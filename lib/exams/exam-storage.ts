@@ -18,8 +18,9 @@ function clone<T>(value: T): T {
 }
 
 async function readExams(): Promise<ExamRecord[]> {
+  const file = examsFile();
   try {
-    const parsed = JSON.parse(await fs.readFile(examsFile(), 'utf8')) as Array<
+    const parsed = JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file, 'utf8')) as Array<
       ExamRecord & Record<string, unknown>
     >;
     return parsed.map((record) => {
@@ -36,10 +37,11 @@ async function readExams(): Promise<ExamRecord[]> {
 
 async function writeExams(exams: ExamRecord[]): Promise<void> {
   const file = examsFile();
-  await fs.mkdir(path.dirname(file), { recursive: true });
+  const directory = path.dirname(file);
+  await fs.mkdir(/* turbopackIgnore: true */ directory, { recursive: true });
   const temporary = `${file}.${randomUUID()}.tmp`;
-  await fs.writeFile(temporary, JSON.stringify(exams, null, 2), 'utf8');
-  await fs.rename(temporary, file);
+  await fs.writeFile(/* turbopackIgnore: true */ temporary, JSON.stringify(exams, null, 2), 'utf8');
+  await fs.rename(/* turbopackIgnore: true */ temporary, /* turbopackIgnore: true */ file);
 }
 
 async function mutate<T>(operation: (exams: ExamRecord[]) => Promise<T> | T): Promise<T> {

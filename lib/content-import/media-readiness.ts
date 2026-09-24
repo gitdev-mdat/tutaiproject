@@ -24,7 +24,7 @@ const RECOVERED_VISUAL_ENVIRONMENT =
 export function normalizeRecoveredVisualContent(
   blocks: QuestionContentBlock[]
 ): QuestionContentBlock[] {
-  return blocks.flatMap((block, index) => {
+  return blocks.flatMap<QuestionContentBlock>((block, index) => {
     if (block.type !== 'TEXT') return [block];
     const adjacentImage = [blocks[index - 1], blocks[index + 1]].some(
       (nearby) => nearby?.type === 'IMAGE'

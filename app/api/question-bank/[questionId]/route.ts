@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getQuestion, appendAuditEntry, saveQuestion } from '@/lib/question-bank/qb-storage';
+import {
+  getQuestion,
+  appendAuditEntry,
+  saveQuestion,
+  deleteQuestion,
+} from '@/lib/question-bank/qb-storage';
 import {
   validateForPublishing,
   validateForReview,
@@ -25,7 +30,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ questio
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ questionId: string }> }) {
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ questionId: string }> }
+) {
   try {
     const { questionId } = await params;
     return (await deleteQuestion(questionId))

@@ -365,7 +365,9 @@ export function QuestionCandidateEditor({
             </div>
             <div>
               <dt>Trang nguồn</dt>
-              <dd className="font-medium text-slate-700">{active.sourcePages.join(', ') || '—'}</dd>
+              <dd className="font-medium text-slate-700">
+                {(active.sourcePages ?? []).join(', ') || '—'}
+              </dd>
             </div>
           </dl>
         </div>

@@ -14,6 +14,8 @@ import {
 import { createDocumentImportSession, ImportStorageError } from '@/lib/content-import/storage';
 import { detectMissingQuestionVisuals } from '@/lib/content-import/visual-region-detection';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { QuestionBankPage } from '@/components/admin/question-bank/qb-page';
 
 export const metadata: Metadata = {
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 export default function QuestionBankAdminPage() {
   return (
     <div className="flex min-h-full flex-col">
-      <QuestionBankPage />
+      <Suspense fallback={<p className="p-6 text-sm text-slate-500">Đang tải…</p>}>
+        <QuestionBankPage />
+      </Suspense>
     </div>
   );
 }

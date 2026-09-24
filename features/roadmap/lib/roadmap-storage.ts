@@ -70,13 +70,21 @@ let queue: Promise<void> = Promise.resolve();
 function filePath() {
   return (
     process.env.TUTAI_ROADMAPS_FILE ??
-    path.join(process.cwd(), 'data', 'roadmaps', 'student-roadmaps.json')
+    path.join(
+      /* turbopackIgnore: true */ process.cwd(),
+      'data',
+      'roadmaps',
+      'student-roadmaps.json'
+    )
   );
 }
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 async function readAll(): Promise<StoredRoadmap[]> {
+  const file = filePath();
   try {
-    return JSON.parse(await fs.readFile(filePath(), 'utf8')) as StoredRoadmap[];
+    return JSON.parse(
+      await fs.readFile(/* turbopackIgnore: true */ file, 'utf8')
+    ) as StoredRoadmap[];
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
     throw error;
@@ -84,10 +92,15 @@ async function readAll(): Promise<StoredRoadmap[]> {
 }
 async function writeAll(records: StoredRoadmap[]) {
   const file = filePath();
-  await fs.mkdir(path.dirname(file), { recursive: true });
+  const directory = path.dirname(file);
+  await fs.mkdir(/* turbopackIgnore: true */ directory, { recursive: true });
   const temporary = `${file}.${randomUUID()}.tmp`;
-  await fs.writeFile(temporary, JSON.stringify(records, null, 2), 'utf8');
-  await fs.rename(temporary, file);
+  await fs.writeFile(
+    /* turbopackIgnore: true */ temporary,
+    JSON.stringify(records, null, 2),
+    'utf8'
+  );
+  await fs.rename(/* turbopackIgnore: true */ temporary, /* turbopackIgnore: true */ file);
 }
 async function mutate<T>(operation: (records: StoredRoadmap[]) => T | Promise<T>): Promise<T> {
   let resolve!: (value: T) => void;

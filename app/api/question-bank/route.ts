@@ -28,6 +28,7 @@ interface NormalizedManualQuestion {
   stem: string;
   questionType: QuestionType;
   options: QuestionOption[];
+  trueFalseStatements?: Question['trueFalseStatements'];
   correctAnswer: string;
   explanation: string;
   solutionGuidance?: string;

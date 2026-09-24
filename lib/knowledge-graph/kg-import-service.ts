@@ -571,8 +571,8 @@ export async function commitImportSession(sessionId: string) {
   const backupPath = getBackupPath();
   const graphPath = getGraphPath();
   try {
-    const raw = await fs.readFile(graphPath, 'utf-8');
-    await fs.writeFile(backupPath, raw, 'utf-8');
+    const raw = await fs.readFile(/* turbopackIgnore: true */ graphPath, 'utf-8');
+    await fs.writeFile(/* turbopackIgnore: true */ backupPath, raw, 'utf-8');
   } catch {
     // Ignore backup write failure if graph.json does not exist yet
   }
@@ -991,12 +991,12 @@ export async function commitImportSession(sessionId: string) {
     // Rollback to backup
     try {
       const exists = await fs
-        .stat(backupPath)
+        .stat(/* turbopackIgnore: true */ backupPath)
         .then(() => true)
         .catch(() => false);
       if (exists) {
-        const backupData = await fs.readFile(backupPath, 'utf-8');
-        await fs.writeFile(graphPath, backupData, 'utf-8');
+        const backupData = await fs.readFile(/* turbopackIgnore: true */ backupPath, 'utf-8');
+        await fs.writeFile(/* turbopackIgnore: true */ graphPath, backupData, 'utf-8');
       }
     } catch {
       // Ignore rollback failure

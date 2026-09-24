@@ -138,6 +138,7 @@ export function AdminRoadmapEditor({
   );
   const change = (patch: Partial<RoadmapDefinition>) => setItem({ ...item, ...patch });
   async function save() {
+    if (!item) return null;
     setSaving(true);
     try {
       const saved = persisted
@@ -174,6 +175,7 @@ export function AdminRoadmapEditor({
     stageId: string,
     updater: (stage: RoadmapDefinition['stages'][number]) => RoadmapDefinition['stages'][number]
   ) {
+    if (!item) return;
     change({ stages: item.stages.map((s) => (s.id === stageId ? updater(s) : s)) });
   }
   return (

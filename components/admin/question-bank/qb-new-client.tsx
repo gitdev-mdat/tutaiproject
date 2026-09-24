@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +52,6 @@ function initialAnswers(): Record<QuestionType, string> {
 
 export function QuestionBankNewClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState('');
   const [duplicate, setDuplicate] = React.useState<ApiErrorPayload | null>(null);
@@ -65,6 +64,10 @@ export function QuestionBankNewClient() {
     { key: 'B', content: '' },
     { key: 'C', content: '' },
     { key: 'D', content: '' },
+  ]);
+  const [trueFalseStatements, setTrueFalseStatements] = React.useState<TrueFalseStatement[]>([
+    { id: 'statement-1', content: '', isTrue: true },
+    { id: 'statement-2', content: '', isTrue: true },
   ]);
   const [answersByType, setAnswersByType] =
     React.useState<Record<QuestionType, string>>(initialAnswers);
@@ -157,9 +160,12 @@ export function QuestionBankNewClient() {
           stem,
           questionType,
           options: isChoiceQuestion ? options : [],
-          correctAnswer: questionType === 'TRUE_FALSE'
-            ? trueFalseStatements.map((statement) => statement.isTrue ? 'TRUE' : 'FALSE').join(',')
-            : correctAnswer,
+          correctAnswer:
+            questionType === 'TRUE_FALSE'
+              ? trueFalseStatements
+                  .map((statement) => (statement.isTrue ? 'TRUE' : 'FALSE'))
+                  .join(',')
+              : correctAnswer,
           trueFalseStatements,
           explanation,
           solutionGuidance: questionType === 'SHORT_ANSWER' ? solutionGuidance : '',
@@ -373,15 +379,51 @@ export function QuestionBankNewClient() {
                         aria-label={`Mệnh đề ${index + 1}`}
                         placeholder={`Mệnh đề ${index + 1}`}
                         value={statement.content}
-                        onChange={(event) => setTrueFalseStatements((current) => current.map((item) => item.id === statement.id ? { ...item, content: event.target.value } : item))}
+                        onChange={(event) =>
+                          setTrueFalseStatements((current) =>
+                            current.map((item) =>
+                              item.id === statement.id
+                                ? { ...item, content: event.target.value }
+                                : item
+                            )
+                          )
+                        }
                       />
                       <div className="grid grid-cols-2 gap-1">
-                        <Button type="button" size="sm" variant={statement.isTrue ? 'default' : 'outline'} onClick={() => setTrueFalseStatements((current) => current.map((item) => item.id === statement.id ? { ...item, isTrue: true } : item))}>Đúng</Button>
-                        <Button type="button" size="sm" variant={!statement.isTrue ? 'default' : 'outline'} onClick={() => setTrueFalseStatements((current) => current.map((item) => item.id === statement.id ? { ...item, isTrue: false } : item))}>Sai</Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={statement.isTrue ? 'default' : 'outline'}
+                          onClick={() =>
+                            setTrueFalseStatements((current) =>
+                              current.map((item) =>
+                                item.id === statement.id ? { ...item, isTrue: true } : item
+                              )
+                            )
+                          }
+                        >
+                          Đúng
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={!statement.isTrue ? 'default' : 'outline'}
+                          onClick={() =>
+                            setTrueFalseStatements((current) =>
+                              current.map((item) =>
+                                item.id === statement.id ? { ...item, isTrue: false } : item
+                              )
+                            )
+                          }
+                        >
+                          Sai
+                        </Button>
                       </div>
                     </div>
                   ))}
-                  {fieldError('trueFalseStatements') && <p className="text-xs text-red-600">{fieldError('trueFalseStatements')}</p>}
+                  {fieldError('trueFalseStatements') && (
+                    <p className="text-xs text-red-600">{fieldError('trueFalseStatements')}</p>
+                  )}
                 </div>
               )}
 
