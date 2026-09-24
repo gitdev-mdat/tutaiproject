@@ -1,0 +1,865 @@
+{
+  "schemaVersion": 3,
+  "updatedAt": "2026-07-25T08:31:43.747Z",
+  "subjects": [
+    {
+      "id": "subj_math",
+      "title": "Toán học",
+      "slug": "toan-hoc",
+      "order": 0,
+      "status": "PUBLISHED",
+      "createdAt": "2026-07-22T06:46:01.544Z",
+      "updatedAt": "2026-07-24T06:35:08.714Z",
+      "type": "SUBJECT",
+      "grades": [
+        {
+          "id": "grade_12",
+          "title": "Lớp 12",
+          "slug": "lop-12",
+          "order": 0,
+          "status": "PUBLISHED",
+          "createdAt": "2026-07-22T06:46:01.544Z",
+          "updatedAt": "2026-07-24T06:35:08.721Z",
+          "type": "GRADE",
+          "subjectId": "subj_math",
+          "domains": [
+            {
+              "id": "chap_3",
+              "title": "Chương 3: Nguyên hàm - Tích phân",
+              "slug": "chuong-3-nguyen-ham-tich-phan",
+              "order": 0,
+              "status": "ARCHIVED",
+              "createdAt": "2026-07-22T06:46:01.544Z",
+              "updatedAt": "2026-07-23T06:45:03.431Z",
+              "type": "DOMAIN",
+              "subjectId": "subj_math",
+              "gradeId": "grade_12",
+              "concepts": [
+                {
+                  "id": "unit_1",
+                  "title": "Định nghĩa nguyên hàm",
+                  "slug": "dinh-nghia-nguyen-ham",
+                  "order": 1,
+                  "status": "ARCHIVED",
+                  "createdAt": "2026-07-22T06:46:01.544Z",
+                  "updatedAt": "2026-07-23T06:45:03.427Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "chap_3",
+                  "aliases": [],
+                  "detailedDescription": "",
+                  "shortDescription": ""
+                },
+                {
+                  "id": "unit_2",
+                  "title": "Tính chất nguyên hàm",
+                  "slug": "tinh-chat-nguyen-ham",
+                  "order": 2,
+                  "status": "ARCHIVED",
+                  "createdAt": "2026-07-22T06:46:01.544Z",
+                  "updatedAt": "2026-07-23T06:45:03.429Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "chap_3",
+                  "aliases": [],
+                  "detailedDescription": "",
+                  "shortDescription": ""
+                }
+              ],
+              "description": ""
+            },
+            {
+              "id": "node-3ayn8fowx",
+              "title": "Đại số nền tảng",
+              "slug": "i-s-n-n-t-ng",
+              "order": 2,
+              "status": "DRAFT",
+              "createdAt": "2026-07-22T13:54:38.204Z",
+              "updatedAt": "2026-07-24T06:35:08.727Z",
+              "type": "DOMAIN",
+              "subjectId": "subj_math",
+              "gradeId": "grade_12",
+              "concepts": [
+                {
+                  "id": "node-v13e6bhcm",
+                  "title": "Hàm số",
+                  "slug": "h-m-s",
+                  "order": 1,
+                  "status": "DRAFT",
+                  "createdAt": "2026-07-22T13:54:38.221Z",
+                  "updatedAt": "2026-07-24T06:35:08.754Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "node-3ayn8fowx",
+                  "shortDescription": "",
+                  "detailedDescription": "",
+                  "aliases": [],
+                  "_isFixture": true,
+                  "provenance": {
+                    "sourceType": "FIXTURE",
+                    "sourceId": "kg-v1-math12-pilot"
+                  }
+                },
+                {
+                  "id": "node-uknvp1qzc",
+                  "title": "Biến đổi biểu thức đại số",
+                  "slug": "bi-n-i-bi-u-th-c-i-s",
+                  "order": 2,
+                  "status": "DRAFT",
+                  "createdAt": "2026-07-22T13:54:38.226Z",
+                  "updatedAt": "2026-07-24T06:35:08.759Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "node-3ayn8fowx",
+                  "shortDescription": "",
+                  "detailedDescription": "",
+                  "aliases": [],
+                  "_isFixture": true,
+                  "provenance": {
+                    "sourceType": "FIXTURE",
+                    "sourceId": "kg-v1-math12-pilot"
+                  }
+                }
+              ],
+              "_isFixture": true,
+              "provenance": {
+                "sourceType": "FIXTURE",
+                "sourceId": "kg-v1-math12-pilot"
+              }
+            },
+            {
+              "id": "node-nrm3k7taj",
+              "title": "Hàm số và ứng dụng đạo hàm",
+              "slug": "h-m-s-v-ng-d-ng-o-h-m",
+              "order": 3,
+              "status": "DRAFT",
+              "createdAt": "2026-07-22T13:54:38.210Z",
+              "updatedAt": "2026-07-24T06:35:08.733Z",
+              "type": "DOMAIN",
+              "subjectId": "subj_math",
+              "gradeId": "grade_12",
+              "concepts": [
+                {
+                  "id": "node-8nls4j6rj",
+                  "title": "Hàm hợp",
+                  "slug": "h-m-h-p",
+                  "order": 1,
+                  "status": "DRAFT",
+                  "createdAt": "2026-07-22T13:54:38.231Z",
+                  "updatedAt": "2026-07-24T06:35:08.766Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "node-nrm3k7taj",
+                  "shortDescription": "",
+                  "detailedDescription": "",
+                  "aliases": [],
+                  "_isFixture": true,
+                  "provenance": {
+                    "sourceType": "FIXTURE",
+                    "sourceId": "kg-v1-math12-pilot"
+                  }
+                },
+                {
+                  "id": "node-n5pvpy7hd",
+                  "title": "Đạo hàm",
+                  "slug": "o-h-m",
+                  "order": 2,
+                  "status": "DRAFT",
+                  "createdAt": "2026-07-22T13:54:38.237Z",
+                  "updatedAt": "2026-07-24T06:35:08.781Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "node-nrm3k7taj",
+                  "shortDescription": "",
+                  "detailedDescription": "",
+                  "aliases": [],
+                  "_isFixture": true,
+                  "provenance": {
+                    "sourceType": "FIXTURE",
+                    "sourceId": "kg-v1-math12-pilot"
+                  }
+                },
+                {
+                  "id": "node-s0f2jitge",
+                  "type": "CONCEPT",
+                  "title": "Tính đơn điệu của hàm số",
+                  "slug": "tinh-don-dieu-cua-ham-so",
+                  "primaryDomainId": "node-nrm3k7taj",
+                  "shortDescription": "Tính đơn điệu mô tả chiều biến thiên của hàm số trên một khoảng, gồm đồng biến và nghịch biến. Khái niệm có thể được nhận biết từ định nghĩa, đồ thị hoặc dấu của đạo hàm.",
+                  "detailedDescription": "Trên một khoảng I, hàm số f đồng biến khi x₁ < x₂ kéo theo f(x₁) < f(x₂), và nghịch biến khi x₁ < x₂ kéo theo f(x₁) > f(x₂). Trên đồ thị, điều này tương ứng với đường cong đi lên hoặc đi xuống khi quan sát từ trái sang phải. Nếu f khả vi trên I, dấu của đạo hàm cung cấp điều kiện đủ quen thuộc để xác định các khoảng đơn điệu: f′(x) > 0 cho đồng biến và f′(x) < 0 cho nghịch biến trên khoảng đang xét.",
+                  "aliases": [],
+                  "order": 3,
+                  "status": "PUBLISHED",
+                  "provenance": {
+                    "sourceType": "IMPORT",
+                    "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+                    "sourceKey": "textbook-review:mryei32t-0fybu39:merged:merged-concept-6cb460eb-25bb-4f06-b7ca-d85cf11eed86",
+                    "textbookId": "mryei32t-0fybu39",
+                    "lessonId": "mryhipx2-eh6ke0j",
+                    "mergedProposalId": "merged-concept-6cb460eb-25bb-4f06-b7ca-d85cf11eed86",
+                    "sourceSemanticRecordIds": [
+                      "698f55755a97950a85c0ef80",
+                      "c96fdcbcc1964afec99aabd7"
+                    ],
+                    "sourcePageEvidence": [
+                      {
+                        "candidateId": "concept-d41b969d6f3e1a",
+                        "pages": [10],
+                        "evidence": [
+                          "Tính đơn điệu của hàm số: Tìm hiểu về định nghĩa tính đồng biến, nghịch biến (tính đơn điệu) của hàm số và cách nhận biết thông qua đồ thị.",
+                          "Định nghĩa tính đơn điệu của hàm số: Định nghĩa toán học của hàm số đồng biến và nghịch biến trên một khoảng."
+                        ]
+                      },
+                      {
+                        "candidateId": "concept-1e50b72495f5d8",
+                        "pages": [10],
+                        "evidence": [
+                          "Tính đơn điệu của hàm số: Tìm hiểu về định nghĩa tính đồng biến, nghịch biến (tính đơn điệu) của hàm số và cách nhận biết thông qua đồ thị.",
+                          "Định nghĩa tính đơn điệu của hàm số: Định nghĩa toán học của hàm số đồng biến và nghịch biến trên một khoảng."
+                        ]
+                      }
+                    ]
+                  },
+                  "createdAt": "2026-07-25T08:31:43.747Z",
+                  "updatedAt": "2026-07-25T08:31:43.747Z"
+                },
+                {
+                  "id": "node-sg3wg6atb",
+                  "type": "CONCEPT",
+                  "title": "Cực trị của hàm số",
+                  "slug": "cuc-tri-cua-ham-so",
+                  "primaryDomainId": "node-nrm3k7taj",
+                  "shortDescription": "Cực trị của hàm số gồm cực đại và cực tiểu địa phương, phân biệt giữa điểm cực trị, giá trị cực trị và điểm biểu diễn tương ứng trên đồ thị.",
+                  "detailedDescription": "Nếu x₀ là điểm cực đại hoặc cực tiểu địa phương thì x₀ là hoành độ điểm cực trị, f(x₀) là giá trị cực trị, còn (x₀, f(x₀)) là điểm cực trị trên đồ thị. Với hàm số khả vi ở hai phía của x₀, việc f′ đổi dấu từ dương sang âm khi qua x₀ là điều kiện đủ để có cực đại, còn đổi dấu từ âm sang dương là điều kiện đủ để có cực tiểu; riêng điều kiện f′(x₀) = 0 không đủ để kết luận có cực trị.",
+                  "aliases": [],
+                  "order": 4,
+                  "status": "PUBLISHED",
+                  "provenance": {
+                    "sourceType": "IMPORT",
+                    "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+                    "sourceKey": "textbook-review:mryei32t-0fybu39:merged:merged-concept-20c4326d-eea4-40a1-8c7b-2654fe25b2ec",
+                    "textbookId": "mryei32t-0fybu39",
+                    "lessonId": "mryhipx2-eh6ke0j",
+                    "mergedProposalId": "merged-concept-20c4326d-eea4-40a1-8c7b-2654fe25b2ec",
+                    "sourceSemanticRecordIds": ["c449df6f978fa3295e78b98c"],
+                    "sourcePageEvidence": [
+                      {
+                        "candidateId": "concept-1413275d59b257",
+                        "pages": [13],
+                        "evidence": [
+                          "Cực trị của hàm số: Khái niệm điểm cực đại, điểm cực tiểu, giá trị cực đại và giá trị cực tiểu của hàm số."
+                        ]
+                      },
+                      {
+                        "candidateId": "concept-dde7c22d82b828",
+                        "pages": [13],
+                        "evidence": [
+                          "Cực trị của hàm số: Khái niệm điểm cực đại, điểm cực tiểu, giá trị cực đại và giá trị cực tiểu của hàm số."
+                        ]
+                      }
+                    ]
+                  },
+                  "createdAt": "2026-07-25T08:31:43.747Z",
+                  "updatedAt": "2026-07-25T08:31:43.747Z"
+                }
+              ],
+              "_isFixture": true,
+              "provenance": {
+                "sourceType": "FIXTURE",
+                "sourceId": "kg-v1-math12-pilot"
+              }
+            },
+            {
+              "id": "node-3ohrzxw98",
+              "title": "Nguyên hàm và tích phân",
+              "slug": "nguy-n-h-m-v-t-ch-ph-n",
+              "order": 4,
+              "status": "DRAFT",
+              "createdAt": "2026-07-22T13:54:38.215Z",
+              "updatedAt": "2026-07-24T06:35:08.737Z",
+              "type": "DOMAIN",
+              "subjectId": "subj_math",
+              "gradeId": "grade_12",
+              "concepts": [
+                {
+                  "id": "node-ez69x03zv",
+                  "title": "Nguyên hàm",
+                  "slug": "nguy-n-h-m",
+                  "order": 1,
+                  "status": "DRAFT",
+                  "createdAt": "2026-07-22T13:54:38.243Z",
+                  "updatedAt": "2026-07-24T06:35:08.788Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "node-3ohrzxw98",
+                  "shortDescription": "",
+                  "detailedDescription": "",
+                  "aliases": ["Nguyên hàm của hàm số"],
+                  "_isFixture": true,
+                  "provenance": {
+                    "sourceType": "FIXTURE",
+                    "sourceId": "kg-v1-math12-pilot"
+                  }
+                },
+                {
+                  "id": "node-qey0ijr64",
+                  "title": "Tích phân",
+                  "slug": "t-ch-ph-n",
+                  "order": 2,
+                  "status": "DRAFT",
+                  "createdAt": "2026-07-22T13:54:38.251Z",
+                  "updatedAt": "2026-07-24T06:35:08.795Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "node-3ohrzxw98",
+                  "shortDescription": "",
+                  "detailedDescription": "",
+                  "aliases": [],
+                  "_isFixture": true,
+                  "provenance": {
+                    "sourceType": "FIXTURE",
+                    "sourceId": "kg-v1-math12-pilot"
+                  }
+                },
+                {
+                  "id": "node-7y3uzrx7n",
+                  "title": "Phương pháp đổi biến",
+                  "slug": "ph-ng-ph-p-i-bi-n",
+                  "order": 3,
+                  "status": "DRAFT",
+                  "createdAt": "2026-07-22T13:54:38.257Z",
+                  "updatedAt": "2026-07-24T06:35:08.802Z",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "node-3ohrzxw98",
+                  "shortDescription": "",
+                  "detailedDescription": "",
+                  "aliases": [],
+                  "_isFixture": true,
+                  "provenance": {
+                    "sourceType": "FIXTURE",
+                    "sourceId": "kg-v1-math12-pilot"
+                  }
+                }
+              ],
+              "_isFixture": true,
+              "provenance": {
+                "sourceType": "FIXTURE",
+                "sourceId": "kg-v1-math12-pilot"
+              }
+            }
+          ],
+          "description": "",
+          "_isFixture": true,
+          "provenance": {
+            "sourceType": "FIXTURE",
+            "sourceId": "kg-v1-math12-pilot"
+          }
+        }
+      ],
+      "description": "",
+      "_isFixture": true,
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      }
+    }
+  ],
+  "learningObjectives": [
+    {
+      "conceptId": "node-ez69x03zv",
+      "bloomLevel": "REMEMBER",
+      "statement": "Nhận biết được một hàm số là nguyên hàm của hàm số đã cho.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "lo-dd079s4jd",
+      "order": 1,
+      "createdAt": "2026-07-22T13:54:38.262Z",
+      "updatedAt": "2026-07-22T13:54:38.262Z",
+      "_isFixture": true
+    },
+    {
+      "conceptId": "node-ez69x03zv",
+      "bloomLevel": "UNDERSTAND",
+      "statement": "Giải thích được mối quan hệ giữa nguyên hàm và đạo hàm.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "lo-jsg1zi86y",
+      "order": 2,
+      "createdAt": "2026-07-22T13:54:38.269Z",
+      "updatedAt": "2026-07-22T13:54:38.269Z",
+      "_isFixture": true
+    },
+    {
+      "conceptId": "node-ez69x03zv",
+      "bloomLevel": "APPLY",
+      "statement": "Áp dụng bảng nguyên hàm cơ bản để tính các nguyên hàm trực tiếp.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "lo-r01uov28q",
+      "order": 3,
+      "createdAt": "2026-07-22T13:54:38.274Z",
+      "updatedAt": "2026-07-22T13:54:38.274Z",
+      "_isFixture": true
+    },
+    {
+      "conceptId": "node-7y3uzrx7n",
+      "bloomLevel": "UNDERSTAND",
+      "statement": "Nhận biết được cấu trúc biểu thức phù hợp với phương pháp đổi biến.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "lo-f5urpzwdb",
+      "order": 1,
+      "createdAt": "2026-07-22T13:54:38.280Z",
+      "updatedAt": "2026-07-22T13:54:38.280Z",
+      "_isFixture": true
+    },
+    {
+      "conceptId": "node-7y3uzrx7n",
+      "bloomLevel": "APPLY",
+      "statement": "Lựa chọn được biểu thức đổi biến phù hợp trong các nguyên hàm cơ bản.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "lo-m7cmvjsl7",
+      "order": 2,
+      "createdAt": "2026-07-22T13:54:38.285Z",
+      "updatedAt": "2026-07-22T13:54:38.285Z",
+      "_isFixture": true
+    },
+    {
+      "id": "lo-x1qd87ndh",
+      "conceptId": "node-ez69x03zv",
+      "bloomLevel": "APPLY",
+      "statement": "Giải bài tập nguyên hàm cơ bản",
+      "order": 4,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "5ff31ee1-3db8-41f3-8ba0-0078b40c937f"
+      },
+      "createdAt": "2026-07-22T13:54:40.348Z",
+      "updatedAt": "2026-07-22T13:54:40.348Z"
+    },
+    {
+      "id": "lo-qp9v7ookn",
+      "conceptId": "node-ez69x03zv",
+      "bloomLevel": "REMEMBER",
+      "statement": "Nhận biết được một hàm số là nguyên hàm của hàm số đã cho (Phiên bản Pilot).",
+      "order": 5,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "5ff31ee1-3db8-41f3-8ba0-0078b40c937f"
+      },
+      "createdAt": "2026-07-22T13:54:40.348Z",
+      "updatedAt": "2026-07-22T13:54:40.348Z"
+    },
+    {
+      "id": "lo-9qzwa04az",
+      "conceptId": "node-qey0ijr64",
+      "bloomLevel": "UNDERSTAND",
+      "statement": "Hiểu ý nghĩa hình học của tích phân (Phiên bản Pilot).",
+      "order": 1,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "5ff31ee1-3db8-41f3-8ba0-0078b40c937f"
+      },
+      "createdAt": "2026-07-22T13:54:40.348Z",
+      "updatedAt": "2026-07-22T13:54:40.348Z"
+    },
+    {
+      "id": "lo-k9r4dsac7",
+      "conceptId": "node-7y3uzrx7n",
+      "bloomLevel": "APPLY",
+      "statement": "Vận dụng phương pháp đổi biến số để tính nguyên hàm.",
+      "order": 3,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "5ff31ee1-3db8-41f3-8ba0-0078b40c937f"
+      },
+      "createdAt": "2026-07-22T13:54:40.348Z",
+      "updatedAt": "2026-07-22T13:54:40.348Z"
+    },
+    {
+      "id": "lo-e9pv38gd0",
+      "conceptId": "node-qey0ijr64",
+      "bloomLevel": "UNDERSTAND",
+      "statement": "Giải thích được mối quan hệ giữa tích phân xác định và diện tích hình phẳng trong các trường hợp cơ bản.",
+      "order": 2,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "82cd8c65-31f9-4923-a4fc-d4fc68bedf67"
+      },
+      "createdAt": "2026-07-23T06:46:29.508Z",
+      "updatedAt": "2026-07-23T06:46:29.508Z"
+    },
+    {
+      "id": "lo-aiv0goj8y",
+      "conceptId": "node-qey0ijr64",
+      "bloomLevel": "APPLY",
+      "statement": "Tính được tích phân xác định bằng định lý cơ bản của giải tích.",
+      "order": 3,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "82cd8c65-31f9-4923-a4fc-d4fc68bedf67"
+      },
+      "createdAt": "2026-07-23T06:46:29.508Z",
+      "updatedAt": "2026-07-23T06:46:29.508Z"
+    },
+    {
+      "id": "lo-pd93g5zbe",
+      "conceptId": "node-7y3uzrx7n",
+      "bloomLevel": "APPLY",
+      "statement": "Lựa chọn được biểu thức đổi biến phù hợp trong các nguyên hàm và tích phân cơ bản.",
+      "order": 4,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "82cd8c65-31f9-4923-a4fc-d4fc68bedf67"
+      },
+      "createdAt": "2026-07-23T06:46:29.508Z",
+      "updatedAt": "2026-07-23T06:46:29.508Z"
+    },
+    {
+      "id": "lo-iwjo2z1y9",
+      "conceptId": "node-s0f2jitge",
+      "bloomLevel": "UNDERSTAND",
+      "statement": "Nhận biết và giải thích được các khoảng đồng biến, nghịch biến của hàm số từ định nghĩa hoặc đồ thị.",
+      "order": 1,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-lo:lo-a1fbae5ebb45f1",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "sourceProposalId": "lo-a1fbae5ebb45f1"
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z",
+      "updatedAt": "2026-07-25T08:31:43.747Z"
+    },
+    {
+      "id": "lo-wea5iqp1q",
+      "conceptId": "node-s0f2jitge",
+      "bloomLevel": "APPLY",
+      "statement": "Sử dụng dấu của đạo hàm và bảng biến thiên để xác định các khoảng đồng biến, nghịch biến của hàm số.",
+      "order": 2,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-lo:lo-81584f77a96722",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "sourceProposalId": "lo-81584f77a96722"
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z",
+      "updatedAt": "2026-07-25T08:31:43.747Z"
+    },
+    {
+      "id": "lo-f2zyq4sgk",
+      "conceptId": "node-sg3wg6atb",
+      "bloomLevel": "UNDERSTAND",
+      "statement": "Phân biệt được điểm cực đại/cực tiểu, giá trị cực đại/cực tiểu và điểm cực trị trên đồ thị.",
+      "order": 1,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-lo:lo-5f6befcb6a4405",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "sourceProposalId": "lo-5f6befcb6a4405"
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z",
+      "updatedAt": "2026-07-25T08:31:43.747Z"
+    },
+    {
+      "id": "lo-450tjkhpv",
+      "conceptId": "node-sg3wg6atb",
+      "bloomLevel": "APPLY",
+      "statement": "Áp dụng điều kiện đổi dấu của đạo hàm và bảng biến thiên để xác định điểm và giá trị cực trị của hàm số.",
+      "order": 2,
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-lo:lo-d7019a8ff05369",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "sourceProposalId": "lo-d7019a8ff05369"
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z",
+      "updatedAt": "2026-07-25T08:31:43.747Z"
+    }
+  ],
+  "conceptRelations": [
+    {
+      "sourceConceptId": "node-v13e6bhcm",
+      "targetConceptId": "node-n5pvpy7hd",
+      "type": "PREREQUISITE",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "rel-mofa9c2oj",
+      "createdAt": "2026-07-22T13:54:38.289Z",
+      "updatedAt": "2026-07-22T13:54:38.289Z",
+      "_isFixture": true
+    },
+    {
+      "sourceConceptId": "node-8nls4j6rj",
+      "targetConceptId": "node-7y3uzrx7n",
+      "type": "PREREQUISITE",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "rel-0orx24hyf",
+      "createdAt": "2026-07-22T13:54:38.294Z",
+      "updatedAt": "2026-07-22T13:54:38.294Z",
+      "_isFixture": true
+    },
+    {
+      "sourceConceptId": "node-n5pvpy7hd",
+      "targetConceptId": "node-7y3uzrx7n",
+      "type": "PREREQUISITE",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "rel-gc4486flx",
+      "createdAt": "2026-07-22T13:54:38.299Z",
+      "updatedAt": "2026-07-22T13:54:38.299Z",
+      "_isFixture": true
+    },
+    {
+      "sourceConceptId": "node-uknvp1qzc",
+      "targetConceptId": "node-7y3uzrx7n",
+      "type": "PREREQUISITE",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "FIXTURE",
+        "sourceId": "kg-v1-math12-pilot"
+      },
+      "id": "rel-30r6s2ra1",
+      "createdAt": "2026-07-22T13:54:38.309Z",
+      "updatedAt": "2026-07-22T13:54:38.309Z",
+      "_isFixture": true
+    },
+    {
+      "id": "rel-xjxyapfbl",
+      "sourceConceptId": "node-ez69x03zv",
+      "targetConceptId": "node-7y3uzrx7n",
+      "type": "PREREQUISITE",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "82cd8c65-31f9-4923-a4fc-d4fc68bedf67"
+      },
+      "createdAt": "2026-07-23T06:46:29.508Z",
+      "updatedAt": "2026-07-23T06:46:29.508Z"
+    },
+    {
+      "id": "rel-j3dvk5k4i",
+      "sourceConceptId": "node-v13e6bhcm",
+      "targetConceptId": "node-s0f2jitge",
+      "type": "PREREQUISITE",
+      "strength": 1,
+      "rationale": "Hàm số là kiến thức học tập cần có trước khi diễn giải tính đơn điệu trên một khoảng.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-prerequisite:prerequisite-1251c61e-74e0-459e-b3e2-639e71b98e9f",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "sourceProposalId": "prerequisite-1251c61e-74e0-459e-b3e2-639e71b98e9f"
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z",
+      "updatedAt": "2026-07-25T08:31:43.747Z"
+    },
+    {
+      "id": "rel-8gtgahrb9",
+      "sourceConceptId": "node-n5pvpy7hd",
+      "targetConceptId": "node-s0f2jitge",
+      "type": "PREREQUISITE",
+      "strength": 1,
+      "rationale": "Trong Bài 1, học sinh dùng dấu của đạo hàm để xác định các khoảng đơn điệu.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-prerequisite:prerequisite-ef9e846f-24dd-4a51-a1bb-f8fca2412e8e",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "sourceProposalId": "prerequisite-ef9e846f-24dd-4a51-a1bb-f8fca2412e8e"
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z",
+      "updatedAt": "2026-07-25T08:31:43.747Z"
+    },
+    {
+      "id": "rel-mdpdclyyl",
+      "sourceConceptId": "node-s0f2jitge",
+      "targetConceptId": "node-sg3wg6atb",
+      "type": "PREREQUISITE",
+      "strength": 1,
+      "rationale": "Sự đổi chiều đơn điệu qua một điểm là nền học tập để nhận biết cực đại và cực tiểu bằng bảng biến thiên.",
+      "status": "PUBLISHED",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-prerequisite:prerequisite-00ce6119-9308-4b22-b97c-9d8ae31198bc",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "sourceProposalId": "prerequisite-00ce6119-9308-4b22-b97c-9d8ae31198bc"
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z",
+      "updatedAt": "2026-07-25T08:31:43.747Z"
+    }
+  ],
+  "domainMemberships": [
+    {
+      "id": "mem-unit_1-chap_3",
+      "conceptId": "unit_1",
+      "domainId": "chap_3",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.197Z"
+    },
+    {
+      "id": "mem-unit_2-chap_3",
+      "conceptId": "unit_2",
+      "domainId": "chap_3",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.197Z"
+    },
+    {
+      "id": "mem-node-v13e6bhcm-node-3ayn8fowx",
+      "conceptId": "node-v13e6bhcm",
+      "domainId": "node-3ayn8fowx",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.221Z"
+    },
+    {
+      "id": "mem-node-uknvp1qzc-node-3ayn8fowx",
+      "conceptId": "node-uknvp1qzc",
+      "domainId": "node-3ayn8fowx",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.226Z"
+    },
+    {
+      "id": "mem-node-8nls4j6rj-node-nrm3k7taj",
+      "conceptId": "node-8nls4j6rj",
+      "domainId": "node-nrm3k7taj",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.231Z"
+    },
+    {
+      "id": "mem-node-n5pvpy7hd-node-nrm3k7taj",
+      "conceptId": "node-n5pvpy7hd",
+      "domainId": "node-nrm3k7taj",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.237Z"
+    },
+    {
+      "id": "mem-node-ez69x03zv-node-3ohrzxw98",
+      "conceptId": "node-ez69x03zv",
+      "domainId": "node-3ohrzxw98",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.243Z"
+    },
+    {
+      "id": "mem-node-qey0ijr64-node-3ohrzxw98",
+      "conceptId": "node-qey0ijr64",
+      "domainId": "node-3ohrzxw98",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.251Z"
+    },
+    {
+      "id": "mem-node-7y3uzrx7n-node-3ohrzxw98",
+      "conceptId": "node-7y3uzrx7n",
+      "domainId": "node-3ohrzxw98",
+      "role": "PRIMARY",
+      "createdAt": "2026-07-22T13:54:38.257Z"
+    },
+    {
+      "id": "mem-node-s0f2jitge-node-nrm3k7taj",
+      "conceptId": "node-s0f2jitge",
+      "domainId": "node-nrm3k7taj",
+      "role": "PRIMARY",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-review:mryei32t-0fybu39:merged:merged-concept-6cb460eb-25bb-4f06-b7ca-d85cf11eed86",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "mergedProposalId": "merged-concept-6cb460eb-25bb-4f06-b7ca-d85cf11eed86",
+        "sourceSemanticRecordIds": ["698f55755a97950a85c0ef80", "c96fdcbcc1964afec99aabd7"],
+        "sourcePageEvidence": [
+          {
+            "candidateId": "concept-d41b969d6f3e1a",
+            "pages": [10],
+            "evidence": [
+              "Tính đơn điệu của hàm số: Tìm hiểu về định nghĩa tính đồng biến, nghịch biến (tính đơn điệu) của hàm số và cách nhận biết thông qua đồ thị.",
+              "Định nghĩa tính đơn điệu của hàm số: Định nghĩa toán học của hàm số đồng biến và nghịch biến trên một khoảng."
+            ]
+          },
+          {
+            "candidateId": "concept-1e50b72495f5d8",
+            "pages": [10],
+            "evidence": [
+              "Tính đơn điệu của hàm số: Tìm hiểu về định nghĩa tính đồng biến, nghịch biến (tính đơn điệu) của hàm số và cách nhận biết thông qua đồ thị.",
+              "Định nghĩa tính đơn điệu của hàm số: Định nghĩa toán học của hàm số đồng biến và nghịch biến trên một khoảng."
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z"
+    },
+    {
+      "id": "mem-node-sg3wg6atb-node-nrm3k7taj",
+      "conceptId": "node-sg3wg6atb",
+      "domainId": "node-nrm3k7taj",
+      "role": "PRIMARY",
+      "provenance": {
+        "sourceType": "IMPORT",
+        "sourceId": "a3c9c76c-834c-454e-867b-fec39c0e8403",
+        "sourceKey": "textbook-review:mryei32t-0fybu39:merged:merged-concept-20c4326d-eea4-40a1-8c7b-2654fe25b2ec",
+        "textbookId": "mryei32t-0fybu39",
+        "lessonId": "mryhipx2-eh6ke0j",
+        "mergedProposalId": "merged-concept-20c4326d-eea4-40a1-8c7b-2654fe25b2ec",
+        "sourceSemanticRecordIds": ["c449df6f978fa3295e78b98c"],
+        "sourcePageEvidence": [
+          {
+            "candidateId": "concept-1413275d59b257",
+            "pages": [13],
+            "evidence": [
+              "Cực trị của hàm số: Khái niệm điểm cực đại, điểm cực tiểu, giá trị cực đại và giá trị cực tiểu của hàm số."
+            ]
+          },
+          {
+            "candidateId": "concept-dde7c22d82b828",
+            "pages": [13],
+            "evidence": [
+              "Cực trị của hàm số: Khái niệm điểm cực đại, điểm cực tiểu, giá trị cực đại và giá trị cực tiểu của hàm số."
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-07-25T08:31:43.747Z"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+:global(:root) {
+  --landing-ice-surface: #f2f7ff;
+  --landing-transition-surface: var(--landing-ice-surface);
+}
+
+.heroFrame {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  min-height: 100svh;
+  flex-direction: column;
+  isolation: isolate;
+  overflow: clip;
+  background:
+    radial-gradient(
+      ellipse 58% 76% at 78% 43%,
+      rgba(30, 101, 255, 0.34) 0%,
+      rgba(12, 59, 154, 0.18) 43%,
+      transparent 74%
+    ),
+    radial-gradient(ellipse 70% 52% at 48% 105%, rgba(25, 92, 216, 0.2) 0%, transparent 65%),
+    linear-gradient(118deg, #061326 0%, #071a38 48%, #0b2d6e 100%);
+}
+
+.heroFrame::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: '';
+  background: linear-gradient(
+    90deg,
+    rgba(3, 13, 31, 0.28) 0%,
+    transparent 47%,
+    rgba(20, 79, 188, 0.08) 100%
+  );
+  pointer-events: none;
+}
+
+.heroFrame::after {
+  position: absolute;
+  z-index: 4;
+  right: -10%;
+  bottom: -124px;
+  left: -10%;
+  height: 180px;
+  background: var(--landing-transition-surface);
+  clip-path: ellipse(70% 100% at 50% 100%);
+  content: '';
+  filter: drop-shadow(0 -1px 0 rgba(72, 137, 225, 0.22));
+  pointer-events: none;
+}
+
+.knowledgeSection {
+  position: relative;
+  background: var(--landing-transition-surface);
+}
+
+.heroBoundaryParticles {
+  position: absolute;
+  z-index: 5;
+  inset: auto 0 0;
+  height: 96px;
+  pointer-events: none;
+}
+
+.heroCurveHandoff {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.heroCurveHandoff path {
+  fill: none;
+  stroke: rgba(119, 205, 255, 0);
+  stroke-dasharray: 0.18 0.82;
+  stroke-dashoffset: 0.48;
+  stroke-linecap: round;
+  stroke-width: 1.4;
+}
+
+.heroFrame:has(+ .knowledgeSection > section[data-visible='true']) .heroCurveHandoff path {
+  animation: curveLightHandoff 820ms ease-out 80ms 1 both;
+}
+
+.heroBoundaryParticles i {
+  position: absolute;
+  width: var(--particle-size);
+  height: var(--particle-size);
+  border-radius: 50%;
+  background: var(--particle-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--particle-color) 62%, transparent);
+  opacity: 0;
+  transform: translate3d(0, -8px, 0);
+}
+
+.heroFrame:has(+ .knowledgeSection > section[data-visible='true']) .heroBoundaryParticles i {
+  animation: boundaryParticleDrift 720ms ease-out var(--particle-delay) 1 both;
+}
+
+@keyframes boundaryParticleDrift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0);
+  }
+  32% {
+    opacity: 0.52;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, var(--particle-drift), 0);
+  }
+}
+
+@keyframes curveLightHandoff {
+  0% {
+    stroke: rgba(119, 205, 255, 0);
+    stroke-dashoffset: 0.48;
+  }
+  36% {
+    stroke: rgba(119, 205, 255, 0.44);
+  }
+  100% {
+    stroke: rgba(119, 205, 255, 0);
+    stroke-dashoffset: -0.16;
+  }
+}
+
+@media (max-width: 1279px) {
+  .heroFrame::after {
+    bottom: -88px;
+    height: 120px;
+  }
+
+  .heroBoundaryParticles i:nth-child(5) {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .heroFrame {
+    background:
+      radial-gradient(ellipse 86% 62% at 82% 34%, rgba(30, 101, 255, 0.2) 0%, transparent 68%),
+      linear-gradient(145deg, #061326 0%, #071a38 60%, #0a285c 100%);
+  }
+}
+
+@media (max-width: 767px) {
+  .heroFrame {
+    min-height: 0;
+  }
+
+  .heroFrame::after {
+    right: -18%;
+    bottom: -66px;
+    left: -18%;
+    height: 90px;
+    clip-path: ellipse(72% 100% at 50% 100%);
+  }
+
+  .heroBoundaryParticles {
+    display: none;
+  }
+
+  .heroCurveHandoff {
+    display: none;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .heroBoundaryParticles,
+  .heroCurveHandoff {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroBoundaryParticles,
+  .heroCurveHandoff {
+    display: none;
+  }
+}

@@ -1,0 +1,435 @@
+.page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 2px 0 32px;
+  color: #0b1020;
+}
+.pageHeader {
+  min-height: 128px;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  overflow: hidden;
+}
+.pageHeader > div:first-child {
+  position: relative;
+  z-index: 2;
+  padding-top: 6px;
+}
+.pageHeader > div:first-child > p {
+  margin: 0;
+  color: #1463ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.pageHeader h1 {
+  margin: 6px 0 0;
+  font-size: 38px;
+  line-height: 1.1;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+.pageHeader > div:first-child > span {
+  display: block;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 15px;
+}
+.headerArtwork {
+  position: absolute;
+  right: 0;
+  top: -5px;
+  width: min(36%, 460px);
+  height: 145px;
+  opacity: 0.65;
+}
+.headerArtwork svg {
+  width: 100%;
+  height: 100%;
+}
+.profileHero {
+  min-height: 162px;
+  display: grid;
+  grid-template-columns: 126px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 23px 26px;
+  border: 1px solid #e5ebf3;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 8px 24px rgba(37, 99, 235, 0.02);
+  animation: enter 0.32s ease both;
+}
+.avatar {
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #eef5ff, #dceaff);
+  color: #1463ff;
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.heroIdentity h2 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: -0.025em;
+}
+.heroIdentity > p {
+  margin: 4px 0 0;
+  color: #597096;
+  font-size: 15px;
+}
+.heroIdentity > div {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+.heroIdentity span {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #586e91;
+  font-size: 13px;
+}
+.heroIdentity svg {
+  color: #6d86ad;
+}
+.heroAction {
+  justify-self: end;
+}
+.outlineAction {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #1463ff;
+  border-radius: 10px;
+  background: white;
+  padding: 0 17px;
+  color: #1463ff;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  transition: 0.18s ease;
+}
+.outlineAction:hover {
+  background: #f5f9ff;
+  transform: translateY(-1px);
+}
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+.infoCard {
+  min-height: 255px;
+  padding: 21px 23px;
+  border: 1px solid #e5ebf3;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 8px 24px rgba(37, 99, 235, 0.02);
+  animation: enter 0.34s ease both;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.infoCard:hover {
+  border-color: rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 9px 25px rgba(37, 99, 235, 0.035);
+}
+.cardHeader {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 50px 1fr auto;
+  align-items: start;
+  gap: 13px;
+}
+.cardIcon {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eef5ff;
+  color: #1463ff;
+}
+.cardHeader h2 {
+  margin: 3px 0 0;
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 820;
+}
+.cardHeader p {
+  margin: 5px 0 0;
+  color: #71829b;
+  font-size: 12px;
+}
+.cardAction {
+  align-self: start;
+}
+.cardAction .outlineAction {
+  min-height: 36px;
+  padding: 0 13px;
+  font-size: 11px;
+}
+.detailRows {
+  margin: 15px 0 0;
+}
+.detailRows > div {
+  min-height: 37px;
+  display: grid;
+  grid-template-columns: 34% 1fr;
+  align-items: center;
+  border-bottom: 1px solid #e8edf4;
+}
+.detailRows > div:last-child {
+  border-bottom: 0;
+}
+.detailRows dt {
+  color: #667b9a;
+  font-size: 12px;
+}
+.detailRows dd {
+  margin: 0;
+  color: #15213d;
+  font-size: 12.5px;
+  font-weight: 550;
+}
+.subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+.subjects i {
+  border-radius: 999px;
+  background: #eef5ff;
+  padding: 6px 13px;
+  color: #1463ff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+.planPanel {
+  min-height: 90px;
+  display: grid;
+  grid-template-columns: 62px 1fr auto;
+  align-items: center;
+  gap: 13px;
+  margin-top: 17px;
+  padding: 14px 17px;
+  border: 1px solid #d9e7fa;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #eef5ff, #f8fbff);
+}
+.planIcon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #deebff;
+  color: #1463ff;
+}
+.planPanel strong {
+  font-size: 15px;
+}
+.planPanel p {
+  margin: 5px 0 0;
+  color: #647b9c;
+  font-size: 12px;
+}
+.planPanel a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #1463ff;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.planPanel a svg {
+  transition: transform 0.18s ease;
+}
+.planPanel a:hover svg {
+  transform: translateX(2px);
+}
+.editForm {
+  display: grid;
+  gap: 14px;
+  margin-top: 5px;
+}
+.editForm label {
+  display: grid;
+  gap: 6px;
+  color: #425474;
+  font-size: 12px;
+  font-weight: 700;
+}
+.editForm input {
+  height: 42px;
+  border: 1px solid #d9e2ee;
+  border-radius: 10px;
+  background: white;
+  padding: 0 12px;
+  color: #111827;
+  font-size: 13px;
+  outline: none;
+}
+.editForm input:focus {
+  border-color: #1463ff;
+  box-shadow: 0 0 0 3px rgba(20, 99, 255, 0.1);
+}
+.saveButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: #1463ff;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+}
+.formError {
+  margin: 0;
+  color: #c2410c;
+  font-size: 12px;
+}
+.successMessage {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 12px;
+  background: #eefaf5;
+  padding: 16px;
+  color: #14785a;
+  font-size: 13px;
+  font-weight: 700;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 1000px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+  .infoCard {
+    min-height: auto;
+  }
+  .headerArtwork {
+    width: 45%;
+  }
+}
+@media (max-width: 680px) {
+  .pageHeader {
+    min-height: 124px;
+  }
+  .pageHeader h1 {
+    font-size: 32px;
+  }
+  .pageHeader > div:first-child > span {
+    font-size: 13px;
+  }
+  .headerArtwork {
+    display: none;
+  }
+  .profileHero {
+    grid-template-columns: 78px 1fr;
+    gap: 15px;
+    padding: 20px 17px;
+  }
+  .avatar {
+    width: 74px;
+    height: 74px;
+    font-size: 25px;
+  }
+  .heroIdentity h2 {
+    font-size: 21px;
+  }
+  .heroIdentity > p {
+    font-size: 13px;
+  }
+  .heroIdentity > div {
+    grid-column: 1/-1;
+  }
+  .heroIdentity span {
+    font-size: 11px;
+  }
+  .heroAction {
+    grid-column: 1/-1;
+    justify-self: stretch;
+  }
+  .heroAction button,
+  .heroAction .outlineAction {
+    width: 100%;
+  }
+  .cardGrid {
+    gap: 13px;
+    margin-top: 13px;
+  }
+  .infoCard {
+    padding: 18px 16px;
+  }
+  .cardHeader {
+    grid-template-columns: 45px 1fr;
+  }
+  .cardIcon {
+    width: 40px;
+    height: 40px;
+  }
+  .cardAction {
+    grid-column: 1/-1;
+  }
+  .cardAction button,
+  .cardAction .outlineAction {
+    width: 100%;
+  }
+  .detailRows > div {
+    grid-template-columns: 42% 1fr;
+  }
+  .planPanel {
+    grid-template-columns: 50px 1fr;
+  }
+  .planIcon {
+    width: 44px;
+    height: 44px;
+  }
+  .planPanel a {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profileHero,
+  .infoCard {
+    animation: none;
+  }
+  .infoCard,
+  .outlineAction {
+    transition: none;
+  }
+}

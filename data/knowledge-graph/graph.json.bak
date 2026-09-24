@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 3,
+  "updatedAt": "2026-08-26T05:11:31.540Z",
+  "subjects": [
+    {
+      "id": "s-math",
+      "title": "Toán học",
+      "type": "SUBJECT",
+      "slug": "toan-hoc",
+      "order": 1,
+      "status": "PUBLISHED",
+      "createdAt": "",
+      "updatedAt": "",
+      "grades": [
+        {
+          "id": "g-12",
+          "title": "Lớp 12",
+          "type": "GRADE",
+          "subjectId": "s-math",
+          "slug": "lop-12",
+          "order": 1,
+          "status": "PUBLISHED",
+          "createdAt": "",
+          "updatedAt": "",
+          "domains": [
+            {
+              "id": "d-integral",
+              "title": "Tích phân",
+              "type": "DOMAIN",
+              "subjectId": "s-math",
+              "gradeId": "g-12",
+              "slug": "tich-phan",
+              "order": 1,
+              "status": "PUBLISHED",
+              "createdAt": "",
+              "updatedAt": "",
+              "concepts": [
+                {
+                  "id": "c-basic",
+                  "title": "Nguyên hàm cơ bản",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "d-integral",
+                  "aliases": [],
+                  "slug": "nguyen-ham-co-ban",
+                  "order": 1,
+                  "status": "PUBLISHED",
+                  "createdAt": "",
+                  "updatedAt": ""
+                },
+                {
+                  "id": "c-adv",
+                  "title": "Tích phân nâng cao",
+                  "type": "CONCEPT",
+                  "primaryDomainId": "d-integral",
+                  "aliases": [],
+                  "slug": "tich-phan-nang-cao",
+                  "order": 2,
+                  "status": "PUBLISHED",
+                  "createdAt": "",
+                  "updatedAt": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "learningObjectives": [],
+  "conceptRelations": [
+    {
+      "id": "rel-reverse",
+      "sourceConceptId": "c-basic",
+      "targetConceptId": "c-adv",
+      "type": "PREREQUISITE",
+      "status": "PUBLISHED",
+      "createdAt": "",
+      "updatedAt": ""
+    }
+  ],
+  "domainMemberships": []
+}

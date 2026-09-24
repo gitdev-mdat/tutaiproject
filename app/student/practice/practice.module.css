@@ -1,0 +1,45 @@
+@keyframes mode-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modeContent {
+  animation: mode-enter 240ms ease-out both;
+}
+
+.practiceCard,
+.chapterCard {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.practiceCard:hover,
+.chapterCard:hover {
+  transform: translateY(-2px);
+  border-color: rgb(191 219 254);
+  box-shadow: 0 12px 28px -22px rgb(15 23 42 / 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modeContent {
+    animation: none;
+  }
+
+  .practiceCard,
+  .chapterCard {
+    transition: none;
+  }
+
+  .practiceCard:hover,
+  .chapterCard:hover {
+    transform: none;
+  }
+}

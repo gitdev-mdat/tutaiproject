@@ -1,0 +1,16 @@
+[
+  {
+    "id": "52b7a432-5633-4ff3-ae65-11a2a4de15bd",
+    "code": "TT-MUVGZW",
+    "userId": "demo-student-001",
+    "planId": "PLUS_6M",
+    "amount": 349000,
+    "currency": "VND",
+    "paymentMethod": "BANK_TRANSFER",
+    "status": "PAID",
+    "createdAt": "2026-08-18T13:43:29.314Z",
+    "expiresAt": "2026-08-19T13:43:29.314Z",
+    "paidAt": "2026-08-19T14:11:01.118Z",
+    "approvedBy": "demo-student-001"
+  }
+]

@@ -1,0 +1,8 @@
+--- a/src/example.ts
++++ b/src/example.ts
+@@ -1,3 +1,4 @@
+ function example() {
+   const value = 1;
++  const other = 2;
+ }
+

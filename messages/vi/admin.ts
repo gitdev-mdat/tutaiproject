@@ -1,0 +1,87 @@
+/**
+ * Admin panel user-facing strings (Vietnamese).
+ */
+export const adminMessages = {
+  // Users
+  usersTitle: 'Quản lý người dùng',
+  usersTotal: 'Tổng người dùng',
+  usersStudents: 'Học sinh',
+  usersTeachers: 'Giáo viên',
+  usersAdmins: 'Quản trị viên',
+  usersPendingVerification: 'Chờ xác minh',
+  usersActive: 'Đang hoạt động',
+  usersSuspended: 'Bị khóa',
+  usersSearch: 'Tìm kiếm người dùng...',
+  usersView: 'Xem',
+  usersSuspend: 'Khóa tài khoản',
+  usersReinstate: 'Mở khóa',
+  usersDelete: 'Xóa tài khoản',
+  usersDeleteConfirm: 'Bạn có chắc muốn xóa tài khoản này? Hành động này không thể hoàn tác.',
+  usersRole: 'Vai trò',
+  usersJoinedDate: 'Ngày tham gia',
+  usersLastActive: 'Hoạt động gần nhất',
+  usersEmail: 'Email',
+  usersPhone: 'Số điện thoại',
+
+  // Moderation
+  moderationTitle: 'Kiểm duyệt nội dung',
+  moderationPending: 'Đang chờ kiểm duyệt',
+  moderationFlagged: 'Đã bị gắn cờ',
+  moderationApproved: 'Đã phê duyệt',
+  moderationRejected: 'Đã từ chối',
+  moderationUnderRevision: 'Yêu cầu sửa đổi',
+  moderationApprove: 'Phê duyệt',
+  moderationReject: 'Từ chối',
+  moderationRequestRevision: 'Yêu cầu sửa đổi',
+  moderationEscalate: 'Chuyển lên',
+  moderationCase: 'Hồ sơ #{id}',
+  moderationTeacher: 'Giáo viên: {name}',
+  moderationReason: 'Lý do',
+  moderationDecision: 'Quyết định',
+  moderationDecisionNote: 'Ghi chú quyết định',
+  moderationHistory: 'Lịch sử kiểm duyệt',
+  moderationDecisionRecorded: 'Quyết định đã được ghi nhận.',
+  moderationTeacherNotified: 'Giáo viên đã được thông báo.',
+
+  // Curriculum
+  curriculumTitle: 'Quản lý chương trình',
+  curriculumVersion: 'Phiên bản',
+  curriculumCurrent: 'Đang hiệu lực',
+  curriculumArchived: 'Đã lưu trữ',
+  curriculumAddChapter: 'Thêm chương',
+  curriculumAddLesson: 'Thêm bài học',
+  curriculumAddKnowledgeUnit: 'Thêm đơn vị kiến thức',
+  curriculumPrerequisites: 'Yêu cầu kiến thức trước',
+  curriculumBulkImport: 'Nhập hàng loạt',
+  curriculumVersionHistory: 'Lịch sử phiên bản',
+  curriculumEffectiveFrom: 'Có hiệu lực từ {date}',
+  curriculumSupersedes: 'Thay thế phiên bản trước',
+
+  // Reports
+  reportsTitle: 'Báo cáo',
+  reportsOverview: 'Tổng quan nền tảng',
+  reportsPlatform: 'Thống kê nền tảng',
+  reportsStudentEngagement: 'Mức độ tham gia của học sinh',
+  reportsTeacherPerformance: 'Hiệu suất giáo viên',
+  reportsContentQuality: 'Chất lượng nội dung',
+  reportsRevenue: 'Doanh thu nền tảng',
+  reportsExport: 'Xuất báo cáo',
+  reportsDateRange: 'Khoảng thời gian',
+  reportsGenerated: 'Báo cáo được tạo lúc {time}',
+  reportsNoData: 'Chưa có dữ liệu cho khoảng thời gian này.',
+
+  // Settings
+  settingsTitle: 'Cài đặt',
+  settingsGeneral: 'Chung',
+  settingsSecurity: 'Bảo mật',
+  settingsNotifications: 'Thông báo',
+  settingsIntegrations: 'Tích hợp',
+  settingsMaintenance: 'Bảo trì',
+  settingsMaintenanceMode: 'Chế độ bảo trì',
+  settingsMaintenanceEnabled: 'Nền tảng đang trong chế độ bảo trì.',
+  settingsMaintenanceDisabled: 'Nền tảng đang hoạt động bình thường.',
+  settingsSave: 'Lưu cài đặt',
+  settingsSaved: 'Đã lưu!',
+} as const;
+
+export type AdminMessages = typeof adminMessages;

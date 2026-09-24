@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "id": "new-weak-student",
+      "targetScore": 9,
+      "evidence": [{ "topicId": "unit_1", "correct": 1, "total": 4 }]
+    },
+    {
+      "id": "new-strong-student",
+      "targetScore": 9,
+      "evidence": [
+        { "topicId": "unit_1", "correct": 4, "total": 4 },
+        { "topicId": "unit_2", "correct": 4, "total": 4 }
+      ]
+    },
+    { "id": "returning-student", "flow": ["diagnostic", "start", "reload"] },
+    { "id": "struggling-student", "activityAccuracy": 0.4, "expected": "remediation" },
+    {
+      "id": "admin-override-student",
+      "progressPolicy": "retain",
+      "rationale": "Điều chỉnh theo đánh giá của giáo viên"
+    }
+  ]
+}

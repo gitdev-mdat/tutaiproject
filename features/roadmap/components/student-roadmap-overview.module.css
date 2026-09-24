@@ -1,0 +1,755 @@
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page {
+  --blue: #1463ff;
+  --navy: #0f172a;
+  --muted: #64748b;
+  --border: #e5ebf3;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding-bottom: 30px;
+  color: #0b1020;
+}
+.hero {
+  position: relative;
+  min-height: 164px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 5px 0 18px;
+  animation: enter 360ms ease-out both;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: -45px 9% -20px 13%;
+  z-index: -2;
+  background: radial-gradient(ellipse, rgba(66, 139, 255, 0.12), transparent 70%);
+  filter: blur(18px);
+}
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  width: min(66%, 790px);
+}
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #6b84aa;
+  font-size: 13px;
+  font-weight: 650;
+}
+.breadcrumb:hover {
+  opacity: 1;
+  color: var(--blue);
+}
+.hero h1 {
+  margin: 10px 0 0;
+  color: var(--navy);
+  font-size: clamp(32px, 3.15vw, 45px);
+  font-weight: 790;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+.hero h1 span {
+  color: #6f95d3;
+}
+.heroCopy > p {
+  margin: 8px 0 0;
+  color: #5f7395;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+.heroProgress {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 16px;
+}
+.heroProgress strong {
+  flex: 0 0 auto;
+  color: #617596;
+  font-size: 13px;
+  font-weight: 650;
+}
+.heroProgress strong b {
+  color: var(--blue);
+  font-size: 15px;
+}
+.progressTrack {
+  display: block;
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6edf6;
+}
+.progressFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2e79ff, var(--blue));
+  transition: width 760ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.heroArt {
+  position: absolute;
+  inset: -8px 0 auto 39%;
+  z-index: -1;
+  width: 62%;
+  height: 182px;
+  color: #80b1ef;
+  opacity: 0.25;
+}
+.quote {
+  position: relative;
+  z-index: 1;
+  margin: 74px 16% 0 0;
+  color: #39547e;
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.quote cite {
+  display: block;
+  margin-top: 4px;
+  color: #8192ad;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 550;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(330px, 0.85fr);
+  align-items: start;
+  gap: 16px;
+}
+.mainColumn {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.card {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.02),
+    0 8px 24px rgba(37, 99, 235, 0.025);
+  animation: enter 420ms 90ms ease-out both;
+}
+.lessonCard {
+  padding: 18px 20px;
+}
+.stepLabel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #1c63d2;
+  font-size: 13px;
+}
+.stepLabel > span {
+  width: 39px;
+  height: 39px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #4d90ff, #1463ff);
+  box-shadow: 0 6px 14px rgba(20, 99, 255, 0.18);
+  font-size: 14px;
+  font-weight: 780;
+}
+.stepLabel strong {
+  font-weight: 750;
+}
+.lessonLayout {
+  display: grid;
+  grid-template-columns: 205px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+.lessonGraph {
+  height: 148px;
+  overflow: hidden;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #f2f7ff, #e7f1ff);
+}
+.lessonGraph svg {
+  width: 100%;
+  height: 100%;
+  color: var(--blue);
+}
+.lessonGraph path,
+.lessonGraph circle {
+  stroke: currentColor;
+}
+.lessonGraph circle {
+  fill: currentColor;
+}
+.lessonGraph text {
+  fill: #3776d9;
+  font-family: serif;
+  font-size: 14px;
+  font-style: italic;
+}
+.axis {
+  opacity: 0.5;
+  stroke-width: 1.2;
+}
+.curve {
+  stroke-width: 2;
+}
+.lessonContent {
+  min-width: 0;
+}
+.lessonContent h2 {
+  margin: 0;
+  color: #101a36;
+  font-size: clamp(19px, 1.55vw, 23px);
+  font-weight: 780;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+.metadata {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 11px;
+  color: #7185a7;
+  font-size: 12px;
+  font-weight: 600;
+}
+.metadata span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lessonContent > p {
+  margin: 9px 0 0;
+  color: #657b9d;
+  font-size: 13px;
+  line-height: 1.48;
+}
+.lessonProgress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 15px;
+}
+.lessonProgress b {
+  color: #526b91;
+  font-size: 12px;
+}
+.primaryButton {
+  min-width: 132px;
+  min-height: 51px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 0 20px;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #1463ff, #0759f1);
+  box-shadow: 0 8px 20px rgba(20, 99, 255, 0.23);
+  font-size: 15px;
+  font-weight: 750;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+.primaryButton:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 11px 25px rgba(20, 99, 255, 0.28);
+}
+.primaryButton:hover svg {
+  transform: translateX(2px);
+}
+.primaryButton svg {
+  transition: transform 180ms ease;
+}
+.reasonBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-top: 15px;
+  padding: 13px 15px;
+  border: 1px solid #d7e7fb;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #f6faff, #f1f7ff);
+}
+.reasonBox > span {
+  width: 35px;
+  height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1px solid #cfe2fb;
+  border-radius: 50%;
+  color: var(--blue);
+  background: #fff;
+}
+.reasonBox h3 {
+  margin: 0;
+  color: #254266;
+  font-size: 13px;
+  font-weight: 750;
+}
+.reasonBox p {
+  margin: 4px 0 0;
+  color: #6680a6;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.quizCard {
+  padding: 13px 20px 14px;
+}
+.quizCard .stepLabel > span {
+  color: var(--blue);
+  background: #e7f1ff;
+  box-shadow: none;
+}
+.quizRow {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 7px 0 0 50px;
+}
+.quizIcon {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: var(--blue);
+  background: #eef5ff;
+}
+.quizRow h2 {
+  margin: 0;
+  color: #17223e;
+  font-size: 15px;
+  font-weight: 760;
+}
+.quizRow p {
+  margin: 4px 0 0;
+  color: #7185a6;
+  font-size: 12px;
+}
+.lockWrap {
+  position: relative;
+}
+.lockButton {
+  min-height: 43px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 11px;
+  color: #7186aa;
+  background: #f2f5fb;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+.lockPopover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 7px);
+  z-index: 20;
+  width: 230px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #fff;
+  background: #17213a;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.summaryCard {
+  padding: 22px 20px;
+}
+.summaryHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.summaryHeader h2 {
+  margin: 0;
+  color: #101831;
+  font-size: 22px;
+  font-weight: 780;
+  letter-spacing: -0.025em;
+}
+.summaryHeader p {
+  margin: 5px 0 0;
+  color: #6f83a4;
+  font-size: 13px;
+}
+.summaryHeader > strong {
+  color: var(--blue);
+  font-size: 23px;
+  font-weight: 800;
+}
+.summaryCard > .progressTrack {
+  margin-top: 14px;
+}
+.chapterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 17px;
+  padding-top: 16px;
+  border-top: 1px solid #e7edf5;
+}
+.chapterHeader h3 {
+  margin: 0;
+  color: #354b6e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chapterHeader b {
+  color: #465f84;
+  font-size: 12px;
+}
+.stageList {
+  position: relative;
+  display: grid;
+  gap: 0;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.stageList::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: #dce7f4;
+}
+.stageList li {
+  position: relative;
+  z-index: 1;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  color: #506789;
+  font-size: 12px;
+  font-weight: 650;
+  animation: enter 340ms ease-out both;
+}
+.stageList li > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.stageList li > b {
+  color: var(--blue);
+  font-size: 10px;
+}
+.stageList li > em {
+  color: #97a7bd;
+  font-size: 10px;
+  font-style: normal;
+}
+.stageList .activeStage {
+  color: #102347;
+  background: #eef5ff;
+  font-weight: 750;
+}
+.stageDot {
+  width: 25px;
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 2px solid #9eb2cf;
+  border-radius: 50%;
+  color: #fff;
+  background: #fff;
+}
+.stageDot.completed {
+  border-color: #d8f3e8;
+  color: #14996a;
+  background: #dcf8ed;
+}
+.stageDot.current {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px #e4efff;
+}
+.stageDot.current span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.outlineButton {
+  width: 100%;
+  min-height: 45px;
+  margin-top: 18px;
+  border: 1px solid #bcd4fa;
+  border-radius: 11px;
+  color: var(--blue);
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+.outlineButton:hover {
+  border-color: #8eb8fa;
+  background: #f5f9ff;
+}
+
+.journeyCard {
+  margin-top: 16px;
+  padding: 16px 20px;
+}
+.journeyHeader {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.journeyHeader > span {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d6e5fa;
+  border-radius: 11px;
+  color: var(--blue);
+  background: #f6faff;
+}
+.journeyHeader h2 {
+  margin: 0;
+  color: #14203a;
+  font-size: 17px;
+  font-weight: 780;
+}
+.journeyHeader p {
+  margin: 3px 0 0;
+  color: #7185a5;
+  font-size: 12px;
+}
+.journeyHeader em {
+  color: #5b85c6;
+  font-family: serif;
+  font-size: 15px;
+  white-space: nowrap;
+  transform: rotate(-3deg);
+}
+.journeySteps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 25px minmax(0, 1fr) 25px minmax(0, 1fr) 25px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  margin-top: 13px;
+}
+.journeySteps article {
+  min-height: 82px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #dce6f2;
+  border-radius: 11px;
+  background: #fff;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+.journeySteps article:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+.journeySteps article > span {
+  width: 35px;
+  height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: var(--blue);
+  background: #eaf3ff;
+  font-size: 13px;
+  font-weight: 780;
+}
+.journeySteps h3 {
+  margin: 0;
+  color: #21304c;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+.journeySteps p {
+  margin: 4px 0 0;
+  color: #7587a4;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.journeyArrow {
+  color: #8ba5ca;
+}
+.journeySteps .encouragement {
+  border-style: dashed;
+  background: #f8fbff;
+}
+.journeySteps .encouragement > span {
+  border-radius: 10px;
+}
+
+@media (max-width: 1160px) {
+  .quote {
+    display: none;
+  }
+  .heroCopy {
+    width: 76%;
+  }
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+  .summaryCard {
+    grid-row: auto;
+  }
+  .lessonLayout {
+    grid-template-columns: 210px minmax(0, 1fr) auto;
+  }
+  .journeySteps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .journeyArrow {
+    display: none;
+  }
+  .journeySteps .encouragement {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 760px) {
+  .hero {
+    min-height: 215px;
+  }
+  .heroCopy {
+    width: 100%;
+  }
+  .heroArt {
+    inset: 10px -35% auto auto;
+    width: 110%;
+    opacity: 0.13;
+  }
+  .hero h1 {
+    font-size: 31px;
+  }
+  .heroProgress {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lessonCard {
+    padding: 16px;
+  }
+  .lessonLayout {
+    grid-template-columns: 1fr;
+  }
+  .lessonGraph {
+    height: 150px;
+  }
+  .primaryButton {
+    width: 100%;
+  }
+  .quizRow {
+    grid-template-columns: 42px minmax(0, 1fr);
+    margin-left: 0;
+  }
+  .lockWrap {
+    grid-column: 1/-1;
+  }
+  .lockButton {
+    width: 100%;
+    justify-content: center;
+  }
+  .lockPopover {
+    left: 0;
+    right: auto;
+    bottom: calc(100% + 7px);
+    width: 100%;
+  }
+  .journeyHeader {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .journeyHeader em {
+    display: none;
+  }
+  .journeySteps {
+    grid-template-columns: 1fr;
+  }
+  .journeySteps .encouragement {
+    grid-column: auto;
+  }
+}
+@media (max-width: 430px) {
+  .hero h1 {
+    font-size: 28px;
+  }
+  .heroCopy > p {
+    font-size: 13px;
+  }
+  .card {
+    border-radius: 17px;
+  }
+  .lessonGraph {
+    height: 128px;
+  }
+  .summaryHeader h2 {
+    font-size: 20px;
+  }
+  .journeyCard {
+    padding: 15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "1.0",
+  "source": {
+    "title": "Phase 3.2 Pilot Dataset",
+    "organization": "Tu Tai",
+    "version": "1.0.0"
+  },
+  "subjects": [
+    {
+      "sourceKey": "math",
+      "title": "Toán học",
+      "grades": [
+        {
+          "sourceKey": "math-12",
+          "title": "Lớp 12",
+          "gradeNumber": 12,
+          "domains": [
+            {
+              "sourceKey": "calculus",
+              "title": "Nguyên hàm và tích phân"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "sourceKey": "antiderivative",
+      "title": "Nguyên hàm",
+      "primaryDomainSourceKey": "calculus",
+      "learningObjectives": [
+        {
+          "sourceKey": "antiderivative-remember-1",
+          "bloomLevel": "REMEMBER",
+          "statement": "Nhận biết được một hàm số là nguyên hàm của hàm số đã cho."
+        },
+        {
+          "sourceKey": "antiderivative-understand-1",
+          "bloomLevel": "UNDERSTAND",
+          "statement": "Giải thích được mối quan hệ giữa nguyên hàm và đạo hàm."
+        },
+        {
+          "sourceKey": "antiderivative-apply-1",
+          "bloomLevel": "APPLY",
+          "statement": "Áp dụng bảng nguyên hàm cơ bản để tính các nguyên hàm trực tiếp."
+        }
+      ]
+    },
+    {
+      "sourceKey": "integral",
+      "title": "Tích phân",
+      "primaryDomainSourceKey": "calculus",
+      "learningObjectives": [
+        {
+          "sourceKey": "integral-understand-1",
+          "bloomLevel": "UNDERSTAND",
+          "statement": "Giải thích được mối quan hệ giữa tích phân xác định và diện tích hình phẳng trong các trường hợp cơ bản."
+        },
+        {
+          "sourceKey": "integral-apply-1",
+          "bloomLevel": "APPLY",
+          "statement": "Tính được tích phân xác định bằng định lý cơ bản của giải tích."
+        }
+      ]
+    },
+    {
+      "sourceKey": "substitution-method",
+      "title": "Phương pháp đổi biến",
+      "primaryDomainSourceKey": "calculus",
+      "learningObjectives": [
+        {
+          "sourceKey": "substitution-understand-1",
+          "bloomLevel": "UNDERSTAND",
+          "statement": "Nhận biết được cấu trúc biểu thức phù hợp với phương pháp đổi biến."
+        },
+        {
+          "sourceKey": "substitution-apply-1",
+          "bloomLevel": "APPLY",
+          "statement": "Lựa chọn được biểu thức đổi biến phù hợp trong các nguyên hàm và tích phân cơ bản."
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "sourceKey": "rel-1",
+      "type": "PREREQUISITE",
+      "sourceConceptSourceKey": "antiderivative",
+      "targetConceptSourceKey": "substitution-method"
+    }
+  ]
+}

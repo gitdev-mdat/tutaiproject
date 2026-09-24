@@ -1,0 +1,359 @@
+{
+  "home": {
+    "meta": {
+      "title": "Tú Tài — Lộ trình học cá nhân cho học sinh lớp 12",
+      "description": "Tú Tài phân tích kiến thức của em, tạo lộ trình cá nhân hóa, và luôn biết em cần học gì tiếp theo để tiến gần mục tiêu thi."
+    },
+    "nav": {
+      "subjects": "Môn học",
+      "mockExams": "Thi thử",
+      "sources": "Nguồn đề",
+      "teachers": "Giáo viên",
+      "pricing": "Bảng giá",
+      "blog": "Blog",
+      "login": "Đăng nhập",
+      "cta": "Xây lộ trình miễn phí"
+    },
+    "hero": {
+      "badge": "Lộ trình cá nhân hoá cho học sinh lớp 12",
+      "headlinePrefix": "Không cần tự hỏi mình ",
+      "headlineBlue": "nên học gì",
+      "headlineSuffix": "",
+      "description": "Tú Tài phân tích phần em đã học, phát hiện kiến thức cần củng cố và tạo một lộ trình vừa sức — để em luôn biết bước tiếp theo.",
+      "ctaPrimary": "Xây lộ trình của em",
+      "ctaSecondary": "Xem lộ trình mẫu",
+      "trustLine": "Không cần tự đoán. Hệ thống đã có sẵn phần việc cho em.",
+      "preview": {
+        "label": "Lộ trình học",
+        "studentName": "Minh, lớp 12",
+        "subject": "Toán",
+        "targetLabel": "Mục tiêu",
+        "chaptersLabel": "chương",
+        "completedLabel": "Đã hoàn thành",
+        "currentLabel": "Đang học",
+        "upcomingLabel": "Sắp tới",
+        "targetNodeLabel": "Đạt điểm 8+",
+        "nodes": [
+          { "label": "Chương 1", "sublabel": "Đạo hàm", "status": "completed" },
+          { "label": "Chương 3", "sublabel": "Tích phân", "status": "completed" },
+          { "label": "Chương 5", "sublabel": "Hàm số mũ", "status": "current" },
+          { "label": "Chương 6", "sublabel": "Xác suất", "status": "upcoming" },
+          { "label": "Chương 8", "sublabel": "Hình không gian", "status": "upcoming" },
+          { "label": "Chương 9", "sublabel": "Phương trình", "status": "upcoming" },
+          { "label": "", "sublabel": "Đạt điểm 8+", "status": "target" }
+        ],
+        "tasks": [
+          { "title": "Luyện tập Hàm số mũ — 10 câu", "duration": "20 phút", "type": "practice" },
+          { "title": "Ôn công thức đạo hàm", "duration": "5 phút", "type": "review" },
+          { "title": "Kiểm tra nhanh — 5 câu", "duration": "10 phút", "type": "check" }
+        ],
+        "cta": "Bắt đầu học"
+      }
+    },
+    "studentConfusion": {
+      "title": "Rất nhiều thứ cần ôn. Nhưng không phải thứ nào cũng cần học ngay lúc này.",
+      "subtitle": "Chương trình lớp 12 rộng. Bài tập nhiều. Đề thi phong phú. Không có điểm nào cho em biết mình đang ở đâu.",
+      "problemHeadline": "Thực trạng phổ biến",
+      "problems": [
+        {
+          "title": "Tất cả đều quan trọng như nhau",
+          "description": "Mỗi chương đều có nhiều bài tập. Không có điểm nào cho em biết chương nào cần ưu tiên trước."
+        },
+        {
+          "title": "Học xong rồi quên",
+          "description": "Không có hệ thống ôn tập đúng lúc. Kiến thức mới bị phai dần trước khi được củng cố đúng cách."
+        },
+        {
+          "title": "Làm đề nhưng không hiểu mình đang yếu chỗ nào",
+          "description": "Khi không biết điểm yếu ở đâu, việc luyện đề trở thành hành động lặp lại — không phải học tập có mục đích."
+        },
+        {
+          "title": "Kế hoạch tự xây không theo kịp nhịp trên lớp",
+          "description": "Nhiều em tự lập kế hoạch riêng nhưng không phù hợp với nhịp học trên lớp, dẫn đến chồng chéo hoặc bỏ sót nội dung."
+        }
+      ]
+    },
+    "howPathBuilt": {
+      "title": "Lộ trình được xây dựng cho em. Không phải cho ai khác.",
+      "subtitle": "Mỗi bước đều có lý do. Không phải ngẫu nhiên.",
+      "steps": [
+        {
+          "label": "Bước 1",
+          "title": "Xác nhận phạm vi đã học",
+          "description": "Tú Tài đi theo chương trình em đã học trên lớp. Không kiểm tra kiến thức chưa tiếp cận.",
+          "detail": "Em chọn môn học và giai đoạn hiện tại. Hệ thống xác nhận phạm vi chương trình chính thức."
+        },
+        {
+          "label": "Bước 2",
+          "title": "Thu thập bằng chứng học tập",
+          "description": "Kết quả luyện tập và kiểm tra cho biết em đã thành thạo phần nào và cần củng cố phần nào.",
+          "detail": "Mỗi buổi học tạo ra dữ liệu cho phần việc tiếp theo."
+        },
+        {
+          "label": "Bước 3",
+          "title": "Xây dựng lộ trình cá nhân",
+          "description": "Hệ thống sắp xếp nhiệm vụ theo trình tự tối ưu — ưu tiên phần em đang yếu nhưng đã đủ nền tảng để tiến bộ.",
+          "detail": "Lộ trình không cố định. Nó thay đổi khi em hoàn thành mỗi phần việc."
+        },
+        {
+          "label": "Bước 4",
+          "title": "Nhiệm vụ mỗi ngày được chuẩn bị sẵn",
+          "description": "Mỗi ngày em mở Tú Tài, hệ thống đã chuẩn bị phần việc cụ thể — vừa sức, có mục đích, và đúng thời điểm ôn tập.",
+          "detail": "Không cần tự quyết định hôm nay học gì."
+        }
+      ]
+    },
+    "roadmapViz": {
+      "sectionLabel": "Xem trước trải nghiệm",
+      "headline": "Đây là lộ trình của em.",
+      "subheadline": "Mỗi ngày em mở Tú Tài, hệ thống đã chuẩn bị sẵn phần việc cụ thể.",
+      "longTerm": {
+        "label": "Hành trình dài hạn",
+        "description": "Từ vị trí hiện tại đến mục tiêu thi — qua từng chương đã học.",
+        "legendCompleted": "Đã hoàn thành",
+        "legendCurrent": "Đang học",
+        "legendUpcoming": "Sắp tới",
+        "legendTarget": "Mục tiêu thi"
+      },
+      "todayMission": {
+        "label": "Nhiệm vụ hôm nay",
+        "dateLabel": "Thứ Hai, 16 tháng 7",
+        "tasks": [
+          {
+            "number": "1",
+            "type": "review",
+            "title": "Ôn công thức đạo hàm",
+            "duration": "5 phút",
+            "reason": "Đã đến lúc ôn tập lại — kiến thức đang phai dần"
+          },
+          {
+            "number": "2",
+            "type": "practice",
+            "title": "Luyện tập Hàm số mũ",
+            "duration": "20 phút",
+            "reason": "Điểm yếu được xác định từ kết quả tuần trước"
+          },
+          {
+            "number": "3",
+            "type": "check",
+            "title": "Kiểm tra nhanh — 5 câu",
+            "duration": "10 phút",
+            "reason": "Cập nhật bằng chứng học tập cho phần tiếp theo"
+          }
+        ],
+        "totalTime": "35 phút hôm nay",
+        "cta": "Bắt đầu học"
+      },
+      "taskTypes": {
+        "review": "Ôn tập",
+        "practice": "Luyện tập",
+        "check": "Kiểm tra",
+        "spaced": "Ôn tập spaced"
+      }
+    },
+    "dailyLearning": {
+      "headline": "Mỗi ngày, một bước nhỏ. Cuối cùng, em đạt mục tiêu.",
+      "subtitle": "Các nhiệm vụ được chia nhỏ để em dễ bắt đầu và duy trì.",
+      "steps": [
+        {
+          "icon": "review",
+          "title": "Nhận nhiệm vụ",
+          "description": "Hệ thống chọn bài tập phù hợp mức độ hiện tại của em — không quá dễ, không quá khó.",
+          "detail": "AI hỗ trợ sắp xếp nội dung. Quyết định do giáo viên và chương trình chuẩn."
+        },
+        {
+          "icon": "practice",
+          "title": "Luyện tập có mục đích",
+          "description": "Bài tập được chọn vì em cần ôn chủ đề đó — không phải vì ngẫu nhiên.",
+          "detail": "Mỗi bài tập nằm trong lộ trình cá nhân, có lý do rõ ràng."
+        },
+        {
+          "icon": "check",
+          "title": "Kiểm tra mức hiểu",
+          "description": "Bài kiểm tra ngắn cập nhật bằng chứng học tập cho phần tiếp theo.",
+          "detail": "Kết quả không dùng để so sánh — dùng để điều chỉnh lộ trình."
+        },
+        {
+          "icon": "spaced",
+          "title": "Ôn tập đúng lúc",
+          "description": "Hệ thống nhắc em ôn lại đúng lúc kiến thức bắt đầu phai — trước khi quên hẳn.",
+          "detail": "Dựa trên nguyên tắc spaced repetition phù hợp với chương trình em đã học."
+        }
+      ]
+    },
+    "contentQuality": {
+      "headline": "Nội dung không được xuất bản chỉ vì AI tạo ra.",
+      "subtitle": "Mọi nội dung trên Tú Tài đều trải qua quy trình kiểm tra người — trước khi đến tay em.",
+      "steps": [
+        {
+          "title": "Giáo viên cung cấp nội dung",
+          "description": "Giáo viên hoặc người đóng góp được xác minh tải lên tài liệu giảng dạy, đề thi, hoặc bài tập đã biên soạn."
+        },
+        {
+          "title": "AI hỗ trợ trích xuất và phân loại",
+          "description": "Hệ thống hỗ trợ trích xuất câu hỏi, phân loại theo chương trình, và gắn siêu dữ liệu ban đầu."
+        },
+        {
+          "title": "Người duyệt kiểm tra trước khi xuất bản",
+          "description": "Nội dung được xem xét trước khi xuất bản. Không có nội dung nào được xuất bản tự động."
+        },
+        {
+          "title": "Phản hồi học sinh có thể kích hoạt chỉnh sửa",
+          "description": "Nếu nội dung có vấn đề, phản hồi của học sinh có thể kích hoạt quy trình xem xét và chỉnh sửa."
+        }
+      ]
+    },
+    "subjects": {
+      "title": "Môn học theo chương trình thi tốt nghiệp THPT",
+      "viewAll": "Xem tất cả môn học",
+      "contentTypes": "Lý thuyết · Luyện tập · Kiểm tra ngắn · Thi thử",
+      "exploreHint": "Khám phá nội dung theo môn học.",
+      "items": {
+        "toan": { "name": "Toán", "tagline": "Tư duy logic và kỹ năng giải toán" },
+        "ngu-van": { "name": "Ngữ văn", "tagline": "Đọc hiểu, viết nghị luận và sáng tạo" },
+        "vat-ly": { "name": "Vật lý", "tagline": "Công thức, bài tập và mô phỏng" },
+        "hoa-hoc": { "name": "Hóa học", "tagline": "Phản ứng, công thức và bài tập" },
+        "lich-su": { "name": "Lịch sử", "tagline": "Dòng thời gian và nhận định lịch sử" },
+        "dia-ly": { "name": "Địa lý", "tagline": "Bản đồ, số liệu và phân tích địa lý" },
+        "tieng-anh": { "name": "Tiếng Anh", "tagline": "Ngữ pháp, từ vựng và kỹ năng" }
+      }
+    },
+    "examSources": {
+      "headline": "Luyện với nguồn đề nổi bật trên toàn quốc.",
+      "subheadline": "Thư viện đề thi được xây dựng từ nguồn đã kiểm duyệt.",
+      "description": "Tú Tài hướng đến việc tích hợp nội dung từ giáo viên đã xác minh, trường THPT, và các bộ sưu tập đề thi có uy tín. Mỗi nguồn được kiểm duyệt trước khi đưa vào thư viện.",
+      "demoNote": "Nội dung minh hoạ — danh sách nguồn thực tế sẽ được cập nhật khi có nguồn được xác minh.",
+      "categories": {
+        "specialized": "THPT Chuyên",
+        "teacher": "Giáo viên",
+        "curated": "Tuyển chọn"
+      },
+      "viewAll": "Xem tất cả nguồn đề",
+      "previewSources": [
+        {
+          "name": "Nguồn minh hoạ A",
+          "location": "Hà Nội",
+          "subjects": ["Toán", "Vật lý"],
+          "category": "specialized",
+          "verified": false
+        },
+        {
+          "name": "Nguồn minh hoạ B",
+          "location": "TP. Hồ Chí Minh",
+          "subjects": ["Toán", "Hóa học"],
+          "category": "teacher",
+          "verified": false
+        },
+        {
+          "name": "Nguồn minh hoạ C",
+          "location": "Đà Nẵng",
+          "subjects": ["Ngữ văn", "Lịch sử"],
+          "category": "curated",
+          "verified": false
+        }
+      ]
+    },
+    "earlyStageTrust": {
+      "headline": "Tú Tài hoạt động bằng cách nào?",
+      "subheadline": "Những nguyên tắc cốt lõi định hướng mọi quyết định trên nền tảng.",
+      "rules": [
+        {
+          "title": "Học theo phạm vi đã xác nhận",
+          "description": "Lộ trình xây dựng trên chương trình em đã học trên lớp. Không kiểm tra kiến thức chưa tiếp cận."
+        },
+        {
+          "title": "Nội dung do giáo viên kiểm duyệt",
+          "description": "Không có nội dung nào được xuất bản chỉ vì AI tạo ra. Mọi nội dung đều qua xem xét trước khi đến tay em."
+        },
+        {
+          "title": "Lộ trình cập nhật từ kết quả học tập",
+          "description": "Phần việc tiếp theo được quyết định bởi bằng chứng học tập — không phải thuật toán công thức cố định."
+        },
+        {
+          "title": "Nguồn đề có ghi nhận nguồn gốc rõ ràng",
+          "description": "Mỗi nguồn đề đều được ghi nhận nguồn gốc. Không có nội dung nào được trình bày sai nguồn."
+        },
+        {
+          "title": "Em kiểm soát hồ sơ học tập của mình",
+          "description": "Dữ liệu học tập được dùng để cá nhân hóa lộ trình — không chia sẻ khi chưa có sự đồng ý."
+        }
+      ]
+    },
+    "pricing": {
+      "title": "Chọn cách bắt đầu phù hợp",
+      "free": {
+        "label": "Miễn phí",
+        "tagline": "Dành cho học sinh muốn trải nghiệm",
+        "features": [
+          "Tạo hồ sơ học tập cơ bản",
+          "Xem lộ trình mẫu",
+          "Trải nghiệm nhiệm vụ học cơ bản",
+          "Truy cập nội dung chọn lọc"
+        ],
+        "cta": "Bắt đầu miễn phí"
+      },
+      "premium": {
+        "label": "Premium",
+        "tagline": "Dành cho học sinh muốn học sâu",
+        "features": [
+          "Mở rộng lộ trình và phân tích kết quả học tập",
+          "Mở rộng kho đề từ nguồn nổi bật",
+          "Hỗ trợ giải thích và ôn tập nâng cao"
+        ],
+        "priceNote": "Giá sẽ được công bố sau",
+        "notify": "Nhận thông báo khi mở Premium"
+      }
+    },
+    "faq": {
+      "title": "Câu hỏi thường gặp",
+      "items": [
+        {
+          "q": "Tú Tài có phải chỉ là kho đề không?",
+          "a": "Không. Điểm khác biệt cốt lõi là em không tự chọn đề để làm — hệ thống chọn và sắp xếp nội dung phù hợp dựa trên lộ trình cá nhân. Kho đề là một phần của nội dung, không phải sản phẩm chính."
+        },
+        {
+          "q": "Học sinh mới lên lớp 12 có bị kiểm tra kiến thức chưa học không?",
+          "a": "Không. Tú Tài tuân thủ nguyên tắc đánh giá đúng phạm vi — em chỉ được kiểm tra trên các chủ đề đã học trên lớp. Không có bài kiểm tra nào trên nội dung em chưa được tiếp cận."
+        },
+        {
+          "q": "Lộ trình thay đổi như thế nào?",
+          "a": "Lộ trình được điều chỉnh dựa trên kết quả luyện tập và kiểm tra của em. Khi em hoàn thành một phần việc, hệ thống cập nhật phần tiếp theo phù hợp với tiến độ thực tế."
+        },
+        {
+          "q": "Nội dung AI có được con người kiểm tra không?",
+          "a": "Có. Mọi nội dung được tạo hoặc trích xuất bởi AI đều phải qua người xem xét và phê duyệt trước khi xuất bản. Không có nội dung nào được xuất bản tự động."
+        },
+        {
+          "q": "Nguồn đề trên Tú Tài đến từ đâu?",
+          "a": "Tú Tài hướng đến việc tích hợp nội dung từ giáo viên đã xác minh, trường THPT, và các bộ sưu tập đề thi có uy tín trên toàn quốc. Mỗi nguồn đều được kiểm duyệt trước khi đưa vào thư viện."
+        },
+        {
+          "q": "Có thể học tự do ngoài lộ trình không?",
+          "a": "Tú Tài được thiết kế để hỗ trợ em theo lộ trình cá nhân. Tuy nhiên, em có thể khám phá nội dung theo môn học mà không bắt buộc tuân theo lộ trình được sắp xếp."
+        },
+        {
+          "q": "Tú Tài có miễn phí không?",
+          "a": "Có. Em có thể tạo hồ sơ học tập, xem lộ trình, và trải nghiệm nhiệm vụ học cơ bản mà không cần thanh toán. Gói Premium với các tính năng chuyên sâu sẽ được công bố sau."
+        }
+      ]
+    },
+    "finalCta": {
+      "headline": "Bắt đầu hôm nay để lộ trình có thời gian thích nghi cùng em.",
+      "cta": "Xây lộ trình miễn phí",
+      "note": "Không cần thẻ thanh toán."
+    },
+    "footer": {
+      "brand": "Tú Tài",
+      "tagline": "Lộ trình học cá nhân hóa cho học sinh lớp 12.",
+      "product": "Học tập",
+      "company": "Tú Tài",
+      "legal": "Pháp lý",
+      "copyright": "Mọi quyền được bảo lưu.",
+      "links": {
+        "terms": "Điều khoản sử dụng",
+        "privacy": "Chính sách bảo mật",
+        "copyright": "Chính sách bản quyền"
+      }
+    }
+  }
+}

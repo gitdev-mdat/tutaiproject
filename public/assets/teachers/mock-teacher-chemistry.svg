@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Minh họa chân dung giáo viên Hóa học</title>
+  <desc id="desc">Chân dung minh họa trừu tượng trên nền xanh lam với cấu trúc phân tử.</desc>
+  <defs>
+    <linearGradient id="bg" x1="90" y1="40" x2="710" y2="950" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20567D"/><stop offset="1" stop-color="#0A213C"/>
+    </linearGradient>
+    <linearGradient id="jacket" x1="225" y1="640" x2="590" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B75B3"/><stop offset="1" stop-color="#103A69"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" rx="48" fill="url(#bg)"/>
+  <g opacity=".2" stroke="#A8D5FF" stroke-width="4">
+    <path d="M116 186l92-54 92 54v108l-92 54-92-54zM528 176l70-40 70 40v82l-70 41-70-41zM570 296l-96 105" fill="none"/>
+    <circle cx="208" cy="132" r="11" fill="#A8D5FF"/><circle cx="668" cy="176" r="10" fill="#A8D5FF"/><circle cx="474" cy="401" r="12" fill="#A8D5FF"/>
+  </g>
+  <circle cx="402" cy="405" r="166" fill="#D9B297"/>
+  <path d="M241 396c4-137 69-216 167-216 101 0 164 76 163 203-30-57-78-103-139-134-47 75-111 123-191 147z" fill="#2A2732"/>
+  <path d="M288 425c19 117 68 178 115 178 49 0 99-62 116-178-38 31-76 45-116 45-39 0-77-14-115-45z" fill="#E5C0A6"/>
+  <path d="M330 495c49 21 96 21 143 0-10 60-33 89-71 89-36 0-60-29-72-89z" fill="#B97F6D" opacity=".5"/>
+  <path d="M131 1000c16-235 108-364 271-364s255 129 269 364z" fill="url(#jacket)"/>
+  <path d="M301 654l102 124 99-124 34 29-58 317H330l-62-316z" fill="#F6FAFF"/>
+  <path d="M375 767h56l30 233H346z" fill="#12385A"/>
+</svg>
+

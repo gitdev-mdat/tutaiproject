@@ -1,0 +1,9 @@
+--- a/src/foo.ts
++++ b/src/foo.ts
+@@ -1 +1 @@
+-export const value = 1;
++export const value = 2;
+--- /dev/null
++++ b/src/b.ts
+@@ -0,0 +1 @@
++new

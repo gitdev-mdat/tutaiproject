@@ -1,0 +1,77 @@
+{
+  "sessions": [
+    {
+      "id": "7b1e7136-2fe5-48c2-ada9-c7b18b71cd39",
+      "title": "Test",
+      "sourceType": "JSON_FILE",
+      "sourceName": "test.json",
+      "sourceChecksum": "eyJzY2hlbWFWZXJzaW9uIjoiMS4wIiwic291cmNlIjp7InRpdGxlIjoiVGVzdCIsIm9yZ2FuaXphdGlvbiI6Ik9yZyIsInZlcnNpb24iOiIxLjAifSwic3ViamVjdHMiOlt7InNvdXJjZUtleSI6InMxIiwidGl0bGUiOiJIw7NhIGjhu41jIiwiZ3JhZGVzIjpbXX1dLCJjb25jZXB0cyI6W10sInJlbGF0aW9ucyI6W119",
+      "status": "COMPLETED",
+      "parserVersion": "1.0",
+      "targetGraphVersion": "3",
+      "createdAt": "2026-09-18T09:43:48.326Z",
+      "updatedAt": "2026-09-18T09:43:48.326Z",
+      "summary": {
+        "totalCandidates": 1,
+        "approved": 0,
+        "rejected": 0,
+        "unresolved": 1,
+        "warnings": 0,
+        "errors": 0
+      },
+      "committedAt": "2026-09-18T09:43:48.356Z"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "ca03cd8e-6529-4ab4-8cbf-efddd1dc3b9c",
+      "sessionId": "7b1e7136-2fe5-48c2-ada9-c7b18b71cd39",
+      "entityType": "SUBJECT",
+      "sourceKey": "s1",
+      "sourceData": {
+        "sourceKey": "s1",
+        "title": "Hóa học",
+        "grades": []
+      },
+      "normalizedData": {
+        "title": "hóa học"
+      },
+      "status": "APPROVED_CREATE",
+      "matchReasons": [
+        "Không tìm thấy khớp chính xác. Yêu cầu kiểm duyệt."
+      ],
+      "validationErrors": [],
+      "validationWarnings": [],
+      "createdAt": "2026-09-18T09:43:48.331Z",
+      "updatedAt": "2026-09-18T09:43:48.331Z"
+    }
+  ],
+  "audits": [
+    {
+      "id": "9f372d97-aacd-48ca-b1fd-6f3bb2f8dfd9",
+      "sessionId": "7b1e7136-2fe5-48c2-ada9-c7b18b71cd39",
+      "candidateId": "ca03cd8e-6529-4ab4-8cbf-efddd1dc3b9c",
+      "action": "CREATE",
+      "entityType": "SUBJECT",
+      "canonicalEntityId": "node-2l94ogig1",
+      "after": {
+        "id": "node-2l94ogig1",
+        "title": "Hóa học",
+        "slug": "h-a-h-c",
+        "order": 0,
+        "status": "PUBLISHED",
+        "provenance": {
+          "sourceType": "IMPORT",
+          "sourceId": "7b1e7136-2fe5-48c2-ada9-c7b18b71cd39"
+        },
+        "createdAt": "2026-09-18T09:43:48.353Z",
+        "updatedAt": "2026-09-18T09:43:48.353Z"
+      },
+      "createdAt": "2026-09-18T09:43:48.353Z"
+    }
+  ],
+  "indexes": {
+    "sessionBySourceKey": {},
+    "candidateBySourceKey": {}
+  }
+}

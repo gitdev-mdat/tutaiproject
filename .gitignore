@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Generated files
+/tsconfig.tsbuildinfo
+*.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Misc
+.DS_Store
+*.log
+.turbo
+
+# Git
+.git
+.husky
+
+# Docs (generated or managed separately)
+docs
+
+# Temp scaffold directory
+tu-tai-temp
+/temp_cands.json
+
+# Local content-import runtime data
+/tmp/content-imports/
+/tmp/content-import-qa-artifacts/
+
+# IDE
+.idea
+.vscode
+
+.ai/

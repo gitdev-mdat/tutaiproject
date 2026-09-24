@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Chân dung minh họa giáo viên Toán</title>
+  <desc id="desc">Chân dung bán hiện thực đơn sắc của một giáo viên hư cấu trên nền xanh học thuật.</desc>
+  <defs>
+    <linearGradient id="background" x1="110" y1="28" x2="694" y2="972" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A4A86"/>
+      <stop offset="0.52" stop-color="#0D315F"/>
+      <stop offset="1" stop-color="#071A35"/>
+    </linearGradient>
+    <radialGradient id="light" cx="0" cy="0" r="1" gradientTransform="translate(470 315) rotate(118) scale(420 360)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9FC2FF" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#9FC2FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="face" x1="302" y1="244" x2="500" y2="590" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CAD9EC"/>
+      <stop offset="0.58" stop-color="#91A8C4"/>
+      <stop offset="1" stop-color="#637C9B"/>
+    </linearGradient>
+    <linearGradient id="jacket" x1="194" y1="650" x2="616" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#183F73"/>
+      <stop offset="1" stop-color="#081B38"/>
+    </linearGradient>
+    <linearGradient id="shirt" x1="350" y1="646" x2="448" y2="965" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF2FF"/>
+      <stop offset="1" stop-color="#9DB4D0"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="1000" rx="48" fill="url(#background)"/>
+  <rect width="800" height="1000" rx="48" fill="url(#light)"/>
+
+  <g fill="none" stroke="#B8D4FF" opacity="0.16">
+    <path d="M76 244H724M76 354H724M76 464H724" stroke-width="2"/>
+    <path d="M138 142V522M270 142V522M402 142V522M534 142V522M666 142V522" stroke-width="2"/>
+    <path d="M76 430C188 398 224 250 326 284C426 318 466 424 724 212" stroke-width="5"/>
+    <circle cx="326" cy="284" r="9" fill="#B8D4FF" stroke="none"/>
+    <circle cx="534" cy="344" r="7" fill="#B8D4FF" stroke="none"/>
+  </g>
+
+  <ellipse cx="406" cy="842" rx="260" ry="112" fill="#030D1F" opacity="0.3" filter="url(#soft-shadow)"/>
+
+  <path d="M305 566H500V704H305Z" fill="#758EAA"/>
+  <path d="M253 376C253 241 321 172 414 172C519 172 575 256 557 404L527 503C507 568 464 615 405 615C345 615 301 570 280 506L253 376Z" fill="url(#face)"/>
+
+  <path d="M254 389C235 284 280 183 383 157C477 133 561 189 579 283C524 272 470 239 433 192C405 267 345 336 254 389Z" fill="#101E33"/>
+  <path d="M515 243C565 282 585 343 560 425L535 404C545 348 536 294 515 243Z" fill="#0A172A"/>
+
+  <path d="M291 417C319 390 353 378 390 384" fill="none" stroke="#415A79" stroke-width="12" stroke-linecap="round" opacity="0.72"/>
+  <path d="M427 384C466 376 501 388 529 414" fill="none" stroke="#415A79" stroke-width="12" stroke-linecap="round" opacity="0.72"/>
+  <path d="M386 399H430" fill="none" stroke="#2E4664" stroke-width="8"/>
+  <path d="M303 407L256 392M517 407L559 391" fill="none" stroke="#2E4664" stroke-width="8"/>
+  <path d="M404 421L385 497L423 504" fill="none" stroke="#607B9A" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"/>
+  <path d="M351 545C384 557 420 559 455 544" fill="none" stroke="#526D8D" stroke-width="9" stroke-linecap="round" opacity="0.72"/>
+  <path d="M284 471C294 552 338 617 404 625C470 618 514 552 526 470C499 512 458 535 405 535C351 535 311 513 284 471Z" fill="#49627F" opacity="0.18"/>
+
+  <path d="M119 1000C133 779 230 650 402 650C579 650 673 779 686 1000H119Z" fill="url(#jacket)"/>
+  <path d="M306 651L402 769L500 651L542 692L483 1000H322L263 691L306 651Z" fill="url(#shirt)"/>
+  <path d="M375 752H431L462 1000H344L375 752Z" fill="#0C2B57"/>
+  <path d="M306 651L402 769L332 816L263 691L306 651ZM500 651L402 769L472 816L542 692L500 651Z" fill="#214B80"/>
+  <path d="M151 1000C175 820 236 738 307 696L333 1000H151ZM653 1000C630 820 570 738 499 696L472 1000H653Z" fill="#0A2244" opacity="0.8"/>
+
+  <rect x="610" y="86" width="104" height="34" rx="17" fill="#B8D4FF" opacity="0.12"/>
+  <circle cx="632" cy="103" r="5" fill="#9FC2FF" opacity="0.72"/>
+  <path d="M648 103H692" stroke="#B8D4FF" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+</svg>

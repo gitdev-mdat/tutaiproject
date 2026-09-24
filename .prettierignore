@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Generated files
+*.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Misc
+.DS_Store
+*.log
+.turbo
+
+# Git
+.git
+.husky
+
+# Docs (generated or managed separately)
+docs

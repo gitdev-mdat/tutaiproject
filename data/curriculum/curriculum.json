@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-22T06:46:01.562Z",
+  "subjects": [
+    {
+      "id": "subj_math",
+      "slug": "toan-hoc",
+      "title": "Toán học",
+      "order": 0,
+      "status": "PUBLISHED",
+      "description": "Chương trình Toán học phổ thông.",
+      "createdAt": "2026-07-22T06:46:01.544Z",
+      "updatedAt": "2026-07-22T06:46:01.544Z",
+      "type": "SUBJECT",
+      "grades": [
+        {
+          "id": "grade_12",
+          "slug": "lop-12",
+          "title": "Lớp 12",
+          "order": 0,
+          "status": "PUBLISHED",
+          "createdAt": "2026-07-22T06:46:01.544Z",
+          "updatedAt": "2026-07-22T06:46:01.544Z",
+          "type": "GRADE",
+          "chapters": [
+            {
+              "id": "chap_3",
+              "slug": "chuong-3-nguyen-ham-tich-phan",
+              "title": "Chương 3: Nguyên hàm - Tích phân",
+              "order": 0,
+              "status": "PUBLISHED",
+              "description": "Các phương pháp tính nguyên hàm và ứng dụng tích phân.",
+              "createdAt": "2026-07-22T06:46:01.544Z",
+              "updatedAt": "2026-07-22T06:46:01.544Z",
+              "type": "CHAPTER",
+              "lessons": [
+                {
+                  "id": "les_1",
+                  "slug": "bai-1-nguyen-ham",
+                  "title": "Bài 1: Nguyên hàm",
+                  "order": 0,
+                  "status": "PUBLISHED",
+                  "description": "Định nghĩa và tính chất nguyên hàm.",
+                  "createdAt": "2026-07-22T06:46:01.544Z",
+                  "updatedAt": "2026-07-22T06:46:01.544Z",
+                  "type": "LESSON",
+                  "knowledgeUnits": [
+                    {
+                      "id": "unit_1",
+                      "slug": "dinh-nghia-nguyen-ham",
+                      "title": "Định nghĩa nguyên hàm",
+                      "order": 0,
+                      "status": "PUBLISHED",
+                      "description": "Khái niệm nguyên hàm của một hàm số.",
+                      "createdAt": "2026-07-22T06:46:01.544Z",
+                      "updatedAt": "2026-07-22T06:46:01.544Z",
+                      "type": "KNOWLEDGE_UNIT",
+                      "knowledgeType": "DEFINITION",
+                      "prerequisiteIds": []
+                    },
+                    {
+                      "id": "unit_2",
+                      "slug": "tinh-chat-nguyen-ham",
+                      "title": "Tính chất nguyên hàm",
+                      "order": 1,
+                      "status": "PUBLISHED",
+                      "description": "Các tính chất cơ bản của nguyên hàm.",
+                      "createdAt": "2026-07-22T06:46:01.544Z",
+                      "updatedAt": "2026-07-22T06:46:01.544Z",
+                      "type": "KNOWLEDGE_UNIT",
+                      "knowledgeType": "THEOREM",
+                      "prerequisiteIds": ["unit_1"]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
