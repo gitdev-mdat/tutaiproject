@@ -70,7 +70,7 @@
     display: block;
   }
 
-  .demoHost:is([data-demo-state='hover'], [data-demo-state='press'], [data-demo-state='confirm'])
+  .demoHost:is([data-demo-state='LEARN_HOVER'], [data-demo-state='LEARN_PRESS'])
     [data-demo-action='primary'] {
     color: #0f5dec;
     background: #f5f8ff;
@@ -79,36 +79,63 @@
     transform: translateY(-1px);
   }
 
-  .demoHost:is([data-demo-state='hover'], [data-demo-state='press'], [data-demo-state='confirm'])
+  .demoHost:is([data-demo-state='LEARN_HOVER'], [data-demo-state='LEARN_PRESS'])
     [data-demo-action='primary']
     > svg {
     transform: translateX(3px);
   }
 
-  .demoHost[data-demo-state='press'] [data-demo-action='primary'] {
+  .demoHost[data-demo-state='LEARN_PRESS'] [data-demo-action='primary'] {
     box-shadow: 0 6px 16px rgba(21, 94, 239, 0.12);
     transform: translateY(0) scale(0.985);
   }
 
-  .demoHost[data-demo-state='press'] [data-demo-action='primary'] [data-demo-ripple] {
+  .demoHost[data-demo-state='LEARN_PRESS'] [data-demo-action='primary'] [data-demo-ripple] {
     animation: demo-ripple 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .demoHost[data-demo-state='confirm'] [data-demo-card='primary'] {
-    border-color: rgba(21, 94, 239, 0.42);
-    box-shadow:
-      0 16px 38px rgba(32, 93, 184, 0.11),
-      0 0 0 3px rgba(65, 130, 255, 0.08);
+  .demoHost:is([data-demo-state='PRACTICE_HOVER'], [data-demo-state='PRACTICE_PRESS'])
+    [data-demo-action='secondary'] {
+    filter: brightness(1.04);
+    box-shadow: 0 12px 27px rgba(118, 84, 220, 0.24);
+    transform: translateY(-1px);
   }
 
-  .demoHost[data-demo-state='confirm'] [data-demo-card='primary'] [data-demo-progress] {
-    width: 42%;
-    transition: width 720ms cubic-bezier(0.22, 1, 0.36, 1);
+  .demoHost[data-demo-state='PRACTICE_PRESS'] [data-demo-action='secondary'] {
+    box-shadow: 0 6px 16px rgba(118, 84, 220, 0.18);
+    transform: translateY(0) scale(0.985);
   }
 
-  .demoHost[data-demo-state='confirm'] [data-demo-card='primary'] [data-demo-icon] {
-    animation: demo-confirm 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  .demoHost:is(
+      [data-demo-state='PRACTICE_Q1_HOVER'],
+      [data-demo-state='PRACTICE_Q1_PRESS'],
+      [data-demo-state='PRACTICE_Q2_HOVER'],
+      [data-demo-state='PRACTICE_Q2_PRESS'],
+      [data-demo-state='PRACTICE_Q3_HOVER'],
+      [data-demo-state='PRACTICE_Q3_PRESS']
+    )
+    [data-demo-answer='correct'] {
+    border-color: rgba(118, 84, 220, 0.34);
+    box-shadow: 0 9px 22px rgba(118, 84, 220, 0.12);
+    transform: translateY(-1px);
   }
+
+  .demoHost:is(
+      [data-demo-state='PRACTICE_Q1_PRESS'],
+      [data-demo-state='PRACTICE_Q2_PRESS'],
+      [data-demo-state='PRACTICE_Q3_PRESS']
+    )
+    [data-demo-answer='correct'] {
+    transform: translateY(0) scale(0.99);
+  }
+}
+
+.demoHost[data-demo-state='RESETTING'] [data-demo-scene] {
+  opacity: 0;
+  transform: translateY(5px) scale(0.996);
+  transition:
+    opacity 520ms ease,
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes demo-ripple {

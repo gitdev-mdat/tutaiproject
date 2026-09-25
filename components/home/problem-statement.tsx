@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import {
   BookOpen,
   Check,
@@ -51,11 +51,26 @@ interface StepCardProps {
   title: string;
   children: ReactNode;
   className?: string;
+  revealed?: boolean;
+  active?: boolean;
 }
 
-function StepCard({ number, tone, icon: Icon, title, children, className = '' }: StepCardProps) {
+function StepCard({
+  number,
+  tone,
+  icon: Icon,
+  title,
+  children,
+  className = '',
+  revealed = false,
+  active = false,
+}: StepCardProps) {
   return (
-    <article className={`${styles.stepCard} ${styles[`step_${tone}`]} ${className}`}>
+    <article
+      className={`${styles.stepCard} ${styles[`step_${tone}`]} ${className}`}
+      data-revealed={revealed}
+      data-active={active}
+    >
       <span className={styles.stepNumber}>{number}</span>
       <span className={styles.stepIcon} aria-hidden="true">
         <Icon size={25} strokeWidth={2} />
@@ -68,9 +83,21 @@ function StepCard({ number, tone, icon: Icon, title, children, className = '' }:
   );
 }
 
-function AnalysisModule({ className = '' }: { className?: string }) {
+function AnalysisModule({
+  className = '',
+  revealed = false,
+  active = false,
+}: {
+  className?: string;
+  revealed?: boolean;
+  active?: boolean;
+}) {
   return (
-    <div className={`${styles.analysisModule} ${className}`}>
+    <div
+      className={`${styles.analysisModule} ${className}`}
+      data-revealed={revealed}
+      data-active={active}
+    >
       <div className={styles.analysisRings} aria-hidden="true" />
       <div className={styles.analysisNode} aria-hidden="true">
         <span>
@@ -86,9 +113,22 @@ function AnalysisModule({ className = '' }: { className?: string }) {
   );
 }
 
-function GoalNode({ className = '' }: { className?: string }) {
+function GoalNode({
+  className = '',
+  revealed = false,
+  active = false,
+}: {
+  className?: string;
+  revealed?: boolean;
+  active?: boolean;
+}) {
   return (
-    <div className={`${styles.goalNode} ${className}`} aria-label="Mục tiêu 9+">
+    <div
+      className={`${styles.goalNode} ${className}`}
+      data-revealed={revealed}
+      data-active={active}
+      aria-label="Mục tiêu 9+"
+    >
       <Sparkles className={styles.goalSparkle} size={23} strokeWidth={1.8} aria-hidden="true" />
       <span>9+</span>
       <small>MỤC TIÊU</small>
@@ -96,7 +136,13 @@ function GoalNode({ className = '' }: { className?: string }) {
   );
 }
 
-function DesktopLoop({ pathId, glowId }: { pathId: string; glowId: string }) {
+const CONNECTOR_PHASES = [2, 4, 6, 8, 10] as const;
+
+function isActivePhase(phase: number, start: number, end: number) {
+  return phase >= start && phase <= end;
+}
+
+function DesktopLoop({ pathId, glowId, phase }: { pathId: string; glowId: string; phase: number }) {
   return (
     <div className={styles.desktopLoop} aria-label="Vòng học thích ứng của Tú Tài">
       <span className={`${styles.subjectChip} ${styles.chipFunction}`}>∿&nbsp;&nbsp; Hàm số</span>
@@ -151,18 +197,43 @@ function DesktopLoop({ pathId, glowId }: { pathId: string; glowId: string }) {
           filter={`url(#${glowId})`}
           markerEnd={`url(#${pathId}-arrow)`}
         >
-          <path d="M270 137C289 137 301 138 320 141" />
-          <path d="M540 153C640 166 655 265 552 325" />
-          <path d="M360 423C294 448 240 468 188 501" />
-          <path d="M290 551C330 555 355 555 390 555" />
-          <path d="M620 550C680 530 714 462 726 392" />
+          <path
+            d="M270 137C289 137 301 138 320 141"
+            data-revealed={phase >= CONNECTOR_PHASES[0]}
+            data-active={phase === CONNECTOR_PHASES[0]}
+          />
+          <path
+            d="M540 153C640 166 655 265 552 325"
+            data-revealed={phase >= CONNECTOR_PHASES[1]}
+            data-active={phase === CONNECTOR_PHASES[1]}
+          />
+          <path
+            d="M360 423C294 448 240 468 188 501"
+            data-revealed={phase >= CONNECTOR_PHASES[2]}
+            data-active={phase === CONNECTOR_PHASES[2]}
+          />
+          <path
+            d="M290 551C330 555 355 555 390 555"
+            data-revealed={phase >= CONNECTOR_PHASES[3]}
+            data-active={phase === CONNECTOR_PHASES[3]}
+          />
+          <path
+            d="M620 550C680 530 714 462 726 392"
+            data-revealed={phase >= CONNECTOR_PHASES[4]}
+            data-active={phase === CONNECTOR_PHASES[4]}
+          />
         </g>
         <g className={styles.loopParticles}>
-          <circle cx="302" cy="141" r="5" />
-          <circle cx="626" cy="233" r="5" />
-          <circle cx="257" cy="462" r="5" />
-          <circle cx="345" cy="555" r="5" />
-          <circle cx="692" cy="478" r="5" />
+          {CONNECTOR_PHASES.map((connectorPhase, index) => (
+            <circle
+              key={connectorPhase}
+              cx={[302, 626, 257, 345, 692][index]}
+              cy={[141, 233, 462, 555, 478][index]}
+              r="5"
+              data-revealed={phase >= connectorPhase}
+              data-active={phase === connectorPhase}
+            />
+          ))}
         </g>
       </svg>
 
@@ -172,6 +243,8 @@ function DesktopLoop({ pathId, glowId }: { pathId: string; glowId: string }) {
         icon={BookOpen}
         title="Lý thuyết trọng tâm"
         className={styles.desktopStepOne}
+        revealed={phase >= 1}
+        active={isActivePhase(phase, 1, 2)}
       >
         <span className={styles.subjectTag}>Đạo hàm</span>
       </StepCard>
@@ -182,6 +255,8 @@ function DesktopLoop({ pathId, glowId }: { pathId: string; glowId: string }) {
         icon={Pencil}
         title="Luyện ngay"
         className={styles.desktopStepTwo}
+        revealed={phase >= 3}
+        active={isActivePhase(phase, 3, 4)}
       >
         <p className={styles.answerMeta}>Câu 04</p>
         <p className={styles.answerChoice}>
@@ -189,7 +264,11 @@ function DesktopLoop({ pathId, glowId }: { pathId: string; glowId: string }) {
         </p>
       </StepCard>
 
-      <AnalysisModule className={styles.desktopAnalysis} />
+      <AnalysisModule
+        className={styles.desktopAnalysis}
+        revealed={phase >= 5}
+        active={isActivePhase(phase, 5, 6)}
+      />
 
       <StepCard
         number="4"
@@ -197,6 +276,8 @@ function DesktopLoop({ pathId, glowId }: { pathId: string; glowId: string }) {
         icon={TimerReset}
         title="Ôn lại đúng chỗ"
         className={styles.desktopStepFour}
+        revealed={phase >= 7}
+        active={isActivePhase(phase, 7, 8)}
       >
         <span className={`${styles.subjectTag} ${styles.reviewTag}`}>Ôn nhanh 6 phút</span>
       </StepCard>
@@ -207,18 +288,20 @@ function DesktopLoop({ pathId, glowId }: { pathId: string; glowId: string }) {
         icon={CheckCircle2}
         title="Luyện lại"
         className={styles.desktopStepFive}
+        revealed={phase >= 9}
+        active={isActivePhase(phase, 9, 10)}
       >
         <p className={styles.answerChoice}>
           Câu tương tự <Check size={17} strokeWidth={2.8} aria-label="Đúng" />
         </p>
       </StepCard>
 
-      <GoalNode className={styles.desktopGoal} />
+      <GoalNode className={styles.desktopGoal} revealed={phase >= 11} active={phase === 11} />
     </div>
   );
 }
 
-function MobileLoop({ pathId }: { pathId: string }) {
+function MobileLoop({ pathId, phase }: { pathId: string; phase: number }) {
   return (
     <div className={styles.mobileLoop} aria-label="Vòng học thích ứng của Tú Tài">
       <svg className={styles.mobileLoopSvg} viewBox="0 0 350 550" fill="none" aria-hidden="true">
@@ -256,11 +339,20 @@ function MobileLoop({ pathId }: { pathId: string }) {
           stroke={`url(#${pathId})`}
           markerEnd={`url(#${pathId}-arrow)`}
         >
-          <path d="M151 64C169 64 181 64 199 64" />
-          <path d="M268 108C268 128 231 141 198 153" />
-          <path d="M151 284C127 297 101 309 86 328" />
-          <path d="M151 365C169 365 181 365 199 365" />
-          <path d="M268 408C269 438 237 456 207 470" />
+          {[
+            'M151 64C169 64 181 64 199 64',
+            'M268 108C268 128 231 141 198 153',
+            'M151 284C127 297 101 309 86 328',
+            'M151 365C169 365 181 365 199 365',
+            'M268 408C269 438 237 456 207 470',
+          ].map((path, index) => (
+            <path
+              key={path}
+              d={path}
+              data-revealed={phase >= CONNECTOR_PHASES[index]}
+              data-active={phase === CONNECTOR_PHASES[index]}
+            />
+          ))}
         </g>
       </svg>
 
@@ -272,6 +364,8 @@ function MobileLoop({ pathId }: { pathId: string }) {
             icon={BookOpen}
             title="Lý thuyết trọng tâm"
             className={styles.mobileStepOne}
+            revealed={phase >= 1}
+            active={isActivePhase(phase, 1, 2)}
           >
             <span className={styles.subjectTag}>Đạo hàm</span>
           </StepCard>
@@ -282,6 +376,8 @@ function MobileLoop({ pathId }: { pathId: string }) {
             icon={Pencil}
             title="Luyện ngay"
             className={styles.mobileStepTwo}
+            revealed={phase >= 3}
+            active={isActivePhase(phase, 3, 4)}
           >
             <p className={styles.answerChoice}>
               Câu 04 · B <X size={13} strokeWidth={2.6} aria-label="Sai" />
@@ -290,7 +386,11 @@ function MobileLoop({ pathId }: { pathId: string }) {
         </div>
 
         <div className={styles.mobileAnalysisRow}>
-          <AnalysisModule className={styles.mobileAnalysis} />
+          <AnalysisModule
+            className={styles.mobileAnalysis}
+            revealed={phase >= 5}
+            active={isActivePhase(phase, 5, 6)}
+          />
         </div>
 
         <div className={`${styles.mobileStepRow} ${styles.mobileBottomRow}`}>
@@ -300,6 +400,8 @@ function MobileLoop({ pathId }: { pathId: string }) {
             icon={TimerReset}
             title="Ôn lại đúng chỗ"
             className={styles.mobileStepFour}
+            revealed={phase >= 7}
+            active={isActivePhase(phase, 7, 8)}
           >
             <span className={`${styles.subjectTag} ${styles.reviewTag}`}>6 phút</span>
           </StepCard>
@@ -310,6 +412,8 @@ function MobileLoop({ pathId }: { pathId: string }) {
             icon={CheckCircle2}
             title="Luyện lại"
             className={styles.mobileStepFive}
+            revealed={phase >= 9}
+            active={isActivePhase(phase, 9, 10)}
           >
             <p className={styles.answerChoice}>
               Câu tương tự <Check size={14} strokeWidth={2.8} aria-label="Đúng" />
@@ -318,7 +422,7 @@ function MobileLoop({ pathId }: { pathId: string }) {
         </div>
 
         <div className={styles.mobileGoalRow}>
-          <GoalNode className={styles.mobileGoal} />
+          <GoalNode className={styles.mobileGoal} revealed={phase >= 11} active={phase === 11} />
         </div>
       </div>
     </div>
@@ -327,9 +431,61 @@ function MobileLoop({ pathId }: { pathId: string }) {
 
 export function ProblemStatement() {
   const instanceId = useId().replace(/:/g, '');
+  const sectionRef = useRef<HTMLElement>(null);
+  const hasPlayedRef = useRef(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [phase, setPhase] = useState(-1);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () =>
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener('change', updatePreference);
+
+    return () => mediaQuery.removeEventListener('change', updatePreference);
+  }, []);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || hasPlayedRef.current) return;
+        hasPlayedRef.current = true;
+        setIsVisible(true);
+        setPhase(0);
+        observer.disconnect();
+      },
+      { threshold: 0.28 }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (phase < 0 || phase >= 12) return;
+
+    const standardDelays = [900, 900, 620, 950, 620, 1200, 620, 900, 620, 900, 620, 800];
+    const reducedDelays = [280, 220, 100, 220, 100, 280, 100, 220, 100, 220, 100, 220];
+    const delays = prefersReducedMotion ? reducedDelays : standardDelays;
+    const timer = window.setTimeout(() => setPhase((current) => current + 1), delays[phase]);
+
+    return () => window.clearTimeout(timer);
+  }, [phase, prefersReducedMotion]);
 
   return (
-    <section className={styles.section} data-visible="true" aria-labelledby="learning-loop-heading">
+    <section
+      ref={sectionRef}
+      className={styles.section}
+      data-visible={isVisible}
+      data-sequence-complete={phase >= 12}
+      aria-labelledby="learning-loop-heading"
+    >
       <div className={styles.backgroundArcs} aria-hidden="true" />
       <div className={styles.container}>
         <div className={styles.editorial}>
@@ -368,8 +524,12 @@ export function ProblemStatement() {
           </p>
         </div>
 
-        <DesktopLoop pathId={`desktop-loop-${instanceId}`} glowId={`desktop-glow-${instanceId}`} />
-        <MobileLoop pathId={`mobile-loop-${instanceId}`} />
+        <DesktopLoop
+          pathId={`desktop-loop-${instanceId}`}
+          glowId={`desktop-glow-${instanceId}`}
+          phase={phase}
+        />
+        <MobileLoop pathId={`mobile-loop-${instanceId}`} phase={phase} />
       </div>
     </section>
   );

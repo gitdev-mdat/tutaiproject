@@ -262,7 +262,19 @@
   stroke-linejoin: round;
   stroke-dasharray: 420;
   stroke-dashoffset: 420;
-  transition: stroke-dashoffset 900ms cubic-bezier(0.65, 0, 0.35, 1) 520ms;
+  opacity: 0;
+  transition:
+    stroke-dashoffset 620ms cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 180ms ease;
+}
+
+.loopPaths path[data-revealed='true'] {
+  stroke-dashoffset: 0;
+  opacity: 1;
+}
+
+.loopPaths path[data-active='true'] {
+  stroke-width: 5.5;
 }
 
 .loopParticles circle {
@@ -270,7 +282,15 @@
   stroke: rgba(255, 255, 255, 0.96);
   stroke-width: 3;
   opacity: 0;
-  transition: opacity 450ms ease 780ms;
+  transition: opacity 240ms ease;
+}
+
+.loopParticles circle[data-revealed='true'] {
+  opacity: 1;
+}
+
+.loopParticles circle[data-active='true'] {
+  animation: connector-arrival 620ms ease-out both;
 }
 
 .subjectChip {
@@ -324,7 +344,23 @@
   transform: translateY(14px);
   transition:
     opacity 520ms ease,
-    transform 520ms ease;
+    transform 520ms ease,
+    border-color 320ms ease,
+    box-shadow 320ms ease;
+}
+
+.stepCard[data-revealed='true'] {
+  opacity: 0.76;
+  transform: none;
+}
+
+.stepCard[data-active='true'],
+.section[data-sequence-complete='true'] .stepCard[data-revealed='true'] {
+  border-color: color-mix(in srgb, var(--step-accent) 38%, transparent);
+  box-shadow:
+    0 17px 38px rgba(40, 79, 139, 0.14),
+    0 0 0 3px color-mix(in srgb, var(--step-accent) 7%, transparent);
+  opacity: 1;
 }
 
 .stepNumber {
@@ -422,22 +458,18 @@
 .desktopStepOne {
   top: 15%;
   left: 4%;
-  transition-delay: 260ms;
 }
 .desktopStepTwo {
   top: 17%;
   left: 38%;
-  transition-delay: 360ms;
 }
 .desktopStepFour {
   bottom: 9%;
   left: 7%;
-  transition-delay: 630ms;
 }
 .desktopStepFive {
   bottom: 7%;
   left: 46%;
-  transition-delay: 730ms;
 }
 
 .analysisModule {
@@ -482,8 +514,8 @@
   opacity: 0;
   transform: translateX(-50%) scale(0.9);
   transition:
-    opacity 520ms ease 470ms,
-    transform 620ms cubic-bezier(0.16, 1, 0.3, 1) 470ms;
+    opacity 480ms ease,
+    transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .analysisNode > span {
@@ -513,8 +545,31 @@
   opacity: 0;
   transform: translateY(14px);
   transition:
-    opacity 540ms ease 510ms,
-    transform 540ms ease 510ms;
+    opacity 500ms ease 70ms,
+    transform 540ms ease 70ms,
+    box-shadow 360ms ease;
+}
+
+.analysisModule[data-revealed='true'] .analysisNode {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+.analysisModule[data-revealed='true'] .analysisCard {
+  opacity: 0.86;
+  transform: none;
+}
+
+.analysisModule[data-active='true'] .analysisCard,
+.section[data-sequence-complete='true'] .analysisCard {
+  box-shadow:
+    0 20px 48px rgba(22, 90, 192, 0.19),
+    0 0 34px rgba(45, 132, 255, 0.16);
+  opacity: 1;
+}
+
+.analysisModule[data-active='true'] .analysisNode {
+  animation: analysis-settle 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .analysisCard > strong {
@@ -562,8 +617,37 @@
   opacity: 0;
   transform: scale(0.9);
   transition:
-    opacity 520ms ease 820ms,
-    transform 620ms cubic-bezier(0.16, 1, 0.3, 1) 820ms;
+    opacity 480ms ease,
+    transform 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 360ms ease;
+}
+
+.goalNode::after {
+  position: absolute;
+  inset: -10px;
+  border: 1px solid rgba(40, 139, 255, 0.42);
+  border-radius: 50%;
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+}
+
+.goalNode[data-revealed='true'] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.goalNode[data-active='true'] {
+  animation: goal-payoff 780ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow:
+    0 0 0 10px rgba(51, 132, 246, 0.13),
+    0 0 0 20px rgba(51, 132, 246, 0.055),
+    0 20px 40px rgba(20, 83, 184, 0.27),
+    inset 0 0 28px rgba(255, 255, 255, 0.2);
+}
+
+.goalNode[data-active='true']::after {
+  animation: goal-ring 780ms ease-out both;
 }
 
 .goalNode > span {
@@ -602,24 +686,59 @@
 .section[data-visible='true'] .heading span,
 .section[data-visible='true'] .description,
 .section[data-visible='true'] .principles li,
-.section[data-visible='true'] .closingNote,
-.section[data-visible='true'] .stepCard,
-.section[data-visible='true'] .analysisCard,
-.section[data-visible='true'] .goalNode {
+.section[data-visible='true'] .closingNote {
   opacity: 1;
   transform: none;
 }
 
-.section[data-visible='true'] .analysisNode {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
+@keyframes connector-arrival {
+  0% {
+    opacity: 0;
+    transform: scale(0.65);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.section[data-visible='true'] .loopPaths path {
-  stroke-dashoffset: 0;
+@keyframes analysis-settle {
+  0% {
+    transform: translateX(-50%) scale(0.92);
+  }
+  55% {
+    transform: translateX(-50%) scale(1.035);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
 }
-.section[data-visible='true'] .loopParticles circle {
-  opacity: 1;
+
+@keyframes goal-payoff {
+  0% {
+    transform: scale(0.96);
+  }
+  58% {
+    transform: scale(1.025);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes goal-ring {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
 }
 
 @media (max-width: 1280px) and (min-width: 768px) {
@@ -858,7 +977,10 @@
     stroke-linejoin: round;
     stroke-dasharray: 280;
     stroke-dashoffset: 280;
-    transition: stroke-dashoffset 720ms ease 420ms;
+    opacity: 0;
+    transition:
+      stroke-dashoffset 620ms ease,
+      opacity 180ms ease;
   }
 
   .mobileLoop .stepCard {
@@ -905,19 +1027,6 @@
   .mobileLoop .answerChoice {
     margin-top: 5px;
     font-size: clamp(9.5px, 2.7vw, 10.5px);
-  }
-
-  .mobileStepOne {
-    transition-delay: 220ms;
-  }
-  .mobileStepTwo {
-    transition-delay: 310ms;
-  }
-  .mobileStepFour {
-    transition-delay: 590ms;
-  }
-  .mobileStepFive {
-    transition-delay: 680ms;
   }
 
   .mobileAnalysis {
@@ -987,11 +1096,9 @@
     height: 17px;
   }
 
-  .section[data-visible='true'] .mobileGoal {
-    transform: scale(1);
-  }
-  .section[data-visible='true'] .mobilePaths path {
+  .mobilePaths path[data-revealed='true'] {
     stroke-dashoffset: 0;
+    opacity: 1;
   }
 }
 
@@ -1039,24 +1146,24 @@
   .heading span,
   .description,
   .principles li,
-  .closingNote,
-  .stepCard,
-  .analysisCard,
-  .goalNode,
-  .loopParticles circle {
+  .closingNote {
     opacity: 1;
     transform: none;
   }
 
-  .analysisNode {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
+  .stepCard,
+  .analysisCard,
+  .analysisNode,
+  .goalNode {
+    transition: opacity 180ms linear !important;
   }
+
   .loopPaths path,
   .mobilePaths path {
-    stroke-dashoffset: 0;
+    transition: none !important;
   }
+
   .mobileGoal {
-    transform: translateX(50%) scale(1);
+    transform: scale(1);
   }
 }

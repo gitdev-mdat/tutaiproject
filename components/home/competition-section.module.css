@@ -93,8 +93,34 @@
   text-wrap: balance;
 }
 
-.headline span {
+.headlineAccent {
   color: #1768f5;
+}
+
+.eyebrow,
+.headlineLine,
+.description,
+.learningNote,
+.eventStage,
+.loopStep,
+.prizeTier,
+.participants {
+  opacity: 0;
+}
+
+.eyebrow,
+.headlineLine,
+.description,
+.learningNote,
+.loopStep,
+.prizeTier,
+.participants {
+  transform: translateY(12px);
+}
+
+.eventStage {
+  transform: translateY(14px) scale(0.985);
+  transform-origin: 50% 44%;
 }
 
 .description {
@@ -400,6 +426,28 @@
     0 9px 28px rgba(231, 172, 32, 0.24);
   white-space: nowrap;
 }
+.prizeAmount {
+  position: relative;
+  width: fit-content;
+  overflow: hidden;
+}
+.prizeAmount::after {
+  position: absolute;
+  inset: -18% auto -18% -35%;
+  width: 24%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 251, 218, 0.88) 50%,
+    rgba(255, 255, 255, 0.08) 75%,
+    transparent 100%
+  );
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transform: skewX(-16deg);
+}
 .prizeHero small {
   display: block;
   margin-top: 9px;
@@ -642,7 +690,7 @@
   flex: 0 0 auto;
   color: #5fa7ff;
 }
-.countdown span {
+.countdown > div > span {
   color: #7294be;
   font-size: 9px;
 }
@@ -654,6 +702,14 @@
   font-weight: 760;
   letter-spacing: 0.01em;
   white-space: nowrap;
+}
+.countdown time {
+  display: inline-block;
+  min-width: 154px;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: inherit;
 }
 .countdown small {
   display: block;
@@ -700,6 +756,217 @@
 }
 .rankingNote svg {
   color: #4f95ee;
+}
+
+.section[data-visible='true'] .eyebrow,
+.section[data-visible='true'] .headlineLine,
+.section[data-visible='true'] .description,
+.section[data-visible='true'] .learningNote,
+.section[data-visible='true'] .eventStage,
+.section[data-visible='true'] .loopStep,
+.section[data-visible='true'] .prizeTier,
+.section[data-visible='true'] .participants {
+  animation: revealUp 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.section[data-visible='true'] .eyebrow {
+  animation-delay: 40ms;
+}
+.section[data-visible='true'] .headlineLine:nth-child(1) {
+  animation-delay: 130ms;
+}
+.section[data-visible='true'] .headlineLine:nth-child(2) {
+  animation-delay: 210ms;
+}
+.section[data-visible='true'] .headlineLine:nth-child(3) {
+  animation-delay: 290ms;
+}
+.section[data-visible='true'] .description {
+  animation-delay: 390ms;
+}
+.section[data-visible='true'] .eventStage {
+  animation-name: presentCard;
+  animation-delay: 250ms;
+  animation-duration: 760ms;
+}
+.section[data-visible='true'] .learningNote {
+  animation-delay: 1780ms;
+}
+
+.section[data-visible='true'] .loopStep:nth-child(1) {
+  animation:
+    revealUp 460ms 760ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    stepEmphasis 520ms 900ms ease-out both;
+}
+.section[data-visible='true'] .loopStep:nth-child(2) {
+  animation:
+    revealUp 460ms 1010ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    stepEmphasis 520ms 1150ms ease-out both;
+}
+.section[data-visible='true'] .loopStep:nth-child(3) {
+  animation:
+    revealUp 460ms 1260ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    stepEmphasis 520ms 1400ms ease-out both;
+}
+.section[data-visible='true'] .loopStep:nth-child(4) {
+  animation:
+    revealUp 460ms 1510ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    stepEmphasis 520ms 1650ms ease-out both;
+}
+.section[data-visible='true'] .loopStep:nth-child(1) .loopArrow {
+  animation: connectStep 360ms 990ms ease-out both;
+}
+.section[data-visible='true'] .loopStep:nth-child(2) .loopArrow {
+  animation: connectStep 360ms 1240ms ease-out both;
+}
+.section[data-visible='true'] .loopStep:nth-child(3) .loopArrow {
+  animation: connectStep 360ms 1490ms ease-out both;
+}
+
+.section[data-visible='true'] .prizeTier:nth-child(1) {
+  animation-delay: 760ms;
+}
+.section[data-visible='true'] .prizeTier:nth-child(2) {
+  animation-delay: 880ms;
+}
+.section[data-visible='true'] .prizeTier:nth-child(3) {
+  animation-delay: 1000ms;
+}
+.section[data-visible='true'] .participants {
+  animation-delay: 1110ms;
+}
+.section[data-visible='true'] .avatarStack span:nth-child(1) {
+  animation: avatarSettle 380ms 1120ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.section[data-visible='true'] .avatarStack span:nth-child(2) {
+  animation: avatarSettle 380ms 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.section[data-visible='true'] .avatarStack span:nth-child(3) {
+  animation: avatarSettle 380ms 1280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.section[data-visible='true'] .avatarStack strong {
+  animation: avatarSettle 380ms 1360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.section[data-visible='true'] .prizeAmount::after {
+  animation: prizeShimmer 820ms 660ms cubic-bezier(0.4, 0, 0.2, 1) 1 both;
+}
+.section[data-visible='true'] .trophyGlow {
+  animation: trophyBreathe 4.8s 1s ease-in-out infinite;
+}
+.section[data-visible='true'] .status span {
+  animation: statusPulse 2.6s 1.8s ease-out infinite;
+}
+.section[data-visible='true'] .cardAtmosphere {
+  animation: atmosphereDrift 14s 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes presentCard {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes stepEmphasis {
+  0%,
+  100% {
+    border-color: rgba(72, 132, 222, 0.14);
+    box-shadow: 0 12px 30px rgba(39, 95, 178, 0.055);
+  }
+  45% {
+    border-color: rgba(45, 125, 246, 0.34);
+    box-shadow: 0 15px 34px rgba(31, 105, 222, 0.14);
+  }
+}
+
+@keyframes connectStep {
+  from {
+    opacity: 0;
+    transform: translate(-7px, -50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+@keyframes prizeShimmer {
+  0% {
+    left: -35%;
+    opacity: 0;
+  }
+  18%,
+  72% {
+    opacity: 0.72;
+  }
+  100% {
+    left: 112%;
+    opacity: 0;
+  }
+}
+
+@keyframes trophyBreathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes statusPulse {
+  0%,
+  58%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(79, 162, 255, 0.26),
+      0 0 10px rgba(79, 162, 255, 0.7);
+  }
+  78% {
+    box-shadow:
+      0 0 0 5px rgba(79, 162, 255, 0),
+      0 0 13px rgba(79, 162, 255, 0.78);
+  }
+}
+
+@keyframes atmosphereDrift {
+  from {
+    opacity: 0.72;
+    transform: translate3d(-10px, 7px, 0) scale(0.98);
+  }
+  to {
+    opacity: 0.94;
+    transform: translate3d(12px, -8px, 0) scale(1.04);
+  }
+}
+
+@keyframes avatarSettle {
+  from {
+    opacity: 0;
+    transform: translateX(-5px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (max-width: 1199px) {
@@ -867,6 +1134,34 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .eyebrow,
+  .headlineLine,
+  .description,
+  .learningNote,
+  .eventStage,
+  .loopStep,
+  .prizeTier,
+  .participants {
+    opacity: 1;
+    transform: none;
+  }
+  .section[data-visible='true'] .eyebrow,
+  .section[data-visible='true'] .headlineLine,
+  .section[data-visible='true'] .description,
+  .section[data-visible='true'] .learningNote,
+  .section[data-visible='true'] .eventStage,
+  .section[data-visible='true'] .loopStep,
+  .section[data-visible='true'] .loopArrow,
+  .section[data-visible='true'] .prizeTier,
+  .section[data-visible='true'] .participants,
+  .section[data-visible='true'] .avatarStack span,
+  .section[data-visible='true'] .avatarStack strong,
+  .section[data-visible='true'] .trophyGlow,
+  .section[data-visible='true'] .status span,
+  .section[data-visible='true'] .cardAtmosphere,
+  .section[data-visible='true'] .prizeAmount::after {
+    animation: none;
+  }
   .eventCard,
   .prizeTier,
   .medalFrame,

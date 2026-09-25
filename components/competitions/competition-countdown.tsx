@@ -21,12 +21,10 @@ export function CompetitionCountdown({ startAt }: CompetitionCountdownProps) {
     return () => window.clearInterval(interval);
   }, [startAt]);
 
-  if (remaining === null) {
-    return null;
-  }
+  if (remaining === null) return <time aria-label="Đang tải thời gian còn lại">--:--:--</time>;
 
   if (remaining <= 0) {
-    return <span>Cuộc thi đã bắt đầu</span>;
+    return <time dateTime={startAt}>Cuộc thi đã bắt đầu</time>;
   }
 
   const totalSeconds = Math.floor(remaining / 1000);
@@ -39,23 +37,23 @@ export function CompetitionCountdown({ startAt }: CompetitionCountdownProps) {
 
   if (days > 0) {
     return (
-      <span>
+      <time dateTime={startAt} aria-label={`Còn ${days} ngày ${hours} giờ ${minutes} phút`}>
         Còn {pad(days)} ngày {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-      </span>
+      </time>
     );
   }
 
   if (hours > 0) {
     return (
-      <span>
+      <time dateTime={startAt} aria-label={`Còn ${hours} giờ ${minutes} phút`}>
         Còn {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-      </span>
+      </time>
     );
   }
 
   return (
-    <span>
+    <time dateTime={startAt} aria-label={`Còn ${minutes} phút ${seconds} giây`}>
       Còn {pad(minutes)}:{pad(seconds)}
-    </span>
+    </time>
   );
 }

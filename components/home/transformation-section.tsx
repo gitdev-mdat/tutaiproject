@@ -20,13 +20,18 @@ import {
   Target,
   TriangleAlert,
   TrendingUp,
+  UnlockKeyhole,
 } from 'lucide-react';
 
 import { TuTaiMark } from '@/components/layout/public-header';
 import { getRoadmapCta, getClientRoadmapUserState } from '@/lib/navigation/roadmap-flow';
 import { useOnboardingDraft } from '@/lib/onboarding/use-onboarding-draft';
 
-import { ProductDemoCursor, productDemoHostClassName } from './product-demo-cursor';
+import {
+  ProductDemoCursor,
+  productDemoHostClassName,
+  type ProductDemoScene,
+} from './product-demo-cursor';
 import styles from './transformation-section.module.css';
 
 type IconComponent = ComponentType<{
@@ -135,6 +140,9 @@ interface TodayTaskCardProps {
   action: string;
   note?: string;
   secondary?: boolean;
+  unlocked?: boolean;
+  completed?: boolean;
+  unlocking?: boolean;
 }
 
 function TodayTaskCard({
@@ -145,14 +153,17 @@ function TodayTaskCard({
   action,
   note,
   secondary = false,
+  unlocked = false,
+  completed = false,
+  unlocking = false,
 }: TodayTaskCardProps) {
+  const cardClassName = `${styles.taskCard} ${secondary ? styles.taskSecondary : styles.taskPrimary} ${unlocked ? styles.taskUnlocked : ''} ${completed ? styles.taskCompleted : ''} ${unlocking ? styles.taskUnlocking : ''}`;
+  const actionClassName = `${styles.taskAction} ${secondary ? styles.taskActionSecondary : ''} ${!unlocked && secondary ? styles.taskActionLocked : ''}`;
+
   return (
-    <article
-      className={`${styles.taskCard} ${secondary ? styles.taskSecondary : styles.taskPrimary}`}
-      data-demo-card={secondary ? undefined : 'primary'}
-    >
+    <article className={cardClassName} data-demo-card={secondary ? undefined : 'primary'}>
       <span className={styles.taskNumber} aria-label={`Bước ${index}`}>
-        {index}
+        {completed ? <CheckCircle2 size={15} strokeWidth={2.4} aria-hidden="true" /> : index}
       </span>
       <span
         className={styles.taskIllustration}
@@ -160,7 +171,11 @@ function TodayTaskCard({
         aria-hidden="true"
       >
         {secondary ? (
-          <Dumbbell size={26} strokeWidth={1.9} />
+          unlocked || unlocking ? (
+            <UnlockKeyhole size={26} strokeWidth={1.9} />
+          ) : (
+            <LockKeyhole size={25} strokeWidth={1.9} />
+          )
         ) : (
           <BookOpen size={28} strokeWidth={1.9} />
         )}
@@ -191,23 +206,351 @@ function TodayTaskCard({
           </span>
           {note ? (
             <span className={styles.unlockNote}>
-              <LockKeyhole size={12} strokeWidth={1.9} aria-hidden={true} />
+              {unlocking ? (
+                <UnlockKeyhole size={12} strokeWidth={1.9} aria-hidden={true} />
+              ) : !unlocked ? (
+                <LockKeyhole size={12} strokeWidth={1.9} aria-hidden={true} />
+              ) : null}
               {note}
             </span>
           ) : null}
         </div>
       </div>
-      <Link
-        href="/auth/register"
-        className={`${styles.taskAction} ${secondary ? styles.taskActionSecondary : ''}`}
-        data-demo-action={secondary ? undefined : 'primary'}
-        aria-label={`${action}: ${title}`}
-      >
-        {action}
-        <ArrowRight size={14} strokeWidth={2} aria-hidden={true} />
-        {!secondary ? <span data-demo-ripple aria-hidden="true" /> : null}
-      </Link>
+      {secondary && !unlocked ? (
+        <span className={actionClassName} aria-disabled="true" aria-label={`${action}: đang khóa`}>
+          {unlocking ? (
+            <UnlockKeyhole size={13} strokeWidth={2} aria-hidden="true" />
+          ) : (
+            <LockKeyhole size={13} strokeWidth={2} aria-hidden="true" />
+          )}
+          {unlocking ? 'Đang mở…' : 'Đang khóa'}
+        </span>
+      ) : (
+        <Link
+          href="/auth/register"
+          className={actionClassName}
+          data-demo-action={secondary ? 'secondary' : 'primary'}
+          aria-label={`${action}: ${title}`}
+        >
+          {action}
+          <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
+          {!secondary ? <span data-demo-ripple aria-hidden="true" /> : null}
+        </Link>
+      )}
     </article>
+  );
+}
+
+function LessonExperience({ scene }: { scene: ProductDemoScene }) {
+  const completedSteps =
+    scene === 'LESSON_COMPLETE'
+      ? 3
+      : scene === 'LESSON_STEP_3'
+        ? 2
+        : scene === 'LESSON_STEP_2'
+          ? 1
+          : 0;
+  const activeStep =
+    scene === 'LESSON_STEP_3'
+      ? 3
+      : scene === 'LESSON_STEP_2'
+        ? 2
+        : scene === 'LESSON_STEP_1'
+          ? 1
+          : 0;
+  const completed = scene === 'LESSON_COMPLETE';
+  const steps = [
+    ['Nhận diện dạng bài', 'Tìm biểu thức phù hợp để đặt ẩn'],
+    ['Chọn biến u', 'Đặt u = u(x) để rút gọn biểu thức'],
+    ['Biến đổi biểu thức', 'Đưa tích phân về dạng quen thuộc'],
+  ] as const;
+
+  return (
+    <div
+      className={styles.lessonExperience}
+      data-completed={completed ? 'true' : 'false'}
+      data-active-step={activeStep}
+      aria-live="polite"
+    >
+      <header className={styles.lessonHeader}>
+        <div>
+          <span className={styles.todayLabel}>BÀI HỌC ĐƯỢC ĐỀ XUẤT</span>
+          <h3>Phương pháp đổi biến số</h3>
+          <p>Toán 12 · Nguyên hàm</p>
+        </div>
+        <span className={styles.lessonStepChip}>
+          {completed ? 'Hoàn thành' : `Bước ${Math.max(activeStep, 1)}/3`}
+        </span>
+      </header>
+
+      <article className={styles.conceptCard}>
+        <div className={styles.formulaPanel} aria-label="Công thức đổi biến số">
+          <span>∫ f(u(x)) · u&apos;(x) dx</span>
+          <span className={styles.formulaArrow} aria-hidden="true">
+            →
+          </span>
+          <strong>u = u(x)</strong>
+          <span className={styles.formulaSweep} aria-hidden="true" />
+        </div>
+
+        <p className={styles.conceptHint}>
+          Chọn <strong>u</strong> sao cho phần còn lại của biểu thức chính là{' '}
+          <strong>u&apos;(x) dx</strong>.
+        </p>
+        <div className={styles.lessonSteps} aria-label="Các bước trong bài học">
+          {steps.map(([title, detail], index) => {
+            const step = index + 1;
+            const isComplete = step <= completedSteps;
+            const isActive = step === activeStep;
+            return (
+              <div
+                key={title}
+                className={styles.lessonStep}
+                data-visible={isComplete || isActive || completed ? 'true' : 'false'}
+                data-status={isComplete || completed ? 'complete' : isActive ? 'active' : 'pending'}
+              >
+                <span className={styles.lessonStepMarker} aria-hidden="true">
+                  {isComplete || completed ? <CheckCircle2 size={18} strokeWidth={2.4} /> : step}
+                </span>
+                <span>
+                  <strong>{title}</strong>
+                  <small>{detail}</small>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </article>
+
+      <div className={styles.lessonOutcome}>
+        <div className={styles.lessonProgressHeading}>
+          <span>Tiến độ bài học</span>
+          <strong>{completed ? '100%' : '35%'}</strong>
+        </div>
+        <div
+          className={styles.lessonProgressTrack}
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={completed ? 100 : 35}
+        >
+          <span />
+        </div>
+        <span className={styles.progressGain}>Hoàn thành 100%</span>
+
+        <div className={styles.tutaiResponse}>
+          <span aria-hidden="true">
+            <TuTaiMark size={25} />
+          </span>
+          <div>
+            <strong>Hoàn thành bài học</strong>
+            <p>Em đã sẵn sàng luyện tập.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const PRACTICE_QUESTIONS = [
+  {
+    question: 'Với tích phân ∫ 2x · cos(x²) dx, em nên đặt u bằng gì?',
+    answers: ['u = 2x', 'u = x²', 'u = cos(x)', 'u = x'],
+    correctIndex: 1,
+    explanation: 'Vì du = 2x dx, tích phân trở thành ∫ cos(u) du.',
+  },
+  {
+    question: 'Nếu đặt u = x² thì du bằng gì?',
+    answers: ['du = x dx', 'du = 2x dx', 'du = 2 dx', 'du = x² dx'],
+    correctIndex: 1,
+    explanation: 'Đạo hàm của x² là 2x, nên du = 2x dx.',
+  },
+  {
+    question: 'Sau khi đặt u = x², tích phân trở thành dạng nào?',
+    answers: ['∫ cos(u) du', '∫ u · cos(u) du', '∫ cos(x) dx', '∫ 2u dx'],
+    correctIndex: 0,
+    explanation: 'Thay u = x² và du = 2x dx, ta được ∫ cos(u) du.',
+  },
+] as const;
+
+const FIREWORK_PARTICLES = [
+  [10, 22, -36, -30, '#58a6ff', 0],
+  [10, 22, -15, -50, '#8b6ff0', 40],
+  [10, 22, 12, -46, '#19b99a', 70],
+  [10, 22, 36, -25, '#f5b940', 20],
+  [10, 22, 42, 7, '#58a6ff', 90],
+  [10, 22, 16, 28, '#8b6ff0', 120],
+  [10, 22, -20, 24, '#19b99a', 60],
+  [90, 20, -40, -24, '#f5b940', 80],
+  [90, 20, -14, -49, '#58a6ff', 20],
+  [90, 20, 16, -43, '#8b6ff0', 100],
+  [90, 20, 39, -16, '#19b99a', 50],
+  [90, 20, 43, 15, '#f5b940', 130],
+  [90, 20, 14, 28, '#58a6ff', 70],
+  [90, 20, -22, 23, '#8b6ff0', 10],
+  [13, 80, -36, -17, '#19b99a', 160],
+  [13, 80, -22, 23, '#f5b940', 110],
+  [13, 80, 2, 42, '#58a6ff', 190],
+  [13, 80, 34, 20, '#8b6ff0', 140],
+  [87, 78, -37, -11, '#f5b940', 180],
+  [87, 78, -21, 28, '#58a6ff', 120],
+  [87, 78, 0, -45, '#19b99a', 200],
+  [87, 78, 27, 21, '#8b6ff0', 150],
+] as const;
+
+function PracticeCelebration({ scene }: { scene: ProductDemoScene }) {
+  const celebrating = scene === 'CELEBRATING';
+  const finalSummary = scene === 'FINAL_SUMMARY';
+
+  if (finalSummary) {
+    return (
+      <div className={styles.finalSummary} aria-live="polite">
+        <span className={styles.summaryLabel}>HOÀN THÀNH MỤC TIÊU HÔM NAY</span>
+        <span className={styles.summaryCheck} aria-hidden="true">
+          <CheckCircle2 size={42} strokeWidth={2.1} />
+        </span>
+        <h3>Hôm nay em đã hoàn thành</h3>
+        <div className={styles.summaryItems}>
+          <span>
+            <CheckCircle2 size={18} strokeWidth={2.4} aria-hidden="true" />
+            Phương pháp đổi biến số
+          </span>
+          <span>
+            <CheckCircle2 size={18} strokeWidth={2.4} aria-hidden="true" />3 câu luyện trọng tâm
+          </span>
+        </div>
+        <div className={styles.summaryProgress}>
+          <span>Tiến độ hôm nay</span>
+          <strong>100%</strong>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.practiceCompletion} data-celebrating={celebrating ? 'true' : 'false'}>
+      {celebrating ? (
+        <div className={styles.celebrationLayer} aria-hidden="true">
+          {FIREWORK_PARTICLES.map(([x, y, dx, dy, color, delay], index) => (
+            <span
+              key={`${x}-${y}-${index}`}
+              style={
+                {
+                  '--particle-x': `${x}%`,
+                  '--particle-y': `${y}%`,
+                  '--particle-dx': `${dx}px`,
+                  '--particle-dy': `${dy}px`,
+                  '--particle-color': color,
+                  '--particle-delay': `${delay}ms`,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+      ) : null}
+      <div className={styles.practiceCompletionCard}>
+        <span className={styles.completionLabel}>LUYỆN TẬP HOÀN THÀNH</span>
+        <span className={styles.completionCheck} aria-hidden="true">
+          <CheckCircle2 size={46} strokeWidth={2.1} />
+        </span>
+        <h3>Xuất sắc! Em đã hoàn thành 3/3 câu</h3>
+        <p>Phương pháp đổi biến số đã được củng cố.</p>
+        <div className={styles.completionStats}>
+          <span>
+            <strong>3/3</strong>
+            chính xác
+          </span>
+          <span>
+            <strong>100%</strong>
+            hoàn thành
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PracticeExperience({ scene }: { scene: ProductDemoScene }) {
+  const completionScene = ['PRACTICE_COMPLETE', 'CELEBRATING', 'FINAL_SUMMARY'].includes(scene);
+  if (completionScene) return <PracticeCelebration scene={scene} />;
+
+  const questionIndex = scene.startsWith('PRACTICE_Q3')
+    ? 2
+    : scene.startsWith('PRACTICE_Q2')
+      ? 1
+      : 0;
+  const questionNumber = questionIndex + 1;
+  const question = PRACTICE_QUESTIONS[questionIndex];
+  const answered = scene.endsWith('_PRESS') || scene.endsWith('_FEEDBACK');
+  const feedback = scene.endsWith('_FEEDBACK');
+  const completedCount = feedback ? questionNumber : questionIndex;
+  const progress =
+    completedCount === 1 ? 33 : completedCount === 2 ? 67 : completedCount === 3 ? 100 : 0;
+
+  return (
+    <div
+      className={styles.practiceExperience}
+      data-feedback={feedback ? 'true' : 'false'}
+      data-question={questionNumber}
+    >
+      <header className={styles.practiceHeader}>
+        <div>
+          <span className={styles.todayLabel}>LUYỆN TẬP ĐÃ MỞ KHÓA</span>
+          <h3>3 câu luyện trọng tâm</h3>
+          <p>Phương pháp đổi biến số · Toán 12</p>
+        </div>
+        <span className={styles.practiceCount}>Câu {questionNumber} / 3</span>
+      </header>
+
+      <article key={questionNumber} className={styles.questionCard}>
+        <span className={styles.questionLabel}>CÂU HỎI</span>
+        <h4>{question.question}</h4>
+        <div className={styles.answerGrid}>
+          {question.answers.map((answer, index) => {
+            const correct = index === question.correctIndex;
+            return (
+              <div
+                key={answer}
+                className={`${styles.answerOption} ${correct && answered ? styles.answerCorrect : ''}`}
+                data-demo-answer={correct ? 'correct' : undefined}
+              >
+                <span>{String.fromCharCode(65 + index)}</span>
+                <strong>{answer}</strong>
+                {correct && answered ? (
+                  <CheckCircle2 size={18} strokeWidth={2.4} aria-hidden="true" />
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </article>
+
+      <div className={styles.practiceFooter}>
+        <div className={styles.practiceProgress}>
+          <div>
+            <span>Tiến độ luyện tập</span>
+            <strong>{completedCount}/3 câu hoàn thành</strong>
+          </div>
+          <span
+            className={styles.practiceProgressTrack}
+            role="progressbar"
+            aria-label="Tiến độ luyện tập"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+          >
+            <span style={{ '--practice-progress': `${progress}%` } as CSSProperties} />
+          </span>
+        </div>
+        <div className={styles.answerFeedback} aria-live="polite">
+          <CheckCircle2 size={20} strokeWidth={2.4} aria-hidden="true" />
+          <span>
+            <strong>Chính xác</strong>
+            <small>{question.explanation}</small>
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -260,7 +603,7 @@ function RecommendationReasonCard() {
         <div className={styles.reasonDetailRow}>
           <TriangleAlert size={16} strokeWidth={2} aria-hidden={true} />
           <span>Kết quả gần đây:</span>
-          <strong className={styles.reasonOrange}>Sai 3/5 câu liên quan</strong>
+          <strong className={styles.reasonOrange}>Sai 2/3 câu liên quan</strong>
         </div>
       </div>
 
@@ -275,7 +618,7 @@ function RecommendationReasonCard() {
         </Link>
         <div className={styles.reasonLockNote}>
           <LockKeyhole size={16} strokeWidth={1.9} aria-hidden={true} />
-          <span>Sau khi học xong, 5 câu luyện trọng tâm sẽ được mở khóa</span>
+          <span>Sau khi học xong, 3 câu luyện trọng tâm sẽ được mở khóa</span>
         </div>
       </div>
     </aside>
@@ -284,6 +627,29 @@ function RecommendationReasonCard() {
 
 function ProductShowcaseShell() {
   const productStageRef = useRef<HTMLDivElement>(null);
+  const [demoScene, setDemoScene] = useState<ProductDemoScene>('ROADMAP_LOCKED');
+  const lessonVisible = demoScene.startsWith('LESSON_');
+  const practiceVisible =
+    demoScene === 'PRACTICE_ACTIVE' ||
+    demoScene.startsWith('PRACTICE_Q') ||
+    demoScene === 'PRACTICE_COMPLETE' ||
+    demoScene === 'CELEBRATING' ||
+    demoScene === 'FINAL_SUMMARY';
+  const lessonCompleted = [
+    'ROADMAP_LESSON_COMPLETE',
+    'PRACTICE_UNLOCKING',
+    'PRACTICE_READY',
+    'PRACTICE_APPROACH',
+    'PRACTICE_HOVER',
+    'PRACTICE_PRESS',
+  ].includes(demoScene);
+  const practiceUnlocked = [
+    'PRACTICE_READY',
+    'PRACTICE_APPROACH',
+    'PRACTICE_HOVER',
+    'PRACTICE_PRESS',
+  ].includes(demoScene);
+  const practiceUnlocking = demoScene === 'PRACTICE_UNLOCKING';
 
   return (
     <div
@@ -296,194 +662,75 @@ function ProductShowcaseShell() {
       <div className={styles.productShell}>
         <ProductNavigation />
         <div className={styles.productMain}>
-          <header className={styles.productHeader}>
-            <div>
-              <span className={styles.todayLabel}>LỘ TRÌNH CỦA EM</span>
-              <h3>Hôm nay em nên học gì?</h3>
-            </div>
-            <span className={styles.goalChip}>
-              <Target size={15} strokeWidth={2} aria-hidden={true} />
-              Mục tiêu <strong>8.5+</strong>
-            </span>
-          </header>
-
-          <div className={styles.taskList}>
-            <TodayTaskCard
-              index={1}
-              title="Phương pháp đổi biến số"
-              progress={35}
-              meta="Bài học · Toán 12"
-              action="Học"
-            />
-            <TodayTaskCard
-              index={2}
-              title="5 câu luyện trọng tâm"
-              progress={0}
-              meta="Bài luyện · Toán 12"
-              note="Mở khóa khi hoàn thành Bài học 1"
-              action="Luyện tập"
-              secondary
-            />
-          </div>
-
-          <MiniStatCards />
-          <RecommendationReasonCard />
-        </div>
-      </div>
-      <ProductDemoCursor hostRef={productStageRef} />
-    </div>
-  );
-}
-
-function MobileProductShowcase() {
-  const [lessonComplete, setLessonComplete] = useState(false);
-  const progress = lessonComplete ? 100 : 35;
-
-  return (
-    <div className={`${styles.mobileProductStage} ${styles.reveal}`}>
-      <div className={styles.mobileDashboard}>
-        <header className={styles.mobileDashboardHeader}>
-          <span>LỘ TRÌNH CỦA EM</span>
-          <div>
-            <h3>Hôm nay em nên học gì?</h3>
-            <span className={styles.mobileGoalChip}>
-              Mục tiêu <strong>8.5+</strong>
-            </span>
-          </div>
-        </header>
-
-        <div className={styles.mobileTaskList}>
-          <article className={styles.mobileLessonCard}>
-            <div className={styles.mobileLessonHeading}>
-              <span className={styles.mobileStepBadge}>1</span>
-              <span className={styles.mobileTaskIcon} aria-hidden="true">
-                <BookOpen size={24} strokeWidth={1.9} />
-              </span>
-              <h4>Phương pháp đổi biến số</h4>
-            </div>
-
-            <div className={styles.mobileProgressRow}>
-              <div
-                className={styles.mobileProgressTrack}
-                role="progressbar"
-                aria-label="Tiến độ Phương pháp đổi biến số"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={progress}
-              >
-                <span style={{ width: `${progress}%` }} />
-              </div>
-              <strong>{progress}%</strong>
-            </div>
-
-            <div className={styles.mobileLessonFooter}>
-              <span>
-                <Clock3 size={14} strokeWidth={1.9} aria-hidden="true" />
-                Bài học · Toán 12
-              </span>
-              <Link href="/auth/register" className={styles.mobileTaskCta}>
-                Học
-                <ArrowRight size={15} strokeWidth={2.1} aria-hidden="true" />
-              </Link>
-            </div>
-          </article>
-
-          <article
-            className={`${styles.mobilePracticeCard} ${lessonComplete ? styles.mobilePracticeActive : ''}`}
-            aria-live="polite"
+          <div
+            className={`${styles.demoScene} ${lessonVisible ? styles.demoSceneLesson : practiceVisible ? styles.demoScenePractice : styles.demoSceneRoadmap}`}
+            data-demo-scene
           >
-            <div className={styles.mobilePracticeHeading}>
-              <span className={styles.mobileStepBadge}>2</span>
-              <span className={styles.mobilePracticeIcon} aria-hidden="true">
-                <Dumbbell size={22} strokeWidth={1.9} />
-              </span>
-              <div>
-                <h4>5 câu luyện trọng tâm</h4>
-                {lessonComplete ? (
-                  <span className={styles.mobilePracticeMeta}>5 câu · ~7 phút</span>
-                ) : (
-                  <span className={styles.mobilePracticeLock}>
-                    <LockKeyhole size={14} strokeWidth={1.9} aria-hidden="true" />
-                    Mở sau khi hoàn thành bài học phía trên
-                  </span>
-                )}
-              </div>
-              {lessonComplete ? (
-                <Link href="/auth/register" className={styles.mobilePracticeCta}>
-                  Luyện tập
-                  <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
-                </Link>
-              ) : null}
-            </div>
-          </article>
-        </div>
-
-        <div className={styles.mobileStatsGrid} aria-label="Tiến độ học tập">
-          {STATS.map(({ value, label, Icon, tone }) => (
-            <article key={label} className={styles.mobileStatCard}>
-              <div>
-                <span className={styles[`mobileStat_${tone}`]} aria-hidden="true">
-                  <Icon size={16} strokeWidth={2} />
-                </span>
-                <strong>{value}</strong>
-              </div>
-              <small>{label}</small>
-            </article>
-          ))}
-        </div>
-
-        <aside className={styles.mobileInsight} aria-label="Lý do Tú Tài chọn bài học">
-          <header>
-            <span aria-hidden="true">
-              <Lightbulb size={19} strokeWidth={1.9} />
-            </span>
-            <h4>Vì sao Tú Tài chọn bài này?</h4>
-          </header>
-
-          <dl className={styles.mobileInsightRows}>
-            <div>
-              <dt>Mục tiêu của em</dt>
-              <dd>8.5+</dd>
-            </div>
-            <div>
-              <dt>Chủ đề cần cải thiện</dt>
-              <dd>Đổi biến số</dd>
-            </div>
-            <div>
-              <dt>5 câu gần nhất</dt>
-              <dd className={styles.mobileWarning}>Sai 3 câu</dd>
-            </div>
-          </dl>
-
-          <p>Vì vậy, đây là phần Tú Tài ưu tiên cho em hôm nay.</p>
-
-          <button
-            type="button"
-            className={styles.mobileInsightCta}
-            onClick={() => setLessonComplete(true)}
-            disabled={lessonComplete}
-          >
-            {lessonComplete ? (
-              <>
-                <CheckCircle2 size={17} strokeWidth={2} aria-hidden="true" />
-                Đã hoàn thành
-              </>
+            {lessonVisible ? (
+              <LessonExperience scene={demoScene} />
+            ) : practiceVisible ? (
+              <PracticeExperience scene={demoScene} />
             ) : (
-              <>
-                Học ngay
-                <ArrowRight size={17} strokeWidth={2.1} aria-hidden="true" />
-              </>
-            )}
-          </button>
+              <div
+                className={styles.roadmapExperience}
+                data-completed={lessonCompleted ? 'true' : 'false'}
+                data-unlocking={practiceUnlocking ? 'true' : 'false'}
+              >
+                <header className={styles.productHeader}>
+                  <div>
+                    <span className={styles.todayLabel}>LỘ TRÌNH CỦA EM</span>
+                    <h3>Hôm nay em nên học gì?</h3>
+                  </div>
+                  <span className={styles.goalChip}>
+                    <Target size={15} strokeWidth={2} aria-hidden={true} />
+                    Mục tiêu <strong>8.5+</strong>
+                  </span>
+                </header>
 
-          <span className={styles.mobileInsightLock}>
-            <LockKeyhole size={15} strokeWidth={1.9} aria-hidden="true" />
-            {lessonComplete
-              ? '5 câu luyện trọng tâm đã được mở'
-              : 'Hoàn thành bài này để mở 5 câu luyện trọng tâm'}
-          </span>
-        </aside>
+                <div className={styles.taskList}>
+                  <TodayTaskCard
+                    index={1}
+                    title="Phương pháp đổi biến số"
+                    progress={lessonCompleted ? 100 : 35}
+                    meta={lessonCompleted ? 'Đã hoàn thành' : 'Bài học · Toán 12'}
+                    action={lessonCompleted ? 'Xem lại' : 'Học'}
+                    completed={lessonCompleted}
+                  />
+                  <div
+                    className={styles.unlockBridge}
+                    data-visible={practiceUnlocking ? 'true' : 'false'}
+                    aria-hidden={practiceUnlocking ? undefined : 'true'}
+                  >
+                    <span />
+                    Bài học hoàn thành · Đang mở khóa luyện tập
+                  </div>
+                  <TodayTaskCard
+                    index={2}
+                    title="3 câu luyện trọng tâm"
+                    progress={0}
+                    meta={practiceUnlocked ? '3 câu · ~5 phút' : 'Bài luyện · Toán 12'}
+                    note={
+                      practiceUnlocking
+                        ? 'Bài học hoàn thành · Đang mở khóa…'
+                        : practiceUnlocked
+                          ? 'Đã mở khóa · Sẵn sàng luyện tập'
+                          : 'Mở khóa khi hoàn thành Bài học 1'
+                    }
+                    action="Luyện tập"
+                    secondary
+                    unlocked={practiceUnlocked}
+                    unlocking={practiceUnlocking}
+                  />
+                </div>
+
+                <MiniStatCards />
+                <RecommendationReasonCard />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+      <ProductDemoCursor hostRef={productStageRef} onSceneChange={setDemoScene} />
     </div>
   );
 }
@@ -593,7 +840,6 @@ export function TransformationSection() {
         </div>
 
         <ProductShowcaseShell />
-        <MobileProductShowcase />
       </div>
     </div>
   );

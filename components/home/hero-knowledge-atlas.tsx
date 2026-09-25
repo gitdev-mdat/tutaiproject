@@ -1002,26 +1002,6 @@ export function HeroKnowledgeAtlas() {
                     strokeOpacity="0.1"
                     strokeLinecap="round"
                   />
-                  <line
-                    x1="285"
-                    y1="240"
-                    x2="355"
-                    y2="420"
-                    stroke="#0052FF"
-                    strokeWidth="1"
-                    strokeOpacity="0.14"
-                    strokeLinecap="round"
-                  />
-                  <line
-                    x1="195"
-                    y1="380"
-                    x2="355"
-                    y2="420"
-                    stroke="#0052FF"
-                    strokeWidth="1"
-                    strokeOpacity="0.12"
-                    strokeLinecap="round"
-                  />
 
                   {/* Animated travel highlights — one or two paths fire occasionally */}
                   {!reducedMotion && (
@@ -1036,18 +1016,6 @@ export function HeroKnowledgeAtlas() {
                         style={{
                           animation: 'hero-path-travel 8s ease-in-out infinite 4s',
                           opacity: 0.6,
-                        }}
-                      />
-                      <path
-                        d="M 285 240 Q 362 310 355 420"
-                        stroke="#5B9BFF"
-                        strokeWidth="1.5"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray="4 10"
-                        style={{
-                          animation: 'hero-path-travel 9s ease-in-out infinite 7s',
-                          opacity: 0.5,
                         }}
                       />
                     </>
@@ -1120,38 +1088,12 @@ export function HeroKnowledgeAtlas() {
                   <circle cx="380" cy="78" r="5" fill="url(#nodeGlow)" opacity="0.4" />
                   <circle cx="380" cy="78" r="2" fill="#0052FF" opacity="0.75" />
 
-                  <circle
-                    cx="440"
-                    cy="195"
-                    r="7"
-                    fill="url(#nodeGlowGreen)"
-                    opacity="0.35"
-                    style={
-                      !reducedMotion
-                        ? { animation: 'hero-node-pulse 7s ease-in-out infinite 2s' }
-                        : undefined
-                    }
-                  />
-                  <circle cx="440" cy="195" r="3" fill="#00C896" opacity="0.85" />
-
                   {/* Bottom cluster */}
                   <circle cx="195" cy="380" r="5.5" fill="url(#nodeGlow)" opacity="0.38" />
                   <circle cx="195" cy="380" r="2.2" fill="#0052FF" opacity="0.8" />
 
                   <circle cx="390" cy="350" r="4.5" fill="url(#nodeGlow)" opacity="0.32" />
                   <circle cx="390" cy="350" r="1.8" fill="#0052FF" opacity="0.7" />
-
-                  <circle cx="355" cy="420" r="6" fill="url(#nodeGlowGreen)" opacity="0.35" />
-                  <circle cx="355" cy="420" r="2.5" fill="#00C896" opacity="0.85" />
-                  <path
-                    d={`M ${355 - 2.5} ${420} l 2 2 3.5-3.5`}
-                    stroke="white"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    opacity="0.85"
-                  />
 
                   {/* Floating mini-nodes (ambient particles) — some drift slowly */}
                   <circle
@@ -1212,11 +1154,6 @@ export function HeroKnowledgeAtlas() {
                   {/* Light aura behind the image */}
                   <div
                     className={`${styles.studentAura} ${!reducedMotion ? 'hero-aura-breathe' : ''}`}
-                    style={{
-                      background:
-                        'radial-gradient(ellipse 80% 80% at 50% 55%, rgba(0,82,255,0.14) 0%, rgba(0,82,255,0.05) 50%, transparent 75%)',
-                      filter: 'blur(8px)',
-                    }}
                     aria-hidden="true"
                   />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1224,15 +1161,6 @@ export function HeroKnowledgeAtlas() {
                     src="/assets/graduated.png"
                     alt="Học sinh hoàn thành lộ trình cá nhân trên Tú Tài"
                     className={styles.studentImage}
-                    style={{
-                      borderRadius: '24px',
-                      maskImage:
-                        'linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
-                      WebkitMaskImage:
-                        'linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
-                      filter:
-                        'drop-shadow(0 16px 40px rgba(0,82,255,0.12)) drop-shadow(0 6px 16px rgba(0,0,0,0.05))',
-                    }}
                   />
                 </div>
 

@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import * as React from 'react';
 import { ArrowRight, BarChart3, BookOpen, Clock3, FileText, Gift, Trophy } from 'lucide-react';
 
 import { CompetitionCountdown } from '@/components/competitions/competition-countdown';
@@ -33,6 +36,11 @@ function getPrizeCount(rankFrom: number, rankTo: number) {
 }
 
 export function CompetitionSection() {
+  const sectionRef = React.useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [participantCount, setParticipantCount] = React.useState(
+    Math.max(0, featuredCompetition.participantCount - 24)
+  );
   const competition = featuredCompetition;
   const participantPreview = competition.participantPreview ?? [];
   const remainingParticipants = Math.max(
@@ -40,8 +48,51 @@ export function CompetitionSection() {
     competition.participantCount - participantPreview.length
   );
 
+  React.useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setIsVisible(true);
+        observer.disconnect();
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    if (!isVisible) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const animationFrame = window.requestAnimationFrame(() => {
+        setParticipantCount(competition.participantCount);
+      });
+      return () => window.cancelAnimationFrame(animationFrame);
+    }
+
+    const from = Math.max(0, competition.participantCount - 24);
+    const duration = 720;
+    const startedAt = performance.now();
+    let animationFrame = 0;
+
+    const updateCount = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setParticipantCount(Math.round(from + (competition.participantCount - from) * eased));
+      if (progress < 1) animationFrame = window.requestAnimationFrame(updateCount);
+    };
+
+    animationFrame = window.requestAnimationFrame(updateCount);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [competition.participantCount, isVisible]);
+
   return (
-    <div className={styles.section}>
+    <div ref={sectionRef} className={styles.section} data-visible={isVisible}>
       <div className={styles.arenaLines} aria-hidden="true" />
       <div className={styles.sparkleOne} aria-hidden="true" />
       <div className={styles.sparkleTwo} aria-hidden="true" />
@@ -55,9 +106,11 @@ export function CompetitionSection() {
             </div>
 
             <h2 className={styles.headline}>
-              Học chắc kiến thức.
-              <span>Tranh tài thật.</span>
-              Nhận thưởng xứng đáng.
+              <span className={styles.headlineLine}>Học chắc kiến thức.</span>
+              <span className={`${styles.headlineLine} ${styles.headlineAccent}`}>
+                Tranh tài thật.
+              </span>
+              <span className={styles.headlineLine}>Nhận thưởng xứng đáng.</span>
             </h2>
 
             <p className={styles.description}>
@@ -124,7 +177,9 @@ export function CompetitionSection() {
                 <div className={styles.prizeHero}>
                   <div>
                     <span>TỔNG GIẢI THƯỞNG</span>
-                    <strong>{formatCurrency(competition.prizePool)}</strong>
+                    <strong className={styles.prizeAmount}>
+                      {formatCurrency(competition.prizePool)}
+                    </strong>
                     <small>Ghi nhận nỗ lực. Tôn vinh tri thức.</small>
                   </div>
                   <div className={styles.trophyVisual} aria-hidden="true">
@@ -179,8 +234,7 @@ export function CompetitionSection() {
                   </div>
                   <div>
                     <strong>
-                      {new Intl.NumberFormat('vi-VN').format(competition.participantCount)} học sinh
-                      đã tham gia
+                      {new Intl.NumberFormat('vi-VN').format(participantCount)} học sinh đã tham gia
                     </strong>
                     <span>Cùng tranh tài, cùng tiến bộ.</span>
                   </div>

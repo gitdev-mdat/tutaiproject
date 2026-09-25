@@ -3,20 +3,20 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
 import styles from './product-demo-cursor.module.css';
+import { NEXT_PRODUCT_DEMO_SCENE, type ProductDemoScene } from './product-demo-sequence';
+
+export type { ProductDemoScene } from './product-demo-sequence';
 
 export const productDemoHostClassName = styles.demoHost;
 
 interface ProductDemoCursorProps {
   hostRef: RefObject<HTMLDivElement | null>;
+  onSceneChange: (scene: ProductDemoScene) => void;
 }
 
-interface DemoPosition {
+interface Point {
   x: number;
   y: number;
-  startX: number;
-  startY: number;
-  exitX: number;
-  exitY: number;
 }
 
 function waitFor(ms: number, signal: AbortSignal) {
@@ -40,15 +40,18 @@ function waitFor(ms: number, signal: AbortSignal) {
   });
 }
 
-export function ProductDemoCursor({ hostRef }: ProductDemoCursorProps) {
+export function ProductDemoCursor({ hostRef, onSceneChange }: ProductDemoCursorProps) {
   const cursorRef = useRef<SVGSVGElement>(null);
+  const sceneChangeRef = useRef(onSceneChange);
+
+  useEffect(() => {
+    sceneChangeRef.current = onSceneChange;
+  }, [onSceneChange]);
 
   useEffect(() => {
     const host = hostRef.current;
     const cursor = cursorRef.current;
-    const action = host?.querySelector<HTMLElement>("[data-demo-action='primary']");
-
-    if (!host || !cursor || !action) return;
+    if (!host || !cursor) return;
 
     const desktopQuery = window.matchMedia(
       '(min-width: 1024px) and (hover: hover) and (pointer: fine)'
@@ -56,49 +59,45 @@ export function ProductDemoCursor({ hostRef }: ProductDemoCursorProps) {
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     let sectionVisible = false;
-    let pointerInside = false;
     let focusInside = false;
     let clickedInside = false;
     let pageVisible = !document.hidden;
     let startTimer: number | undefined;
     let cycleController: AbortController | null = null;
-    let position: DemoPosition | null = null;
+    let currentScene: ProductDemoScene = 'ROADMAP_LOCKED';
 
-    const canPlay = () =>
-      desktopQuery.matches &&
-      !reducedMotionQuery.matches &&
-      sectionVisible &&
-      pageVisible &&
-      !pointerInside &&
-      !focusInside &&
-      !clickedInside;
+    const canStart = () =>
+      sectionVisible && pageVisible && !focusInside && !clickedInside && cycleController === null;
+    const canContinue = () => !focusInside && !clickedInside;
 
-    const measure = () => {
+    const applyScene = (scene: ProductDemoScene) => {
+      host.dataset.demoState = scene;
+      sceneChangeRef.current(scene);
+    };
+
+    const advanceTo = (scene: ProductDemoScene) => {
+      if (NEXT_PRODUCT_DEMO_SCENE[currentScene] !== scene) return false;
+      currentScene = scene;
+      applyScene(scene);
+      return true;
+    };
+
+    const measureTarget = (selector: string): Point | null => {
+      const target = host.querySelector<HTMLElement>(selector);
+      if (!target) return null;
       const hostRect = host.getBoundingClientRect();
-      const actionRect = action.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      if (!hostRect.width || !hostRect.height) return null;
 
-      if (hostRect.width === 0 || hostRect.height === 0) {
-        position = null;
-        return;
-      }
-
-      const x = actionRect.left - hostRect.left + actionRect.width * 0.66;
-      const y = actionRect.top - hostRect.top + actionRect.height * 0.55;
-      const startX = Math.min(hostRect.width - 30, Math.max(x + 96, hostRect.width * 0.84));
-      const startY = Math.min(hostRect.height - 36, Math.max(y + 128, hostRect.height * 0.72));
-
-      position = {
-        x,
-        y,
-        startX,
-        startY,
-        exitX: Math.min(hostRect.width - 30, x + 34),
-        exitY: Math.min(hostRect.height - 36, y + 24),
+      return {
+        x: targetRect.left - hostRect.left + targetRect.width * 0.62,
+        y: targetRect.top - hostRect.top + targetRect.height * 0.55,
       };
     };
 
     const resetVisuals = () => {
-      host.removeAttribute('data-demo-state');
+      currentScene = 'ROADMAP_LOCKED';
+      applyScene('ROADMAP_LOCKED');
       cursor.getAnimations().forEach((animation) => animation.cancel());
       cursor.style.opacity = '0';
       cursor.style.transform = '';
@@ -115,8 +114,9 @@ export function ProductDemoCursor({ hostRef }: ProductDemoCursorProps) {
     };
 
     const schedule = (delay: number) => {
+      if (cycleController) return;
       if (startTimer !== undefined) window.clearTimeout(startTimer);
-      if (!canPlay()) return;
+      if (!canStart()) return;
 
       startTimer = window.setTimeout(() => {
         startTimer = undefined;
@@ -124,150 +124,223 @@ export function ProductDemoCursor({ hostRef }: ProductDemoCursorProps) {
       }, delay);
     };
 
-    const playCycle = async () => {
-      if (!canPlay()) return;
-
-      measure();
-      if (!position) return;
-
-      const controller = new AbortController();
-      const { signal } = controller;
-      cycleController = controller;
-
-      const { x, y, startX, startY, exitX, exitY } = position;
-      const approach = cursor.animate(
+    const animateCursor = async (
+      from: Point,
+      to: Point,
+      duration: number,
+      signal: AbortSignal,
+      fadeIn = false
+    ) => {
+      const movement = cursor.animate(
         [
           {
-            opacity: 0,
-            transform: `translate3d(${startX}px, ${startY}px, 0) rotate(1.5deg)`,
+            opacity: fadeIn ? 0 : 1,
+            transform: `translate3d(${from.x}px, ${from.y}px, 0) rotate(1deg)`,
           },
           {
-            offset: 0.14,
+            offset: 0.72,
             opacity: 1,
-            transform: `translate3d(${startX - 8}px, ${startY - 10}px, 0) rotate(1deg)`,
+            transform: `translate3d(${to.x + 18}px, ${to.y + 12}px, 0) rotate(0.3deg)`,
           },
-          {
-            offset: 0.68,
-            opacity: 1,
-            transform: `translate3d(${x + 38}px, ${y + 24}px, 0) rotate(0.35deg)`,
-          },
-          { opacity: 1, transform: `translate3d(${x}px, ${y}px, 0) rotate(0deg)` },
+          { opacity: 1, transform: `translate3d(${to.x}px, ${to.y}px, 0) rotate(0deg)` },
         ],
         {
-          duration: 1200,
+          duration: reducedMotionQuery.matches ? 1 : duration,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards',
         }
       );
+      await movement.finished.catch(() => undefined);
+      return !signal.aborted && canContinue();
+    };
 
-      host.dataset.demoState = 'moving';
-      await approach.finished.catch(() => undefined);
-      if (signal.aborted || !canPlay()) return;
-
-      host.dataset.demoState = 'hover';
-      if (!(await waitFor(380, signal)) || !canPlay()) return;
-
-      host.dataset.demoState = 'press';
+    const pressCursor = async (point: Point, signal: AbortSignal) => {
       const press = cursor.animate(
         [
-          { opacity: 1, transform: `translate3d(${x}px, ${y}px, 0)` },
-          { opacity: 1, transform: `translate3d(${x + 1}px, ${y + 2}px, 0)` },
-          { opacity: 1, transform: `translate3d(${x}px, ${y}px, 0)` },
-        ],
-        { duration: 140, easing: 'ease-out', fill: 'forwards' }
-      );
-      await press.finished.catch(() => undefined);
-      if (signal.aborted || !canPlay()) return;
-
-      host.dataset.demoState = 'confirm';
-      if (!(await waitFor(920, signal)) || !canPlay()) return;
-
-      host.dataset.demoState = 'exit';
-      const exit = cursor.animate(
-        [
-          { opacity: 1, transform: `translate3d(${x}px, ${y}px, 0)` },
+          { opacity: 1, transform: `translate3d(${point.x}px, ${point.y}px, 0) scale(1)` },
           {
-            opacity: 0,
-            transform: `translate3d(${exitX}px, ${exitY}px, 0) rotate(1deg)`,
+            opacity: 1,
+            transform: `translate3d(${point.x + 1}px, ${point.y + 2}px, 0) scale(0.94)`,
           },
+          { opacity: 1, transform: `translate3d(${point.x}px, ${point.y}px, 0) scale(1)` },
         ],
         {
-          duration: 650,
-          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          duration: reducedMotionQuery.matches ? 1 : 140,
+          easing: 'ease-out',
           fill: 'forwards',
         }
       );
-      await exit.finished.catch(() => undefined);
-      if (signal.aborted) return;
+      await press.finished.catch(() => undefined);
+      return !signal.aborted && canContinue();
+    };
+
+    const hideCursor = async (point: Point) => {
+      const fade = cursor.animate(
+        [
+          { opacity: 1, transform: `translate3d(${point.x}px, ${point.y}px, 0)` },
+          { opacity: 0, transform: `translate3d(${point.x + 16}px, ${point.y + 10}px, 0)` },
+        ],
+        {
+          duration: reducedMotionQuery.matches ? 1 : 260,
+          easing: 'ease-out',
+          fill: 'forwards',
+        }
+      );
+      await fade.finished.catch(() => undefined);
+    };
+
+    const hold = async (scene: ProductDemoScene, duration: number, signal: AbortSignal) => {
+      if (!advanceTo(scene)) return false;
+      const adjusted = reducedMotionQuery.matches ? Math.min(duration, 500) : duration;
+      return (await waitFor(adjusted, signal)) && canContinue();
+    };
+
+    const playCycle = async () => {
+      if (!canStart()) return;
+
+      const learnTarget = measureTarget("[data-demo-action='primary']");
+      const hostRect = host.getBoundingClientRect();
+      if (!learnTarget || !hostRect.width || !hostRect.height) return;
+
+      const controller = new AbortController();
+      const { signal } = controller;
+      cycleController = controller;
+      const start = {
+        x: Math.min(hostRect.width - 34, Math.max(learnTarget.x + 104, hostRect.width * 0.84)),
+        y: Math.min(hostRect.height - 42, Math.max(learnTarget.y + 132, hostRect.height * 0.76)),
+      };
+
+      if (!advanceTo('LEARN_APPROACH')) return;
+      if (!(await animateCursor(start, learnTarget, 900, signal, true))) return;
+      if (!(await hold('LEARN_HOVER', 750, signal))) return;
+      if (!advanceTo('LEARN_PRESS')) return;
+      if (!(await pressCursor(learnTarget, signal))) return;
+      await hideCursor(learnTarget);
+      if (!canContinue() || signal.aborted) return;
+
+      if (!(await hold('LESSON_ENTERING', 450, signal))) return;
+      if (!(await hold('LESSON_STEP_1', 700, signal))) return;
+      if (!(await hold('LESSON_STEP_2', 750, signal))) return;
+      if (!(await hold('LESSON_STEP_3', 800, signal))) return;
+      if (!(await hold('LESSON_COMPLETE', 1300, signal))) return;
+      if (!(await hold('ROADMAP_LESSON_COMPLETE', 900, signal))) return;
+      if (!(await hold('PRACTICE_UNLOCKING', 1200, signal))) return;
+      if (!(await hold('PRACTICE_READY', 900, signal))) return;
+
+      const practiceTarget = measureTarget("[data-demo-action='secondary']");
+      if (!practiceTarget) return;
+      if (!advanceTo('PRACTICE_APPROACH')) return;
+      if (
+        !(await animateCursor(
+          { x: learnTarget.x - 22, y: learnTarget.y - 10 },
+          practiceTarget,
+          850,
+          signal,
+          true
+        ))
+      )
+        return;
+      if (!(await hold('PRACTICE_HOVER', 700, signal))) return;
+      if (!advanceTo('PRACTICE_PRESS')) return;
+      if (!(await pressCursor(practiceTarget, signal))) return;
+      await hideCursor(practiceTarget);
+      if (!canContinue() || signal.aborted) return;
+
+      if (!(await hold('PRACTICE_ACTIVE', 650, signal))) return;
+      const answerOneTarget = measureTarget("[data-demo-answer='correct']");
+      if (!answerOneTarget) return;
+      if (!advanceTo('PRACTICE_Q1_APPROACH')) return;
+      if (
+        !(await animateCursor(
+          { x: answerOneTarget.x + 70, y: answerOneTarget.y + 52 },
+          answerOneTarget,
+          450,
+          signal,
+          true
+        ))
+      )
+        return;
+      if (!(await hold('PRACTICE_Q1_HOVER', 320, signal))) return;
+      if (!advanceTo('PRACTICE_Q1_PRESS')) return;
+      if (!(await pressCursor(answerOneTarget, signal))) return;
+      if (!(await hold('PRACTICE_Q1_FEEDBACK', 1000, signal))) return;
+
+      if (!(await hold('PRACTICE_Q2', 350, signal))) return;
+      const answerTwoTarget = measureTarget("[data-demo-answer='correct']");
+      if (!answerTwoTarget) return;
+      if (!advanceTo('PRACTICE_Q2_APPROACH')) return;
+      if (!(await animateCursor(answerOneTarget, answerTwoTarget, 500, signal))) return;
+      if (!(await hold('PRACTICE_Q2_HOVER', 300, signal))) return;
+      if (!advanceTo('PRACTICE_Q2_PRESS')) return;
+      if (!(await pressCursor(answerTwoTarget, signal))) return;
+      if (!(await hold('PRACTICE_Q2_FEEDBACK', 950, signal))) return;
+
+      if (!(await hold('PRACTICE_Q3', 350, signal))) return;
+      const answerThreeTarget = measureTarget("[data-demo-answer='correct']");
+      if (!answerThreeTarget) return;
+      if (!advanceTo('PRACTICE_Q3_APPROACH')) return;
+      if (!(await animateCursor(answerTwoTarget, answerThreeTarget, 550, signal))) return;
+      if (!(await hold('PRACTICE_Q3_HOVER', 320, signal))) return;
+      if (!advanceTo('PRACTICE_Q3_PRESS')) return;
+      if (!(await pressCursor(answerThreeTarget, signal))) return;
+      if (!(await hold('PRACTICE_Q3_FEEDBACK', 1100, signal))) return;
+
+      if (!(await hold('PRACTICE_COMPLETE', 650, signal))) return;
+      if (!(await hold('CELEBRATING', 1800, signal))) return;
+      if (!(await hold('FINAL_SUMMARY', 1600, signal))) return;
+
+      if (!advanceTo('RESETTING')) return;
+      await hideCursor(answerThreeTarget);
+      if (!(await waitFor(reducedMotionQuery.matches ? 120 : 700, signal)) || signal.aborted)
+        return;
 
       cycleController = null;
-      resetVisuals();
-      schedule(6500);
-    };
-
-    const pauseForInteraction = () => {
-      stop();
-    };
-
-    const handlePointerEnter = () => {
-      pointerInside = true;
-      pauseForInteraction();
+      if (!advanceTo('ROADMAP_LOCKED')) return;
+      cursor.getAnimations().forEach((animation) => animation.cancel());
+      cursor.style.opacity = '0';
+      cursor.style.transform = '';
+      schedule(1400);
     };
 
     const handlePointerLeave = () => {
-      pointerInside = false;
       clickedInside = false;
       schedule(3000);
     };
-
     const handleFocusIn = () => {
       focusInside = true;
-      pauseForInteraction();
+      stop();
     };
-
     const handleFocusOut = () => {
-      window.setTimeout(() => {
+      window.queueMicrotask(() => {
         focusInside = host.contains(document.activeElement);
         if (!focusInside) {
           clickedInside = false;
           schedule(3000);
         }
-      }, 0);
+      });
     };
-
     const handlePointerDown = () => {
       clickedInside = true;
-      pauseForInteraction();
+      stop();
     };
-
     const handleVisibilityChange = () => {
       pageVisible = !document.hidden;
       if (pageVisible) schedule(900);
-      else stop();
     };
-
     const handleMediaChange = () => {
-      if (desktopQuery.matches && !reducedMotionQuery.matches) {
-        host.dataset.demoEnabled = 'true';
-        measure();
-        schedule(900);
-      } else {
-        host.removeAttribute('data-demo-enabled');
-        stop();
-      }
+      if (desktopQuery.matches) host.dataset.demoEnabled = 'true';
+      else host.removeAttribute('data-demo-enabled');
+      schedule(900);
     };
 
     const intersectionObserver = new IntersectionObserver(
       ([entry]) => {
         sectionVisible = entry.isIntersecting && entry.intersectionRatio >= 0.4;
-        if (sectionVisible) schedule(800);
-        else stop();
+        if (sectionVisible) schedule(1600);
       },
       { threshold: [0, 0.4, 0.5] }
     );
-    const resizeObserver = new ResizeObserver(measure);
 
-    host.addEventListener('pointerenter', handlePointerEnter);
     host.addEventListener('pointerleave', handlePointerLeave);
     host.addEventListener('pointerdown', handlePointerDown);
     host.addEventListener('focusin', handleFocusIn);
@@ -276,14 +349,13 @@ export function ProductDemoCursor({ hostRef }: ProductDemoCursorProps) {
     desktopQuery.addEventListener('change', handleMediaChange);
     reducedMotionQuery.addEventListener('change', handleMediaChange);
     intersectionObserver.observe(host);
-    resizeObserver.observe(host);
+    resetVisuals();
     handleMediaChange();
 
     return () => {
       stop();
       host.removeAttribute('data-demo-enabled');
       host.removeAttribute('data-demo-state');
-      host.removeEventListener('pointerenter', handlePointerEnter);
       host.removeEventListener('pointerleave', handlePointerLeave);
       host.removeEventListener('pointerdown', handlePointerDown);
       host.removeEventListener('focusin', handleFocusIn);
@@ -292,7 +364,6 @@ export function ProductDemoCursor({ hostRef }: ProductDemoCursorProps) {
       desktopQuery.removeEventListener('change', handleMediaChange);
       reducedMotionQuery.removeEventListener('change', handleMediaChange);
       intersectionObserver.disconnect();
-      resizeObserver.disconnect();
     };
   }, [hostRef]);
 
