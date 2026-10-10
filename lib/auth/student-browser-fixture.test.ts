@@ -14,13 +14,13 @@ import {
   type FixtureDependencies,
 } from './student-browser-fixture';
 import { readAuthDatabase } from './store';
-import { findOrCreateGoogleUser, saveOnboarding } from './auth-service';
+import { findOrCreateGoogleUser, findStudentByUserId, saveOnboarding } from './auth-service';
 import { ensureStudentAssignment, resolveStudentLifecycle } from '@/lib/student/lifecycle';
 
 const realDependencies: FixtureDependencies = {
   findOrCreateUser: findOrCreateGoogleUser,
   saveOnboarding,
-  readDatabase: readAuthDatabase,
+  findStudent: findStudentByUserId,
   ensureAssignment: ensureStudentAssignment,
   resolveLifecycle: resolveStudentLifecycle,
 };

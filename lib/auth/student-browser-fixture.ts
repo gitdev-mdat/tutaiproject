@@ -1,8 +1,7 @@
 import 'server-only';
 
-import { findOrCreateGoogleUser, saveOnboarding } from './auth-service';
+import { findOrCreateGoogleUser, findStudentByUserId, saveOnboarding } from './auth-service';
 import { setSessionCookie } from './session';
-import { readAuthDatabase } from './store';
 import { ensureStudentAssignment, resolveStudentLifecycle } from '@/lib/student/lifecycle';
 
 const FIXTURE_SUBJECT = 'tutai-browser-active-student-v1';
@@ -63,7 +62,7 @@ export function assertStudentBrowserFixtureEnvironment(
 export type FixtureDependencies = {
   findOrCreateUser: typeof findOrCreateGoogleUser;
   saveOnboarding: typeof saveOnboarding;
-  readDatabase: typeof readAuthDatabase;
+  findStudent: typeof findStudentByUserId;
   ensureAssignment: typeof ensureStudentAssignment;
   resolveLifecycle: typeof resolveStudentLifecycle;
 };
@@ -75,7 +74,7 @@ export type FixtureSessionDependencies = FixtureDependencies & {
 const defaultDependencies: FixtureDependencies = {
   findOrCreateUser: findOrCreateGoogleUser,
   saveOnboarding,
-  readDatabase: readAuthDatabase,
+  findStudent: findStudentByUserId,
   ensureAssignment: ensureStudentAssignment,
   resolveLifecycle: resolveStudentLifecycle,
 };
@@ -134,13 +133,10 @@ export async function ensureActiveStudentBrowserFixture(
     })
   );
 
-  const database = await fixtureStage(
-    'FIXTURE_AUTH_STORE_UNAVAILABLE',
-    'profile_lookup',
-    dependencies.readDatabase
+  const student = await fixtureStage('FIXTURE_AUTH_STORE_UNAVAILABLE', 'profile_lookup', () =>
+    dependencies.findStudent(user.id)
   );
-  const profile = database.studentProfiles.find((candidate) => candidate.userId === user.id);
-  if (!profile) {
+  if (!student) {
     throw new StudentFixtureError(
       'FIXTURE_PROFILE_MISSING',
       'profile_lookup',
@@ -148,27 +144,21 @@ export async function ensureActiveStudentBrowserFixture(
     );
   }
   await fixtureStage('FIXTURE_ASSIGNMENT_FAILED', 'assignment', () =>
-    dependencies.ensureAssignment(profile.id)
+    dependencies.ensureAssignment(student.profile.id)
   );
 
-  const refreshed = await fixtureStage(
-    'FIXTURE_AUTH_STORE_UNAVAILABLE',
-    'profile_refresh',
-    dependencies.readDatabase
+  const refreshed = await fixtureStage('FIXTURE_AUTH_STORE_UNAVAILABLE', 'profile_refresh', () =>
+    dependencies.findStudent(user.id)
   );
-  const refreshedProfile = refreshed.studentProfiles.find(
-    (candidate) => candidate.userId === user.id
-  );
-  const learning = refreshed.learningProfiles.find(
-    (candidate) => candidate.studentId === refreshedProfile?.id
-  );
-  if (!refreshedProfile) {
+  if (!refreshed) {
     throw new StudentFixtureError(
       'FIXTURE_PROFILE_MISSING',
       'profile_refresh',
       'Fixture student profile disappeared after assignment.'
     );
   }
+  const refreshedProfile = refreshed.profile;
+  const learning = refreshed.learning;
   const lifecycle = await fixtureStage('FIXTURE_LIFECYCLE_INVALID', 'lifecycle', () =>
     dependencies.resolveLifecycle({
       user,
