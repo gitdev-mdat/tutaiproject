@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AdminDashboard } from '@/components/admin/admin-dashboard';
 import { readKnowledgeTree } from '@/lib/knowledge-tree/knowledge-tree-storage';
 import { getAllOrders } from '@/lib/db/payment-db';
+import { requireAdminPage } from '@/lib/auth/admin';
 
 export const metadata: Metadata = {
   title: 'Tổng quan | Admin',
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminHomePage() {
+  await requireAdminPage('/admin');
   const tree = await readKnowledgeTree();
   const orders = await getAllOrders();
 
