@@ -349,6 +349,22 @@ export function validateSnapshot(database: AuthDatabase): { errors: string[]; wa
   if (withoutLearning) warnings.push(`${withoutLearning} profile(s) have no learning profile`);
   const expired = database.sessions.filter((s) => Date.parse(s.expiresAt) <= Date.now()).length;
   if (expired) warnings.push(`${expired} session(s) already expired (imported as-is)`);
+  // The file store used to link Google to unverified password accounts by
+  // email. Such accounts may belong to whoever registered the password; they
+  // are imported unchanged and listed for a manual review.
+  const providers = new Map<string, Set<string>>();
+  for (const identity of database.identities) {
+    const set = providers.get(identity.userId) ?? new Set<string>();
+    set.add(identity.provider);
+    providers.set(identity.userId, set);
+  }
+  const mixed = [...providers.values()].filter(
+    (set) => set.has('password') && set.has('google')
+  ).length;
+  if (mixed)
+    warnings.push(
+      `${mixed} user(s) have both a password and a Google identity; review them for the old automatic linking`
+    );
   return { errors, warnings };
 }
 

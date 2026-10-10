@@ -1,8 +1,8 @@
 import 'server-only';
 
 import type postgres from 'postgres';
-import { getSql } from '@/lib/db/postgres';
-import { AuthError } from './errors';
+import { getSql, withDatabaseRetry } from '@/lib/db/postgres';
+import { AuthError, unverifiedAccountLinkError } from './errors';
 import type { AuthRepository, NewAccount } from './repository';
 import type {
   AssignmentAttempt,
@@ -108,7 +108,7 @@ async function insertAccount(tx: Tx, { user, identity, profile, learning }: NewA
             ${learning.targetScore}, ${learning.updatedAt})`;
 }
 
-export const postgresAuthRepository: AuthRepository = {
+const repository: AuthRepository = {
   async createPasswordUser(account) {
     try {
       await getSql().begin((tx) => insertAccount(tx, account));
@@ -148,14 +148,18 @@ export const postgresAuthRepository: AuthRepository = {
             where i.provider = 'google' and i.provider_account_id = ${subject}`;
           if (linked) return { user: toUser(linked), created: false };
 
-          const [existing] = await tx`
-            update tutai.users set
-              email_verified_at = coalesce(email_verified_at, ${now}),
-              display_name = coalesce(nullif(display_name, ''), ${displayName}),
-              avatar_url = coalesce(nullif(avatar_url, ''), ${avatarUrl}),
-              updated_at = ${now}
-            where email = ${email}
-            returning *`;
+          const [owner] = await tx`
+            select email_verified_at from tutai.users where email = ${email} for update`;
+          if (owner && !owner.email_verified_at) throw unverifiedAccountLinkError();
+          const [existing] = owner
+            ? await tx`
+                update tutai.users set
+                  display_name = coalesce(nullif(display_name, ''), ${displayName}),
+                  avatar_url = coalesce(nullif(avatar_url, ''), ${avatarUrl}),
+                  updated_at = ${now}
+                where email = ${email}
+                returning *`
+            : [];
           if (existing) {
             await tx`
               insert into tutai.identities (id, user_id, provider, provider_account_id, password_hash, created_at)
@@ -170,6 +174,30 @@ export const postgresAuthRepository: AuthRepository = {
         throw error;
       }
     }
+  },
+
+  async consumeRateLimit(key, windowMs) {
+    const sql = getSql();
+    const [row] = await sql`
+      insert into tutai.rate_limits as r (key, count, window_started_at)
+      values (${key}, 1, now())
+      on conflict (key) do update set
+        count = case when r.window_started_at <= now() - ${windowMs} * interval '1 millisecond'
+          then 1 else r.count + 1 end,
+        window_started_at = case when r.window_started_at <= now() - ${windowMs} * interval '1 millisecond'
+          then now() else r.window_started_at end
+      returning count`;
+    // Windows are at most a day long; drop old counters now and then.
+    if (Math.random() < 0.01) {
+      await sql`delete from tutai.rate_limits where window_started_at < now() - interval '1 day'`.catch(
+        () => undefined
+      );
+    }
+    return row.count as number;
+  },
+
+  async resetRateLimit(key) {
+    await getSql()`delete from tutai.rate_limits where key = ${key}`;
   },
 
   async createSession(record, replaceExisting) {
@@ -344,3 +372,26 @@ export const postgresAuthRepository: AuthRepository = {
     };
   },
 };
+
+// Methods that only read, or whose effect is the same when repeated. The
+// others each run one statement or one transaction, and are retried only when
+// that never reached the server (see withDatabaseRetry).
+const IDEMPOTENT = new Set<keyof AuthRepository>([
+  'findPasswordLogin',
+  'findSession',
+  'deleteSession',
+  'resetRateLimit',
+  'countProfiles',
+  'findStudentByUserId',
+  'findAssignment',
+]);
+
+export const postgresAuthRepository = Object.fromEntries(
+  Object.entries(repository).map(([name, method]) => [
+    name,
+    (...args: unknown[]) =>
+      withDatabaseRetry(() => (method as (...a: unknown[]) => Promise<unknown>)(...args), {
+        idempotent: IDEMPOTENT.has(name as keyof AuthRepository),
+      }),
+  ])
+) as unknown as AuthRepository;

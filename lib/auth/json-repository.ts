@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { AuthError } from './errors';
+import { AuthError, unverifiedAccountLinkError } from './errors';
 import type { AuthRepository } from './repository';
 import { authTransaction, readAuthDatabase } from './store';
 import type { AuthDatabase } from './types';
@@ -13,7 +13,25 @@ function findByIdentifier(database: AuthDatabase, identifier: string) {
   );
 }
 
+// Rate-limit counters stay in memory: the file store serves one local process.
+const rateLimits = new Map<string, { count: number; windowStartedAt: number }>();
+
 export const jsonAuthRepository: AuthRepository = {
+  async consumeRateLimit(key, windowMs) {
+    const now = Date.now();
+    const current = rateLimits.get(key);
+    const next =
+      current && now - current.windowStartedAt < windowMs
+        ? { count: current.count + 1, windowStartedAt: current.windowStartedAt }
+        : { count: 1, windowStartedAt: now };
+    rateLimits.set(key, next);
+    return next.count;
+  },
+
+  async resetRateLimit(key) {
+    rateLimits.delete(key);
+  },
+
   async createPasswordUser({ user, identity, profile, learning }) {
     await authTransaction((database) => {
       if (user.username && database.users.some((item) => item.username === user.username)) {
@@ -60,7 +78,7 @@ export const jsonAuthRepository: AuthRepository = {
         database.studentProfiles.push(newAccount.profile);
         database.learningProfiles.push(newAccount.learning);
       } else {
-        user.emailVerifiedAt = user.emailVerifiedAt ?? now;
+        if (!user.emailVerifiedAt) throw unverifiedAccountLinkError();
         user.displayName = user.displayName || displayName;
         user.avatarUrl = user.avatarUrl || avatarUrl;
         user.updatedAt = now;

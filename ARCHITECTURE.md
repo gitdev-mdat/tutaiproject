@@ -44,6 +44,12 @@ Form/button      ──Server Action (app/**/actions.ts)─▶ lib/<domain> serv
 
 - Sessions: `lib/auth/session.ts` sets an httpOnly `tutai_session` cookie; the session
   record lives in the auth store. Password and Google sign-in are supported.
+- Google sign-in links to an existing account by email only when that account's email is
+  already verified. A password account's email is never verified, so Google sign-in with
+  the same address is refused (`ACCOUNT_LINK_REQUIRES_VERIFICATION`) rather than handing
+  the account, or an `ADMIN_EMAILS` entry, to whoever registered it first.
+- Password sign-in and reset requests are rate limited per account and per client address
+  (`RATE_LIMITS` in `lib/auth/auth-service.ts`, counters in `tutai.rate_limits`).
 - Students: `app/student/layout.tsx` requires a session and an active student lifecycle;
   student API routes call `requireDemoStudentSession()` and only touch that student's data.
 - Admins: `lib/auth/admin.ts`. An admin is a signed-in user whose **verified** email (today:
@@ -119,6 +125,7 @@ one group at a time, the same way accounts did.
 | `NEXT_PUBLIC_SITE_URL`                                            | Canonical URLs, sitemap, robots               |
 | `DATABASE_URL`                                                    | PostgreSQL for accounts (server only)         |
 | `DATABASE_POOL_MAX`                                               | Connections per server instance (default 3)   |
+| `DATABASE_CA_CERT`                                                | Database CA (PEM) to verify TLS; else encrypt |
 | `AUTH_STORE_DRIVER=json`                                          | Use the JSON account file outside `next dev`  |
 | `TEST_DATABASE_URL`                                               | Throwaway `*_test` database for DB tests      |
 | `AUTH_STORE_PATH`, `TUTAI_EXAMS_FILE`                             | Override JSON store locations                 |

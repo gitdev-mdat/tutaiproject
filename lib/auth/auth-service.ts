@@ -119,17 +119,54 @@ export async function registerCredential(input: {
   return user;
 }
 
+const RATE_WINDOW_LOGIN_MS = 15 * 60 * 1000;
+const RATE_WINDOW_RESET_MS = 60 * 60 * 1000;
+/** Attempts allowed per window. Accounts are keyed by identifier, clients by address. */
+export const RATE_LIMITS = {
+  loginPerAccount: 10,
+  loginPerClient: 50,
+  resetPerAccount: 3,
+  resetPerClient: 20,
+} as const;
+
+function rateKey(kind: string, value: string): string {
+  return `${kind}:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+/**
+ * Signs in with a password. Attempts are counted per account and per client
+ * address (when known) before the password is checked, so guessing is capped
+ * at RATE_LIMITS per 15 minutes; a successful sign-in clears the account count.
+ */
 export async function authenticateCredential(
   identifierInput: string,
-  password: string
+  password: string,
+  clientAddress?: string | null
 ): Promise<AuthUser> {
   const identifier = identifierInput.includes('@')
     ? normalizeEmail(identifierInput)
     : normalizeUsername(identifierInput);
-  const login = await (await getAuthRepository()).findPasswordLogin(identifier);
+  const repository = await getAuthRepository();
+  const accountKey = rateKey('login-account', identifier);
+  const accountCount = await repository.consumeRateLimit(accountKey, RATE_WINDOW_LOGIN_MS);
+  const clientCount = clientAddress
+    ? await repository.consumeRateLimit(
+        rateKey('login-client', clientAddress),
+        RATE_WINDOW_LOGIN_MS
+      )
+    : 0;
+  if (accountCount > RATE_LIMITS.loginPerAccount || clientCount > RATE_LIMITS.loginPerClient) {
+    throw new AuthError(
+      'RATE_LIMITED',
+      'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 15 phút.',
+      429
+    );
+  }
+  const login = await repository.findPasswordLogin(identifier);
   if (!login || !(await verifyPassword(password, login.passwordHash))) {
     throw new AuthError('INVALID_CREDENTIALS', GENERIC_CREDENTIAL_ERROR, 401);
   }
+  await repository.resetRateLimit(accountKey);
   return login.user;
 }
 
@@ -283,15 +320,31 @@ export async function saveOnboarding(
   });
 }
 
-export async function requestPasswordReset(identifierInput: string): Promise<string | null> {
+/** Returns null without creating a token when the account or client asked too often. */
+export async function requestPasswordReset(
+  identifierInput: string,
+  clientAddress?: string | null
+): Promise<string | null> {
   const identifier = identifierInput.includes('@')
     ? normalizeEmail(identifierInput)
     : normalizeUsername(identifierInput);
+  const repository = await getAuthRepository();
+  const accountCount = await repository.consumeRateLimit(
+    rateKey('reset-account', identifier),
+    RATE_WINDOW_RESET_MS
+  );
+  const clientCount = clientAddress
+    ? await repository.consumeRateLimit(
+        rateKey('reset-client', clientAddress),
+        RATE_WINDOW_RESET_MS
+      )
+    : 0;
+  if (accountCount > RATE_LIMITS.resetPerAccount || clientCount > RATE_LIMITS.resetPerClient) {
+    return null;
+  }
   const token = randomBytes(32).toString('base64url');
   const now = new Date();
-  const created = await (
-    await getAuthRepository()
-  ).createPasswordReset(identifier, {
+  const created = await repository.createPasswordReset(identifier, {
     id: randomUUID(),
     tokenHash: tokenHash(token),
     expiresAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),

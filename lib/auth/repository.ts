@@ -47,6 +47,12 @@ export interface AuthRepository {
     studentId: string,
     plan: (state: AssignmentState) => AssignmentPlan
   ): Promise<AssignmentPlan>;
+  /**
+   * Counts one attempt against `key` in a fixed window that starts at the
+   * first attempt, and returns the count so far, this attempt included.
+   */
+  consumeRateLimit(key: string, windowMs: number): Promise<number>;
+  resetRateLimit(key: string): Promise<void>;
   findAssignment(studentId: string): Promise<{
     enrollment: StudentEnrollment | null;
     latestAttempt: AssignmentAttempt | null;

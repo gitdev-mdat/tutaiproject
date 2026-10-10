@@ -13,6 +13,7 @@ import path from 'node:path';
 import postgres from 'postgres';
 import {
   AuthError,
+  RATE_LIMITS,
   authenticateCredential,
   createSession,
   findOrCreateGoogleUser,
@@ -26,6 +27,8 @@ import {
 } from './auth-service';
 import { importAuthSnapshot, parseSnapshot, validateSnapshot } from './import-json';
 import { readAuthDatabase } from './store';
+import { evaluateAdminAccess } from './admin';
+import { ACCOUNT_LINK_REQUIRES_VERIFICATION } from './errors';
 import { closeSql } from '@/lib/db/postgres';
 import { runMigrations } from '@/lib/db/migrations';
 import { ensureStudentAssignment, resolveStudentLifecycle } from '@/lib/student/lifecycle';
@@ -168,25 +171,106 @@ describe.skipIf(!TEST_DATABASE_URL).sequential('PostgreSQL auth store', () => {
     });
     expect(again).toMatchObject({ created: false, user: { id: created.user.id } });
 
-    const passwordUser = await registerCredential({
+    // A verified account (for example one imported with a verified email)
+    // still links by email.
+    const verifiedUser = await registerCredential({
       username: 'pg_linked',
       email: 'linked@example.com',
       password: 'mat-khau-dung-1',
       fullName: 'Linked',
       phone: '0865689102',
     });
+    await admin`update tutai.users set email_verified_at = now() where id = ${verifiedUser.id}`;
     const linked = await findOrCreateGoogleUser({
       subject: 'g-2',
       email: 'linked@example.com',
       emailVerified: true,
       displayName: 'Linked Google',
     });
-    expect(linked).toMatchObject({ created: false, user: { id: passwordUser.id } });
-    expect(linked.user.emailVerifiedAt).not.toBeNull();
-    expect(await getProfileCount(passwordUser.id)).toBe(1);
+    expect(linked).toMatchObject({ created: false, user: { id: verifiedUser.id } });
+    expect(await getProfileCount(verifiedUser.id)).toBe(1);
     const identities = await admin`
-      select provider from tutai.identities where user_id = ${passwordUser.id} order by provider`;
+      select provider from tutai.identities where user_id = ${verifiedUser.id} order by provider`;
     expect(identities.map((row) => row.provider)).toEqual(['google', 'password']);
+  });
+
+  it('never hands a pre-registered unverified account to a Google sign-in', async () => {
+    const squatter = await registerCredential({
+      username: 'pg_squatter',
+      email: 'admin.owner@example.com',
+      password: 'Attacker-password-01!',
+      fullName: 'Squatter',
+      phone: '0865689102',
+    });
+    const { token } = await createSession(squatter.id);
+
+    // Concurrent attempts all fail the same way and leave nothing behind.
+    const attempts = await Promise.allSettled(
+      Array.from({ length: 3 }, () =>
+        findOrCreateGoogleUser({
+          subject: 'g-owner',
+          email: 'Admin.Owner@example.com',
+          emailVerified: true,
+          displayName: 'Real Owner',
+        })
+      )
+    );
+    for (const attempt of attempts) {
+      expect(attempt).toMatchObject({
+        status: 'rejected',
+        reason: { code: ACCOUNT_LINK_REQUIRES_VERIFICATION, status: 409 },
+      });
+    }
+
+    const [user] = await admin`
+      select email_verified_at, display_name from tutai.users where id = ${squatter.id}`;
+    expect(user).toEqual({ email_verified_at: null, display_name: null });
+    const identities = await admin`
+      select provider from tutai.identities where user_id = ${squatter.id}`;
+    expect(identities.map((row) => row.provider)).toEqual(['password']);
+    const [{ count }] = await admin`
+      select count(*)::int as count from tutai.identities where provider_account_id = 'g-owner'`;
+    expect(count).toBe(0);
+
+    const session = await resolveSession(token);
+    expect(
+      evaluateAdminAccess(session!.user, {
+        NODE_ENV: 'production',
+        ADMIN_EMAILS: 'admin.owner@example.com',
+      })
+    ).toEqual({ allowed: false, reason: 'forbidden' });
+  });
+
+  it('throttles password guesses and password-reset requests in the database', async () => {
+    await register('pg_throttled');
+    for (let attempt = 0; attempt < RATE_LIMITS.loginPerAccount; attempt += 1) {
+      await expect(authenticateCredential('pg_throttled', 'sai-mat-khau')).rejects.toMatchObject({
+        code: 'INVALID_CREDENTIALS',
+      });
+    }
+    await expect(authenticateCredential('pg_throttled', 'mat-khau-dung-1')).rejects.toMatchObject({
+      code: 'RATE_LIMITED',
+    });
+    // Counters are shared through the database, not per process, and never
+    // store the identifier itself.
+    const keys = await admin`select key, count from tutai.rate_limits`;
+    expect(keys.length).toBeGreaterThan(0);
+    for (const row of keys) {
+      expect(row.key).toMatch(/^[a-z-]+:[0-9a-f]{64}$/);
+      expect(row.key).not.toContain('pg_throttled');
+    }
+    // An expired window starts over.
+    await admin`update tutai.rate_limits set window_started_at = now() - interval '16 minutes'`;
+    await expect(authenticateCredential('pg_throttled', 'mat-khau-dung-1')).resolves.toMatchObject({
+      username: 'pg_throttled',
+    });
+
+    const tokens = [];
+    for (let attempt = 0; attempt <= RATE_LIMITS.resetPerAccount; attempt += 1) {
+      tokens.push(await requestPasswordReset('pg_throttled'));
+    }
+    expect(tokens.slice(0, RATE_LIMITS.resetPerAccount).every(Boolean)).toBe(true);
+    expect(tokens.at(-1)).toBeNull();
   });
 
   it('saves onboarding and assigns a programme once', async () => {
