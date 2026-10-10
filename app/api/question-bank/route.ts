@@ -7,7 +7,6 @@ import {
 } from '@/lib/question-bank/qb-knowledge-utils';
 import {
   appendAuditEntry,
-  getMetrics,
   getQuestionByContentHash,
   listQuestions,
   saveQuestion,
@@ -118,17 +117,6 @@ export async function GET(req: Request) {
     };
 
     return NextResponse.json(await listQuestions(filter));
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET_metrics() {
-  try {
-    return NextResponse.json(await getMetrics());
   } catch (error: unknown) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
