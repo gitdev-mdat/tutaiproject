@@ -73,23 +73,39 @@ Form/button      ──Server Action (app/**/actions.ts)─▶ lib/<domain> serv
 
 ## Persistence
 
-All mutable data is JSON on the local filesystem:
+### Accounts, sessions and student profiles: PostgreSQL
 
-| Data                         | File                                                    |
-| ---------------------------- | ------------------------------------------------------- |
-| Accounts, sessions, profiles | `data/runtime/auth-store.json` (`AUTH_STORE_PATH`)      |
-| Knowledge tree and lessons   | `data/knowledge-tree/tree.json`, `articles.json`        |
-| Question bank and assets     | `data/question-bank/**`                                 |
-| Exams                        | `data/exams/exams.json` (`TUTAI_EXAMS_FILE`)            |
-| Knowledge graph              | `data/knowledge-graph/graph.json`                       |
-| Orders and subscriptions     | `data/mock-orders.json`, `data/mock-subscriptions.json` |
-| Student roadmaps             | `data/roadmaps/student-roadmaps.json`                   |
-| Import sessions              | `tmp/content-imports/**`                                |
+- Tables live in the `tutai` schema (not `public`, so Supabase's REST API does not expose
+  them; row level security is on with no policies, and `anon`/`authenticated` get nothing).
+  Only server code connects, through `lib/db/postgres.ts` with `DATABASE_URL`.
+- Schema changes are SQL files in `db/migrations/`, applied in order by `pnpm db:migrate`
+  and recorded in `tutai.schema_migrations`. Never edit an applied file; add a new one.
+- `lib/auth/auth-service.ts` validates and hashes, then calls an `AuthRepository`
+  (`lib/auth/repository.ts`). `postgres-repository.ts` is the durable store;
+  `json-repository.ts` keeps the original file store for local work and tests.
+- Driver choice (`resolveAuthStoreDriver`): PostgreSQL whenever `DATABASE_URL` is set. The
+  JSON file is used only under `next dev` and tests, or with `AUTH_STORE_DRIVER=json`, and
+  never on Vercel. There is no automatic fallback: if PostgreSQL is down, sign-in and
+  signed-in pages fail, and the landing page shows its signed-out state.
+- `pnpm db:import-auth` copies an `auth-store.json` snapshot into PostgreSQL (dry run unless
+  `--apply`; see the script header).
+
+### Everything else: JSON files
+
+| Data                       | File                                                    |
+| -------------------------- | ------------------------------------------------------- |
+| Accounts (local dev only)  | `data/runtime/auth-store.json` (`AUTH_STORE_PATH`)      |
+| Knowledge tree and lessons | `data/knowledge-tree/tree.json`, `articles.json`        |
+| Question bank and assets   | `data/question-bank/**`                                 |
+| Exams                      | `data/exams/exams.json` (`TUTAI_EXAMS_FILE`)            |
+| Knowledge graph            | `data/knowledge-graph/graph.json`                       |
+| Orders and subscriptions   | `data/mock-orders.json`, `data/mock-subscriptions.json` |
+| Student roadmaps           | `data/roadmaps/student-roadmaps.json`                   |
+| Import sessions            | `tmp/content-imports/**`                                |
 
 This works on a single long-running server. On Vercel the filesystem is not durable, so
-writes are lost between instances and deployments. Moving to a managed Postgres database is
-the main open infrastructure decision; the storage modules listed above are the seam where a
-database implementation would replace the file reads and writes.
+writes are lost between instances and deployments. These modules move to PostgreSQL next,
+one group at a time, the same way accounts did.
 
 ## Environment variables
 
@@ -101,6 +117,10 @@ database implementation would replace the file reads and writes.
 | `GEMINI_*_MODEL`, `KNOWLEDGE_AI_PROVIDER`                         | Model overrides, mock provider for local work |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Google sign-in                                |
 | `NEXT_PUBLIC_SITE_URL`                                            | Canonical URLs, sitemap, robots               |
+| `DATABASE_URL`                                                    | PostgreSQL for accounts (server only)         |
+| `DATABASE_POOL_MAX`                                               | Connections per server instance (default 3)   |
+| `AUTH_STORE_DRIVER=json`                                          | Use the JSON account file outside `next dev`  |
+| `TEST_DATABASE_URL`                                               | Throwaway `*_test` database for DB tests      |
 | `AUTH_STORE_PATH`, `TUTAI_EXAMS_FILE`                             | Override JSON store locations                 |
 
 ## Checks
@@ -109,5 +129,6 @@ database implementation would replace the file reads and writes.
 pnpm exec tsc --noEmit   # types
 pnpm lint                # ESLint + Prettier
 pnpm test                # Vitest (lib/** and features/** suites listed in vitest.config.ts)
+TEST_DATABASE_URL=postgres://…/tutai_test pnpm test lib/auth   # also runs the PostgreSQL suite
 pnpm build               # production build
 ```
