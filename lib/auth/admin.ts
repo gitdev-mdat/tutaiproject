@@ -12,11 +12,13 @@ import { getAuthSession } from './session';
  * means the account signed in with Google; password accounts never have one,
  * so registering someone else's address does not grant access.
  *
- * When ADMIN_EMAILS is not set, local development stays open (as it was
- * before this guard existed) and production denies every request.
+ * Local development without Google sign-in can opt in to an open admin area
+ * with ADMIN_DEV_BYPASS=1. The opt-in is honoured only when NODE_ENV is
+ * 'development' (`next dev`); `next start`, previews and production ignore it.
+ * Anything else that is not an allowlisted admin is denied.
  */
 
-type AdminEnv = { NODE_ENV?: string; ADMIN_EMAILS?: string };
+type AdminEnv = { NODE_ENV?: string; ADMIN_EMAILS?: string; ADMIN_DEV_BYPASS?: string };
 
 type SessionUser = { id: string; email: string | null; emailVerifiedAt: string | null };
 
@@ -37,22 +39,16 @@ export function evaluateAdminAccess(
   user: SessionUser | null,
   env: AdminEnv = process.env
 ): AdminAccess {
-  const allowlist = parseAdminEmails(env.ADMIN_EMAILS);
-
-  if (allowlist.size === 0) {
-    if (env.NODE_ENV !== 'production') {
-      return { allowed: true, adminId: user?.id ?? 'local-development', via: 'local-development' };
-    }
-    return { allowed: false, reason: user ? 'forbidden' : 'unauthenticated' };
-  }
-
-  if (!user) return { allowed: false, reason: 'unauthenticated' };
-
-  const email = user.email?.trim().toLowerCase();
-  if (email && user.emailVerifiedAt && allowlist.has(email)) {
+  const email = user?.email?.trim().toLowerCase();
+  if (user && email && user.emailVerifiedAt && parseAdminEmails(env.ADMIN_EMAILS).has(email)) {
     return { allowed: true, adminId: user.id, via: 'allowlist' };
   }
-  return { allowed: false, reason: 'forbidden' };
+
+  if (env.NODE_ENV === 'development' && env.ADMIN_DEV_BYPASS === '1') {
+    return { allowed: true, adminId: user?.id ?? 'local-development', via: 'local-development' };
+  }
+
+  return { allowed: false, reason: user ? 'forbidden' : 'unauthenticated' };
 }
 
 export async function getAdminAccess(): Promise<AdminAccess> {

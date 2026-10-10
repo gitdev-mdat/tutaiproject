@@ -13,23 +13,34 @@ describe('admin access', () => {
     expect(parseAdminEmails(undefined).size).toBe(0);
   });
 
-  it('keeps local development open when no allowlist is configured', () => {
-    expect(evaluateAdminAccess(null, { NODE_ENV: 'development' })).toEqual({
+  it('denies everyone when nothing is configured, in every environment', () => {
+    for (const NODE_ENV of ['development', 'test', 'production', undefined]) {
+      expect(evaluateAdminAccess(null, { NODE_ENV })).toEqual({
+        allowed: false,
+        reason: 'unauthenticated',
+      });
+      expect(evaluateAdminAccess(verifiedAdmin, { NODE_ENV })).toEqual({
+        allowed: false,
+        reason: 'forbidden',
+      });
+    }
+  });
+
+  it('opens the admin area only with the explicit opt-in under next dev', () => {
+    expect(evaluateAdminAccess(null, { NODE_ENV: 'development', ADMIN_DEV_BYPASS: '1' })).toEqual({
       allowed: true,
       adminId: 'local-development',
       via: 'local-development',
     });
-  });
-
-  it('denies everyone in production when no allowlist is configured', () => {
-    expect(evaluateAdminAccess(null, { NODE_ENV: 'production' })).toEqual({
-      allowed: false,
-      reason: 'unauthenticated',
-    });
-    expect(evaluateAdminAccess(verifiedAdmin, { NODE_ENV: 'production' })).toEqual({
-      allowed: false,
-      reason: 'forbidden',
-    });
+    for (const NODE_ENV of ['production', 'test', undefined]) {
+      expect(evaluateAdminAccess(null, { NODE_ENV, ADMIN_DEV_BYPASS: '1' })).toEqual({
+        allowed: false,
+        reason: 'unauthenticated',
+      });
+    }
+    expect(
+      evaluateAdminAccess(null, { NODE_ENV: 'development', ADMIN_DEV_BYPASS: 'true' })
+    ).toEqual({ allowed: false, reason: 'unauthenticated' });
   });
 
   it('allows a verified email on the allowlist', () => {
@@ -41,8 +52,8 @@ describe('admin access', () => {
     ).toEqual({ allowed: true, adminId: 'user-admin', via: 'allowlist' });
   });
 
-  it('rejects unverified emails, other emails and anonymous callers once configured', () => {
-    const env = { NODE_ENV: 'development', ADMIN_EMAILS: 'admin@example.com' };
+  it('rejects unverified emails, other emails and anonymous callers', () => {
+    const env = { NODE_ENV: 'production', ADMIN_EMAILS: 'admin@example.com' };
     expect(evaluateAdminAccess({ ...verifiedAdmin, emailVerifiedAt: null }, env)).toEqual({
       allowed: false,
       reason: 'forbidden',
