@@ -9,7 +9,7 @@ dist
 build
 
 # Generated files
-/tsconfig.tsbuildinfo
+*.tsbuildinfo
 *.lock
 package-lock.json
 pnpm-lock.yaml
