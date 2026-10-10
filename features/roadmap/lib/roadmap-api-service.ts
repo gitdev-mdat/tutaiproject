@@ -5,9 +5,12 @@ import type {
   RoadmapWeek,
   StudentRoadmap,
   StudentRoadmapDashboard,
+  StudentRoadmapSnapshot,
 } from './types';
 
-type RoadmapResponse = { roadmap: StudentRoadmap; dashboard: StudentRoadmapDashboard };
+type RoadmapResponse = StudentRoadmapSnapshot;
+
+let snapshotRequest: Promise<RoadmapResponse> | null = null;
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -23,12 +26,28 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export class ApiRoadmapService implements RoadmapService {
+  getStudentRoadmapSnapshot(force = false): Promise<StudentRoadmapSnapshot> {
+    if (!force && snapshotRequest) return snapshotRequest;
+
+    const pending = request<RoadmapResponse>('/api/student/roadmap');
+    snapshotRequest = pending;
+    void pending.then(
+      () => {
+        if (snapshotRequest === pending) snapshotRequest = null;
+      },
+      () => {
+        if (snapshotRequest === pending) snapshotRequest = null;
+      }
+    );
+    return pending;
+  }
+
   async getStudentRoadmap(): Promise<StudentRoadmap | null> {
-    return (await request<RoadmapResponse>('/api/student/roadmap')).roadmap;
+    return (await this.getStudentRoadmapSnapshot()).roadmap;
   }
 
   async getStudentRoadmapDashboard(): Promise<StudentRoadmapDashboard> {
-    const dashboard = (await request<RoadmapResponse>('/api/student/roadmap')).dashboard;
+    const dashboard = (await this.getStudentRoadmapSnapshot()).dashboard;
     if (!dashboard) throw new Error('Chưa có lộ trình');
     return dashboard;
   }

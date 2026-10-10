@@ -1,7 +1,21 @@
 import * as React from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getAuthSession } from '@/lib/auth/session';
+import {
+  isOnboardingLifecycle,
+  lifecycleDestination,
+  resolveAndEnsureStudentLifecycle,
+} from '@/lib/student/lifecycle';
 
-export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
+  const session = await getAuthSession();
+  if (!session) redirect('/auth/login?returnTo=%2Fonboarding%2Fprofile');
+
+  const lifecycle = await resolveAndEnsureStudentLifecycle(session);
+  if (!isOnboardingLifecycle(lifecycle.state)) {
+    redirect(lifecycleDestination(lifecycle.state));
+  }
   return (
     <div className="flex min-h-screen flex-col bg-[#F8FAFC] font-sans text-[#091224] selection:bg-blue-200">
       <header className="w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-sm sticky top-0 z-20">

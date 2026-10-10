@@ -20,6 +20,8 @@ export default defineConfig({
       'lib/question-bank/**/*.test.ts',
       'lib/content-import/**/*.test.ts',
       'lib/admin/**/*.test.ts',
+      'lib/auth/**/*.test.ts',
+      'features/roadmap/**/*.test.ts',
       'features/progress/**/*.test.ts',
       'features/student-experience/**/*.test.ts',
     ],

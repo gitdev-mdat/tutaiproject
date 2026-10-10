@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { clearSessionCookie } from '@/lib/auth/session';
 
 export async function POST() {
-  const cookieStore = await cookies();
-  cookieStore.delete('tutai_demo_session');
+  await clearSessionCookie();
 
   return NextResponse.json({ success: true });
 }

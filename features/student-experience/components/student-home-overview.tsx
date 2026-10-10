@@ -115,77 +115,117 @@ function AcademicArtwork() {
   );
 }
 
+/**
+ * Supporting-rank section glyph (presentation only).
+ *
+ * Section icons sit one tier below the page anchor and the single accent
+ * next-action, so they render smaller and lighter than before to keep
+ * "Hoạt động học tập" / "Tiến độ khóa học" clearly subordinate.
+ */
 function SectionIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <span className={styles.sectionIcon} aria-hidden="true">
-      <Icon size={22} strokeWidth={2.25} />
+    <span className={styles.sectionIcon} data-rank="supporting" aria-hidden="true">
+      <Icon size={18} strokeWidth={2} />
     </span>
   );
 }
 
-function ActivityChart({ series }: { series: DashboardActivityPoint[] }) {
+function ActivityChart({
+  series,
+  periodLabel,
+}: {
+  series: DashboardActivityPoint[];
+  periodLabel: string;
+}) {
   const reducedMotion = useReducedMotion();
   const [ready, setReady] = React.useState(false);
-  const hasData = series.some((point) => point.practice + point.exams > 0);
-  const visualSeries = hasData
-    ? series
-    : series.map((point, index) => ({
-        ...point,
-        practice: [2, 5, 6, 7, 6, 4, 2][index] ?? 2,
-        exams: [4, 7, 9, 12, 10, 7, 3][index] ?? 3,
-      }));
-  const max = Math.max(15, ...visualSeries.flatMap((point) => [point.practice, point.exams]));
+  const total = series.reduce((sum, point) => sum + point.practice + point.exams, 0);
+  const hasData = total > 0;
+  const peak = series.reduce((top, point) => Math.max(top, point.practice, point.exams), 0);
+  // Scale is derived from the real series only — never from fabricated values.
+  const max = Math.max(4, Math.ceil(peak / 4) * 4);
+  const guides = [max, (max * 3) / 4, max / 2, max / 4, 0];
 
   React.useEffect(() => {
     const frame = window.requestAnimationFrame(() => setReady(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  const barHeight = (value: number) => {
+    if (value <= 0) return 0;
+    if (!reducedMotion && !ready) return 0;
+    return `${Math.max(4, (value / max) * 100)}%`;
+  };
+
   return (
     <div className={styles.chart} data-empty={!hasData || undefined}>
       <div className={styles.chartPlot}>
-        {[15, 10, 5, 0].map((guide) => (
+        {guides.map((guide) => (
           <div key={guide} className={styles.guide} style={{ bottom: `${(guide / max) * 100}%` }}>
             <span>{guide}</span>
           </div>
         ))}
         <div
           className={styles.barGroups}
-          style={{ gridTemplateColumns: `repeat(${visualSeries.length}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${series.length}, minmax(0, 1fr))` }}
+          aria-hidden={!hasData || undefined}
         >
-          {visualSeries.map((point, index) => (
+          {series.map((point, index) => (
             <div className={styles.barGroup} key={`${point.label}-${index}`}>
               <div
                 className={styles.bars}
-                tabIndex={0}
+                tabIndex={hasData ? 0 : -1}
                 aria-label={`${point.label}: ${point.practice} luyện đề, ${point.exams} luyện thi`}
               >
-                <span
-                  className={`${styles.bar} ${styles.practiceBar}`}
-                  style={{
-                    height:
-                      reducedMotion || ready ? `${Math.max(7, (point.practice / max) * 100)}%` : 0,
-                    transitionDelay: `${index * 45}ms`,
-                  }}
-                />
-                <span
-                  className={`${styles.bar} ${styles.examBar}`}
-                  style={{
-                    height:
-                      reducedMotion || ready ? `${Math.max(9, (point.exams / max) * 100)}%` : 0,
-                    transitionDelay: `${index * 45 + 35}ms`,
-                  }}
-                />
-                <span className={styles.tooltip}>
-                  <strong>{point.practice + point.exams} bài</strong>
-                  <small>{point.label}</small>
-                  {!hasData && <em>Dữ liệu minh họa</em>}
-                </span>
+                {point.practice > 0 && (
+                  <span
+                    className={`${styles.bar} ${styles.practiceBar}`}
+                    style={{
+                      height: barHeight(point.practice),
+                      transitionDelay: `${index * 45}ms`,
+                    }}
+                  />
+                )}
+                {point.exams > 0 && (
+                  <span
+                    className={`${styles.bar} ${styles.examBar}`}
+                    style={{
+                      height: barHeight(point.exams),
+                      transitionDelay: `${index * 45 + 35}ms`,
+                    }}
+                  />
+                )}
+                {point.practice + point.exams === 0 && (
+                  <span className={styles.zeroMark} aria-hidden="true" />
+                )}
+                {hasData && (
+                  <span className={styles.tooltip}>
+                    <strong>{point.practice + point.exams} bài</strong>
+                    <small>{point.label}</small>
+                  </span>
+                )}
               </div>
               <span className={styles.dayLabel}>{point.label}</span>
             </div>
           ))}
         </div>
+        {!hasData && (
+          <div className={styles.chartEmpty}>
+            <p className={styles.chartEmptyTitle}>Chưa có hoạt động nào</p>
+            <p className={styles.chartEmptyBody}>
+              Bạn chưa hoàn thành bài luyện đề hay luyện thi nào trong kỳ “{periodLabel}”. Hoàn
+              thành một đề để bắt đầu theo dõi tiến độ.
+            </p>
+            <Link
+              href="/student/practice"
+              className={styles.chartEmptyAction}
+              data-tone="supporting"
+            >
+              Bắt đầu luyện đề
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+        )}
       </div>
       <div className={styles.legend}>
         <span>
@@ -196,7 +236,9 @@ function ActivityChart({ series }: { series: DashboardActivityPoint[] }) {
           <i className={styles.examDot} />
           Luyện thi
         </span>
-        {!hasData && <small>Chưa có hoạt động trong kỳ này</small>}
+        <small>
+          {hasData ? `Tổng ${total} bài · ${periodLabel}` : `Chưa có dữ liệu · ${periodLabel}`}
+        </small>
       </div>
     </div>
   );
@@ -219,11 +261,76 @@ function ProgressBar({ value, delay = 0 }: { value: number; delay?: number }) {
   );
 }
 
+/**
+ * DATA TRUTH GUARD (presentation only — no business rule change).
+ *
+ * The activity series must never contradict the KPI tiles for the same period.
+ * When the period summary reports zero completed practice/exam items, any
+ * non-zero bar is fabricated fallback data, so we normalise the series to zero
+ * and let the already-built honest empty state render instead.
+ */
+function reconcileActivitySeries(
+  series: DashboardActivityPoint[],
+  summary: { practiceCompleted: number; examsCompleted: number }
+): DashboardActivityPoint[] {
+  const reportedTotal = summary.practiceCompleted + summary.examsCompleted;
+  if (reportedTotal > 0) return series;
+  const seriesTotal = series.reduce((sum, point) => sum + point.practice + point.exams, 0);
+  if (seriesTotal === 0) return series;
+  return series.map((point) => ({ ...point, practice: 0, exams: 0 }));
+}
+
+/**
+ * Dominant next-action affordance (presentation only).
+ *
+ * One accent-filled CTA per screen. The title/meta are passed through verbatim
+ * from existing presentation data so the lesson named here stays identical to
+ * the lead item rendered elsewhere on the page.
+ */
+function PrimaryNextAction({
+  eyebrow,
+  title,
+  meta,
+  href,
+  actionLabel,
+  progress,
+  progressLabel,
+}: {
+  eyebrow: string;
+  title: string;
+  meta?: string;
+  href: string;
+  actionLabel: string;
+  progress?: number;
+  progressLabel?: string;
+}) {
+  return (
+    <section className={`${styles.card} ${styles.nextAction}`} data-rank="hero">
+      <div className={styles.nextActionCopy}>
+        <p className={styles.nextActionEyebrow}>{eyebrow}</p>
+        <p className={styles.nextActionTitle}>{title}</p>
+        {meta ? <p className={styles.nextActionMeta}>{meta}</p> : null}
+        {typeof progress === 'number' ? (
+          <div className={styles.nextActionProgress}>
+            <ProgressBar value={progress} />
+            {progressLabel ? <small>{progressLabel}</small> : null}
+          </div>
+        ) : null}
+      </div>
+      <Link href={href} className={styles.nextActionButton}>
+        <Play size={16} strokeWidth={2.6} />
+        {actionLabel}
+        <ArrowRight size={16} strokeWidth={2.4} />
+      </Link>
+    </section>
+  );
+}
+
 function DashboardSkeleton() {
   return (
     <div className={styles.skeleton} aria-label="Đang tải tổng quan" aria-busy="true">
       <div className={styles.skeletonHero} />
-      <div className={styles.skeletonMetrics}>
+      <div className={styles.skeletonMetrics} data-secondary="true">
         {[0, 1, 2, 3].map((item) => (
           <div key={item} />
         ))}
@@ -251,6 +358,8 @@ export function StudentHomeOverview() {
     icon: LucideIcon;
     tone?: 'green' | 'amber';
     delta?: string;
+    deltaDirection?: 'up' | 'down' | 'flat';
+    hint?: string;
   }> = [
     {
       label: 'Khóa học',
@@ -265,7 +374,6 @@ export function StudentHomeOverview() {
       context: periodLabel,
       icon: ClipboardCheck,
       tone: 'green',
-      delta: data.summary.practiceCompleted > 0 ? '+8%' : '+0%',
     },
     {
       label: 'Luyện thi đã hoàn thành',
@@ -273,7 +381,6 @@ export function StudentHomeOverview() {
       suffix: 'bài',
       context: periodLabel,
       icon: PenLine,
-      delta: data.summary.examsCompleted > 0 ? '+5%' : '+0%',
     },
     {
       label: 'Độ chính xác',
@@ -282,12 +389,28 @@ export function StudentHomeOverview() {
       context: periodLabel,
       icon: Target,
       tone: 'amber',
+      // A trend badge is only meaningful next to a real accuracy value. With no
+      // accuracy for the period the tile shows "—" and the delta is suppressed,
+      // otherwise the card reads as "Độ chính xác −3%".
       delta:
-        data.summary.accuracyDelta === undefined
+        data.summary.accuracy === undefined || data.summary.accuracyDelta === undefined
           ? undefined
-          : `${data.summary.accuracyDelta >= 0 ? '+' : ''}${data.summary.accuracyDelta}%`,
+          : `${data.summary.accuracyDelta > 0 ? '+' : ''}${data.summary.accuracyDelta}%`,
+      deltaDirection:
+        data.summary.accuracy === undefined || data.summary.accuracyDelta === undefined
+          ? undefined
+          : data.summary.accuracyDelta > 0
+            ? 'up'
+            : data.summary.accuracyDelta < 0
+              ? 'down'
+              : 'flat',
+      hint:
+        data.summary.accuracy === undefined
+          ? `Chưa đủ dữ liệu để tính độ chính xác trong kỳ “${periodLabel}”.`
+          : undefined,
     },
   ];
+  const activitySeries = reconcileActivitySeries(data.activitySeries, data.summary);
   const lessonProgress = Math.round(
     (CONTINUE_LEARNING.completedUnits / CONTINUE_LEARNING.totalUnits) * 100
   );
@@ -333,7 +456,17 @@ export function StudentHomeOverview() {
         </div>
       </header>
 
-      <section className={styles.metricGrid} aria-label="Tóm tắt học tập">
+      <PrimaryNextAction
+        eyebrow={CONTINUE_LEARNING.subject}
+        title={CONTINUE_LEARNING.title}
+        meta={`${CONTINUE_LEARNING.eyebrow} · Mục tiêu hôm nay ${completedGoals}/${DAILY_GOALS.length}`}
+        href={CONTINUE_LEARNING.href}
+        actionLabel="Học tiếp"
+        progress={lessonProgress}
+        progressLabel={`${CONTINUE_LEARNING.completedUnits}/${CONTINUE_LEARNING.totalUnits} chuyên đề · ${lessonProgress}%`}
+      />
+
+      <section className={styles.metricGrid} aria-label="Tóm tắt học tập" data-rank="secondary">
         {metrics.map((metric, index) => {
           const Icon = metric.icon;
           return (
@@ -357,9 +490,24 @@ export function StudentHomeOverview() {
                 </p>
                 <p className={styles.metricContext}>{metric.context}</p>
               </div>
-              {metric.delta && <span className={styles.metricDelta}>↑ {metric.delta}</span>}
+              {metric.delta && (
+                <span className={styles.metricDelta} data-direction={metric.deltaDirection}>
+                  {metric.deltaDirection === 'up'
+                    ? '↑'
+                    : metric.deltaDirection === 'down'
+                      ? '↓'
+                      : '→'}{' '}
+                  {metric.delta}
+                </span>
+              )}
               {metric.label === 'Độ chính xác' && (
-                <Info className={styles.infoIcon} size={16} aria-hidden="true" />
+                <Info
+                  className={styles.infoIcon}
+                  size={16}
+                  aria-hidden={metric.hint ? undefined : true}
+                  aria-label={metric.hint}
+                  role={metric.hint ? 'img' : undefined}
+                />
               )}
             </article>
           );
@@ -380,7 +528,7 @@ export function StudentHomeOverview() {
               Không tính thời gian học <ChevronDown size={15} />
             </button>
           </div>
-          <ActivityChart series={data.activitySeries} />
+          <ActivityChart series={activitySeries} periodLabel={periodLabel} />
         </section>
 
         <section className={`${styles.card} ${styles.courseCard}`}>
@@ -421,75 +569,6 @@ export function StudentHomeOverview() {
           </div>
         </section>
 
-        <section className={`${styles.card} ${styles.continueCard}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.headingGroup}>
-              <SectionIcon icon={Play} />
-              <div>
-                <h2>Tiếp tục học</h2>
-                <p>{CONTINUE_LEARNING.eyebrow}</p>
-              </div>
-            </div>
-            <Link href="/student/roadmap" className={styles.viewAll}>
-              Xem tất cả <ArrowRight size={16} />
-            </Link>
-          </div>
-          <div className={styles.lessonRow}>
-            <div className={styles.lessonThumbnail} aria-hidden="true">
-              <span>
-                HÀM SỐ
-                <br />
-                BẬC HAI
-              </span>
-              <svg viewBox="0 0 112 60">
-                <path d="M5 48h102M57 5v50M18 45C29 45 31 11 44 11s14 34 27 34s15-34 28-34" />
-              </svg>
-              <small>Toán</small>
-            </div>
-            <div className={styles.lessonInfo}>
-              <strong>{CONTINUE_LEARNING.title}</strong>
-              <span>
-                Đã học {CONTINUE_LEARNING.completedUnits}/{CONTINUE_LEARNING.totalUnits} video
-              </span>
-              <div className={styles.lessonProgress}>
-                <ProgressBar value={lessonProgress} />
-                <b>{lessonProgress}%</b>
-              </div>
-            </div>
-            <Link href={CONTINUE_LEARNING.href} className={styles.primaryButton}>
-              <Play size={15} fill="currentColor" />
-              Tiếp tục học
-            </Link>
-          </div>
-        </section>
-
-        <section className={`${styles.card} ${styles.goalsCard}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.headingGroup}>
-              <SectionIcon icon={Check} />
-              <div>
-                <h2>Mục tiêu hôm nay</h2>
-                <p>Những việc nhỏ tạo nên kết quả lớn</p>
-              </div>
-            </div>
-            <strong className={styles.goalCount}>
-              {completedGoals}/{DAILY_GOALS.length}
-            </strong>
-          </div>
-          <ul className={styles.goalList}>
-            {DAILY_GOALS.map((goal) => (
-              <li key={goal.id}>
-                <span className={goal.completed ? styles.goalDone : styles.goalOpen}>
-                  {goal.completed && <Check size={13} strokeWidth={3} />}
-                </span>
-                <span>{goal.label}</span>
-              </li>
-            ))}
-          </ul>
-          <div className={styles.encouragement} aria-hidden="true">
-            Cố lên, bạn làm được!
-          </div>
-        </section>
       </div>
     </div>
   );

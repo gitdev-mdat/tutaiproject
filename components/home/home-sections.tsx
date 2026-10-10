@@ -10,6 +10,7 @@ import { SubjectProofSection } from '@/components/home/subject-proof-section';
 
 import { CompetitionSection } from '@/components/home/competition-section';
 import { PricingPreview } from '@/components/home/pricing-preview';
+import { resolveLandingCtas, type StudentLandingContext } from '@/lib/navigation/landing-cta';
 import styles from './home-sections.module.css';
 
 /**
@@ -22,13 +23,19 @@ import styles from './home-sections.module.css';
  * - Section entrance animations are triggered by IntersectionObserver.
  * - The Hero scroll cue scrolls to #knowledge-gps via anchor link.
  */
-export function HomeSections() {
+export function HomeSections({ landingContext }: { landingContext: StudentLandingContext }) {
+  const ctas = resolveLandingCtas(landingContext);
+
   return (
     <>
       <div className={styles.heroFrame}>
-        <PublicHeader />
+        <PublicHeader ctas={ctas} />
         <section id="hero" className="flex min-h-0 flex-1" aria-label="Giới thiệu Tú Tài">
-          <HeroKnowledgeAtlas />
+          <HeroKnowledgeAtlas
+            primaryCta={ctas.hero.primary}
+            lifecycleState={ctas.state}
+            displayName={ctas.displayName}
+          />
         </section>
       </div>
 
@@ -50,7 +57,7 @@ export function HomeSections() {
 
       {/* ── 3. Daily experience ── */}
       <section id="transformation" aria-label="Trải nghiệm học tập mỗi ngày với Tú Tài">
-        <TransformationSection />
+        <TransformationSection primaryCta={ctas.header.primary} />
       </section>
 
       {/* ── 8. Competition Arena (Teaser) ── */}

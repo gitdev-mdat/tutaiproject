@@ -2,7 +2,16 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowDown, ArrowUp, Eye, Plus, Save, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Eye,
+  Plus,
+  RefreshCw,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,17 +36,46 @@ export function AdminRoadmapList() {
   }
   return (
     <div className="space-y-5">
-      <header className="flex items-center gap-4">
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-slate-900">Lộ trình học</h1>
+      <header className="flex flex-wrap items-end gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+            Quản trị chương trình
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">Chương trình & phiên bản</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Thiết kế hành trình dùng chung và xem trước trải nghiệm học sinh.
+            Theo dõi trạng thái xuất bản, độ phủ học liệu và sức khỏe phân bổ.
           </p>
         </div>
         <Button nativeButton={false} render={<Link href="/admin/roadmaps/new" />}>
-          <Plus /> Tạo lộ trình
+          <Plus /> Tạo phiên bản mới
         </Button>
       </header>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phiên bản</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{items.length}</p>
+          <p className="text-xs text-slate-500">
+            {items.filter((x) => x.status === 'published').length} đang phát hành
+          </p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Độ phủ nội dung
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {items.filter((x) => roadmapDefinitionService.validate(x).length === 0).length}/
+            {items.length}
+          </p>
+          <p className="text-xs text-slate-500">phiên bản đủ điều kiện</p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+            Phân bổ & ghi danh
+          </p>
+          <p className="mt-1 font-bold text-amber-900">Chưa có dữ liệu máy chủ</p>
+          <p className="text-xs text-amber-700">Không suy diễn số liệu từ bản xem trước</p>
+        </div>
+      </div>
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="w-full min-w-[800px] text-sm">
           <thead className="border-b bg-slate-50 text-left text-[11px] uppercase tracking-wide text-slate-500">
@@ -125,12 +163,98 @@ export function AdminRoadmapEditor({
   const [notice, setNotice] = React.useState('');
   const [persisted, setPersisted] = React.useState(Boolean(roadmapId));
   const [saving, setSaving] = React.useState(false);
-  React.useEffect(() => {
-    void (
-      roadmapId ? roadmapDefinitionService.get(roadmapId) : Promise.resolve(createEmptyRoadmap())
-    ).then(setItem);
+  const [loadingError, setLoadingError] = React.useState('');
+  const load = React.useCallback(async () => {
+    setLoadingError('');
+    try {
+      const loaded = roadmapId
+        ? await roadmapDefinitionService.get(roadmapId)
+        : createEmptyRoadmap();
+      if (!loaded) throw new Error('Không tìm thấy phiên bản chương trình này.');
+      setItem(loaded);
+    } catch (error) {
+      setLoadingError(
+        error instanceof Error ? error.message : 'Không thể tải dữ liệu chương trình.'
+      );
+    }
   }, [roadmapId]);
-  if (!item) return <p className="text-sm text-slate-500">Đang tải lộ trình…</p>;
+  React.useEffect(() => {
+    // Loading is intentionally kicked off after hydration; this editor is client-backed.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
+  if (!item) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-5" aria-busy={!loadingError}>
+        <Link
+          href="/admin/roadmaps"
+          className="inline-flex text-sm font-semibold text-blue-700 hover:underline"
+        >
+          ← Danh sách chương trình
+        </Link>
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-6 py-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Chương trình học · Phiên bản
+                </p>
+                <h1 className="mt-2 text-2xl font-bold text-slate-900">
+                  {loadingError ? 'Không thể mở phiên bản' : 'Đang tải phiên bản chương trình'}
+                </h1>
+                <p className="mt-2 text-sm text-slate-600">
+                  {loadingError ||
+                    'Đang lấy cấu trúc học thuật, độ phủ nội dung và quy tắc phân bổ…'}
+                </p>
+              </div>
+              <span
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${loadingError ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}
+              >
+                {loadingError ? 'Lỗi tải dữ liệu' : 'Đang đồng bộ'}
+              </span>
+            </div>
+          </div>
+          {loadingError ? (
+            <div className="flex flex-col items-start gap-4 px-6 py-8">
+              <div className="flex size-10 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-900">Dữ liệu chưa sẵn sàng</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Kiểm tra kết nối rồi thử lại. Không có thay đổi nào được thực hiện.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => void load()}>
+                  <RefreshCw /> Thử tải lại
+                </Button>
+                <Button
+                  variant="outline"
+                  nativeButton={false}
+                  render={<Link href="/admin/roadmaps/new" />}
+                >
+                  <Plus /> Tạo phiên bản mới
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-5 p-6 lg:grid-cols-[1fr_280px]">
+              <div className="space-y-4">
+                <div className="h-28 animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-44 animate-pulse rounded-lg bg-slate-100" />
+              </div>
+              <div className="h-48 animate-pulse rounded-lg bg-slate-100" />
+              <p className="lg:col-span-2 text-xs text-slate-500">
+                Quá trình này thường chỉ mất vài giây. Nếu không hoàn tất, hãy tải lại trang hoặc
+                quay về danh sách.
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
   const issues = roadmapDefinitionService.validate(item);
   const simulation = roadmapDefinitionService.simulate(
     item,

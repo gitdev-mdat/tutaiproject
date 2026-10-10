@@ -8,6 +8,7 @@ import { AuthShell, AuthColumn } from '@/components/auth/auth-shell';
 import { AuthFormField } from '@/components/auth/auth-form-field';
 import { LoginDashboardPreview } from '@/components/auth/login-dashboard-preview';
 import { safeReturnPath } from '@/lib/auth/safe-return-path';
+import { fetchAuthSession } from '@/lib/auth/client-session';
 
 // ─── Login Page ─────────────────────────────────────────────────────────────
 // Route: /auth/login
@@ -21,15 +22,15 @@ function LoginPageContent() {
   const returnTo = safeReturnPath(searchParams.get('returnTo'));
   const practiceExam = searchParams.get('exam');
   const practiceSource = safeReturnPath(searchParams.get('source'), '/exam-sets');
+  const oauthError = searchParams.get('oauthError');
 
   React.useEffect(() => {
     let active = true;
 
-    fetch('/api/auth/session')
-      .then((response) => (response.ok ? response.json() : null))
+    fetchAuthSession()
       .then((session) => {
-        if (!active || !(session?.authenticated || session?.user)) return;
-        router.replace(returnTo);
+        if (!active || !session?.authenticated) return;
+        router.replace(session.redirectTo);
       })
       .catch(() => undefined);
 
@@ -50,7 +51,7 @@ function LoginPageContent() {
 
   function validate() {
     const next: typeof errors = {};
-    if (!username.trim()) next.username = 'Vui lòng nhập tên đăng nhập.';
+    if (!username.trim()) next.username = 'Vui lòng nhập tên đăng nhập hoặc email.';
     if (!password) next.password = 'Vui lòng nhập mật khẩu.';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -63,14 +64,14 @@ function LoginPageContent() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/auth/demo-login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim().toLowerCase(), password, returnTo }),
+        body: JSON.stringify({ identifier: username, password, remember: rememberMe, returnTo }),
       });
       const data = await res.json();
 
-      if (data.success) {
+      if (res.ok && data.success) {
         if (isPracticeIntent && practiceExam) {
           const startResponse = await fetch('/api/exam-sets/start', {
             method: 'POST',
@@ -159,19 +160,38 @@ function LoginPageContent() {
           )}
 
           {/* Server error banner */}
-          {serverError && (
+          {(serverError || oauthError) && (
             <div className="mb-4 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-600">
-              {serverError}
+              {serverError ||
+                (oauthError === 'not_configured'
+                  ? 'Đăng nhập Google chưa được cấu hình trên máy chủ.'
+                  : 'Không thể đăng nhập với Google. Vui lòng thử lại.')}
             </div>
           )}
+
+          <a
+            href={`/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
+            aria-disabled={isSubmitting}
+            className="mb-5 flex h-[50px] w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white text-sm font-bold text-slate-800 transition hover:bg-slate-50 aria-disabled:pointer-events-none aria-disabled:opacity-60"
+          >
+            <span aria-hidden="true" className="text-lg font-black text-[#4285F4]">
+              G
+            </span>
+            Tiếp tục với Google
+          </a>
+          <div className="mb-5 flex items-center gap-3 text-xs font-semibold text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            hoặc
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
 
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
             {/* Username field */}
             <AuthFormField
               id="login-username"
-              label="Tên đăng nhập"
+              label="Tên đăng nhập hoặc email"
               type="text"
-              placeholder="Nhập tên đăng nhập"
+              placeholder="Nhập tên đăng nhập hoặc email"
               autoComplete="username"
               value={username}
               onChange={(e) => {

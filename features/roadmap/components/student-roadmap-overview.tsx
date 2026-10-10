@@ -236,13 +236,17 @@ export function StudentRoadmapOverview({
                 </Link>
               )}
             </div>
-            <aside className={styles.reasonBox}>
-              <span>
-                <Lightbulb size={21} />
+            <aside
+              className={`${styles.reasonBox} !mt-6 !items-start !gap-3 !border-slate-100 !bg-slate-50/70 !p-4`}
+            >
+              <span className="!text-slate-400">
+                <Lightbulb size={16} />
               </span>
               <div>
-                <h3>Vì sao bài này xuất hiện?</h3>
-                <p>
+                <h3 className="!text-[11px] !font-bold !uppercase !tracking-[.14em] !text-slate-400">
+                  Vì sao bài này xuất hiện?
+                </h3>
+                <p className="!mt-1 !text-[13px] !font-medium !leading-relaxed !text-slate-500">
                   {model.reason} Bài học này sẽ giúp em củng cố nền tảng quan trọng để học tốt các
                   phần tiếp theo.
                 </p>

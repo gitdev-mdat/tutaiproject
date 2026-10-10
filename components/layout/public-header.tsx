@@ -6,8 +6,23 @@ import Link from 'next/link';
 import { ArrowRight, X } from 'lucide-react';
 
 import { publicNav } from '@/config/navigation';
-import { getRoadmapCta, getClientRoadmapUserState } from '@/lib/navigation/roadmap-flow';
-import { useOnboardingDraft } from '@/lib/onboarding/use-onboarding-draft';
+import {
+  resolveLandingCtas,
+  resolveProfileDestination,
+  type LandingCtaModel,
+} from '@/lib/navigation/landing-cta';
+import { AccountMenu, DrawerLogoutAction } from './account-menu';
+
+const GUEST_CTAS = resolveLandingCtas({ state: 'GUEST' });
+
+const MOBILE_STATE_CAPTION: Record<LandingCtaModel['state'], string> = {
+  GUEST: '',
+  AUTHENTICATED_ONBOARDING_INCOMPLETE: 'Hồ sơ chưa hoàn tất',
+  AUTHENTICATED_READY_FOR_ASSIGNMENT: 'Sẵn sàng nhận lộ trình',
+  AUTHENTICATED_PROGRAM_ASSIGNED: 'Đã có chương trình học',
+  AUTHENTICATED_ACTIVE_STUDENT: 'Đang học',
+  ASSIGNMENT_BLOCKED: 'Cần kiểm tra hồ sơ',
+};
 
 // ─── Shared logo ─────────────────────────────────────────────────────────────
 
@@ -71,10 +86,10 @@ function TuTaiLogo() {
 interface MobileDrawerProps {
   open: boolean;
   onClose: () => void;
-  roadmapCta: ReturnType<typeof getRoadmapCta>;
+  ctas: LandingCtaModel;
 }
 
-function MobileDrawer({ open, onClose, roadmapCta }: MobileDrawerProps) {
+function MobileDrawer({ open, onClose, ctas }: MobileDrawerProps) {
   const drawerRef = React.useRef<HTMLDivElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = React.useState(false);
@@ -320,39 +335,54 @@ function MobileDrawer({ open, onClose, roadmapCta }: MobileDrawerProps) {
             flexShrink: 0,
           }}
         >
-          {/* Secondary — Đăng nhập */}
-          <Link
-            href="/auth/login"
-            onClick={onClose}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 46,
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.14)',
-              background: 'rgba(255,255,255,0.03)',
-              fontSize: 15,
-              fontWeight: 550,
-              color: 'rgba(255,255,255,0.90)',
-              textDecoration: 'none',
-              transition: 'background 150ms ease, border-color 150ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)';
-            }}
-          >
-            Đăng nhập
-          </Link>
+          {ctas.displayName ? (
+            <div className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-white">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0052FF_0%,#1448E0_100%)] text-sm font-bold">
+                {ctas.displayName.trim().charAt(0).toLocaleUpperCase('vi')}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">{ctas.displayName}</span>
+                <span className="block truncate text-xs text-white/55">
+                  {MOBILE_STATE_CAPTION[ctas.state]}
+                </span>
+              </span>
+            </div>
+          ) : null}
+
+          {ctas.header.secondary ? (
+            <Link
+              href={ctas.header.secondary.path}
+              onClick={onClose}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 46,
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.14)',
+                background: 'rgba(255,255,255,0.03)',
+                fontSize: 15,
+                fontWeight: 550,
+                color: 'rgba(255,255,255,0.90)',
+                textDecoration: 'none',
+                transition: 'background 150ms ease, border-color 150ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)';
+              }}
+            >
+              {ctas.header.secondary.label}
+            </Link>
+          ) : null}
 
           {/* Primary CTA */}
           <Link
-            href={roadmapCta.path}
+            href={ctas.header.primary.path}
             onClick={onClose}
             style={{
               display: 'flex',
@@ -379,9 +409,26 @@ function MobileDrawer({ open, onClose, roadmapCta }: MobileDrawerProps) {
               e.currentTarget.style.boxShadow = '0 6px 20px rgba(23,104,255,0.30)';
             }}
           >
-            {roadmapCta.label}
+            {ctas.header.primary.label}
             <ArrowRight size={15} strokeWidth={2.2} aria-hidden="true" />
           </Link>
+
+          {/* Account actions for signed-in students — profile + logout must be reachable on mobile */}
+          {ctas.displayName ? (
+            <>
+              <Link
+                href={resolveProfileDestination(ctas.state)}
+                onClick={onClose}
+                className="flex h-11 w-full items-center justify-between rounded-xl border border-white/[0.1] bg-white/[0.02] px-3.5 text-sm font-medium text-[#E4ECFA] transition-colors hover:bg-white/[0.07] hover:text-white"
+              >
+                Hồ sơ học tập
+                <span aria-hidden="true" className="text-[#8FA9D4]">
+                  →
+                </span>
+              </Link>
+              <DrawerLogoutAction />
+            </>
+          ) : null}
         </div>
       </div>
     </>,
@@ -393,19 +440,21 @@ function MobileDrawer({ open, onClose, roadmapCta }: MobileDrawerProps) {
 
 // PublicHeader: rendered inside the Hero — not fixed, not sticky.
 // It scrolls away naturally when the Hero leaves the viewport.
-export function PublicHeader() {
+export function PublicHeader({ ctas = GUEST_CTAS }: { ctas?: LandingCtaModel }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const { draft } = useOnboardingDraft();
-  const roadmapCta = getRoadmapCta({
-    ...getClientRoadmapUserState(draft?.progress),
-    hasRoadmap: draft?.hasRoadmap ?? false,
-  });
+  // Guests are in the acquisition funnel: the header keeps a visible accented entry point.
+  // Signed-in students already get one dominant next action in the hero, so the header
+  // action is demoted to a quiet duplicate instead of a second competing primary.
+  const isGuest = ctas.state === 'GUEST';
 
   const openDrawer = React.useCallback(() => setMobileOpen(true), []);
   const closeDrawer = React.useCallback(() => setMobileOpen(false), []);
 
   return (
-    <header className="relative z-10 box-border px-[14px] pt-[14px] lg:px-6 lg:pt-4">
+    // z-50: the hero frame is an isolated stacking context whose floating artwork uses
+    // z-index 20. The header must sit above it so the account dropdown (and its options)
+    // can never be overlapped by hero glass cards.
+    <header className="relative z-50 box-border px-[14px] pt-[14px] lg:px-6 lg:pt-4">
       {/* Pill — full-width centered container with no scroll-dependent styles */}
       <div className="mx-auto flex h-14 max-w-[1440px] box-border items-center justify-between rounded-[13px] border border-white/[0.09] bg-[linear-gradient(180deg,rgba(18,36,64,0.80)_0%,rgba(12,26,52,0.76)_100%)] px-2.5 shadow-[0_10px_28px_rgba(0,10,30,0.16)] backdrop-blur-[18px] lg:h-[68px] lg:rounded-[18px] lg:px-6 lg:shadow-[0_14px_40px_rgba(0,10,30,0.18)]">
         {/* Wordmark */}
@@ -441,49 +490,60 @@ export function PublicHeader() {
 
         {/* Desktop actions */}
         <div className="hidden lg:flex items-center gap-2.5 shrink-0">
-          <Link
-            href="/auth/login"
-            className="flex items-center rounded-full px-4 h-9 text-sm font-medium transition-all duration-150"
-            style={{
-              color: 'rgba(210,220,235,0.80)',
-              background: 'transparent',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#FFFFFF';
-              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(210,220,235,0.80)';
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            Đăng nhập
-          </Link>
+          {ctas.displayName ? <AccountMenu ctas={ctas} displayName={ctas.displayName} /> : null}
 
-          {/* Prominent primary CTA */}
+          {ctas.header.secondary ? (
+            <Link
+              href={ctas.header.secondary.path}
+              className="flex items-center rounded-full px-4 h-9 text-sm font-medium transition-all duration-150"
+              style={{
+                color: 'rgba(210,220,235,0.80)',
+                background: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#FFFFFF';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'rgba(210,220,235,0.80)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              {ctas.header.secondary.label}
+            </Link>
+          ) : null}
+
+          {/* Header next-step action.
+              CTA hierarchy: the hero owns the ONE dominant next action per viewport, so this
+              header control is deliberately quiet — same destination, lower visual weight.
+              Guests (who see the sign-up funnel) keep a slightly stronger accent border. */}
           <Link
-            href={roadmapCta.path}
-            className="group flex items-center gap-2 rounded-full px-5 h-9 text-sm font-semibold text-white transition-all duration-150"
+            href={ctas.header.primary.path}
+            className="group flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7ca8ff] motion-reduce:transition-none"
             style={{
-              background: 'linear-gradient(135deg, #0052FF 0%, #1448E0 100%)',
-              boxShadow: '0 4px 18px rgba(0,82,255,0.18), 0 1.5px 6px rgba(0,82,255,0.08)',
+              borderColor: isGuest ? 'rgba(120,170,255,0.55)' : 'rgba(255,255,255,0.16)',
+              background: isGuest ? 'rgba(0,82,255,0.16)' : 'rgba(255,255,255,0.05)',
+              color: isGuest ? '#DCE8FF' : 'rgba(228,236,250,0.92)',
               letterSpacing: '-0.01em',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow =
-                '0 8px 28px rgba(0,82,255,0.24), 0 3px 10px rgba(0,82,255,0.12)';
+              e.currentTarget.style.background = isGuest
+                ? 'rgba(0,82,255,0.28)'
+                : 'rgba(255,255,255,0.11)';
+              e.currentTarget.style.color = '#FFFFFF';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow =
-                '0 4px 18px rgba(0,82,255,0.18), 0 1.5px 6px rgba(0,82,255,0.08)';
+              e.currentTarget.style.background = isGuest
+                ? 'rgba(0,82,255,0.16)'
+                : 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.color = isGuest ? '#DCE8FF' : 'rgba(228,236,250,0.92)';
             }}
           >
-            {roadmapCta.label}
+            {ctas.header.primary.label}
             <ArrowRight
               size={13}
-              className="transition-transform duration-150 group-hover:translate-x-0.5"
+              aria-hidden="true"
+              className="transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
             />
           </Link>
         </div>
@@ -519,7 +579,7 @@ export function PublicHeader() {
       </div>
 
       {/* ── Custom mobile drawer — portal-mounted, desktop-invisible ── */}
-      <MobileDrawer open={mobileOpen} onClose={closeDrawer} roadmapCta={roadmapCta} />
+      <MobileDrawer open={mobileOpen} onClose={closeDrawer} ctas={ctas} />
     </header>
   );
 }

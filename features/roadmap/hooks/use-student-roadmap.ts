@@ -20,31 +20,43 @@ export function useStudentRoadmap() {
   const [error, setError] = useState<string | null>(null);
   const [mutatingActivityId, setMutatingActivityId] = useState<string | null>(null);
 
+  const applySnapshot = useCallback(
+    (result: StudentRoadmap | null, dashboardResult: StudentRoadmapDashboard | null) => {
+      if (!result) {
+        setRoadmap(null);
+        setDashboard(null);
+        setSelectedWeek(null);
+        setState('empty');
+        return;
+      }
+
+      setRoadmap(result);
+      setDashboard(dashboardResult);
+      setSelectedWeek((current) => {
+        const weeks = result.phases.flatMap((phase) => phase.weeks);
+        return (
+          weeks.find((week) => week.id === current?.id) ??
+          weeks.find((week) => week.id === result.currentWeekId) ??
+          null
+        );
+      });
+      setState('ready');
+    },
+    []
+  );
+
   const fetchRoadmap = useCallback(
-    () =>
-      Promise.all([roadmapService.getStudentRoadmap(), roadmapService.getStudentRoadmapDashboard()])
-        .then(([result, dashboardResult]) => {
-          if (!result) {
-            setRoadmap(null);
-            setDashboard(null);
-            setSelectedWeek(null);
-            setState('empty');
-            return;
-          }
-          setRoadmap(result);
-          setDashboard(dashboardResult);
-          setSelectedWeek(
-            result.phases
-              .flatMap((phase) => phase.weeks)
-              .find((week) => week.id === result.currentWeekId) ?? null
-          );
-          setState('ready');
+    (force = false) =>
+      roadmapService
+        .getStudentRoadmapSnapshot(force)
+        .then(({ roadmap: result, dashboard: dashboardResult }) => {
+          applySnapshot(result, dashboardResult);
         })
         .catch((cause: unknown) => {
           setState('error');
           setError(cause instanceof Error ? cause.message : 'Không thể tải lộ trình');
         }),
-    []
+    [applySnapshot]
   );
   useEffect(() => {
     void fetchRoadmap();
@@ -53,7 +65,7 @@ export function useStudentRoadmap() {
   const reload = useCallback(async () => {
     setState('loading');
     setError(null);
-    await fetchRoadmap();
+    await fetchRoadmap(true);
   }, [fetchRoadmap]);
 
   const selectWeek = useCallback(
@@ -75,29 +87,13 @@ export function useStudentRoadmap() {
       setMutatingActivityId(activityId);
       try {
         await action(activityId);
-        const [refreshed, refreshedDashboard] = await Promise.all([
-          roadmapService.getStudentRoadmap(),
-          roadmapService.getStudentRoadmapDashboard(),
-        ]);
-        if (!refreshed) {
-          setRoadmap(null);
-          setDashboard(null);
-          setSelectedWeek(null);
-          setState('empty');
-          return;
-        }
-        setRoadmap(refreshed);
-        setDashboard(refreshedDashboard);
-        setSelectedWeek(
-          refreshed.phases
-            .flatMap((phase) => phase.weeks)
-            .find((week) => week.id === selectedWeek?.id) ?? null
-        );
+        const snapshot = await roadmapService.getStudentRoadmapSnapshot(true);
+        applySnapshot(snapshot.roadmap, snapshot.dashboard);
       } finally {
         setMutatingActivityId(null);
       }
     },
-    [roadmap, selectedWeek?.id]
+    [roadmap, applySnapshot]
   );
   const startActivity = useCallback(
     (id: string) =>

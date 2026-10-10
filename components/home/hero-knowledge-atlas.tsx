@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import type { LandingCta, StudentLandingState } from '@/lib/navigation/landing-cta';
+import { HeroLifecycleNotice, resolveHeroLifecyclePresentation } from './hero-lifecycle-notice';
 import styles from './hero-knowledge-atlas.module.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -460,8 +462,18 @@ function PathVisualization({
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export function HeroKnowledgeAtlas() {
+export function HeroKnowledgeAtlas({
+  primaryCta,
+  lifecycleState = 'GUEST',
+  displayName,
+}: {
+  primaryCta: LandingCta;
+  lifecycleState?: StudentLandingState;
+  displayName?: string;
+}) {
   const reducedMotion = useReducedMotion();
+  const notice = resolveHeroLifecyclePresentation(lifecycleState, displayName);
+  const primaryLabel = notice?.ctaLabel ?? primaryCta.label;
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [scanT, setScanT] = useState(0);
@@ -709,60 +721,37 @@ export function HeroKnowledgeAtlas() {
               rõ ràng, đúng trọng tâm và tiến bộ từng ngày.
             </p>
 
-            {/* CTAs */}
+            {/* Lifecycle continuation — one next step for the signed-in student */}
+            {notice ? <HeroLifecycleNotice notice={notice} /> : null}
+
+            {/* CTA — the hero owns the single dominant next action for this lifecycle state.
+                The secondary action only points at a section that really exists on this page. */}
             <div className={styles.actions}>
-              <Link
-                href="/auth/register"
-                className={`${styles.primaryCta} group flex items-center gap-3 rounded-full font-semibold text-white`}
-                style={{
-                  height: '52px',
-                  paddingLeft: '30px',
-                  paddingRight: '30px',
-                  background: 'linear-gradient(135deg, #0052FF 0%, #1448E0 100%)',
-                  boxShadow: '0 8px 24px rgba(0,82,255,0.16), 0 2px 8px rgba(0,82,255,0.08)',
-                  fontSize: '15px',
-                  transition: 'transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease',
-                  letterSpacing: '-0.01em',
-                  willChange: 'transform',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow =
-                    '0 14px 36px rgba(0,82,255,0.22), 0 4px 12px rgba(0,82,255,0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow =
-                    '0 8px 24px rgba(0,82,255,0.16), 0 2px 8px rgba(0,82,255,0.08)';
-                }}
-              >
-                Xây lộ trình của em
+              <Link href={primaryCta.path} className={`${styles.primaryCta} group`}>
+                {primaryLabel}
                 <ArrowRight
                   size={16}
-                  className="transition-transform duration-200 group-hover:translate-x-1"
+                  aria-hidden="true"
+                  className="shrink-0 transition-transform duration-200 group-hover:translate-x-1"
                 />
               </Link>
 
-              <a
-                href="#roadmap"
-                className={`${styles.secondaryCta} group flex items-center gap-1.5 text-sm font-medium`}
-                style={{
-                  color: 'rgba(160,190,230,0.75)',
-                  transition: 'color 0.18s ease',
-                  padding: '6px 2px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#7BB3FF';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'rgba(160,190,230,0.75)';
-                }}
-              >
-                Xem lộ trình mẫu
-                <ArrowRight
-                  size={13}
-                  className="transition-transform duration-150 group-hover:translate-x-0.5"
-                />
+              <a href="#knowledge-gps" className={`${styles.secondaryCta} group`}>
+                Tú Tài hoạt động thế nào
+                <svg
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden="true"
+                  className="size-3.5 shrink-0 transition-transform duration-150 group-hover:translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0"
+                >
+                  <path
+                    d="M8 3.2v9.6M3.6 8.6L8 13l4.4-4.4"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </a>
             </div>
 

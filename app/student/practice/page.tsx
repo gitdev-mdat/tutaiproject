@@ -75,14 +75,13 @@ function ctaFor(state: PracticeState) {
     return {
       label: 'Luyện tiếp',
       Icon: PlayCircle,
-      className: 'border border-blue-600 bg-blue-600 text-white hover:bg-blue-700',
+      className: 'border border-blue-300 bg-white text-blue-700 hover:bg-blue-50',
     };
   }
   return {
     label: 'Luyện ngay',
     Icon: ArrowRight,
-    className:
-      'border border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100',
+    className: 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
   };
 }
 
@@ -194,22 +193,37 @@ function LessonLibrary({ attempts }: { attempts: Record<string, Attempt> }) {
         ).length;
 
         return (
-          <section key={chapter.id} aria-labelledby={`lesson-section-${chapter.id}`}>
-            <div className="mb-4 flex items-end justify-between gap-4 border-b border-slate-200 pb-3">
-              <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-600">
-                  Chương {String(chapter.number).padStart(2, '0')}
-                </p>
+          <section
+            key={chapter.id}
+            aria-labelledby={`lesson-section-${chapter.id}`}
+            className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5"
+          >
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[12px] font-extrabold text-slate-500">
+                  {String(chapter.number).padStart(2, '0')}
+                </span>
                 <h2
                   id={`lesson-section-${chapter.id}`}
-                  className="mt-1 text-lg font-extrabold text-slate-950"
+                  className="min-w-0 truncate text-[12px] font-extrabold uppercase tracking-[0.16em] text-slate-600"
                 >
                   {chapter.shortTitle}
                 </h2>
               </div>
-              <p className="shrink-0 text-xs font-semibold text-slate-500">
-                {sets.length} bộ luyện · {completed} đã hoàn thành
-              </p>
+              <div className="flex min-w-0 shrink-0 items-center gap-3">
+                <p className="text-xs font-semibold text-slate-500">
+                  {sets.length} bộ luyện · {completed} đã hoàn thành
+                </p>
+                <div
+                  className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="h-full rounded-full bg-blue-600"
+                    style={{ width: `${Math.round((completed / sets.length) * 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {sets.map((set) => (
@@ -297,6 +311,45 @@ function ChapterLibrary({ attempts }: { attempts: Record<string, Attempt> }) {
   );
 }
 
+function ResumeBanner({ attempts }: { attempts: Record<string, Attempt> }) {
+  const candidates = [...LESSON_SETS, ...CHAPTER_SETS];
+  const resumeSet =
+    candidates.find((set) => stateFor(set, attempts[set.id]) === 'IN_PROGRESS') ??
+    candidates.find((set) => stateFor(set, attempts[set.id]) === 'NOT_STARTED');
+  if (!resumeSet) return null;
+
+  const chapter = PRACTICE_CHAPTERS.find((item) => item.id === resumeSet.chapterId);
+  const lesson = chapter?.lessons.find((item) => item.id === resumeSet.lessonId);
+  const title = lesson?.title ?? chapter?.shortTitle ?? resumeSet.title;
+  const resuming = stateFor(resumeSet, attempts[resumeSet.id]) === 'IN_PROGRESS';
+
+  return (
+    <section
+      aria-label="Tiếp tục luyện tập"
+      className="mt-6 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+    >
+      <div className="min-w-0">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
+          {chapter ? `Chương ${String(chapter.number).padStart(2, '0')}` : 'Luyện tập'} ·{' '}
+          {resuming ? 'Đang luyện' : 'Bắt đầu'}
+        </p>
+        <h2 className="mt-1 truncate text-lg font-extrabold leading-7 text-slate-950">{title}</h2>
+        <p className="mt-1 text-xs font-semibold text-slate-500">
+          {resuming && resumeSet.resumeQuestion
+            ? `Dừng ở câu ${resumeSet.resumeQuestion} · ${Math.min(resumeSet.questionCount, 6)} câu`
+            : `${Math.min(resumeSet.questionCount, 6)} câu`}
+        </p>
+      </div>
+      <Link
+        href={assessmentHref(resumeSet, `${title} · ${resumeSet.title}`)}
+        className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-5 text-sm font-extrabold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        {resuming ? 'Luyện tiếp' : 'Luyện ngay'} <ArrowRight size={16} aria-hidden="true" />
+      </Link>
+    </section>
+  );
+}
+
 export default function StudentPracticePage() {
   const [scope, setScope] = React.useState<Scope>('LESSON');
   const [attemptsReady, setAttemptsReady] = React.useState(false);
@@ -326,6 +379,8 @@ export default function StudentPracticePage() {
           Chọn bài hoặc chương em muốn củng cố.
         </p>
       </header>
+
+      <ResumeBanner attempts={attempts} />
 
       <div
         className="relative mt-6 grid w-full max-w-[390px] grid-cols-2 rounded-2xl border border-slate-200 bg-slate-100/80 p-1.5"

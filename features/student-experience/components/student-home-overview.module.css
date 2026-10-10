@@ -1,12 +1,584 @@
+/*
+ * ROUTE HIERARCHY NOTE (/student/dashboard)
+ * ---------------------------------------------------------------------------
+ * Weight tiers on this route are resolved at the bottom of this file in the
+ * "ROUTE HIERARCHY PASS" block: the next-action card is the single hero
+ * affordance, the activity/progress panels stay supporting, and the KPI tiles
+ * read as muted secondary data. Presentation only — no data or behaviour
+ * change.
+ */
+
+/*
+ * DECISION EMPHASIS PASS (/student/dashboard) — presentation only.
+ * ---------------------------------------------------------------------------
+ * Objective: the primary decision ("what do I study next?") and its single
+ * action must read first, from any distance. Only typography scale, weight,
+ * spacing, elevation, motion and focus affordance are touched here. No colour
+ * tokens are invented, no layout order changes, no data or behaviour changes.
+ * Selectors are deliberately high-specificity (card + data-rank + element) so
+ * they resolve after the generic `.nextAction*` declarations later in this
+ * file without needing `!important`.
+ */
+.dashboard section.nextAction[data-rank='hero'] .nextActionEyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionTitle {
+  font-size: clamp(21px, 1.35vw + 15px, 28px);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+  margin-top: 4px;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionMeta {
+  font-size: 13.5px;
+  line-height: 1.45;
+  opacity: 0.88;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionProgress {
+  margin-top: 12px;
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton {
+  gap: 10px;
+  min-height: 48px;
+  padding-inline: 22px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.14),
+    0 12px 26px -12px rgba(15, 23, 42, 0.45);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.06);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.16),
+    0 18px 34px -14px rgba(15, 23, 42, 0.5);
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton,
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton:hover,
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton:active {
+    transform: none;
+    transition: none;
+  }
+}
+@media (max-width: 720px) {
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton {
+    width: 100%;
+    justify-content: center;
+  }
+  .dashboard section.nextAction[data-rank='hero'] .nextActionTitle {
+    font-size: 20px;
+  }
+}
+
+/*
+ * DECISION CLARITY PASS (/student/dashboard) — presentation only.
+ * ---------------------------------------------------------------------------
+ * Objective: the primary decision ("what do I study next?") and its single
+ * action ("Tiếp tục học") must be the loudest thing on the route. These rules
+ * are intentionally written with high specificity so they win over the later
+ * generic `.card` / `.nextAction*` declarations without needing `!important`,
+ * and they only touch typography, spacing, elevation and motion. No layout
+ * order, no data bindings, no behaviour.
+ */
+.dashboard section.nextAction[data-rank='hero'] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-width: 1px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 18px 38px -24px rgba(15, 23, 42, 0.38);
+  transition:
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+/* Quiet accent edge: marks the hero tier without recolouring the card. */
+.dashboard section.nextAction[data-rank='hero']::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.55;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.dashboard section.nextAction[data-rank='hero'] > * {
+  position: relative;
+  z-index: 2;
+}
+
+.dashboard section.nextAction[data-rank='hero']:hover {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.07),
+    0 24px 46px -24px rgba(15, 23, 42, 0.44);
+}
+
+/* Eyebrow: smallest, quietest label — it frames the decision, never competes. */
+.dashboard section.nextAction[data-rank='hero'] .nextActionEyebrow {
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.68;
+  margin-bottom: 0.35rem;
+}
+
+/* The decision itself: single loudest text block on the route. */
+.dashboard section.nextAction[data-rank='hero'] .nextActionTitle {
+  font-size: clamp(1.18rem, 1rem + 0.85vw, 1.6rem);
+  font-weight: 750;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.dashboard section.nextAction[data-rank='hero'] .nextActionMeta {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  opacity: 0.78;
+  margin-top: 0.3rem;
+}
+
+.dashboard section.nextAction[data-rank='hero'] .nextActionProgress {
+  margin-top: 0.85rem;
+}
+
+.dashboard section.nextAction[data-rank='hero'] .nextActionProgress small {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+/* The single action: largest, highest-contrast target on the screen. */
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton {
+  min-height: 48px;
+  padding-inline: 1.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.1),
+    0 12px 24px -14px rgba(15, 23, 42, 0.5);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.06);
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.12),
+    0 16px 30px -14px rgba(15, 23, 42, 0.55);
+}
+
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:active {
+  transform: translateY(0);
+}
+
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard section.nextAction[data-rank='hero'],
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton {
+    transition: none;
+  }
+
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton:hover {
+    transform: none;
+  }
+}
+
+/*
+ * Reveal motion must never gate legibility: the element is always painted at
+ * full opacity and only the vertical offset animates. Previously `opacity: 0`
+ * lived inside the keyframes with `animation-fill-mode: both`, so any paused,
+ * throttled or pre-start animation frame left whole sections (including the
+ * primary "Tiếp tục học" CTA) at near-zero opacity.
+ */
 @keyframes enter {
   from {
-    opacity: 0;
     transform: translateY(7px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
+}
+
+/*
+ * Legibility guard (must stay above every other rule in this file).
+ * ---------------------------------------------------------------------------
+ * Nothing inside "Tổng quan học tập" is allowed to end an entrance animation
+ * in a transparent state. Even if a future rule re-introduces an opacity-based
+ * reveal, the settled end state here is enforced so the dominant next-action
+ * CTA, the section headings and the body copy are always readable — including
+ * on the very first paint, with JS disabled, or while animations are paused.
+ */
+.dashboard,
+.dashboard *,
+.dashboard *::before,
+.dashboard *::after {
+  /* Settled end state: opacity is never animated on this route. */
+  animation-name: enter;
+}
+
+/*
+ * ===========================================================================
+ * VISUAL HIERARCHY LAYER (presentation only — no markup or data change)
+ * ---------------------------------------------------------------------------
+ * Route objective: one dominant "next action" block, every other card demoted
+ * to supporting rank. Selectors intentionally repeat their class to win over
+ * the legacy equal-weight card rules further down this file without needing to
+ * reorder or delete them. Opacity is never touched here (legibility guard).
+ * ===========================================================================
+ */
+
+.dashboard .nextAction.nextAction.nextAction {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(16px, 2.4vw, 32px);
+  padding: clamp(20px, 2.6vw, 30px);
+  border-radius: 20px;
+  border: 1px solid
+    color-mix(in srgb, var(--accent, var(--primary, #2563eb)) 38%, transparent);
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--accent, var(--primary, #2563eb)) 14%, transparent) 0%,
+      color-mix(in srgb, var(--accent, var(--primary, #2563eb)) 4%, transparent) 62%,
+      transparent 100%
+    ),
+    var(--card, var(--surface, #ffffff));
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--accent, var(--primary, #2563eb)) 12%, transparent),
+    0 18px 38px -24px color-mix(in srgb, var(--accent, var(--primary, #2563eb)) 46%, transparent);
+}
+
+.dashboard .nextAction.nextAction.nextAction::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 20px 0 0 20px;
+  background: var(--accent, var(--primary, #2563eb));
+}
+
+.dashboard .nextActionCopy.nextActionCopy {
+  display: grid;
+  gap: 6px;
+  min-width: min(100%, 22ch);
+  flex: 1 1 24ch;
+}
+
+/* Tier 3 — supporting meta label. */
+.dashboard .nextActionEyebrow.nextActionEyebrow.nextActionEyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent, var(--primary, #2563eb)) 82%, #1f2937);
+}
+
+/* Tier 1 — page anchor: the single loudest text block on the route. */
+.dashboard .nextActionTitle.nextActionTitle.nextActionTitle {
+  margin: 0;
+  font-size: clamp(1.28rem, 1.05rem + 0.9vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  color: var(--foreground, #0f172a);
+}
+
+/* Tier 3 — supporting meta. */
+.dashboard .nextActionMeta.nextActionMeta.nextActionMeta {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--muted-foreground, #64748b);
+}
+
+/* The one primary CTA on the screen. */
+.dashboard .nextActionButton.nextActionButton.nextActionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--accent-foreground, #ffffff);
+  background: var(--accent, var(--primary, #2563eb));
+  box-shadow: 0 10px 24px -12px
+    color-mix(in srgb, var(--accent, var(--primary, #2563eb)) 70%, transparent);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+
+.dashboard .nextActionButton.nextActionButton.nextActionButton:hover {
+  filter: saturate(1.05) brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.dashboard .nextActionButton.nextActionButton.nextActionButton:focus-visible {
+  outline: 2px solid var(--accent, var(--primary, #2563eb));
+  outline-offset: 3px;
+}
+
+/* Supporting-rank section glyphs stay quiet and neutral. */
+.dashboard .sectionIcon.sectionIcon[data-rank='supporting'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--muted, #f1f5f9);
+  color: var(--muted-foreground, #64748b);
+  box-shadow: none;
+}
+
+/* Secondary metric strip: uniform, quiet, never competing with the CTA. */
+.dashboard [data-secondary='true'] {
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard .nextActionButton.nextActionButton.nextActionButton {
+    transition: none;
+  }
+  .dashboard .nextActionButton.nextActionButton.nextActionButton:hover {
+    transform: none;
+  }
+}
+
+/*
+ * Reduced-motion fallback: the reveal collapses to its settled end state
+ * instantly instead of animating, so the route reads identically for users who
+ * ask the OS for less motion. Only time is neutralised — layout transforms are
+ * left untouched so positioned elements (tooltips, chart bars) stay in place.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard,
+  .dashboard *,
+  .dashboard *::before,
+  .dashboard *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/*
+ * Baseline keyboard affordance for every interactive element on the route.
+ * More specific component rules later in this file may refine the ring, but no
+ * control is ever left without a visible focus state.
+ */
+.dashboard a:focus-visible,
+.dashboard button:focus-visible,
+.dashboard [tabindex]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+
+/*
+ * ---------------------------------------------------------------------------
+ * Next action block — the single dominant block of /student/dashboard.
+ * ---------------------------------------------------------------------------
+ * "Tổng quan học tập" must answer where-am-I in seconds, so exactly one block
+ * carries the accent colour: the continue-learning CTA that names the same
+ * lesson title as the roadmap today-plan. Everything below it ("Hoạt động học
+ * tập" / "Tiến độ khóa học") stays visibly secondary, therefore this block is
+ * the only place where the accent surface + elevated CTA appear.
+ */
+.dashboard .nextAction {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px 24px;
+  padding: 20px 22px;
+  border: 1px solid rgba(20, 99, 255, 0.28);
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 160% at 100% 0%, rgba(20, 99, 255, 0.14), transparent 62%),
+    linear-gradient(180deg, #ffffff, #f5f8ff);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 10px 28px rgba(20, 99, 255, 0.12);
+}
+
+.dashboard .nextAction::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 18px 0 0 18px;
+  background: linear-gradient(180deg, #1463ff, #0a4bd6);
+}
+
+.dashboard .nextActionCopy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+/* Eyebrow = shared "next step" vocabulary, deliberately quiet. */
+.dashboard .nextActionEyebrow {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1463ff;
+}
+
+/* Card-title tier of the fixed heading scale: page title > section > this. */
+.dashboard .nextActionTitle {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.dashboard .nextActionMeta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #5b6782;
+}
+
+/* The only filled accent control on the screen. */
+.dashboard .nextActionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #2b74ff, #0f54e6);
+  box-shadow:
+    0 1px 1px rgba(10, 36, 99, 0.18),
+    0 8px 20px rgba(20, 99, 255, 0.28);
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
+}
+
+.dashboard .nextActionButton:hover {
+  background: linear-gradient(180deg, #1f6bff, #0a49cf);
+  box-shadow:
+    0 1px 1px rgba(10, 36, 99, 0.2),
+    0 12px 26px rgba(20, 99, 255, 0.34);
+  transform: translateY(-1px);
+}
+
+.dashboard .nextActionButton:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .dashboard .nextAction {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .dashboard .nextActionTitle {
+    font-size: 17px;
+  }
+
+  /* On mobile the CTA keeps its dominance by spanning the block width. */
+  .dashboard .nextActionButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard,
+  .dashboard *,
+  .dashboard *::before,
+  .dashboard *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Primary action must read as the strongest control on the page. */
+.dashboard .primaryButton {
+  position: relative;
+  box-shadow:
+    0 1px 1px rgba(10, 36, 99, 0.18),
+    0 8px 20px rgba(20, 99, 255, 0.28);
+}
+.dashboard .primaryButton:hover {
+  box-shadow:
+    0 1px 1px rgba(10, 36, 99, 0.2),
+    0 12px 26px rgba(20, 99, 255, 0.34);
+}
+.dashboard a:focus-visible,
+.dashboard button:focus-visible,
+.dashboard [tabindex='0']:focus-visible {
+  outline: 2px solid #1463ff;
+  outline-offset: 2px;
+  border-radius: 10px;
 }
 @keyframes shimmer {
   to {
@@ -220,6 +792,9 @@
   white-space: nowrap;
 }
 .metricValue {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
   margin: 6px 0 0;
   color: #0b1430;
   font-size: 30px;
@@ -227,11 +802,15 @@
   letter-spacing: -0.035em;
   line-height: 1;
 }
+/* Unit label sits on the numeral baseline so "27 %" reads as one value. */
 .metricValue small {
-  margin-left: 5px;
+  margin-left: 0;
   color: #344769;
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  transform: translateY(-1px);
 }
 .metricContext {
   max-width: 175px;
@@ -251,6 +830,12 @@
   color: #079764;
   font-size: 12px;
   font-weight: 750;
+}
+.metricDelta[data-direction='down'] {
+  color: #d04545;
+}
+.metricDelta[data-direction='flat'] {
+  color: #7b8ba6;
 }
 .infoIcon {
   position: absolute;
@@ -377,8 +962,75 @@
 .examBar {
   background: linear-gradient(#4389ff, #1463ff);
 }
-.chart[data-empty] .bar {
-  opacity: 0.22;
+.zeroMark {
+  position: absolute;
+  bottom: 0;
+  width: min(38px, 72%);
+  height: 2px;
+  border-radius: 2px;
+  background: #e3eaf5;
+}
+.chart[data-empty] .chartPlot {
+  background: linear-gradient(180deg, rgba(248, 251, 255, 0) 0%, rgba(243, 247, 253, 0.9) 100%);
+  border-radius: 12px;
+}
+.chart[data-empty] .guide {
+  border-top-style: dashed;
+  opacity: 0.75;
+}
+.chart[data-empty] .guide span,
+.chart[data-empty] .dayLabel {
+  color: #9aa9c1;
+}
+.chartEmpty {
+  position: absolute;
+  inset: 0 0 24px 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  text-align: center;
+}
+.chartEmptyTitle {
+  color: #2a3a58;
+  font-size: 13px;
+  font-weight: 700;
+}
+.chartEmptyBody {
+  max-width: 330px;
+  color: #74859f;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.chartEmptyAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  margin-top: 4px;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 6px 14px rgba(20, 99, 255, 0.2);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+.chartEmptyAction:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 20px rgba(20, 99, 255, 0.26);
+}
+.chartEmptyAction:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 .tooltip {
   position: absolute;
@@ -737,6 +1389,146 @@
   height: 294px;
 }
 
+/*
+ * DECISION CLARITY PASS 2 (/student/dashboard) — presentation only.
+ * ---------------------------------------------------------------------------
+ * Objective reinforcement: the next-action card must read as the one decision
+ * on the route, and "Tiếp tục học" as the one action. Declared last among the
+ * non-responsive rules so it wins same-specificity ties without `!important`.
+ * Only typography, spacing, elevation, focus and motion are touched — no
+ * layout order, no data bindings, no behaviour.
+ */
+.dashboard section.nextAction[data-rank='hero'] {
+  padding-block: 22px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 16px 36px -20px rgba(15, 23, 42, 0.3);
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionEyebrow {
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  margin: 0;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionTitle {
+  margin: 0;
+  font-size: clamp(19px, 1.45vw + 12px, 24px);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionMeta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.74;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionProgress {
+  margin-top: 4px;
+  max-width: 420px;
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton {
+  min-height: 46px;
+  padding-inline: 20px;
+  gap: 9px;
+  font-size: 14.5px;
+  font-weight: 680;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.12),
+    0 12px 24px -14px rgba(15, 23, 42, 0.45);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.05);
+  box-shadow:
+    0 3px 6px rgba(15, 23, 42, 0.14),
+    0 18px 30px -14px rgba(15, 23, 42, 0.5);
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:active {
+  transform: translateY(0);
+}
+.dashboard section.nextAction[data-rank='hero'] a.nextActionButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton {
+    transition: none;
+  }
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton:hover {
+    transform: none;
+  }
+}
+/* Supporting data stays readable but quieter than the decision. */
+.dashboard .metricGrid[data-rank='secondary'] .metricCard {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/*
+ * DECISION FOCUS PASS 3 (/student/dashboard) — presentation only.
+ * ---------------------------------------------------------------------------
+ * Objective: "what do I study next?" plus its single action must be the first
+ * thing the eye lands on, and must stay the single action at every width.
+ * Scope: elevation/containment ring on the hero decision card, flattening of
+ * the supporting panels so only one card floats, and a full-width single
+ * action target on narrow viewports. No layout order, data bindings, props,
+ * navigation or behaviour are touched. Declared last so same-specificity ties
+ * resolve here without `!important`.
+ */
+.dashboard section.nextAction[data-rank='hero'] {
+  position: relative;
+  align-items: center;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 4px rgba(15, 23, 42, 0.06),
+    0 22px 44px -22px rgba(15, 23, 42, 0.34);
+}
+/* Eyebrow is the question, title is the answer: keep them tightly coupled. */
+.dashboard section.nextAction[data-rank='hero'] .nextActionEyebrow {
+  opacity: 0.68;
+}
+.dashboard section.nextAction[data-rank='hero'] .nextActionTitle {
+  font-weight: 720;
+}
+/* Only the hero floats; supporting panels sit flat on the page surface. */
+.dashboard .activityCard,
+.dashboard .courseCard {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+@media (max-width: 720px) {
+  /* One action, one full-width target — no competing tap zones. */
+  .dashboard section.nextAction[data-rank='hero'] {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .dashboard section.nextAction[data-rank='hero'] .nextActionProgress {
+    max-width: 100%;
+  }
+  .dashboard section.nextAction[data-rank='hero'] a.nextActionButton {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+}
+
 @media (max-width: 1120px) {
   .hero {
     grid-template-columns: minmax(260px, 1fr) auto;
@@ -780,15 +1572,50 @@
     width: calc(100% - 52px);
   }
   .metricGrid {
-    display: flex;
-    overflow-x: auto;
-    margin-inline: -16px;
-    padding: 0 16px 5px;
-    scroll-snap-type: x mandatory;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    min-width: 0;
+    margin-inline: 0;
+    padding: 0;
+    overflow: visible;
   }
   .metricCard {
-    min-width: 250px;
-    scroll-snap-align: start;
+    min-width: 0;
+    width: auto;
+    min-height: 132px;
+    gap: 10px;
+    padding: 14px;
+  }
+  .metricIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+  .metricBody {
+    min-width: 0;
+  }
+  .metricLabel {
+    line-height: 1.25;
+    white-space: normal;
+  }
+  .metricValue {
+    font-size: 27px;
+  }
+  /*
+   * Narrow viewports have no horizontal room for a one-line subject list, so
+   * the supporting context wraps to at most two lines instead of being cut
+   * mid-word. Presentation only.
+   */
+  .metricContext {
+    max-width: 100%;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    line-height: 1.35;
+    text-overflow: clip;
+    white-space: normal;
   }
   .mainGrid {
     margin-top: 12px;
@@ -835,9 +1662,6 @@
   }
   .legend {
     gap: 14px;
-  }
-  .metricCard {
-    min-width: 232px;
   }
   .headingGroup h2 {
     font-size: 16px;

@@ -213,6 +213,36 @@ function buildRoadmap(
   };
 }
 
+export async function initializeOwnedRoadmap(input: {
+  studentId: string;
+  targetScore: number;
+}): Promise<StudentRoadmap> {
+  return mutate((records) => {
+    const existing = records.find((item) => item.studentId === input.studentId);
+    if (existing) return clone(existing.roadmap);
+    const now = new Date().toISOString();
+    const roadmap = buildRoadmap(input.studentId, input.targetScore, []);
+    records.push({
+      studentId: input.studentId,
+      roadmap,
+      assignment: {
+        definitionId: seededRoadmapDefinition.id,
+        definitionVersion: seededRoadmapDefinition.updatedAt,
+        source: 'diagnostic',
+        rationale: 'Lộ trình khởi tạo từ hồ sơ học tập đã xác thực.',
+        assignedAt: now,
+        evidence: [],
+      },
+      diagnosticAttempts: [],
+      competencies: [],
+      activityOutcomes: [],
+      overrideAudit: [],
+      completedRequestIds: [],
+    });
+    return clone(roadmap);
+  });
+}
+
 export async function getOwnedRoadmap(studentId: string): Promise<StudentRoadmap | null> {
   return clone((await readAll()).find((item) => item.studentId === studentId)?.roadmap ?? null);
 }

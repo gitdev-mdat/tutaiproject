@@ -619,6 +619,18 @@
   }
 }
 
+/* Header account dropdown entrance (motion-safe only) */
+@keyframes accountMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Page base: hero top is deep navy, then transitions to soft white */
 body {
   background-color: #071426;
@@ -1177,8 +1189,8 @@ body {
 
 @keyframes hero-line-in {
   from {
-    opacity: 0;
-    transform: translateY(14px);
+    opacity: 0.45;
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -1191,17 +1203,20 @@ body {
   animation: hero-badge-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: 100ms;
 }
+/* Headline lines: tight stagger so the full value proposition
+   ("Chinh phục mục tiêu 9+ THPT Quốc Gia") is readable almost immediately
+   instead of leaving ~2 blank lines of dark space above the fold. */
 .hero-line-1 {
-  animation: hero-line-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: 320ms;
+  animation: hero-line-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 40ms;
 }
 .hero-line-2 {
-  animation: hero-line-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: 520ms;
+  animation: hero-line-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 110ms;
 }
 .hero-line-3 {
-  animation: hero-line-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: 700ms;
+  animation: hero-line-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 180ms;
 }
 
 /* Illustration floating */

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { msg } from '@/messages/vi';
 import { HomeSections } from '@/components/home/home-sections';
+import { getStudentLandingContext } from '@/lib/navigation/landing-cta.server';
 
 export const metadata: Metadata = {
   title: msg('home.meta.title'),
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
  * Header: rendered inside HomeSections → inside Hero section.
  * Controlled section navigation: useSectionScrollController (desktop only).
  */
-export default function HomePage() {
-  return <HomeSections />;
+export default async function HomePage() {
+  const landingContext = await getStudentLandingContext();
+
+  return <HomeSections landingContext={landingContext} />;
 }

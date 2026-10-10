@@ -24,8 +24,7 @@ import {
 } from 'lucide-react';
 
 import { TuTaiMark } from '@/components/layout/public-header';
-import { getRoadmapCta, getClientRoadmapUserState } from '@/lib/navigation/roadmap-flow';
-import { useOnboardingDraft } from '@/lib/onboarding/use-onboarding-draft';
+import type { LandingCta } from '@/lib/navigation/landing-cta';
 
 import {
   ProductDemoCursor,
@@ -735,13 +734,8 @@ function ProductShowcaseShell() {
   );
 }
 
-export function TransformationSection() {
+export function TransformationSection({ primaryCta }: { primaryCta: LandingCta }) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const { draft } = useOnboardingDraft();
-  const roadmapCta = getRoadmapCta({
-    ...getClientRoadmapUserState(draft?.progress),
-    hasRoadmap: draft?.hasRoadmap ?? false,
-  });
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -825,9 +819,8 @@ export function TransformationSection() {
             className={`${styles.actions} ${styles.reveal}`}
             style={{ '--reveal-delay': '520ms' } as CSSProperties}
           >
-            <Link href={roadmapCta.path} className={styles.primaryCta}>
-              <span className={styles.desktopCtaLabel}>{roadmapCta.label}</span>
-              <span className={styles.mobileCtaLabel}>Xem Tú Tài chọn bài cho em</span>
+            <Link href={primaryCta.path} className={styles.primaryCta}>
+              <span>{primaryCta.label}</span>
               <span aria-hidden="true">
                 <ArrowRight size={17} strokeWidth={2.2} />
               </span>

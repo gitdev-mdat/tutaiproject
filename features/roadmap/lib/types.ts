@@ -250,7 +250,13 @@ export interface CompleteActivityInput {
   accuracy?: number;
 }
 
+export interface StudentRoadmapSnapshot {
+  roadmap: StudentRoadmap | null;
+  dashboard: StudentRoadmapDashboard | null;
+}
+
 export interface RoadmapService {
+  getStudentRoadmapSnapshot(force?: boolean): Promise<StudentRoadmapSnapshot>;
   getStudentRoadmap(): Promise<StudentRoadmap | null>;
   getStudentRoadmapDashboard(): Promise<StudentRoadmapDashboard>;
   getRoadmapWeek(roadmapId: string, weekId: string): Promise<RoadmapWeek>;

@@ -4,6 +4,7 @@
 }
 
 .heroFrame {
+  --public-header-height: 84px;
   position: relative;
   display: flex;
   min-height: 100vh;
@@ -64,6 +65,7 @@
 
 @media (max-width: 1023px) {
   .heroFrame {
+    --public-header-height: 70px;
     background:
       radial-gradient(ellipse 86% 62% at 82% 34%, rgba(30, 101, 255, 0.2) 0%, transparent 68%),
       linear-gradient(145deg, #061326 0%, #071a38 60%, #0a285c 100%);

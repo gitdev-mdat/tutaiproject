@@ -1,0 +1,956 @@
+[
+  {
+    "studentId": "c53fa6c3-f1d3-470e-ada8-fde8f4467b66",
+    "roadmap": {
+      "id": "assignment-c53fa6c3-f1d3-470e-ada8-fde8f4467b66",
+      "studentId": "c53fa6c3-f1d3-470e-ada8-fde8f4467b66",
+      "subject": {
+        "id": "math-12",
+        "code": "MATH12",
+        "name": "Toán"
+      },
+      "targetScore": 9,
+      "dailyStudyMinutes": 30,
+      "estimatedWeeks": 12,
+      "status": "active",
+      "currentPhaseId": "stage-derivative",
+      "currentWeekId": "week-stage-derivative",
+      "currentActivityId": "step-derivative",
+      "phases": [
+        {
+          "id": "stage-derivative",
+          "roadmapId": "assignment-c53fa6c3-f1d3-470e-ada8-fde8f4467b66",
+          "order": 1,
+          "title": "Ứng dụng đạo hàm",
+          "description": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "topics": [
+            "Đạo hàm cơ bản",
+            "Phương pháp đổi biến số",
+            "Tính đơn điệu của hàm số",
+            "Cực trị hàm số",
+            "Kiểm tra nhanh"
+          ],
+          "outcome": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "status": "active",
+          "weeks": [
+            {
+              "id": "week-stage-derivative",
+              "phaseId": "stage-derivative",
+              "order": 1,
+              "title": "Ứng dụng đạo hàm",
+              "status": "active",
+              "completedActivities": 0,
+              "totalActivities": 5,
+              "activities": [
+                {
+                  "id": "step-derivative",
+                  "weekId": "week-stage-derivative",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Đạo hàm cơ bản",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-derivative-basic"
+                  },
+                  "status": "available"
+                },
+                {
+                  "id": "step-substitution",
+                  "weekId": "week-stage-derivative",
+                  "order": 2,
+                  "type": "lesson",
+                  "title": "Phương pháp đổi biến số",
+                  "estimatedMinutes": 18,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-substitution"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-monotonicity",
+                  "weekId": "week-stage-derivative",
+                  "order": 3,
+                  "type": "practice",
+                  "title": "Tính đơn điệu của hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-monotonicity"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-extrema",
+                  "weekId": "week-stage-derivative",
+                  "order": 4,
+                  "type": "practice",
+                  "title": "Cực trị hàm số",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-extrema"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-check",
+                  "weekId": "week-stage-derivative",
+                  "order": 5,
+                  "type": "quiz",
+                  "title": "Kiểm tra nhanh",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "quiz",
+                    "id": "quiz-derivative"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-functions",
+          "roadmapId": "assignment-c53fa6c3-f1d3-470e-ada8-fde8f4467b66",
+          "order": 2,
+          "title": "Khảo sát hàm số",
+          "description": "",
+          "topics": [
+            "Bảng biến thiên",
+            "Đồ thị hàm số"
+          ],
+          "outcome": "Khảo sát hàm số",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-functions",
+              "phaseId": "stage-functions",
+              "order": 1,
+              "title": "Khảo sát hàm số",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 2,
+              "activities": [
+                {
+                  "id": "step-variation",
+                  "weekId": "week-stage-functions",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Bảng biến thiên",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-variation"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-graph",
+                  "weekId": "week-stage-functions",
+                  "order": 2,
+                  "type": "practice",
+                  "title": "Đồ thị hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-graph"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-log",
+          "roadmapId": "assignment-c53fa6c3-f1d3-470e-ada8-fde8f4467b66",
+          "order": 3,
+          "title": "Mũ và Logarit",
+          "description": "",
+          "topics": [
+            "Hàm số mũ và logarit"
+          ],
+          "outcome": "Mũ và Logarit",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-log",
+              "phaseId": "stage-log",
+              "order": 1,
+              "title": "Mũ và Logarit",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 1,
+              "activities": [
+                {
+                  "id": "step-log",
+                  "weekId": "week-stage-log",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Hàm số mũ và logarit",
+                  "estimatedMinutes": 25,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-logarithm"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "progress": {
+        "completedActivities": 0,
+        "totalActivities": 8,
+        "percentage": 0
+      },
+      "createdAt": "2026-09-27T00:58:49.052Z",
+      "updatedAt": "2026-09-27T00:58:49.052Z"
+    },
+    "assignment": {
+      "definitionId": "roadmap-math-12",
+      "definitionVersion": "2026-09-09T08:00:00.000Z",
+      "source": "diagnostic",
+      "rationale": "Kết quả chẩn đoán vững; bắt đầu ở phần luyện tập phù hợp mục tiêu.",
+      "assignedAt": "2026-09-27T00:58:49.052Z",
+      "evidence": [
+        {
+          "correct": 7,
+          "total": 10,
+          "topicId": "dao-ham"
+        }
+      ]
+    },
+    "diagnosticAttempts": [
+      {
+        "id": "44dc745b-0722-4582-8f84-76b567a5b70c",
+        "submissionId": "cta-0927075847",
+        "targetScore": 9,
+        "evidence": [
+          {
+            "correct": 7,
+            "total": 10,
+            "topicId": "dao-ham"
+          }
+        ],
+        "submittedAt": "2026-09-27T00:58:49.052Z"
+      }
+    ],
+    "competencies": [
+      {
+        "topicId": "dao-ham",
+        "mastery": 70,
+        "evidenceCount": 10,
+        "updatedAt": "2026-09-27T00:58:49.052Z"
+      }
+    ],
+    "activityOutcomes": [],
+    "overrideAudit": [],
+    "completedRequestIds": []
+  },
+  {
+    "studentId": "907db492-493d-4d3c-a445-d758b779d5ba",
+    "roadmap": {
+      "id": "assignment-907db492-493d-4d3c-a445-d758b779d5ba",
+      "studentId": "907db492-493d-4d3c-a445-d758b779d5ba",
+      "subject": {
+        "id": "math-12",
+        "code": "MATH12",
+        "name": "Toán"
+      },
+      "targetScore": 9,
+      "dailyStudyMinutes": 30,
+      "estimatedWeeks": 12,
+      "status": "active",
+      "currentPhaseId": "stage-derivative",
+      "currentWeekId": "week-stage-derivative",
+      "currentActivityId": "step-derivative",
+      "phases": [
+        {
+          "id": "stage-derivative",
+          "roadmapId": "assignment-907db492-493d-4d3c-a445-d758b779d5ba",
+          "order": 1,
+          "title": "Ứng dụng đạo hàm",
+          "description": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "topics": [
+            "Đạo hàm cơ bản",
+            "Phương pháp đổi biến số",
+            "Tính đơn điệu của hàm số",
+            "Cực trị hàm số",
+            "Kiểm tra nhanh"
+          ],
+          "outcome": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "status": "active",
+          "weeks": [
+            {
+              "id": "week-stage-derivative",
+              "phaseId": "stage-derivative",
+              "order": 1,
+              "title": "Ứng dụng đạo hàm",
+              "status": "active",
+              "completedActivities": 0,
+              "totalActivities": 5,
+              "activities": [
+                {
+                  "id": "step-derivative",
+                  "weekId": "week-stage-derivative",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Đạo hàm cơ bản",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-derivative-basic"
+                  },
+                  "status": "available"
+                },
+                {
+                  "id": "step-substitution",
+                  "weekId": "week-stage-derivative",
+                  "order": 2,
+                  "type": "lesson",
+                  "title": "Phương pháp đổi biến số",
+                  "estimatedMinutes": 18,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-substitution"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-monotonicity",
+                  "weekId": "week-stage-derivative",
+                  "order": 3,
+                  "type": "practice",
+                  "title": "Tính đơn điệu của hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-monotonicity"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-extrema",
+                  "weekId": "week-stage-derivative",
+                  "order": 4,
+                  "type": "practice",
+                  "title": "Cực trị hàm số",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-extrema"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-check",
+                  "weekId": "week-stage-derivative",
+                  "order": 5,
+                  "type": "quiz",
+                  "title": "Kiểm tra nhanh",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "quiz",
+                    "id": "quiz-derivative"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-functions",
+          "roadmapId": "assignment-907db492-493d-4d3c-a445-d758b779d5ba",
+          "order": 2,
+          "title": "Khảo sát hàm số",
+          "description": "",
+          "topics": [
+            "Bảng biến thiên",
+            "Đồ thị hàm số"
+          ],
+          "outcome": "Khảo sát hàm số",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-functions",
+              "phaseId": "stage-functions",
+              "order": 1,
+              "title": "Khảo sát hàm số",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 2,
+              "activities": [
+                {
+                  "id": "step-variation",
+                  "weekId": "week-stage-functions",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Bảng biến thiên",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-variation"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-graph",
+                  "weekId": "week-stage-functions",
+                  "order": 2,
+                  "type": "practice",
+                  "title": "Đồ thị hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-graph"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-log",
+          "roadmapId": "assignment-907db492-493d-4d3c-a445-d758b779d5ba",
+          "order": 3,
+          "title": "Mũ và Logarit",
+          "description": "",
+          "topics": [
+            "Hàm số mũ và logarit"
+          ],
+          "outcome": "Mũ và Logarit",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-log",
+              "phaseId": "stage-log",
+              "order": 1,
+              "title": "Mũ và Logarit",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 1,
+              "activities": [
+                {
+                  "id": "step-log",
+                  "weekId": "week-stage-log",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Hàm số mũ và logarit",
+                  "estimatedMinutes": 25,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-logarithm"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "progress": {
+        "completedActivities": 0,
+        "totalActivities": 8,
+        "percentage": 0
+      },
+      "createdAt": "2026-09-27T00:59:04.414Z",
+      "updatedAt": "2026-09-27T00:59:04.414Z"
+    },
+    "assignment": {
+      "definitionId": "roadmap-math-12",
+      "definitionVersion": "2026-09-09T08:00:00.000Z",
+      "source": "diagnostic",
+      "rationale": "Kết quả chẩn đoán vững; bắt đầu ở phần luyện tập phù hợp mục tiêu.",
+      "assignedAt": "2026-09-27T00:59:04.414Z",
+      "evidence": [
+        {
+          "total": 10,
+          "correct": 7,
+          "topicId": "dao-ham"
+        }
+      ]
+    },
+    "diagnosticAttempts": [
+      {
+        "id": "ca5afe81-bd63-4e5d-9e66-75363e0b8e40",
+        "submissionId": "cta-27075904",
+        "targetScore": 9,
+        "evidence": [
+          {
+            "total": 10,
+            "correct": 7,
+            "topicId": "dao-ham"
+          }
+        ],
+        "submittedAt": "2026-09-27T00:59:04.414Z"
+      }
+    ],
+    "competencies": [
+      {
+        "topicId": "dao-ham",
+        "mastery": 70,
+        "evidenceCount": 10,
+        "updatedAt": "2026-09-27T00:59:04.414Z"
+      }
+    ],
+    "activityOutcomes": [],
+    "overrideAudit": [],
+    "completedRequestIds": []
+  },
+  {
+    "studentId": "9a31e292-57ae-45b5-aba8-6512c38e9063",
+    "roadmap": {
+      "id": "assignment-9a31e292-57ae-45b5-aba8-6512c38e9063",
+      "studentId": "9a31e292-57ae-45b5-aba8-6512c38e9063",
+      "subject": {
+        "id": "math-12",
+        "code": "MATH12",
+        "name": "Toán"
+      },
+      "targetScore": 8,
+      "dailyStudyMinutes": 30,
+      "estimatedWeeks": 12,
+      "status": "active",
+      "currentPhaseId": "stage-derivative",
+      "currentWeekId": "week-stage-derivative",
+      "currentActivityId": "step-derivative",
+      "phases": [
+        {
+          "id": "stage-derivative",
+          "roadmapId": "assignment-9a31e292-57ae-45b5-aba8-6512c38e9063",
+          "order": 1,
+          "title": "Ứng dụng đạo hàm",
+          "description": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "topics": [
+            "Đạo hàm cơ bản",
+            "Phương pháp đổi biến số",
+            "Tính đơn điệu của hàm số",
+            "Cực trị hàm số",
+            "Kiểm tra nhanh"
+          ],
+          "outcome": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "status": "active",
+          "weeks": [
+            {
+              "id": "week-stage-derivative",
+              "phaseId": "stage-derivative",
+              "order": 1,
+              "title": "Ứng dụng đạo hàm",
+              "status": "active",
+              "completedActivities": 0,
+              "totalActivities": 5,
+              "activities": [
+                {
+                  "id": "step-derivative",
+                  "weekId": "week-stage-derivative",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Đạo hàm cơ bản",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-derivative-basic"
+                  },
+                  "status": "available"
+                },
+                {
+                  "id": "step-substitution",
+                  "weekId": "week-stage-derivative",
+                  "order": 2,
+                  "type": "lesson",
+                  "title": "Phương pháp đổi biến số",
+                  "estimatedMinutes": 18,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-substitution"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-monotonicity",
+                  "weekId": "week-stage-derivative",
+                  "order": 3,
+                  "type": "practice",
+                  "title": "Tính đơn điệu của hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-monotonicity"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-extrema",
+                  "weekId": "week-stage-derivative",
+                  "order": 4,
+                  "type": "practice",
+                  "title": "Cực trị hàm số",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-extrema"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-check",
+                  "weekId": "week-stage-derivative",
+                  "order": 5,
+                  "type": "quiz",
+                  "title": "Kiểm tra nhanh",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "quiz",
+                    "id": "quiz-derivative"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-functions",
+          "roadmapId": "assignment-9a31e292-57ae-45b5-aba8-6512c38e9063",
+          "order": 2,
+          "title": "Khảo sát hàm số",
+          "description": "",
+          "topics": [
+            "Bảng biến thiên",
+            "Đồ thị hàm số"
+          ],
+          "outcome": "Khảo sát hàm số",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-functions",
+              "phaseId": "stage-functions",
+              "order": 1,
+              "title": "Khảo sát hàm số",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 2,
+              "activities": [
+                {
+                  "id": "step-variation",
+                  "weekId": "week-stage-functions",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Bảng biến thiên",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-variation"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-graph",
+                  "weekId": "week-stage-functions",
+                  "order": 2,
+                  "type": "practice",
+                  "title": "Đồ thị hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-graph"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-log",
+          "roadmapId": "assignment-9a31e292-57ae-45b5-aba8-6512c38e9063",
+          "order": 3,
+          "title": "Mũ và Logarit",
+          "description": "",
+          "topics": [
+            "Hàm số mũ và logarit"
+          ],
+          "outcome": "Mũ và Logarit",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-log",
+              "phaseId": "stage-log",
+              "order": 1,
+              "title": "Mũ và Logarit",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 1,
+              "activities": [
+                {
+                  "id": "step-log",
+                  "weekId": "week-stage-log",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Hàm số mũ và logarit",
+                  "estimatedMinutes": 25,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-logarithm"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "progress": {
+        "completedActivities": 0,
+        "totalActivities": 8,
+        "percentage": 0
+      },
+      "createdAt": "2026-09-29T04:01:18.443Z",
+      "updatedAt": "2026-09-29T04:01:18.443Z"
+    },
+    "assignment": {
+      "definitionId": "roadmap-math-12",
+      "definitionVersion": "2026-09-09T08:00:00.000Z",
+      "source": "diagnostic",
+      "rationale": "Lộ trình khởi tạo từ hồ sơ học tập đã xác thực.",
+      "assignedAt": "2026-09-29T04:01:18.442Z",
+      "evidence": []
+    },
+    "diagnosticAttempts": [],
+    "competencies": [],
+    "activityOutcomes": [],
+    "overrideAudit": [],
+    "completedRequestIds": []
+  },
+  {
+    "studentId": "7b4b834a-141d-4f72-8ed7-181f49ac0823",
+    "roadmap": {
+      "id": "assignment-7b4b834a-141d-4f72-8ed7-181f49ac0823",
+      "studentId": "7b4b834a-141d-4f72-8ed7-181f49ac0823",
+      "subject": {
+        "id": "math-12",
+        "code": "MATH12",
+        "name": "Toán"
+      },
+      "targetScore": 8,
+      "dailyStudyMinutes": 30,
+      "estimatedWeeks": 12,
+      "status": "active",
+      "currentPhaseId": "stage-derivative",
+      "currentWeekId": "week-stage-derivative",
+      "currentActivityId": "step-derivative",
+      "phases": [
+        {
+          "id": "stage-derivative",
+          "roadmapId": "assignment-7b4b834a-141d-4f72-8ed7-181f49ac0823",
+          "order": 1,
+          "title": "Ứng dụng đạo hàm",
+          "description": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "topics": [
+            "Đạo hàm cơ bản",
+            "Phương pháp đổi biến số",
+            "Tính đơn điệu của hàm số",
+            "Cực trị hàm số",
+            "Kiểm tra nhanh"
+          ],
+          "outcome": "Củng cố nền tảng trước khi khảo sát hàm số.",
+          "status": "active",
+          "weeks": [
+            {
+              "id": "week-stage-derivative",
+              "phaseId": "stage-derivative",
+              "order": 1,
+              "title": "Ứng dụng đạo hàm",
+              "status": "active",
+              "completedActivities": 0,
+              "totalActivities": 5,
+              "activities": [
+                {
+                  "id": "step-derivative",
+                  "weekId": "week-stage-derivative",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Đạo hàm cơ bản",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-derivative-basic"
+                  },
+                  "status": "available"
+                },
+                {
+                  "id": "step-substitution",
+                  "weekId": "week-stage-derivative",
+                  "order": 2,
+                  "type": "lesson",
+                  "title": "Phương pháp đổi biến số",
+                  "estimatedMinutes": 18,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-substitution"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-monotonicity",
+                  "weekId": "week-stage-derivative",
+                  "order": 3,
+                  "type": "practice",
+                  "title": "Tính đơn điệu của hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-monotonicity"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-extrema",
+                  "weekId": "week-stage-derivative",
+                  "order": 4,
+                  "type": "practice",
+                  "title": "Cực trị hàm số",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-extrema"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-check",
+                  "weekId": "week-stage-derivative",
+                  "order": 5,
+                  "type": "quiz",
+                  "title": "Kiểm tra nhanh",
+                  "estimatedMinutes": 15,
+                  "contentRef": {
+                    "type": "quiz",
+                    "id": "quiz-derivative"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-functions",
+          "roadmapId": "assignment-7b4b834a-141d-4f72-8ed7-181f49ac0823",
+          "order": 2,
+          "title": "Khảo sát hàm số",
+          "description": "",
+          "topics": [
+            "Bảng biến thiên",
+            "Đồ thị hàm số"
+          ],
+          "outcome": "Khảo sát hàm số",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-functions",
+              "phaseId": "stage-functions",
+              "order": 1,
+              "title": "Khảo sát hàm số",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 2,
+              "activities": [
+                {
+                  "id": "step-variation",
+                  "weekId": "week-stage-functions",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Bảng biến thiên",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-variation"
+                  },
+                  "status": "locked"
+                },
+                {
+                  "id": "step-graph",
+                  "weekId": "week-stage-functions",
+                  "order": 2,
+                  "type": "practice",
+                  "title": "Đồ thị hàm số",
+                  "estimatedMinutes": 20,
+                  "contentRef": {
+                    "type": "practice_set",
+                    "id": "practice-graph"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stage-log",
+          "roadmapId": "assignment-7b4b834a-141d-4f72-8ed7-181f49ac0823",
+          "order": 3,
+          "title": "Mũ và Logarit",
+          "description": "",
+          "topics": [
+            "Hàm số mũ và logarit"
+          ],
+          "outcome": "Mũ và Logarit",
+          "status": "locked",
+          "weeks": [
+            {
+              "id": "week-stage-log",
+              "phaseId": "stage-log",
+              "order": 1,
+              "title": "Mũ và Logarit",
+              "status": "locked",
+              "completedActivities": 0,
+              "totalActivities": 1,
+              "activities": [
+                {
+                  "id": "step-log",
+                  "weekId": "week-stage-log",
+                  "order": 1,
+                  "type": "lesson",
+                  "title": "Hàm số mũ và logarit",
+                  "estimatedMinutes": 25,
+                  "contentRef": {
+                    "type": "lesson",
+                    "id": "lesson-logarithm"
+                  },
+                  "status": "locked"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "progress": {
+        "completedActivities": 0,
+        "totalActivities": 8,
+        "percentage": 0
+      },
+      "createdAt": "2026-10-02T02:35:46.464Z",
+      "updatedAt": "2026-10-02T02:35:46.464Z"
+    },
+    "assignment": {
+      "definitionId": "roadmap-math-12",
+      "definitionVersion": "2026-09-09T08:00:00.000Z",
+      "source": "diagnostic",
+      "rationale": "Lộ trình khởi tạo từ hồ sơ học tập đã xác thực.",
+      "assignedAt": "2026-10-02T02:35:46.463Z",
+      "evidence": []
+    },
+    "diagnosticAttempts": [],
+    "competencies": [],
+    "activityOutcomes": [],
+    "overrideAudit": [],
+    "completedRequestIds": []
+  }
+]

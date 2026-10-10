@@ -1,10 +1,10 @@
+/* Entrance motion must never gate legibility: content stays fully opaque and
+   only settles vertically, so any paint before/at animation start is readable. */
 @keyframes enter {
   from {
-    opacity: 0;
     transform: translateY(7px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -18,6 +18,96 @@
   margin: 0 auto;
   padding-bottom: 30px;
   color: #0b1020;
+}
+
+/* ───── Hierarchy layer ─────
+   One dominant action block ("Kế hoạch hôm nay" lesson card). Every other
+   block — quick check, reason note, journey strip — is visibly supporting.
+   Accent (--blue) stays reserved for the next-action CTA. */
+
+.page .lessonCard {
+  border-color: #c9ddff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 20px 44px -24px rgba(20, 99, 255, 0.34);
+}
+.page .lessonCard .lessonContent h2 {
+  font-size: clamp(21px, 1.85vw, 27px);
+  line-height: 1.2;
+}
+
+/* supporting — "Vì sao bài này xuất hiện?" becomes a quiet footnote */
+.page .reasonBox {
+  background: #f7f9fc;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.page .reasonBox > span {
+  color: #8c9cb3;
+}
+.page .reasonBox > span > svg {
+  width: 17px;
+  height: 17px;
+}
+.page .reasonBox h3 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #5b6b82;
+}
+.page .reasonBox p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #778799;
+}
+
+/* supporting — "Tiếp theo trong hành trình" reads as a quiet timeline strip */
+.page .journeyCard {
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.page .journeyCard .journeyHeader > span {
+  color: #93a3b8;
+}
+.page .journeyCard .journeyHeader > span > svg {
+  width: 18px;
+  height: 18px;
+}
+.page .journeyCard .journeyHeader h2 {
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 0;
+  color: #3a4a61;
+}
+.page .journeyCard .journeyHeader p {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8294aa;
+}
+.page .journeyCard .journeyHeader em {
+  font-size: 12px;
+  color: #93a3b8;
+}
+.page .journeyCard .journeySteps article {
+  box-shadow: none;
+}
+.page .journeyCard .journeySteps article > span {
+  color: #9aabc0;
+}
+.page .journeyCard .journeySteps h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a5a70;
+}
+.page .journeyCard .journeySteps p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8695a9;
+}
+.page .journeyCard .journeyArrow {
+  color: #cbd5e1;
 }
 .hero {
   position: relative;
