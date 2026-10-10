@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { KNOWLEDGE_NODE_TYPES } from '@/lib/knowledge-tree/knowledge-node-types';
 import {
   createKnowledge,
   getKnowledgeTreeReadModel,
 } from '@/lib/knowledge-tree/knowledge-tree-service';
+import type { KnowledgeNodeType } from '@/lib/knowledge-tree/knowledge-tree-types';
 
 export async function GET() {
   try {
@@ -21,6 +23,11 @@ export async function POST(request: Request) {
       parentId:
         body.parentId === null || body.parentId === undefined ? null : String(body.parentId),
       kind: body.kind === 'GROUP' ? 'GROUP' : 'KNOWLEDGE',
+      nodeType: KNOWLEDGE_NODE_TYPES.includes(body.nodeType)
+        ? (body.nodeType as KnowledgeNodeType)
+        : undefined,
+      hasLearningContent:
+        typeof body.hasLearningContent === 'boolean' ? body.hasLearningContent : undefined,
     });
     return NextResponse.json({ node }, { status: 201 });
   } catch (error: unknown) {

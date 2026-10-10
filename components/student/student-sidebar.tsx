@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  BookOpen,
   LayoutDashboard,
   Map,
   User,
@@ -18,6 +19,7 @@ import type { StudentShellModel } from '@/lib/student/types';
 const DESTINATION_ICONS: Record<string, typeof LayoutDashboard> = {
   dashboard: LayoutDashboard,
   roadmap: Map,
+  lessons: BookOpen,
   practice: Dumbbell,
   exams: FileText,
   rankings: Trophy,

@@ -44,6 +44,7 @@ describe('resolveStudentShellModel', () => {
     expect(hrefs).toEqual([
       '/student/dashboard',
       '/student/roadmap',
+      '/student/lessons',
       '/student/practice',
       '/student/exams',
       '/student/rankings',
