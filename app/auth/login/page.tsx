@@ -30,7 +30,7 @@ function LoginPageContent() {
     fetchAuthSession()
       .then((session) => {
         if (!active || !session?.authenticated) return;
-        router.replace(session.redirectTo);
+        router.replace(session.redirectTo ?? '/student/dashboard');
       })
       .catch(() => undefined);
 
