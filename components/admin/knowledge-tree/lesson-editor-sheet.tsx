@@ -2,7 +2,16 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Circle, ExternalLink, Eye, EyeOff, Loader2, PenLine } from 'lucide-react';
+import {
+  CheckCircle2,
+  Circle,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Loader2,
+  PenLine,
+  Sparkles,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
@@ -26,6 +35,8 @@ import type {
   KnowledgeArticleBlock,
   KnowledgeTreeNode,
 } from '@/lib/knowledge-tree/knowledge-tree-types';
+import type { AiDraftBlockType } from '@/lib/knowledge-tree/ai-lesson-draft';
+import { AiDraftPanel } from './ai-draft-panel';
 import { PublicationBadge } from './publication-badge';
 
 interface Props {
@@ -75,6 +86,12 @@ function LessonEditor({
   const [saving, setSaving] = React.useState<null | 'draft' | 'publish' | 'unpublish'>(null);
   const [error, setError] = React.useState<{ text: string; missing: string[] } | null>(null);
   const [confirmClose, setConfirmClose] = React.useState(false);
+  const [aiOpen, setAiOpen] = React.useState(false);
+  const [aiUndo, setAiUndo] = React.useState<{
+    blocks: KnowledgeArticleBlock[];
+    dirty: boolean;
+    count: number;
+  } | null>(null);
 
   const load = React.useCallback(async () => {
     setLoadState('loading');
@@ -109,6 +126,27 @@ function LessonEditor({
     setDirty(true);
   };
 
+  /** Applies reviewed AI parts to the editor only; the admin still saves explicitly. */
+  const applyAiDraft = (parts: Partial<Record<AiDraftBlockType, string>>) => {
+    setAiUndo({ blocks, dirty, count: Object.keys(parts).length });
+    setBlocks((current) =>
+      current.map((block) =>
+        parts[block.type as AiDraftBlockType] !== undefined
+          ? { ...block, content: parts[block.type as AiDraftBlockType]! }
+          : block
+      )
+    );
+    setDirty(true);
+    setAiOpen(false);
+  };
+
+  const undoAiDraft = () => {
+    if (!aiUndo) return;
+    setBlocks(aiUndo.blocks);
+    setDirty(aiUndo.dirty);
+    setAiUndo(null);
+  };
+
   const save = async (mode: 'draft' | 'publish' | 'unpublish') => {
     setSaving(mode);
     setError(null);
@@ -131,6 +169,7 @@ function LessonEditor({
     }
     setSaved(result.data);
     setDirty(false);
+    setAiUndo(null);
     const message =
       mode === 'publish'
         ? 'Đã lưu và hiển thị bài học cho học sinh.'
@@ -140,13 +179,27 @@ function LessonEditor({
     onSaved(node.id, summarizeArticle(result.data), message);
   };
 
+  const primarySave = () => {
+    if (saving || loadState !== 'ready' || !dirty) return;
+    if (published && !validation.isValid) return;
+    void save('draft');
+  };
+
   const requestClose = () => {
     if (dirty && !saving) setConfirmClose(true);
     else onClose();
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div
+      className="flex h-full min-h-0 flex-col"
+      onKeyDown={(event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+          event.preventDefault();
+          primarySave();
+        }
+      }}
+    >
       {/* Header */}
       <div className="border-b border-slate-200 px-5 pb-4 pt-5 sm:px-6">
         <div className="flex items-start gap-3">
@@ -164,33 +217,48 @@ function LessonEditor({
             Đóng
           </Button>
         </div>
-        <div
-          role="tablist"
-          aria-label="Chế độ soạn bài"
-          className="mt-4 inline-flex rounded-lg bg-slate-100 p-1"
-        >
-          {(
-            [
-              ['edit', 'Soạn bài', PenLine],
-              ['preview', 'Xem như học sinh', Eye],
-            ] as const
-          ).map(([value, label, Icon]) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={tab === value}
-              onClick={() => setTab(value)}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                tab === value
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </button>
-          ))}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div
+            role="tablist"
+            aria-label="Chế độ soạn bài"
+            className="inline-flex rounded-lg bg-slate-100 p-1"
+          >
+            {(
+              [
+                ['edit', 'Soạn bài', PenLine],
+                ['preview', 'Xem như học sinh', Eye],
+              ] as const
+            ).map(([value, label, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={tab === value}
+                onClick={() => setTab(value)}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  tab === value
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Icon className="size-4" aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto border-violet-200 text-violet-700 hover:bg-violet-50 hover:text-violet-800"
+            disabled={loadState !== 'ready'}
+            aria-expanded={aiOpen}
+            onClick={() => {
+              setTab('edit');
+              setAiOpen(true);
+            }}
+          >
+            <Sparkles /> Soạn nháp bằng AI
+          </Button>
         </div>
       </div>
 
@@ -235,10 +303,34 @@ function LessonEditor({
           </article>
         ) : (
           <div className="space-y-4">
-            {!saved && (
+            {aiOpen && (
+              <AiDraftPanel
+                nodeId={node.id}
+                repo={repo}
+                blocks={blocks}
+                onApply={applyAiDraft}
+                onClose={() => setAiOpen(false)}
+              />
+            )}
+            {aiUndo && (
+              <div
+                role="status"
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm text-violet-900"
+              >
+                <span className="min-w-0 flex-1">
+                  Đã đưa {aiUndo.count} phần do AI đề xuất vào bài. Chưa lưu, hãy đọc lại trước khi
+                  lưu.
+                </span>
+                <Button size="sm" variant="ghost" onClick={undoAiDraft}>
+                  Hoàn tác
+                </Button>
+              </div>
+            )}
+            {!saved && !aiOpen && (
               <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600">
                 Mục này chưa có bài học. Bắt đầu với Mục tiêu, Nội dung chính và Ví dụ, đó là ba
-                phần bắt buộc trước khi hiển thị cho học sinh.
+                phần bắt buộc trước khi hiển thị cho học sinh. Có thể dùng “Soạn nháp bằng AI” để có
+                bản đầu tiên.
               </p>
             )}
             <label className="block rounded-xl border border-slate-200 bg-white p-4 focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100">

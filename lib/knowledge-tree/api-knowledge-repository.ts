@@ -16,6 +16,7 @@ import {
   type UpdateNodeInput,
 } from './knowledge-repository';
 import { childrenOf } from './knowledge-tree';
+import type { AiDraftBlockType, AiLessonDraft } from './ai-lesson-draft';
 import type { ArticleSummary } from './learning-visibility';
 import type {
   KnowledgeArticle,
@@ -165,6 +166,26 @@ export class ApiKnowledgeRepository implements IKnowledgeRepository {
       }
     );
     return result.ok ? { ok: true, data: result.data.article } : result;
+  }
+
+  async getAiDraftAvailability(nodeId: string): Promise<{ available: boolean; reason?: string }> {
+    const result = await request<{ available: boolean; reason?: string }>(
+      `/api/knowledge-tree/${encodeURIComponent(nodeId)}/article/ai-draft`
+    );
+    return result.ok ? result.data : { available: false, reason: result.error.message };
+  }
+
+  /** Asks the server for a proposed draft. Never saves anything. */
+  async requestAiDraft(
+    nodeId: string,
+    input: { existing?: Partial<Record<AiDraftBlockType, string>>; note?: string },
+    signal?: AbortSignal
+  ): Promise<KnowledgeResult<AiLessonDraft>> {
+    const result = await request<{ draft: AiLessonDraft }>(
+      `/api/knowledge-tree/${encodeURIComponent(nodeId)}/article/ai-draft`,
+      { method: 'POST', body: JSON.stringify(input), signal }
+    );
+    return result.ok ? { ok: true, data: result.data.draft } : result;
   }
 
   // Source attachments have no server storage yet; the admin page does not expose them.

@@ -48,6 +48,9 @@ export const GEMINI_MODELS = {
 
   /** Optional stronger route for a future second-pass ambiguity adjudication. */
   ontologyAmbiguity: process.env.GEMINI_ONTOLOGY_AMBIGUITY_MODEL ?? 'gemini-3.5-flash',
+
+  /** Admin-initiated lesson drafting in the curriculum editor; structured JSON output. */
+  lessonDrafting: process.env.GEMINI_LESSON_DRAFT_MODEL ?? 'gemini-3.5-flash',
 } as const;
 
 export type GeminiModelStage = keyof typeof GEMINI_MODELS;

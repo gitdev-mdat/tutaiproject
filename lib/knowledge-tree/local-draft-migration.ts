@@ -47,6 +47,75 @@ export function markLocalDraftsHandled(outcome: 'migrated' | 'dismissed') {
   }
 }
 
+export interface LocalDraftMigrationPlan {
+  /** Items that will be created on the server. */
+  create: number;
+  /** Items matched to an existing server item with the same title under the same parent. */
+  merge: number;
+  /** Items whose parent no longer exists anywhere. */
+  orphaned: number;
+  /** Articles that will be copied to the server as drafts. */
+  articles: number;
+  /** Articles left alone because the server already has an article for that item. */
+  articlesKeptOnServer: number;
+  /** Articles with no matching knowledge item to attach to. */
+  articlesWithoutTarget: number;
+}
+
+const sameTitle = (a: string, b: string) =>
+  a.trim().toLocaleLowerCase('vi') === b.trim().toLocaleLowerCase('vi');
+
+/** Dry run of migrateLocalDrafts: what would happen, without touching the server. */
+export function planLocalDraftMigration(
+  serverNodes: KnowledgeTreeNode[],
+  snapshot: LocalDraftSnapshot,
+  serverArticleNodeIds: ReadonlySet<string>
+): LocalDraftMigrationPlan {
+  const idMap = new Map<string, string>(serverNodes.map((node) => [node.id, node.id]));
+  const known = [...serverNodes];
+  const created = new Set<string>();
+  let merge = 0;
+  let pending = [...snapshot.nodes];
+  while (pending.length) {
+    const ready = pending.filter((node) => node.parentId === null || idMap.has(node.parentId));
+    if (!ready.length) break;
+    for (const node of ready) {
+      const parentId = node.parentId === null ? null : idMap.get(node.parentId)!;
+      const existing = childrenOf(known, parentId).find((item) =>
+        sameTitle(item.title, node.title)
+      );
+      if (existing) {
+        idMap.set(node.id, existing.id);
+        merge += 1;
+        continue;
+      }
+      const placeholder = { ...node, id: `planned:${node.id}`, parentId };
+      idMap.set(node.id, placeholder.id);
+      known.push(placeholder);
+      created.add(placeholder.id);
+    }
+    pending = pending.filter((node) => !ready.includes(node));
+  }
+  let articles = 0;
+  let articlesKeptOnServer = 0;
+  let articlesWithoutTarget = 0;
+  for (const article of snapshot.articles) {
+    const target = idMap.get(article.knowledgeNodeId);
+    const targetNode = known.find((node) => node.id === target);
+    if (!target || targetNode?.kind !== 'KNOWLEDGE') articlesWithoutTarget += 1;
+    else if (!created.has(target) && serverArticleNodeIds.has(target)) articlesKeptOnServer += 1;
+    else articles += 1;
+  }
+  return {
+    create: created.size,
+    merge,
+    orphaned: pending.length,
+    articles,
+    articlesKeptOnServer,
+    articlesWithoutTarget,
+  };
+}
+
 export async function migrateLocalDrafts(
   repo: IKnowledgeRepository,
   serverNodes: KnowledgeTreeNode[],

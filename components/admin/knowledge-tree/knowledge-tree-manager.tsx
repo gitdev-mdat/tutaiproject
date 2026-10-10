@@ -3,14 +3,15 @@
 import * as React from 'react';
 import {
   AlertCircle,
+  CheckCircle2,
   ChevronDown,
-  CloudUpload,
   Download,
   FileText,
   MoreHorizontal,
   Pencil,
   Plus,
   Search,
+  X,
 } from 'lucide-react';
 import { ApiKnowledgeRepository } from '@/lib/knowledge-tree/api-knowledge-repository';
 import { childrenOf, knowledgeBreadcrumb } from '@/lib/knowledge-tree/knowledge-tree';
@@ -21,8 +22,11 @@ import {
   type LessonPublicationState,
 } from '@/lib/knowledge-tree/learning-visibility';
 import {
-  markLocalDraftsHandled,
-  migrateLocalDrafts,
+  buildStudioOverview,
+  buildWorkQueue,
+  type StudioChapter,
+} from '@/lib/knowledge-tree/content-studio';
+import {
   readLocalDraftSnapshot,
   type LocalDraftSnapshot,
 } from '@/lib/knowledge-tree/local-draft-migration';
@@ -52,6 +56,8 @@ import { NodeEditorDialog, type NodeEditorData } from './node-editor-dialog';
 import { TreeImportDialog } from './tree-import-dialog';
 import { LessonEditorSheet } from './lesson-editor-sheet';
 import { PublicationBadge } from './publication-badge';
+import { WorkQueue } from './work-queue';
+import { MigrationDialog } from './migration-dialog';
 
 const repo = new ApiKnowledgeRepository();
 
@@ -62,7 +68,7 @@ type EditorState = {
   parentId: string | null;
   node?: KnowledgeTreeNode;
 } | null;
-type StatusFilter = 'all' | 'NO_ARTICLE' | 'DRAFT' | 'PUBLISHED';
+type StatusFilter = 'all' | Exclude<LessonPublicationState, 'ARCHIVED'>;
 
 const ENTITY_LABELS: Record<EditorKind, string> = {
   subject: 'môn học',
@@ -71,12 +77,12 @@ const ENTITY_LABELS: Record<EditorKind, string> = {
   item: 'kiến thức',
 };
 
-const FILTERS: Array<{ value: StatusFilter; label: string }> = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'NO_ARTICLE', label: 'Chưa có bài' },
-  { value: 'DRAFT', label: 'Đang soạn' },
-  { value: 'PUBLISHED', label: 'Đang hiển thị' },
-];
+const FILTER_LABELS: Record<Exclude<StatusFilter, 'all'>, string> = {
+  NO_ARTICLE: 'Chưa có bài',
+  DRAFT: 'Bản nháp',
+  READY: 'Sẵn sàng',
+  PUBLISHED: 'Đang hiển thị',
+};
 
 const nodeType = (node: KnowledgeTreeNode) =>
   node.nodeType ||
@@ -88,12 +94,6 @@ const nodeType = (node: KnowledgeTreeNode) =>
         ? 'KIEN_THUC'
         : 'CHUONG');
 const normalized = (value: string) => value.trim().toLocaleLowerCase('vi');
-
-function matchesFilter(state: LessonPublicationState, filter: StatusFilter) {
-  if (filter === 'all') return true;
-  if (filter === 'DRAFT') return state === 'DRAFT' || state === 'READY';
-  return state === filter;
-}
 
 function subtree(nodes: KnowledgeTreeNode[], id: string): KnowledgeTreeNode[] {
   return childrenOf(nodes, id).flatMap((child) => [child, ...subtree(nodes, child.id)]);
@@ -108,6 +108,7 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
   const [search, setSearch] = React.useState('');
   const [filter, setFilter] = React.useState<StatusFilter>('all');
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
+  const [showArchived, setShowArchived] = React.useState(false);
   const [editor, setEditor] = React.useState<EditorState>(null);
   const [importOpen, setImportOpen] = React.useState(false);
   const [notice, setNotice] = React.useState<{ text: string; error?: boolean } | null>(null);
@@ -115,8 +116,9 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
   const [deleting, setDeleting] = React.useState(false);
   const [lessonNodeId, setLessonNodeId] = React.useState<string | null>(null);
   const [localDrafts, setLocalDrafts] = React.useState<LocalDraftSnapshot | null>(null);
-  const [migrating, setMigrating] = React.useState(false);
+  const [migrationOpen, setMigrationOpen] = React.useState(false);
   const noticeTimer = React.useRef<number | undefined>(undefined);
+  const explorerRef = React.useRef<HTMLElement>(null);
 
   const flash = React.useCallback((text: string, error = false) => {
     window.clearTimeout(noticeTimer.current);
@@ -156,27 +158,22 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
     [nodes, effectiveSubject]
   );
   const effectiveGrade = grades.some((g) => g.id === gradeId) ? gradeId : (grades[0]?.id ?? '');
-  const chapters = React.useMemo(
-    () => (effectiveGrade ? childrenOf(nodes, effectiveGrade) : []),
-    [nodes, effectiveGrade]
-  );
   const subjectNode = subjects.find((s) => s.id === effectiveSubject);
   const gradeNode = grades.find((g) => g.id === effectiveGrade);
+
+  const overview = React.useMemo(
+    () => buildStudioOverview(nodes, summaries, effectiveGrade),
+    [nodes, summaries, effectiveGrade]
+  );
+  const queue = React.useMemo(
+    () => buildWorkQueue(overview, nodes, summaries),
+    [overview, nodes, summaries]
+  );
 
   const stateOf = React.useCallback(
     (node: KnowledgeTreeNode) => getLessonPublicationState(nodes, node.id, summaries[node.id]),
     [nodes, summaries]
   );
-
-  const knowledgeItems = chapters.flatMap((chapter) =>
-    subtree(nodes, chapter.id).filter((node) => node.kind === 'KNOWLEDGE')
-  );
-  const stats = {
-    total: knowledgeItems.length,
-    published: knowledgeItems.filter((node) => stateOf(node) === 'PUBLISHED').length,
-    drafting: knowledgeItems.filter((node) => ['DRAFT', 'READY'].includes(stateOf(node))).length,
-    empty: knowledgeItems.filter((node) => stateOf(node) === 'NO_ARTICLE').length,
-  };
 
   const query = normalized(search);
   const filtering = !!query || filter !== 'all';
@@ -184,13 +181,31 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
     (!query ||
       normalized(item.title).includes(query) ||
       normalized(chapter.title).includes(query)) &&
-    (filter === 'all' || (item.kind === 'KNOWLEDGE' && matchesFilter(stateOf(item), filter)));
-  const visibleChapters = chapters.filter(
-    (chapter) =>
-      !filtering ||
-      (filter === 'all' && normalized(chapter.title).includes(query)) ||
-      childrenOf(nodes, chapter.id).some((item) => itemVisible(chapter, item))
-  );
+    (filter === 'all' || (item.kind === 'KNOWLEDGE' && stateOf(item) === filter));
+  const chapterVisible = (chapter: KnowledgeTreeNode) =>
+    !filtering ||
+    (filter === 'all' && normalized(chapter.title).includes(query)) ||
+    childrenOf(nodes, chapter.id).some((item) => itemVisible(chapter, item));
+  const activeChapters = overview.chapters.filter((c) => !c.archived && chapterVisible(c.node));
+  // Archived chapters have nothing actionable, so they leave the list while a filter is on.
+  const archivedChapters = filter === 'all' ? overview.chapters.filter((c) => c.archived) : [];
+  const shownArchived = archivedChapters.filter((c) => chapterVisible(c.node));
+
+  const applyFilter = (next: StatusFilter) => {
+    setFilter((current) => (current === next ? 'all' : next));
+    explorerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const focusChapter = (chapterId: string) => {
+    setSearch('');
+    setFilter('all');
+    setCollapsed((current) => ({ ...current, [chapterId]: false }));
+    window.requestAnimationFrame(() => {
+      const element = document.getElementById(`chapter-${chapterId}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
+    });
+  };
 
   // ── Mutations ────────────────────────────────────────────────────────────
   const save = async (data: NodeEditorData) => {
@@ -256,29 +271,6 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
     await load();
   };
 
-  const runMigration = async () => {
-    if (!localDrafts) return;
-    setMigrating(true);
-    try {
-      const result = await migrateLocalDrafts(
-        repo,
-        nodes,
-        localDrafts,
-        new Set(Object.keys(summaries))
-      );
-      setLocalDrafts(null);
-      flash(
-        `Đã chuyển ${result.nodes} mục và ${result.articles} bài học lên máy chủ` +
-          (result.skipped ? `, bỏ qua ${result.skipped} mục không còn vị trí phù hợp.` : '.')
-      );
-      await load();
-    } catch (error) {
-      flash(error instanceof Error ? error.message : 'Không chuyển được dữ liệu.', true);
-    } finally {
-      setMigrating(false);
-    }
-  };
-
   // ── Capability helpers (single source of truth: getNodeCapabilities) ───────
   const capsOf = (node: KnowledgeTreeNode) =>
     getNodeCapabilities(node, childrenOf(nodes, node.parentId));
@@ -296,12 +288,17 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
   if (loadState === 'loading') {
     return (
       <div className="h-full overflow-y-auto bg-slate-50" aria-busy="true">
-        <div className="mx-auto max-w-6xl space-y-4 px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6">
           <div className="h-8 w-72 animate-pulse rounded-lg bg-slate-200" />
-          <div className="h-24 animate-pulse rounded-xl bg-slate-200/70" />
-          {[0, 1, 2].map((item) => (
-            <div key={item} className="h-36 animate-pulse rounded-xl bg-slate-200/60" />
-          ))}
+          <div className="h-16 animate-pulse rounded-xl bg-slate-200/70" />
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-3">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="h-28 animate-pulse rounded-xl bg-slate-200/60" />
+              ))}
+            </div>
+            <div className="hidden h-64 animate-pulse rounded-xl bg-slate-200/60 lg:block" />
+          </div>
           <span className="sr-only">Đang tải chương trình…</span>
         </div>
       </div>
@@ -325,19 +322,193 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
     );
   }
 
+  const renderChapter = (chapter: StudioChapter, index: number | null) => {
+    const { node } = chapter;
+    const items = childrenOf(nodes, node.id);
+    const shownItems = filtering ? items.filter((item) => itemVisible(node, item)) : items;
+    const open = filtering ? true : !(collapsed[node.id] ?? chapter.archived);
+    const caps = capsOf(node);
+    const total = chapter.lessons.length;
+    const published = chapter.counts.PUBLISHED;
+    return (
+      <li
+        key={node.id}
+        id={`chapter-${node.id}`}
+        className="scroll-mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white"
+      >
+        <div className="flex items-center gap-2 px-3 py-2.5 sm:px-4">
+          <button
+            type="button"
+            aria-expanded={open}
+            onClick={() => setCollapsed((x) => ({ ...x, [node.id]: open }))}
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <ChevronDown
+              aria-hidden="true"
+              className={`size-4 shrink-0 text-slate-400 transition-transform ${open ? '' : '-rotate-90'}`}
+            />
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-baseline gap-x-2">
+                {index !== null && (
+                  <span className="text-xs font-semibold tabular-nums text-slate-400">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                )}
+                <h2 className="break-words text-[15px] font-semibold leading-6 text-slate-950">
+                  {node.title}
+                </h2>
+              </span>
+              <span className="block text-xs text-slate-500">
+                {chapter.archived
+                  ? 'Lưu trữ, học sinh không thấy'
+                  : total === 0
+                    ? 'Chưa có kiến thức'
+                    : chapter.complete
+                      ? `Hoàn chỉnh · ${total} bài đang hiển thị`
+                      : `${published}/${total} bài đang hiển thị`}
+              </span>
+            </span>
+          </button>
+          {!chapter.archived && total > 0 && (
+            <ChapterProgress counts={chapter.counts} total={total} complete={chapter.complete} />
+          )}
+          <RowMenu label={`Thao tác với chương ${node.title}`}>
+            <DropdownMenuItem
+              onClick={() => setEditor({ mode: 'create', kind: 'item', parentId: node.id })}
+            >
+              Thêm kiến thức
+            </DropdownMenuItem>
+            <DisabledAware
+              disabledReason={caps.canEdit ? null : 'Dữ liệu hệ thống'}
+              onClick={() =>
+                setEditor({ mode: 'edit', kind: 'chapter', parentId: effectiveGrade, node })
+              }
+            >
+              Đổi tên chương
+            </DisabledAware>
+            <DropdownMenuItem
+              disabled={!caps.canMoveUp}
+              onClick={() => void reorder(node.id, 'up')}
+            >
+              Di chuyển lên
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!caps.canMoveDown}
+              onClick={() => void reorder(node.id, 'down')}
+            >
+              Di chuyển xuống
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DisabledAware
+              destructive
+              disabledReason={deleteBlockedReason(node)}
+              onClick={() => setPendingDelete(node)}
+            >
+              Xóa chương
+            </DisabledAware>
+          </RowMenu>
+        </div>
+        {open && (
+          <div className="border-t border-slate-100">
+            {shownItems.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-slate-500 sm:pl-11">
+                Chương này chưa có kiến thức.
+              </p>
+            ) : (
+              <ol className="divide-y divide-slate-100">
+                {shownItems.map((item) => (
+                  <KnowledgeRow
+                    key={item.id}
+                    item={item}
+                    state={item.kind === 'KNOWLEDGE' ? stateOf(item) : null}
+                    caps={capsOf(item)}
+                    deleteReason={deleteBlockedReason(item)}
+                    highlight={!!query && normalized(item.title).includes(query)}
+                    onOpen={() => setLessonNodeId(item.id)}
+                    onRename={() =>
+                      setEditor({ mode: 'edit', kind: 'item', parentId: node.id, node: item })
+                    }
+                    onReorder={(direction) => void reorder(item.id, direction)}
+                    onDelete={() => setPendingDelete(item)}
+                  />
+                ))}
+              </ol>
+            )}
+            {!filtering && !chapter.archived && (
+              <div className="border-t border-slate-100 px-2 py-1 sm:pl-8">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-700 hover:text-blue-800"
+                  onClick={() => setEditor({ mode: 'create', kind: 'item', parentId: node.id })}
+                >
+                  <Plus /> Thêm kiến thức
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
+
+  const { totals } = overview;
+
   return (
     <div className="h-full overflow-y-auto bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-6 sm:pt-8">
-        {/* ── Page header ── */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mx-auto max-w-7xl px-4 pb-24 pt-5 sm:px-6 sm:pt-6">
+        {/* ── Header: title, scope, page actions ── */}
+        <header className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+            <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
               Chương trình &amp; Kiến thức
             </h1>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Sắp xếp chương, kiến thức và soạn bài học. Bài được bật hiển thị sẽ xuất hiện trong
-              mục Bài học của học sinh.
-            </p>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5">
+              <ScopePicker
+                label="Môn"
+                items={subjects}
+                value={effectiveSubject}
+                onSelect={(id) => {
+                  setSubjectId(id);
+                  setGradeId('');
+                }}
+                onAdd={() => setEditor({ mode: 'create', kind: 'subject', parentId: null })}
+                onEdit={
+                  subjectNode && capsOf(subjectNode).canEdit
+                    ? () =>
+                        setEditor({
+                          mode: 'edit',
+                          kind: 'subject',
+                          parentId: null,
+                          node: subjectNode,
+                        })
+                    : undefined
+                }
+                addLabel="Thêm môn học"
+              />
+              <ScopePicker
+                label="Lớp"
+                items={grades}
+                value={effectiveGrade}
+                disabled={!effectiveSubject}
+                onSelect={setGradeId}
+                onAdd={() =>
+                  setEditor({ mode: 'create', kind: 'grade', parentId: effectiveSubject })
+                }
+                onEdit={
+                  gradeNode && capsOf(gradeNode).canEdit
+                    ? () =>
+                        setEditor({
+                          mode: 'edit',
+                          kind: 'grade',
+                          parentId: effectiveSubject,
+                          node: gradeNode,
+                        })
+                    : undefined
+                }
+                addLabel="Thêm lớp"
+              />
+            </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <Button
@@ -358,132 +529,6 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
           </div>
         </header>
 
-        {localDrafts && (
-          <div className="mt-5 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center">
-            <CloudUpload className="size-5 shrink-0 text-amber-600" aria-hidden="true" />
-            <p className="min-w-0 flex-1 leading-6">
-              Trình duyệt này còn {localDrafts.nodes.length} mục và {localDrafts.articles.length}{' '}
-              bài học tạo ở phiên bản cũ, chưa có trên máy chủ. Chuyển lên để học sinh và quản trị
-              viên khác dùng được. Bài học sẽ được chuyển ở dạng bản nháp.
-            </p>
-            <div className="flex shrink-0 gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={migrating}
-                onClick={() => {
-                  markLocalDraftsHandled('dismissed');
-                  setLocalDrafts(null);
-                }}
-              >
-                Bỏ qua
-              </Button>
-              <Button size="sm" disabled={migrating} onClick={() => void runMigration()}>
-                {migrating ? 'Đang chuyển…' : 'Chuyển lên máy chủ'}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Context bar ── */}
-        <section
-          aria-label="Phạm vi chương trình"
-          className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm"
-        >
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:gap-6">
-            <ScopePicker
-              label="Môn học"
-              items={subjects}
-              value={effectiveSubject}
-              onSelect={(id) => {
-                setSubjectId(id);
-                setGradeId('');
-              }}
-              onAdd={() => setEditor({ mode: 'create', kind: 'subject', parentId: null })}
-              onEdit={
-                subjectNode && capsOf(subjectNode).canEdit
-                  ? () =>
-                      setEditor({
-                        mode: 'edit',
-                        kind: 'subject',
-                        parentId: null,
-                        node: subjectNode,
-                      })
-                  : undefined
-              }
-              addLabel="Thêm môn học"
-            />
-            <ScopePicker
-              label="Khối lớp"
-              items={grades}
-              value={effectiveGrade}
-              disabled={!effectiveSubject}
-              onSelect={setGradeId}
-              onAdd={() => setEditor({ mode: 'create', kind: 'grade', parentId: effectiveSubject })}
-              onEdit={
-                gradeNode && capsOf(gradeNode).canEdit
-                  ? () =>
-                      setEditor({
-                        mode: 'edit',
-                        kind: 'grade',
-                        parentId: effectiveSubject,
-                        node: gradeNode,
-                      })
-                  : undefined
-              }
-              addLabel="Thêm lớp"
-            />
-          </div>
-          {effectiveGrade && (
-            <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:flex sm:flex-wrap">
-                <Stat label="kiến thức" value={stats.total} />
-                <Stat label="đang hiển thị" value={stats.published} tone="text-emerald-700" />
-                <Stat label="đang soạn" value={stats.drafting} tone="text-amber-700" />
-                <Stat label="chưa có bài" value={stats.empty} tone="text-slate-500" />
-              </dl>
-              <div className="relative md:ml-auto md:w-72">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-                  aria-hidden="true"
-                />
-                <Input
-                  className="pl-9"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Tìm chương hoặc kiến thức…"
-                  aria-label="Tìm trong chương trình"
-                />
-              </div>
-            </div>
-          )}
-        </section>
-
-        {effectiveGrade && (
-          <div
-            role="radiogroup"
-            aria-label="Lọc theo trạng thái bài học"
-            className="mt-4 flex gap-2 overflow-x-auto pb-1"
-          >
-            {FILTERS.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                role="radio"
-                aria-checked={filter === item.value}
-                onClick={() => setFilter(item.value)}
-                className={`h-8 shrink-0 rounded-full px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                  filter === item.value
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         <div
           role="status"
           aria-live="polite"
@@ -496,207 +541,196 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
           {notice?.text}
         </div>
 
-        {/* ── Content ── */}
-        <div className="mt-4">
-          {!effectiveSubject ? (
-            <ContextPrompt
-              title="Chưa có môn học nào."
-              text="Tạo môn học đầu tiên để bắt đầu xây dựng chương trình."
-              action="Thêm môn học"
-              onAction={() => setEditor({ mode: 'create', kind: 'subject', parentId: null })}
-            />
-          ) : !effectiveGrade ? (
-            <ContextPrompt
-              title={`${subjectNode?.title ?? 'Môn học'} chưa có khối lớp.`}
-              text="Thêm khối lớp để tạo chương và kiến thức."
-              action="Thêm lớp"
-              onAction={() =>
-                setEditor({ mode: 'create', kind: 'grade', parentId: effectiveSubject })
-              }
-            />
-          ) : chapters.length === 0 ? (
-            <ContextPrompt
-              title={`Chưa có chương nào cho ${subjectNode?.title ?? ''} ${gradeNode?.title ?? ''}`}
-              text="Nhập chương trình có sẵn hoặc tạo chương đầu tiên."
-              action="Tạo chương đầu tiên"
-              onAction={() =>
-                setEditor({ mode: 'create', kind: 'chapter', parentId: effectiveGrade })
-              }
-              secondary={{ label: 'Nhập chương trình', onClick: () => setImportOpen(true) }}
-            />
-          ) : visibleChapters.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white py-12 text-center text-sm text-slate-500">
-              Không có kiến thức nào khớp bộ lọc.{' '}
-              <button
-                type="button"
-                className="font-medium text-blue-700 hover:underline"
-                onClick={() => {
-                  setSearch('');
-                  setFilter('all');
-                }}
+        {!effectiveSubject ? (
+          <ContextPrompt
+            title="Chưa có môn học nào."
+            text="Tạo môn học đầu tiên để bắt đầu xây dựng chương trình."
+            action="Thêm môn học"
+            onAction={() => setEditor({ mode: 'create', kind: 'subject', parentId: null })}
+          />
+        ) : !effectiveGrade ? (
+          <ContextPrompt
+            title={`${subjectNode?.title ?? 'Môn học'} chưa có khối lớp.`}
+            text="Thêm khối lớp để tạo chương và kiến thức."
+            action="Thêm lớp"
+            onAction={() =>
+              setEditor({ mode: 'create', kind: 'grade', parentId: effectiveSubject })
+            }
+          />
+        ) : overview.chapters.length === 0 ? (
+          <ContextPrompt
+            title={`Chưa có chương nào cho ${subjectNode?.title ?? ''} ${gradeNode?.title ?? ''}`}
+            text="Nhập chương trình có sẵn hoặc tạo chương đầu tiên."
+            action="Tạo chương đầu tiên"
+            onAction={() =>
+              setEditor({ mode: 'create', kind: 'chapter', parentId: effectiveGrade })
+            }
+            secondary={{ label: 'Nhập chương trình', onClick: () => setImportOpen(true) }}
+          />
+        ) : (
+          <>
+            {/* ── Curriculum overview: every number is a filter ── */}
+            <section aria-label="Tổng quan chương trình" className="mt-5">
+              <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-6">
+                <Metric
+                  label="Kiến thức"
+                  value={totals.lessons}
+                  active={filter === 'all'}
+                  onClick={() => setFilter('all')}
+                />
+                <Metric
+                  label="Chưa có bài"
+                  value={totals.NO_ARTICLE}
+                  tone="slate"
+                  active={filter === 'NO_ARTICLE'}
+                  onClick={() => applyFilter('NO_ARTICLE')}
+                />
+                <Metric
+                  label="Bản nháp"
+                  value={totals.DRAFT}
+                  tone="amber"
+                  active={filter === 'DRAFT'}
+                  onClick={() => applyFilter('DRAFT')}
+                />
+                <Metric
+                  label="Sẵn sàng"
+                  value={totals.READY}
+                  tone="blue"
+                  active={filter === 'READY'}
+                  onClick={() => applyFilter('READY')}
+                />
+                <Metric
+                  label="Đang hiển thị"
+                  value={totals.PUBLISHED}
+                  tone="emerald"
+                  active={filter === 'PUBLISHED'}
+                  onClick={() => applyFilter('PUBLISHED')}
+                />
+                <div className="flex flex-col justify-center bg-white px-3 py-2.5">
+                  <span className="text-lg font-semibold tabular-nums leading-6 text-slate-900">
+                    {overview.completeChapters}
+                    <span className="text-sm font-normal text-slate-400">
+                      /{overview.activeChapters}
+                    </span>
+                  </span>
+                  <span className="text-xs text-slate-500">Chương hoàn chỉnh</span>
+                </div>
+              </div>
+              {overview.archivedLessons > 0 && (
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Không tính {overview.archivedLessons} kiến thức trong nhánh lưu trữ.
+                </p>
+              )}
+            </section>
+
+            <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+              {/* ── Work queue (first on mobile, right rail on desktop) ── */}
+              <aside className="lg:sticky lg:top-4 lg:order-2">
+                <WorkQueue
+                  items={queue}
+                  migration={
+                    localDrafts
+                      ? {
+                          nodes: localDrafts.nodes.length,
+                          articles: localDrafts.articles.length,
+                          onOpen: () => setMigrationOpen(true),
+                        }
+                      : null
+                  }
+                  onOpenLesson={setLessonNodeId}
+                  onAddToChapter={(chapterId) => {
+                    focusChapter(chapterId);
+                    setEditor({ mode: 'create', kind: 'item', parentId: chapterId });
+                  }}
+                  onShowAll={(kind) => applyFilter(kind)}
+                />
+              </aside>
+
+              {/* ── Curriculum explorer ── */}
+              <section
+                ref={explorerRef}
+                aria-label="Danh sách chương"
+                className="min-w-0 scroll-mt-4 lg:order-1"
               >
-                Xóa bộ lọc
-              </button>
-            </div>
-          ) : (
-            <ol className="space-y-3" aria-label="Danh sách chương">
-              {visibleChapters.map((chapter, chapterIndex) => {
-                const items = childrenOf(nodes, chapter.id);
-                const shownItems = filtering
-                  ? items.filter((item) => itemVisible(chapter, item))
-                  : items;
-                const chapterKnowledge = subtree(nodes, chapter.id).filter(
-                  (node) => node.kind === 'KNOWLEDGE'
-                );
-                const chapterPublished = chapterKnowledge.filter(
-                  (node) => stateOf(node) === 'PUBLISHED'
-                ).length;
-                const archived = chapter.status === 'ARCHIVED';
-                const open = filtering ? true : !(collapsed[chapter.id] ?? archived);
-                const caps = capsOf(chapter);
-                const deleteReason = deleteBlockedReason(chapter);
-                return (
-                  <li
-                    key={chapter.id}
-                    className={`overflow-hidden rounded-xl border bg-white shadow-sm ${archived ? 'border-slate-200 opacity-80' : 'border-slate-200'}`}
-                  >
-                    <div className="flex items-center gap-2 px-3 py-3 sm:px-4">
-                      <button
-                        type="button"
-                        aria-expanded={open}
-                        onClick={() => setCollapsed((x) => ({ ...x, [chapter.id]: open }))}
-                        className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                      >
-                        <ChevronDown
-                          aria-hidden="true"
-                          className={`size-5 shrink-0 text-slate-400 transition-transform ${open ? '' : '-rotate-90'}`}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span className="text-xs font-semibold tabular-nums text-slate-400">
-                              {String(chapterIndex + 1).padStart(2, '0')}
-                            </span>
-                            <h2 className="break-words text-[15px] font-semibold leading-5 text-slate-950">
-                              {chapter.title}
-                            </h2>
-                            {archived && <PublicationBadge state="ARCHIVED" />}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-500">
-                            {chapterKnowledge.length} kiến thức
-                            {chapterKnowledge.length > 0 &&
-                              ` · ${chapterPublished} đang hiển thị cho học sinh`}
-                          </span>
-                        </span>
-                      </button>
-                      {chapterKnowledge.length > 0 && !archived && (
-                        <div
-                          className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-slate-100 sm:block"
-                          aria-hidden="true"
-                        >
-                          <div
-                            className="h-full rounded-full bg-emerald-500"
-                            style={{
-                              width: `${(chapterPublished / chapterKnowledge.length) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      )}
-                      <RowMenu label={`Thao tác với chương ${chapter.title}`}>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            setEditor({ mode: 'create', kind: 'item', parentId: chapter.id })
-                          }
-                        >
-                          Thêm kiến thức
-                        </DropdownMenuItem>
-                        <DisabledAware
-                          disabledReason={caps.canEdit ? null : 'Dữ liệu hệ thống'}
-                          onClick={() =>
-                            setEditor({
-                              mode: 'edit',
-                              kind: 'chapter',
-                              parentId: effectiveGrade,
-                              node: chapter,
-                            })
-                          }
-                        >
-                          Đổi tên chương
-                        </DisabledAware>
-                        <DropdownMenuItem
-                          disabled={!caps.canMoveUp}
-                          onClick={() => void reorder(chapter.id, 'up')}
-                        >
-                          Di chuyển lên
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!caps.canMoveDown}
-                          onClick={() => void reorder(chapter.id, 'down')}
-                        >
-                          Di chuyển xuống
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DisabledAware
-                          destructive
-                          disabledReason={deleteReason}
-                          onClick={() => setPendingDelete(chapter)}
-                        >
-                          Xóa chương
-                        </DisabledAware>
-                      </RowMenu>
-                    </div>
-                    {open && (
-                      <div className="border-t border-slate-100">
-                        {shownItems.length === 0 ? (
-                          <p className="px-4 py-4 text-sm text-slate-500 sm:pl-12">
-                            Chương này chưa có kiến thức.
-                          </p>
-                        ) : (
-                          <ol className="divide-y divide-slate-100">
-                            {shownItems.map((item) => (
-                              <KnowledgeRow
-                                key={item.id}
-                                item={item}
-                                state={item.kind === 'KNOWLEDGE' ? stateOf(item) : null}
-                                caps={capsOf(item)}
-                                deleteReason={deleteBlockedReason(item)}
-                                highlight={!!query && normalized(item.title).includes(query)}
-                                onOpen={() => setLessonNodeId(item.id)}
-                                onRename={() =>
-                                  setEditor({
-                                    mode: 'edit',
-                                    kind: 'item',
-                                    parentId: chapter.id,
-                                    node: item,
-                                  })
-                                }
-                                onReorder={(direction) => void reorder(item.id, direction)}
-                                onDelete={() => setPendingDelete(item)}
-                              />
-                            ))}
-                          </ol>
-                        )}
-                        {!filtering && (
-                          <div className="border-t border-slate-100 px-2 py-1.5 sm:pl-9">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-blue-700 hover:text-blue-800"
-                              onClick={() =>
-                                setEditor({ mode: 'create', kind: 'item', parentId: chapter.id })
-                              }
-                            >
-                              <Plus /> Thêm kiến thức
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="relative sm:w-80">
+                    <Search
+                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+                      aria-hidden="true"
+                    />
+                    <Input
+                      className="h-9 bg-white pl-9"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Tìm chương hoặc kiến thức…"
+                      aria-label="Tìm trong chương trình"
+                    />
+                  </div>
+                  {filter !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setFilter('all')}
+                      className="inline-flex h-8 items-center gap-1.5 self-start rounded-full bg-slate-900 pl-3 pr-2 text-sm font-medium text-white sm:self-auto"
+                      aria-label={`Bỏ lọc ${FILTER_LABELS[filter]}`}
+                    >
+                      {FILTER_LABELS[filter]}
+                      <X className="size-3.5" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+
+                {activeChapters.length === 0 && shownArchived.length === 0 ? (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-white py-10 text-center text-sm text-slate-500">
+                    Không có kiến thức nào khớp bộ lọc.{' '}
+                    <button
+                      type="button"
+                      className="font-medium text-blue-700 hover:underline"
+                      onClick={() => {
+                        setSearch('');
+                        setFilter('all');
+                      }}
+                    >
+                      Xóa bộ lọc
+                    </button>
+                  </div>
+                ) : (
+                  <ol className="mt-3 space-y-2.5">
+                    {activeChapters.map((chapter) =>
+                      renderChapter(
+                        chapter,
+                        overview.chapters
+                          .filter((item) => !item.archived)
+                          .findIndex((item) => item.node.id === chapter.node.id)
+                      )
                     )}
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </div>
+                  </ol>
+                )}
+
+                {shownArchived.length > 0 && (
+                  <div className="mt-5">
+                    <button
+                      type="button"
+                      aria-expanded={showArchived || !!query}
+                      onClick={() => setShowArchived((value) => !value)}
+                      className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-slate-500 outline-none hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-500"
+                    >
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={`size-4 transition-transform ${showArchived || query ? '' : '-rotate-90'}`}
+                      />
+                      Đã lưu trữ ({shownArchived.length})
+                    </button>
+                    {(showArchived || !!query) && (
+                      <ol className="mt-2 space-y-2.5 opacity-80">
+                        {shownArchived.map((chapter) => renderChapter(chapter, null))}
+                      </ol>
+                    )}
+                  </div>
+                )}
+              </section>
+            </div>
+          </>
+        )}
       </div>
 
       <Dialog
@@ -746,9 +780,27 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
         onOpenChange={setImportOpen}
         destinationNodeId={effectiveGrade}
         destinationTitle={gradeNode?.title || null}
-        existingNodes={chapters.flatMap((ch) => [ch, ...childrenOf(nodes, ch.id)])}
+        existingNodes={overview.chapters.flatMap((ch) => [
+          ch.node,
+          ...childrenOf(nodes, ch.node.id),
+        ])}
         onApply={applyImport}
       />
+
+      {localDrafts && (
+        <MigrationDialog
+          open={migrationOpen}
+          onOpenChange={setMigrationOpen}
+          repo={repo}
+          snapshot={localDrafts}
+          serverNodes={nodes}
+          serverArticleNodeIds={new Set(Object.keys(summaries))}
+          onFinished={async (outcome) => {
+            if (outcome !== 'failed') setLocalDrafts(null);
+            if (outcome !== 'dismissed') await load();
+          }}
+        />
+      )}
 
       <LessonEditorSheet
         node={lessonNode}
@@ -773,6 +825,85 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
 
 // ─── Pieces ──────────────────────────────────────────────────────────────────
 
+const METRIC_TONES = {
+  slate: 'text-slate-600',
+  amber: 'text-amber-700',
+  blue: 'text-blue-700',
+  emerald: 'text-emerald-700',
+  default: 'text-slate-900',
+} as const;
+
+function Metric({
+  label,
+  value,
+  tone = 'default',
+  active,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  tone?: keyof typeof METRIC_TONES;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex flex-col items-start justify-center px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+        active
+          ? 'bg-blue-50 shadow-[inset_0_-2px_0_var(--color-blue-600)]'
+          : 'bg-white hover:bg-slate-50'
+      }`}
+    >
+      <span
+        className={`text-lg font-semibold tabular-nums leading-6 ${value ? METRIC_TONES[tone] : 'text-slate-400'}`}
+      >
+        {value}
+      </span>
+      <span className="text-xs text-slate-500">{label}</span>
+    </button>
+  );
+}
+
+/** Stacked bar of real lesson states; width is the share of lessons in each state. */
+function ChapterProgress({
+  counts,
+  total,
+  complete,
+}: {
+  counts: StudioChapter['counts'];
+  total: number;
+  complete: boolean;
+}) {
+  if (complete) {
+    return (
+      <CheckCircle2
+        className="hidden size-4 shrink-0 text-emerald-600 sm:block"
+        aria-hidden="true"
+      />
+    );
+  }
+  const segments = [
+    ['PUBLISHED', 'bg-emerald-500'],
+    ['READY', 'bg-blue-500'],
+    ['DRAFT', 'bg-amber-400'],
+  ] as const;
+  return (
+    <div
+      className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-slate-100 sm:flex"
+      aria-hidden="true"
+    >
+      {segments.map(([key, color]) =>
+        counts[key] ? (
+          <div key={key} className={color} style={{ width: `${(counts[key] / total) * 100}%` }} />
+        ) : null
+      )}
+    </div>
+  );
+}
+
 function ScopePicker({
   label,
   items,
@@ -793,14 +924,12 @@ function ScopePicker({
   addLabel: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3">
-      <span className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        {label}
-      </span>
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="w-9 shrink-0 text-xs font-medium text-slate-500 sm:w-auto">{label}</span>
       <div
         role="radiogroup"
         aria-label={label}
-        className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto"
+        className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
       >
         {items.map((item) => (
           <button
@@ -810,10 +939,8 @@ function ScopePicker({
             aria-checked={item.id === value}
             disabled={disabled}
             onClick={() => onSelect(item.id)}
-            className={`h-8 shrink-0 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-              item.id === value
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
+            className={`h-7 shrink-0 rounded-md px-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              item.id === value ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
             {item.title}
@@ -840,26 +967,6 @@ function ScopePicker({
           <Plus />
         </Button>
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone = 'text-slate-900',
-}: {
-  label: string;
-  value: number;
-  tone?: string;
-}) {
-  return (
-    <div className="flex items-baseline gap-1.5">
-      <dt className="sr-only">{label}</dt>
-      <dd className={`text-base font-semibold tabular-nums ${tone}`}>{value}</dd>
-      <span className="text-slate-500" aria-hidden="true">
-        {label}
-      </span>
     </div>
   );
 }
@@ -926,25 +1033,19 @@ function KnowledgeRow({
   const isLesson = item.kind === 'KNOWLEDGE';
   return (
     <li
-      className={`group flex items-center gap-2 px-3 py-1.5 sm:pl-12 sm:pr-4 ${highlight ? 'bg-blue-50/70' : 'hover:bg-slate-50'}`}
+      className={`group flex items-center gap-2 px-3 py-1 sm:pl-11 sm:pr-4 ${highlight ? 'bg-blue-50/70' : 'hover:bg-slate-50'}`}
     >
       {isLesson ? (
         <button
           type="button"
           onClick={onOpen}
-          className="flex min-h-11 min-w-0 flex-1 flex-col items-start justify-center gap-1 rounded-md py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:flex-row sm:items-center sm:gap-3"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-md py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
-          <span className="flex min-w-0 flex-1 items-center gap-2">
-            <FileText aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
-            <span className="min-w-0 break-words text-sm leading-6 text-slate-800 group-hover:text-slate-950">
-              {item.title}
-            </span>
+          <FileText aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
+          <span className="min-w-0 flex-1 break-words text-sm leading-6 text-slate-800 group-hover:text-slate-950">
+            {item.title}
           </span>
-          {state && (
-            <span className="pl-6 sm:pl-0">
-              <PublicationBadge state={state} />
-            </span>
-          )}
+          {state && <PublicationBadge state={state} variant="dot" />}
         </button>
       ) : (
         <span className="flex min-h-11 min-w-0 flex-1 items-center text-sm font-medium text-slate-700">
@@ -953,6 +1054,15 @@ function KnowledgeRow({
       )}
       <RowMenu label={`Thao tác với ${item.title}`}>
         {isLesson && <DropdownMenuItem onClick={onOpen}>Soạn bài học</DropdownMenuItem>}
+        {state === 'PUBLISHED' && (
+          <DropdownMenuItem
+            onClick={() =>
+              window.open(`/student/lessons/${encodeURIComponent(item.id)}`, '_blank', 'noopener')
+            }
+          >
+            Mở trang học sinh
+          </DropdownMenuItem>
+        )}
         <DisabledAware disabledReason={caps.canEdit ? null : 'Dữ liệu hệ thống'} onClick={onRename}>
           Đổi tên
         </DisabledAware>
@@ -985,7 +1095,7 @@ function ContextPrompt({
   secondary?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+    <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
       <h2 className="font-semibold text-slate-900">{title}</h2>
       <p className="mt-1.5 text-sm text-slate-500">{text}</p>
       <div className="mt-5 flex justify-center gap-2">
