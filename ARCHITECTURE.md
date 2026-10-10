@@ -47,14 +47,18 @@ Form/button      ──Server Action (app/**/actions.ts)─▶ lib/<domain> serv
 - Students: `app/student/layout.tsx` requires a session and an active student lifecycle;
   student API routes call `requireDemoStudentSession()` and only touch that student's data.
 - Admins: `lib/auth/admin.ts`. An admin is a signed-in user whose **verified** email (today:
-  Google sign-in) is listed in `ADMIN_EMAILS` (comma-separated). If `ADMIN_EMAILS` is unset,
-  local development is open and production denies everyone.
+  Google sign-in) is listed in `ADMIN_EMAILS` (comma-separated). Everyone else is denied,
+  in every environment. For local work without Google sign-in, set `ADMIN_DEV_BYPASS=1`;
+  it is honoured only under `next dev` (`NODE_ENV=development`) and ignored by
+  `next start`, previews and production.
   - Pages: `app/admin/layout.tsx` calls `requireAdminPage()`; admin pages that read data on
     the server call it again.
   - Route Handlers: every handler under `/api/knowledge-tree`, `/api/knowledge-graph`,
     `/api/knowledge-import`, `/api/question-bank`, `/api/exams` and `/api/content-import`
-    starts with `adminApiGuard()`. `/api/question-bank/assets/*` stays public because
-    student practice renders question images through it.
+    starts with `adminApiGuard()`, including `/api/question-bank/assets/*`, which serves
+    imported question images and source documents (PDF, DOCX) and is only used by the
+    admin import editor. If students later see question-bank images, serve them through a
+    route that checks the question is approved and published, not by reopening this one.
   - Server Actions: `requireAdmin()` (payments).
 - Treat every Route Handler and Server Action as callable directly by anyone; never rely on
   the UI hiding a button.
@@ -92,6 +96,7 @@ database implementation would replace the file reads and writes.
 | Name                                                              | Used for                                      |
 | ----------------------------------------------------------------- | --------------------------------------------- |
 | `ADMIN_EMAILS`                                                    | Admin allowlist (required in production)      |
+| `ADMIN_DEV_BYPASS=1`                                              | Open admin under `next dev` only (opt-in)     |
 | `GEMINI_API_KEY`                                                  | Gemini calls (server only)                    |
 | `GEMINI_*_MODEL`, `KNOWLEDGE_AI_PROVIDER`                         | Model overrides, mock provider for local work |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Google sign-in                                |
