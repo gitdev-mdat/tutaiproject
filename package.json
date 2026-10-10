@@ -13,7 +13,9 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate": "tsx --conditions=react-server scripts/db/migrate.ts",
+    "db:import-auth": "tsx --conditions=react-server scripts/db/import-auth.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -27,6 +29,7 @@
     "mammoth": "^1.10.0",
     "next": "16.2.10",
     "pdfjs-dist": "^5.4.296",
+    "postgres": "3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "^0.0.1",
@@ -50,6 +53,7 @@
     "lint-staged": "^17.0.8",
     "prettier": "^3.9.5",
     "tailwindcss": "^4",
+    "tsx": "4.20.6",
     "typescript": "^5",
     "vitest": "^3.1.0"
   }
