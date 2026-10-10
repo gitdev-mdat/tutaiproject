@@ -12,8 +12,11 @@ import {
 } from '@/lib/question-bank/qb-validation';
 import { v4 as uuidv4 } from 'uuid';
 import type { EditorialStatus } from '@/lib/question-bank/qb-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ questionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { questionId } = await params;
     const question = await getQuestion(questionId);
@@ -34,6 +37,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ questionId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { questionId } = await params;
     return (await deleteQuestion(questionId))
@@ -48,6 +53,8 @@ export async function DELETE(
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ questionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { questionId } = await params;
     const existing = await getQuestion(questionId);

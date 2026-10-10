@@ -3,8 +3,11 @@ import { NextResponse } from 'next/server';
 import { requireImportSession, saveImportSession } from '@/lib/content-import/storage';
 import { saveExam } from '@/lib/exams/exam-storage';
 import type { ExamRecord } from '@/lib/exams/exam-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function POST(_request: Request, context: { params: Promise<{ sessionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId } = await context.params;
     const session = await requireImportSession(sessionId);

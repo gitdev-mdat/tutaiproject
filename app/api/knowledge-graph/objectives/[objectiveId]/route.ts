@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { updateLearningObjective, deleteLearningObjective } from '@/lib/knowledge-graph/kg-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ objectiveId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const resolvedParams = await params;
     const body = await req.json();
@@ -19,6 +22,8 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ objectiveId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const resolvedParams = await params;
     await deleteLearningObjective(resolvedParams.objectiveId);

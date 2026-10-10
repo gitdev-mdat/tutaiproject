@@ -4,8 +4,11 @@ import {
   ImportStorageError,
   type UploadImageManifestItem,
 } from '@/lib/content-import/storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function POST(request: Request, context: { params: Promise<{ sessionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId } = await context.params;
     const formData = await request.formData();

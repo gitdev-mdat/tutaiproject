@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { commitImportSession } from '@/lib/knowledge-graph/kg-import-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const resolvedParams = await params;
     const simulateFail = req.headers.get('x-simulate-commit-fail') === 'true';

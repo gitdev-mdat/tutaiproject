@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { moveKnowledge } from '@/lib/knowledge-tree/knowledge-tree-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function POST(request: Request, { params }: { params: Promise<{ nodeId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { nodeId } = await params;
     const body = await request.json();

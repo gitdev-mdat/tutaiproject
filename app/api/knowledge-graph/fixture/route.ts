@@ -18,6 +18,7 @@ import {
   BloomLevel,
   KgNode,
 } from '@/lib/knowledge-graph/kg-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 const FIXTURE_PROVENANCE = {
   sourceType: 'FIXTURE' as const,
@@ -25,6 +26,8 @@ const FIXTURE_PROVENANCE = {
 };
 
 export async function POST() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
       { error: 'Fixture can only be seeded in development mode' },
@@ -197,6 +200,8 @@ export async function POST() {
 }
 
 export async function DELETE() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
       { error: 'Fixture can only be reset in development mode' },

@@ -1,4 +1,5 @@
 import ExcelJS, { type DataValidation } from 'exceljs';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 type WorksheetWithRangeValidations = ExcelJS.Worksheet & {
   dataValidations: {
@@ -25,6 +26,8 @@ const QUESTION_HEADERS = [
 ] as const;
 
 export async function GET() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Tú Tài';
   workbook.created = new Date();

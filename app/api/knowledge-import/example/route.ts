@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   const example = {
     schemaVersion: '1.0',
     source: {

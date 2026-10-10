@@ -17,6 +17,7 @@ import { isAttachableKnowledgeNode } from '@/lib/question-bank/qb-knowledge-util
 import { validateForImportCandidate } from '@/lib/question-bank/qb-validation';
 import { computeQuestionFingerprints } from '@/lib/question-bank/qb-hash';
 import { getQuestionByAnyFingerprint } from '@/lib/question-bank/qb-storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 interface SessionPatch {
   pageUpdates?: Array<{
@@ -38,6 +39,8 @@ export async function DELETE(
   _request: Request,
   context: { params: Promise<{ sessionId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId } = await context.params;
     await deleteImportSession(sessionId);
@@ -56,6 +59,8 @@ function clampCrop(value: number): number {
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ sessionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId } = await context.params;
     return NextResponse.json(await requireImportSession(sessionId));
@@ -69,6 +74,8 @@ export async function GET(_request: Request, context: { params: Promise<{ sessio
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ sessionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId } = await context.params;
     const body = (await request.json()) as SessionPatch;

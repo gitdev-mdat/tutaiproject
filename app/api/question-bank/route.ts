@@ -22,6 +22,7 @@ import {
   type ManualQuestionInput,
 } from '@/lib/question-bank/qb-validation';
 import { readKnowledgeTree } from '@/lib/knowledge-tree/knowledge-tree-storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 interface NormalizedManualQuestion {
   stem: string;
@@ -94,6 +95,8 @@ function normalizeManualQuestion(input: ManualQuestionInput): NormalizedManualQu
 }
 
 export async function GET(req: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const url = new URL(req.url);
     const p = url.searchParams;
@@ -126,6 +129,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   let parsedBody: unknown;
   try {
     parsedBody = await req.json();
