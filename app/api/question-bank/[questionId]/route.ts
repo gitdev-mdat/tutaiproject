@@ -6,14 +6,19 @@ import {
   deleteQuestion,
 } from '@/lib/question-bank/qb-storage';
 import {
+  validateForManualCreation,
   validateForPublishing,
   validateForReview,
   isValidStatusTransition,
 } from '@/lib/question-bank/qb-validation';
 import { v4 as uuidv4 } from 'uuid';
-import type { EditorialStatus } from '@/lib/question-bank/qb-types';
+import { isAiAssisted, type EditorialStatus } from '@/lib/question-bank/qb-types';
+import { computeContentHash } from '@/lib/question-bank/qb-hash';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ questionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { questionId } = await params;
     const question = await getQuestion(questionId);
@@ -34,6 +39,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ questionId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { questionId } = await params;
     return (await deleteQuestion(questionId))
@@ -48,6 +55,8 @@ export async function DELETE(
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ questionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { questionId } = await params;
     const existing = await getQuestion(questionId);
@@ -55,10 +64,59 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ questi
       return NextResponse.json({ error: 'Không tìm thấy câu hỏi.' }, { status: 404 });
     }
 
-    const body = (await req.json()) as Partial<typeof existing> & {
+    const { answerVerified, ...body } = (await req.json()) as Partial<typeof existing> & {
       editorialStatus?: EditorialStatus;
+      answerVerified?: boolean;
     };
     const updated = { ...existing, ...body, updatedAt: new Date().toISOString() };
+    const contentChanged = (
+      [
+        'stem',
+        'questionType',
+        'options',
+        'trueFalseStatements',
+        'correctAnswer',
+        'explanation',
+      ] as const
+    ).some((field) => body[field] !== undefined);
+    if (contentChanged) {
+      // Edited content must still have a well-formed answer for its type.
+      const check = validateForManualCreation({
+        ...updated,
+        knowledgeCoverage: updated.knowledgeCoverage ?? 'FOCUS',
+        cognitiveLevel: updated.cognitiveLevel ?? 'COMPREHENSION',
+      });
+      if (!check.valid) {
+        return NextResponse.json(
+          { error: 'Câu hỏi chưa hợp lệ.', details: check.errors },
+          { status: 422 }
+        );
+      }
+    }
+    if (body.stem !== undefined || body.options !== undefined || body.correctAnswer !== undefined) {
+      updated.contentHash = computeContentHash(
+        updated.stem,
+        updated.options,
+        updated.correctAnswer
+      );
+      delete updated.fingerprints;
+    }
+
+    // An AI-suggested answer is not a reliable source: a person has to check it.
+    if (
+      body.editorialStatus === 'IN_REVIEW' &&
+      existing.editorialStatus !== 'IN_REVIEW' &&
+      isAiAssisted(existing) &&
+      answerVerified !== true
+    ) {
+      return NextResponse.json(
+        {
+          error: 'Câu hỏi do AI gợi ý: hãy xác nhận bạn đã tự kiểm tra đáp án và lời giải.',
+          code: 'ANSWER_NOT_VERIFIED',
+        },
+        { status: 422 }
+      );
+    }
 
     // If changing to PUBLISHED, run full validation
     if (body.editorialStatus === 'PUBLISHED' && existing.editorialStatus !== 'PUBLISHED') {
@@ -139,6 +197,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ questi
         prev: existing.source,
         next: body.source,
       });
+    }
+
+    if (answerVerified === true && isAiAssisted(existing)) {
+      auditActions.push({ action: 'UPDATED', prev: null, next: 'Đã kiểm tra đáp án do AI gợi ý' });
     }
 
     for (const { action, prev, next } of auditActions) {

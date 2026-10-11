@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { readImportData, clearImportCache } from '@/lib/knowledge-graph/kg-import-storage';
 import { parseImportFile } from '@/lib/knowledge-graph/kg-import-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     clearImportCache();
     const data = await readImportData();
@@ -13,6 +16,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { payload, filename } = await req.json();
     if (!payload) return NextResponse.json({ error: 'Missing payload' }, { status: 400 });

@@ -4,6 +4,7 @@ import {
   getLessonDraftAvailability,
   requestLessonDraft,
 } from '@/lib/knowledge-tree/ai-lesson-draft-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 type RouteContext = { params: Promise<{ nodeId: string }> };
 
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic';
 
 /** Whether AI drafting can run here, and why not. Never reveals configuration values. */
 export async function GET() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   return NextResponse.json(getLessonDraftAvailability());
 }
 
@@ -19,6 +22,8 @@ export async function GET() {
  * accepted parts locally and the admin saves through the normal article route.
  */
 export async function POST(request: Request, context: RouteContext) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   const origin = request.headers.get('origin');
   const host = request.headers.get('host');
   if (origin && host && new URL(origin).host !== host) {

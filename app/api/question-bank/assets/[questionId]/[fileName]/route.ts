@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import { NextResponse } from 'next/server';
 import { questionAssetFile } from '@/lib/content-import/storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 const SAFE_SEGMENT = /^[a-zA-Z0-9.-]+$/;
 
@@ -8,6 +9,8 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ questionId: string; fileName: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { questionId, fileName } = await context.params;
     if (!SAFE_SEGMENT.test(questionId) || !SAFE_SEGMENT.test(fileName)) {

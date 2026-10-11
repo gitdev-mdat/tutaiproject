@@ -13,6 +13,7 @@ import type {
 } from '@/lib/question-bank/qb-types';
 import { requireImportSession, saveImportSession } from '@/lib/content-import/storage';
 import type { QuestionCandidate } from '@/lib/content-import/types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 interface CommitRequestBody {
   sessionId?: string;
@@ -70,6 +71,8 @@ function candidateToMapped(candidate: QuestionCandidate): Record<ImportTargetFie
 }
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const body = (await request.json()) as CommitRequestBody;
     if (!body.idempotencyKey) {

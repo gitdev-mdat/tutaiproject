@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import { KNOWLEDGE_NODE_TYPES } from '@/lib/knowledge-tree/knowledge-node-types';
 import { deleteKnowledge, updateKnowledge } from '@/lib/knowledge-tree/knowledge-tree-service';
 import type { KnowledgeNodeType } from '@/lib/knowledge-tree/knowledge-tree-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 type RouteContext = { params: Promise<{ nodeId: string }> };
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { nodeId } = await context.params;
     const body = await request.json();
@@ -24,6 +27,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { nodeId } = await context.params;
     const cascade = new URL(request.url).searchParams.get('cascade') === '1';

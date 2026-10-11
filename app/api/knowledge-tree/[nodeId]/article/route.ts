@@ -5,10 +5,13 @@ import {
   sanitizeArticleInput,
   saveKnowledgeArticle,
 } from '@/lib/knowledge-tree/knowledge-tree-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 type RouteContext = { params: Promise<{ nodeId: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { nodeId } = await context.params;
     return NextResponse.json({ article: await getKnowledgeArticle(nodeId) });
@@ -18,6 +21,8 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { nodeId } = await context.params;
     const article = await saveKnowledgeArticle(nodeId, sanitizeArticleInput(await request.json()));

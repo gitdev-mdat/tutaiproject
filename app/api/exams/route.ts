@@ -7,6 +7,7 @@ import { GRADE_VALUES, SUBJECT_ID_VALUES } from '@/lib/question-bank/qb-types';
 import { isSelectableQuestion } from '@/lib/exams/exam-selection';
 import { listExams, saveExam } from '@/lib/exams/exam-storage';
 import type { ExamDraftInput, ExamRecord } from '@/lib/exams/exam-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 const MAX_EXAM_QUESTIONS = 500;
 
@@ -26,6 +27,8 @@ async function selectableQuestions(questionIds: string[]): Promise<Question[] | 
 }
 
 export async function GET() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     return NextResponse.json(await listExams());
   } catch (error: unknown) {
@@ -37,6 +40,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const parsed: unknown = await request.json();
     if (!isRecord(parsed)) {

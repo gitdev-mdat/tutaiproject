@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requestPasswordReset } from '@/lib/auth/auth-service';
+import { clientAddressFrom } from '@/lib/auth/client-address';
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { identifier?: string };
-  const token = await requestPasswordReset(body.identifier ?? '');
+  const token = await requestPasswordReset(body.identifier ?? '', clientAddressFrom(request));
   const response: { success: true; message: string; resetUrl?: string } = {
     success: true,
     message: 'Nếu tài khoản tồn tại, hướng dẫn đặt lại mật khẩu sẽ được gửi tới email đã đăng ký.',

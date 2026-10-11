@@ -10,12 +10,19 @@ import {
 } from '@/lib/knowledge-tree/learning-visibility';
 import { useLessonProgress } from '../lib/lesson-progress';
 
+export type LessonPracticeResults = Record<
+  string,
+  { best: number; total: number; passed: boolean }
+>;
+
 export function LessonsOverview({
   catalog,
   subject,
+  practiceResults = {},
 }: {
   catalog: LearningSubject[];
   subject: LearningSubject;
+  practiceResults?: LessonPracticeResults;
 }) {
   const { model } = useStudentShell();
   const progress = useLessonProgress(model.identity.id);
@@ -124,6 +131,19 @@ export function LessonsOverview({
                                 {lesson.title}
                                 {isViewed && <span className="sr-only"> (đã xem)</span>}
                               </span>
+                              {practiceResults[lesson.id] && (
+                                <span
+                                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                    practiceResults[lesson.id].passed
+                                      ? 'bg-emerald-50 text-emerald-700'
+                                      : 'bg-amber-50 text-amber-700'
+                                  }`}
+                                  data-testid="lesson-practice-result"
+                                >
+                                  Luyện tập {practiceResults[lesson.id].best}/
+                                  {practiceResults[lesson.id].total}
+                                </span>
+                              )}
                               {isCurrent && (
                                 <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-600">
                                   Đang học

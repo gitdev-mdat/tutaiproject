@@ -6,6 +6,7 @@ import {
   saveImportSession,
 } from '@/lib/content-import/storage';
 import type { PipelineStageId } from '@/lib/content-import/types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 function setStages(
   session: Awaited<ReturnType<typeof requireImportSession>>,
@@ -23,6 +24,8 @@ function setStages(
 }
 
 export async function POST(_request: Request, context: { params: Promise<{ sessionId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   const { sessionId } = await context.params;
   try {
     const session = await requireImportSession(sessionId);

@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { importKnowledgeDraft } from '@/lib/knowledge-tree/knowledge-tree-service';
 import type { KnowledgeTreeImportDraft } from '@/lib/knowledge-tree/knowledge-tree-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const body = (await request.json()) as {
       draft?: KnowledgeTreeImportDraft;

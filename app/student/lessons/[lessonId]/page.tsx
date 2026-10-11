@@ -6,7 +6,10 @@ import {
   ChapterLessonList,
   LessonViewRecorder,
 } from '@/features/lessons/components/lesson-reader-client';
+import { LessonPracticeCard } from '@/features/lessons/components/lesson-practice-card';
+import { getDemoStudentSession } from '@/lib/auth/demo-session';
 import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
+import { getLessonPracticeOverview } from '@/lib/practice/practice-service';
 import {
   getKnowledgeArticle,
   getLearningCatalog,
@@ -59,6 +62,13 @@ export default async function StudentLessonPage({ params }: Props) {
   }
 
   const { subject, lesson, index, lessons, article } = data;
+  const student = await getDemoStudentSession();
+  const practice = student
+    ? await getLessonPracticeOverview(student.id, lesson.id).catch((error) => {
+        console.error('[lesson-practice]', error);
+        return null;
+      })
+    : null;
   const chapterLessons = lessons.filter((item) => item.chapterId === lesson.chapterId);
   const positionInChapter = chapterLessons.findIndex((item) => item.id === lesson.id) + 1;
   const previous = lessons[index - 1];
@@ -84,10 +94,22 @@ export default async function StudentLessonPage({ params }: Props) {
             <h1 className="mt-1.5 text-[28px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[34px]">
               {article.title}
             </h1>
+            {practice && practice.questionCount > 0 && (
+              <a
+                href="#luyen-tap"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[13px] font-semibold text-blue-700 hover:bg-blue-100"
+              >
+                {practice.best
+                  ? `Luyện tập: ${practice.best.correctCount}/${practice.best.totalCount} câu đúng`
+                  : `${practice.questionCount} câu luyện tập ở cuối bài`}
+              </a>
+            )}
           </header>
           <div className="rounded-[20px] border border-[#E5EBF3] bg-white p-5 sm:p-8">
             <LessonArticleView blocks={article.blocks} />
           </div>
+
+          <LessonPracticeCard lessonId={lesson.id} overview={practice} />
 
           <nav aria-label="Chuyển bài" className="mt-6 grid gap-3 sm:grid-cols-2">
             {previous ? (

@@ -4,6 +4,7 @@ import {
   ImportStorageError,
   type UploadImageManifestItem,
 } from '@/lib/content-import/storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 function parseManifest(value: FormDataEntryValue | null): UploadImageManifestItem[] {
   if (typeof value !== 'string') return [];
@@ -20,6 +21,8 @@ function parseManifest(value: FormDataEntryValue | null): UploadImageManifestIte
 }
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const formData = await request.formData();
     const files = formData.getAll('files').filter((value): value is File => value instanceof File);

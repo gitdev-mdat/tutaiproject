@@ -5,8 +5,11 @@ import {
   getKnowledgeTreeReadModel,
 } from '@/lib/knowledge-tree/knowledge-tree-service';
 import type { KnowledgeNodeType } from '@/lib/knowledge-tree/knowledge-tree-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     return NextResponse.json(await getKnowledgeTreeReadModel());
   } catch (error: unknown) {
@@ -15,6 +18,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const body = await request.json();
     const node = await createKnowledge({

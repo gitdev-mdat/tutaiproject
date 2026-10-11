@@ -165,7 +165,9 @@ function LoginPageContent() {
               {serverError ||
                 (oauthError === 'not_configured'
                   ? 'Đăng nhập Google chưa được cấu hình trên máy chủ.'
-                  : 'Không thể đăng nhập với Google. Vui lòng thử lại.')}
+                  : oauthError === 'account_exists'
+                    ? 'Email Google này đã gắn với một tài khoản mật khẩu. Hãy đăng nhập bằng tên đăng nhập và mật khẩu.'
+                    : 'Không thể đăng nhập với Google. Vui lòng thử lại.')}
             </div>
           )}
 

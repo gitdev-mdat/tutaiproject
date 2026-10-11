@@ -1,14 +1,9 @@
-import { getDemoStudentSession } from '@/lib/auth/demo-session';
+import { requireAdminPage } from '@/lib/auth/admin';
 import { getAllOrders } from '@/lib/db/payment-db';
-import { redirect } from 'next/navigation';
 import { PaymentAdminClient } from './payment-admin-client';
 
 export default async function AdminPaymentsPage() {
-  const session = await getDemoStudentSession();
-
-  if (!session) {
-    redirect('/auth/login');
-  }
+  await requireAdminPage('/admin/payments');
 
   // Fetch all orders
   const orders = await getAllOrders();
