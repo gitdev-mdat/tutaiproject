@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 import { getLearningCatalog } from '@/lib/knowledge-tree/knowledge-tree-service';
 import { LessonsOverview } from '@/features/lessons/components/lessons-overview';
+import { getDemoStudentSession } from '@/lib/auth/demo-session';
+import { getStudentPracticeResults } from '@/lib/practice/practice-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,5 +43,9 @@ export default async function StudentLessonsPage({
   }
 
   const subject = catalog.find((item) => item.id === subjectId) ?? catalog[0];
-  return <LessonsOverview catalog={catalog} subject={subject} />;
+  const student = await getDemoStudentSession();
+  const practiceResults = student
+    ? await getStudentPracticeResults(student.id).catch(() => ({}))
+    : {};
+  return <LessonsOverview catalog={catalog} subject={subject} practiceResults={practiceResults} />;
 }

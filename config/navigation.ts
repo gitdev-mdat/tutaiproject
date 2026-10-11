@@ -47,6 +47,7 @@ export const adminNav: NavSection[] = [
     items: [
       { title: 'Chương trình & Kiến thức', href: '/admin/knowledge' },
       { title: 'Ngân hàng câu hỏi', href: '/admin/question-bank' },
+      { title: 'Luyện tập theo bài', href: '/admin/practice' },
       { title: 'Đề thi', href: '/admin/exams' },
       { title: 'Lộ trình học', href: '/admin/roadmaps' },
     ],
