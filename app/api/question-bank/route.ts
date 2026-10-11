@@ -11,6 +11,7 @@ import {
   listQuestions,
   saveQuestion,
 } from '@/lib/question-bank/qb-storage';
+import { AI_ASSISTED_SOURCE_NOTE } from '@/lib/question-bank/qb-types';
 import type {
   Question,
   QuestionFilter,
@@ -143,6 +144,7 @@ export async function POST(req: Request) {
   }
 
   const manualInput = pickManualQuestionInput(parsedBody as Record<string, unknown>);
+  const aiAssisted = (parsedBody as Record<string, unknown>).aiAssisted === true;
   const validation = validateForManualCreation(manualInput);
   if (!validation.valid) {
     return NextResponse.json(
@@ -231,7 +233,13 @@ export async function POST(req: Request) {
       isSpecial: false,
       roadmapEligible: false,
       prerequisiteConceptCodes: [],
-      source: { sourceType: 'ORIGINAL', rightsStatus: 'OWNED' },
+      source: aiAssisted
+        ? {
+            sourceType: 'INTERNAL_EDITORIAL',
+            rightsStatus: 'OWNED',
+            sourceNote: AI_ASSISTED_SOURCE_NOTE,
+          }
+        : { sourceType: 'ORIGINAL', rightsStatus: 'OWNED' },
       contentHash,
       examSetIds: [],
       createdAt: now,
@@ -246,7 +254,7 @@ export async function POST(req: Request) {
       action: 'CREATED',
       actor: 'Admin',
       timestamp: now,
-      note: 'Tạo câu hỏi thủ công',
+      note: aiAssisted ? 'Tạo từ gợi ý AI, chờ kiểm tra đáp án' : 'Tạo câu hỏi thủ công',
     });
 
     return NextResponse.json({ question }, { status: 201 });

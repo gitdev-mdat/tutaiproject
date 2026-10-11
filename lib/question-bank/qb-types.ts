@@ -124,6 +124,17 @@ export interface QuestionOption {
 
 // ─── Question Source ──────────────────────────────────────────────────────────
 
+/**
+ * Marks a question whose first draft came from an AI suggestion. Such a
+ * question cannot be sent to review until an admin confirms they checked the
+ * answer and the explanation themselves.
+ */
+export const AI_ASSISTED_SOURCE_NOTE = 'AI_SUGGESTION';
+
+export function isAiAssisted(question: Pick<Question, 'source'>): boolean {
+  return question.source?.sourceNote === AI_ASSISTED_SOURCE_NOTE;
+}
+
 export interface QuestionSource {
   sourceType: SourceType;
   sourceName?: string;

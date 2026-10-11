@@ -3,9 +3,10 @@ import 'server-only';
 /**
  * Question Bank — Storage layer.
  *
- * Persistence: JSON files in data/question-bank/.
- * Uses atomic write via temp file + rename (same pattern as kg-storage).
- * In-memory cache is cleared on write.
+ * Persistence: with DATABASE_URL, three documents in tutai.content_documents
+ * (seeded from the files on first write), read fresh on every call because
+ * other function instances may have written them. Without it, JSON files in
+ * data/question-bank/ with atomic writes and an in-memory cache.
  */
 
 import fs from 'fs/promises';
@@ -19,6 +20,12 @@ import type {
   QuestionListResult,
 } from './qb-types';
 import { computeQuestionFingerprints } from './qb-hash';
+import {
+  readContentDocument,
+  updateContentDocument,
+  usesDatabaseContentStore,
+  type ContentDocumentSource,
+} from '@/lib/content/document-store';
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -91,7 +98,41 @@ async function safeRename(src: string, dest: string): Promise<void> {
 
 // ─── Read full store ──────────────────────────────────────────────────────────
 
+function documentSource<T>(key: string, filePath: string): ContentDocumentSource<T[]> {
+  return {
+    key,
+    readFile: () => readJsonFile<T[]>(filePath, []),
+    writeFile: async (value) => {
+      await ensureDir();
+      await atomicWrite(filePath, value);
+    },
+  };
+}
+
+const questionsSource = documentSource<Question>('question-bank/questions', QUESTIONS_FILE);
+const auditsSource = documentSource<QuestionAuditEntry>('question-bank/audits', AUDITS_FILE);
+const jobsSource = documentSource<ImportJob>('question-bank/import-jobs', JOBS_FILE);
+
+/** Applies one change to one document and keeps the file-mode cache in step. */
+async function updateDocument<T>(
+  source: ContentDocumentSource<T[]>,
+  field: keyof QbStore,
+  change: (current: T[]) => T[]
+): Promise<void> {
+  if (!usesDatabaseContentStore()) await readStore();
+  const next = await updateContentDocument(source, (current) => change(current));
+  if (cache) (cache as unknown as Record<keyof QbStore, T[]>)[field] = next;
+}
+
 async function readStore(): Promise<QbStore> {
+  if (usesDatabaseContentStore()) {
+    const [questions, audits, jobs] = await Promise.all([
+      readContentDocument(questionsSource),
+      readContentDocument(auditsSource),
+      readContentDocument(jobsSource),
+    ]);
+    return { questions, audits, jobs };
+  }
   if (cache) return cache;
   await ensureDir();
   const [questions, audits, jobs] = await Promise.all([
@@ -205,43 +246,37 @@ export async function getQuestionByAnyFingerprint(input: {
 }
 
 export async function deleteQuestion(id: string): Promise<boolean> {
-  const store = await readStore();
-  const next = store.questions.filter((question) => question.id !== id);
-  if (next.length === store.questions.length) return false;
-  store.questions = next;
-  store.audits = store.audits.filter((entry) => entry.questionId !== id);
-  await ensureDir();
-  await Promise.all([
-    atomicWrite(QUESTIONS_FILE, store.questions),
-    atomicWrite(AUDITS_FILE, store.audits),
-  ]);
+  let removed = false;
+  await updateDocument<Question>(questionsSource, 'questions', (questions) => {
+    const next = questions.filter((question) => question.id !== id);
+    removed = next.length !== questions.length;
+    return next;
+  });
+  if (!removed) return false;
+  await updateDocument<QuestionAuditEntry>(auditsSource, 'audits', (audits) =>
+    audits.filter((entry) => entry.questionId !== id)
+  );
   return true;
 }
 
-export async function saveQuestion(question: Question): Promise<void> {
-  const store = await readStore();
-  const idx = store.questions.findIndex((q) => q.id === question.id);
-  if (idx >= 0) {
-    store.questions[idx] = question;
-  } else {
-    store.questions.push(question);
+function upsertById<T extends { id: string }>(items: T[], updates: T[]): T[] {
+  const next = [...items];
+  for (const item of updates) {
+    const index = next.findIndex((existing) => existing.id === item.id);
+    if (index >= 0) next[index] = item;
+    else next.push(item);
   }
-  await ensureDir();
-  await atomicWrite(QUESTIONS_FILE, store.questions);
+  return next;
+}
+
+export async function saveQuestion(question: Question): Promise<void> {
+  await saveManyQuestions([question]);
 }
 
 export async function saveManyQuestions(questions: Question[]): Promise<void> {
-  const store = await readStore();
-  for (const q of questions) {
-    const idx = store.questions.findIndex((ex) => ex.id === q.id);
-    if (idx >= 0) {
-      store.questions[idx] = q;
-    } else {
-      store.questions.push(q);
-    }
-  }
-  await ensureDir();
-  await atomicWrite(QUESTIONS_FILE, store.questions);
+  await updateDocument<Question>(questionsSource, 'questions', (current) =>
+    upsertById(current, questions)
+  );
 }
 
 export async function getMetrics(): Promise<QuestionBankMetrics> {
@@ -261,10 +296,7 @@ export async function getMetrics(): Promise<QuestionBankMetrics> {
 // ─── Audit ────────────────────────────────────────────────────────────────────
 
 export async function appendAuditEntry(entry: QuestionAuditEntry): Promise<void> {
-  const store = await readStore();
-  store.audits.push(entry);
-  await ensureDir();
-  await atomicWrite(AUDITS_FILE, store.audits);
+  await updateDocument<QuestionAuditEntry>(auditsSource, 'audits', (audits) => [...audits, entry]);
 }
 
 export async function listAuditEntries(questionId: string): Promise<QuestionAuditEntry[]> {
@@ -292,15 +324,7 @@ export async function getImportJobByIdempotencyKey(key: string): Promise<ImportJ
 }
 
 export async function saveImportJob(job: ImportJob): Promise<void> {
-  const store = await readStore();
-  const idx = store.jobs.findIndex((j) => j.id === job.id);
-  if (idx >= 0) {
-    store.jobs[idx] = job;
-  } else {
-    store.jobs.push(job);
-  }
-  await ensureDir();
-  await atomicWrite(JOBS_FILE, store.jobs);
+  await updateDocument<ImportJob>(jobsSource, 'jobs', (jobs) => upsertById(jobs, [job]));
 }
 
 // ─── Roadmap query contract ───────────────────────────────────────────────────

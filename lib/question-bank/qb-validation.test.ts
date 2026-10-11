@@ -547,3 +547,41 @@ describe('validateForImportCandidate', () => {
     );
   });
 });
+
+describe('grouped true/false questions', () => {
+  const grouped = baseQuestion({
+    questionType: 'TRUE_FALSE',
+    options: [],
+    correctAnswer: 'TRUE,FALSE',
+    trueFalseStatements: [
+      { id: 's1', content: 'Mệnh đề 1', isTrue: true },
+      { id: 's2', content: 'Mệnh đề 2', isTrue: false },
+    ],
+  });
+
+  it('can be published with an answer on each statement', () => {
+    expect(validateForPublishing(grouped).errors).toEqual([]);
+  });
+
+  it('is blocked when a statement has no answer', () => {
+    const result = validateForPublishing({
+      ...grouped,
+      trueFalseStatements: [
+        { id: 's1', content: 'Mệnh đề 1', isTrue: true },
+        { id: 's2', content: 'Mệnh đề 2' } as never,
+      ],
+    });
+    expect(result.errors.map((e) => e.code)).toContain('INVALID_TRUE_FALSE_STATEMENT');
+  });
+
+  it('still checks the legacy single-statement form', () => {
+    const legacy = baseQuestion({
+      questionType: 'TRUE_FALSE',
+      options: [],
+      correctAnswer: 'MAYBE',
+    });
+    expect(validateForPublishing(legacy).errors.map((e) => e.code)).toContain(
+      'INVALID_TRUE_FALSE_ANSWER'
+    );
+  });
+});
