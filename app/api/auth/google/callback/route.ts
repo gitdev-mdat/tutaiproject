@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { findOrCreateGoogleUser } from '@/lib/auth/auth-service';
+import { AuthError, findOrCreateGoogleUser } from '@/lib/auth/auth-service';
+import { ACCOUNT_LINK_REQUIRES_VERIFICATION } from '@/lib/auth/errors';
 import { destinationFor, getAuthSession, setSessionCookie } from '@/lib/auth/session';
 
 const OAUTH_COOKIE = 'tutai_google_oauth';
@@ -63,9 +64,14 @@ export async function GET(request: Request) {
         : (saved.returnTo ?? requiredDestination);
     return NextResponse.redirect(new URL(destination, requestUrl.origin));
   } catch (error) {
-    console.error('Google OAuth callback failed', error);
+    const accountExists =
+      error instanceof AuthError && error.code === ACCOUNT_LINK_REQUIRES_VERIFICATION;
+    if (!accountExists) console.error('Google OAuth callback failed', error);
     return NextResponse.redirect(
-      new URL('/auth/login?oauthError=callback_failed', requestUrl.origin)
+      new URL(
+        `/auth/login?oauthError=${accountExists ? 'account_exists' : 'callback_failed'}`,
+        requestUrl.origin
+      )
     );
   }
 }

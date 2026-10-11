@@ -31,7 +31,8 @@ const EMPTY_DATABASE: AuthDatabase = {
 
 type LegacyRecord = Record<string, unknown>;
 
-function migrateDatabase(parsed: Partial<AuthDatabase> & LegacyRecord): AuthDatabase {
+/** Upgrades older auth-store.json shapes to the current one. Also used by the PostgreSQL import. */
+export function migrateDatabase(parsed: Partial<AuthDatabase> & LegacyRecord): AuthDatabase {
   const profiles = Array.isArray(parsed.studentProfiles) ? parsed.studentProfiles : [];
   const learningProfiles = Array.isArray(parsed.learningProfiles) ? parsed.learningProfiles : [];
   const now = new Date().toISOString();

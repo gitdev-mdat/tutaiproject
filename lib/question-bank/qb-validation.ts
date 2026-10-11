@@ -429,12 +429,7 @@ export function validateForPublishing(question: Partial<Question>): ValidationRe
 
   // Answer validation by type
   if (question.questionType && question.options !== undefined) {
-    const answerErrors = validateAnswer(
-      question.questionType,
-      question.options,
-      question.correctAnswer
-    );
-    errors.push(...answerErrors);
+    errors.push(...validateStoredAnswer(question));
   }
 
   // Subject & grade
@@ -608,12 +603,7 @@ export function validateForReview(question: Partial<Question>): ValidationResult
   }
 
   if (question.questionType && question.options !== undefined) {
-    const answerErrors = validateAnswer(
-      question.questionType,
-      question.options,
-      question.correctAnswer
-    );
-    errors.push(...answerErrors);
+    errors.push(...validateStoredAnswer(question));
   }
 
   if (!question.subjectId) {
@@ -628,6 +618,39 @@ export function validateForReview(question: Partial<Question>): ValidationResult
 }
 
 // ─── Answer validation by type ────────────────────────────────────────────────
+
+/**
+ * The answer check used before review and publication. A grouped true/false
+ * question keeps its answers on each statement (the scalar `correctAnswer` is
+ * only a summary), so it is checked statement by statement; every other type,
+ * and the legacy single true/false form, goes through `validateAnswer`.
+ */
+export function validateStoredAnswer(question: Partial<Question>): ValidationError[] {
+  if (question.questionType === 'TRUE_FALSE' && Array.isArray(question.trueFalseStatements)) {
+    const statements = question.trueFalseStatements;
+    if (statements.length < 2) {
+      return [
+        {
+          code: 'TOO_FEW_TRUE_FALSE_STATEMENTS',
+          message: 'Câu Đúng/Sai phải có ít nhất hai mệnh đề.',
+          field: 'trueFalseStatements',
+        },
+      ];
+    }
+    return statements.flatMap((statement, index) =>
+      !statement?.content?.trim() || typeof statement.isTrue !== 'boolean'
+        ? [
+            {
+              code: 'INVALID_TRUE_FALSE_STATEMENT',
+              message: `Mệnh đề ${index + 1} cần nội dung và đáp án Đúng hoặc Sai.`,
+              field: `trueFalseStatements.${index}`,
+            },
+          ]
+        : []
+    );
+  }
+  return validateAnswer(question.questionType!, question.options ?? [], question.correctAnswer);
+}
 
 export function validateAnswer(
   questionType: QuestionType,

@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   AuthError,
+  RATE_LIMITS,
   authenticateCredential,
   createSession,
   findOrCreateGoogleUser,
@@ -15,6 +16,8 @@ import {
   saveOnboarding,
 } from './auth-service';
 import { readAuthDatabase } from './store';
+import { evaluateAdminAccess } from './admin';
+import { ACCOUNT_LINK_REQUIRES_VERIFICATION } from './errors';
 
 describe.sequential('canonical authentication lifecycle', () => {
   let directory: string;
@@ -122,15 +125,98 @@ describe.sequential('canonical authentication lifecycle', () => {
     await authenticateCredential('profile_once', 'Valid-test-password-05!');
     const { token } = await createSession(user.id);
     await resolveSession(token);
-    const linked = await findOrCreateGoogleUser({
+    const google = await findOrCreateGoogleUser({
       subject: 'google-subject-05',
-      email: ' PROFILE.ONCE@EXAMPLE.COM ',
+      email: 'profile.google@example.com',
       emailVerified: true,
       displayName: 'Google Name',
     });
-    expect(linked.user.id).toBe(user.id);
+    const linked = await findOrCreateGoogleUser({
+      subject: 'google-subject-05b',
+      email: ' PROFILE.GOOGLE@EXAMPLE.COM ',
+      emailVerified: true,
+    });
+    expect(linked.user.id).toBe(google.user.id);
     expect(linked.created).toBe(false);
     expect(await getProfileCount(user.id)).toBe(1);
+    expect(await getProfileCount(google.user.id)).toBe(1);
+  });
+
+  it('never hands a pre-registered unverified account to a Google sign-in', async () => {
+    const squatter = await registerCredential({
+      username: 'squatter',
+      email: 'Owner@Example.com',
+      password: 'Attacker-password-01!',
+      fullName: 'Squatter',
+      phone: '0865689102',
+    });
+    const { token: squatterToken } = await createSession(squatter.id);
+
+    await expect(
+      findOrCreateGoogleUser({
+        subject: 'google-owner',
+        email: 'owner@example.com',
+        emailVerified: true,
+        displayName: 'Real Owner',
+      })
+    ).rejects.toMatchObject({ code: ACCOUNT_LINK_REQUIRES_VERIFICATION, status: 409 });
+
+    const database = await readAuthDatabase();
+    const stored = database.users.find((candidate) => candidate.id === squatter.id);
+    expect(stored?.emailVerifiedAt).toBeNull();
+    expect(database.identities.filter((identity) => identity.userId === squatter.id)).toEqual([
+      expect.objectContaining({ provider: 'password' }),
+    ]);
+    expect(
+      database.identities.some((identity) => identity.providerAccountId === 'google-owner')
+    ).toBe(false);
+
+    // The squatter keeps a working but unprivileged account: the admin
+    // allowlist needs a verified email, which a password account never has.
+    const login = await authenticateCredential('owner@example.com', 'Attacker-password-01!');
+    const session = await resolveSession(squatterToken);
+    expect(session?.user.id).toBe(login.id);
+    expect(
+      evaluateAdminAccess(session!.user, {
+        NODE_ENV: 'production',
+        ADMIN_EMAILS: 'owner@example.com',
+      })
+    ).toEqual({ allowed: false, reason: 'forbidden' });
+  });
+
+  it('caps password guesses per account and per client, and clears the count on success', async () => {
+    await registerCredential({
+      username: 'throttled',
+      password: 'Valid-test-password-09!',
+      fullName: 'Throttled',
+      phone: '0865689102',
+    });
+    for (let attempt = 1; attempt < RATE_LIMITS.loginPerAccount; attempt += 1) {
+      await expect(authenticateCredential('throttled', 'wrong-password')).rejects.toMatchObject({
+        code: 'INVALID_CREDENTIALS',
+      });
+    }
+    // A success inside the limit resets the account count.
+    await authenticateCredential('throttled', 'Valid-test-password-09!');
+    for (let attempt = 0; attempt < RATE_LIMITS.loginPerAccount; attempt += 1) {
+      await expect(authenticateCredential('throttled', 'wrong-password')).rejects.toMatchObject({
+        code: 'INVALID_CREDENTIALS',
+      });
+    }
+    // Over the limit even the right password is refused without being checked.
+    await expect(
+      authenticateCredential('throttled', 'Valid-test-password-09!')
+    ).rejects.toMatchObject({ code: 'RATE_LIMITED', status: 429 });
+
+    for (let attempt = 0; attempt < RATE_LIMITS.loginPerClient; attempt += 1) {
+      await authenticateCredential(`nobody_${attempt}`, 'x', '203.0.113.7').catch(() => undefined);
+    }
+    await expect(
+      authenticateCredential('profile_once', 'Valid-test-password-05!', '203.0.113.7')
+    ).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    await expect(
+      authenticateCredential('profile_once', 'Valid-test-password-05!', '198.51.100.4')
+    ).resolves.toMatchObject({ username: 'profile_once' });
   });
 
   it('persists the simplified onboarding model without fabricating consent', async () => {
