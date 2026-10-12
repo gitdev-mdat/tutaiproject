@@ -1,5 +1,7 @@
 import 'server-only';
 
+import net from 'node:net';
+
 import postgres from 'postgres';
 
 type Sql = ReturnType<typeof postgres>;
@@ -20,18 +22,21 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
  *
  * - `prepare: false`: a transaction-mode pooler hands each transaction to any
  *   server connection, so named prepared statements cannot be reused.
- * - `max_pipeline: 1`: when a page runs more queries at once than it has
- *   connections, postgres.js would otherwise pipeline them on one socket.
- *   Through Supavisor that left statements stuck half-sent until the 15 s
- *   statement timeout, so extra queries wait for a free connection instead.
+ * - `max_pipeline: 1`: extra concurrent queries wait for a free connection
+ *   instead of being pipelined behind a slow one.
  * - TLS is required for every non-local host. With DATABASE_CA_CERT (the
  *   Supabase root certificate, PEM) the server certificate and host name are
  *   verified; without it the connection is encrypted but not verified. An
  *   explicit `sslmode` in the URL wins.
- * - Connections are short-lived (`idle_timeout`, `max_lifetime`) so a function
- *   instance that was frozen does not keep reusing sockets the pooler has
- *   already dropped, and each instance holds at most DATABASE_POOL_MAX
- *   (default 3, capped at 10) connections.
+ * - Vercel freezes a function between invocations. A socket that was open
+ *   across a freeze can be dead on the far side while Node still thinks it is
+ *   alive, and a query sent on it waits for an answer that never comes, until
+ *   the function's 300 s limit. So idle connections close after a second, and
+ *   every socket is destroyed after SOCKET_INACTIVITY_MS without any traffic,
+ *   which fails the query with ETIMEDOUT (retried by `withDatabaseRetry` for
+ *   reads) instead of hanging the page.
+ * - Each instance holds at most DATABASE_POOL_MAX (default 3, capped at 10)
+ *   connections.
  */
 export function databaseOptions(env: DatabaseEnv = process.env as DatabaseEnv): DatabaseOptions {
   const url = env.DATABASE_URL;
@@ -46,15 +51,52 @@ export function databaseOptions(env: DatabaseEnv = process.env as DatabaseEnv): 
   }
   return {
     max,
-    idle_timeout: 20,
+    idle_timeout: 1,
     max_lifetime: 5 * 60,
     connect_timeout: 10,
     prepare: false,
     ...(ssl ? { ssl } : {}),
     onnotice: () => {},
     // Supported by postgres.js at runtime but missing from its type definitions.
-    ...({ max_pipeline: 1 } as DatabaseOptions),
+    ...({ max_pipeline: 1, socket: watchedSocket } as DatabaseOptions),
   };
+}
+
+export const SOCKET_INACTIVITY_MS = 12_000;
+
+/**
+ * A TCP socket that destroys itself after SOCKET_INACTIVITY_MS without reads
+ * or writes. postgres.js strips all listeners from the raw socket before it
+ * upgrades to TLS, so the timeout listener is put back whenever that happens.
+ */
+class WatchedSocket extends net.Socket {
+  constructor() {
+    super();
+    this.setTimeout(SOCKET_INACTIVITY_MS);
+    this.watch();
+  }
+
+  private watch() {
+    this.on('timeout', () => {
+      const error = Object.assign(new Error('Database socket stopped responding.'), {
+        code: 'ETIMEDOUT',
+      });
+      this.destroy(error);
+    });
+  }
+
+  override removeAllListeners(event?: string | symbol): this {
+    super.removeAllListeners(event);
+    if (event === undefined || event === 'timeout') this.watch();
+    return this;
+  }
+}
+
+function watchedSocket(options: { host: string[]; port: number[] }): net.Socket {
+  const socket = new WatchedSocket();
+  // postgres.js reads `host` to set the TLS server name.
+  Object.assign(socket, { host: options.host[0] });
+  return socket.connect(options.port[0], options.host[0]);
 }
 
 export function getSql(): Sql {

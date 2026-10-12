@@ -11,6 +11,7 @@ describe('databaseOptions', () => {
       ssl: 'require',
       prepare: false,
       max_pipeline: 1,
+      idle_timeout: 1,
       max: 3,
       max_lifetime: 300,
     });
