@@ -12,7 +12,11 @@ type DatabaseEnv = {
   DATABASE_CA_CERT?: string;
 };
 
-const globalForDb = globalThis as unknown as { tutaiSql?: Sql };
+const globalForDb = globalThis as unknown as {
+  tutaiSql?: Sql;
+  tutaiHeartbeat?: number;
+  tutaiHeartbeatTimer?: ReturnType<typeof setInterval>;
+};
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
@@ -34,7 +38,9 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
  *   the function's 300 s limit. So idle connections close after a second, and
  *   every socket is destroyed after SOCKET_INACTIVITY_MS without any traffic,
  *   which fails the query with ETIMEDOUT (retried by `withDatabaseRetry` for
- *   reads) instead of hanging the page.
+ *   reads) instead of hanging the page. getSql() also replaces the client when
+ *   a heartbeat timer shows the function was just frozen, so a request after
+ *   a pause starts on fresh connections instead of waiting out the watchdog.
  * - Each instance holds at most DATABASE_POOL_MAX (default 3, capped at 10)
  *   connections.
  */
@@ -99,17 +105,39 @@ function watchedSocket(options: { host: string[]; port: number[] }): net.Socket 
   return socket.connect(options.port[0], options.host[0]);
 }
 
+// A timer that ticks while the process runs. If the last tick is much older
+// than its interval, the function was frozen, and every pooled socket may be
+// dead without Node knowing.
+const HEARTBEAT_MS = 250;
+const FROZEN_AFTER_MS = 1_000;
+
 export function getSql(): Sql {
-  if (globalForDb.tutaiSql) return globalForDb.tutaiSql;
+  const now = Date.now();
+  const frozen =
+    globalForDb.tutaiHeartbeat !== undefined && now - globalForDb.tutaiHeartbeat > FROZEN_AFTER_MS;
+  if (globalForDb.tutaiSql && !frozen) return globalForDb.tutaiSql;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set.');
+  // Queries already running on the old client may finish; new ones get fresh
+  // connections instead of sockets that went quiet during the freeze.
+  void globalForDb.tutaiSql?.end({ timeout: 15 }).catch(() => {});
   globalForDb.tutaiSql = postgres(url, databaseOptions());
+  globalForDb.tutaiHeartbeat = now;
+  if (!globalForDb.tutaiHeartbeatTimer) {
+    globalForDb.tutaiHeartbeatTimer = setInterval(() => {
+      globalForDb.tutaiHeartbeat = Date.now();
+    }, HEARTBEAT_MS);
+    globalForDb.tutaiHeartbeatTimer.unref();
+  }
   return globalForDb.tutaiSql;
 }
 
 export async function closeSql(): Promise<void> {
   const sql = globalForDb.tutaiSql;
   globalForDb.tutaiSql = undefined;
+  clearInterval(globalForDb.tutaiHeartbeatTimer);
+  globalForDb.tutaiHeartbeatTimer = undefined;
+  globalForDb.tutaiHeartbeat = undefined;
   await sql?.end({ timeout: 5 });
 }
 
