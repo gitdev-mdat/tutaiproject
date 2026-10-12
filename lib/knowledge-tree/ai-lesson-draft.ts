@@ -197,6 +197,7 @@ export function buildLessonDraftPrompt(context: LessonDraftContext): string {
     context.note ? `\nYêu cầu thêm của giáo viên: ${context.note}` : '',
     '',
     'Trả về đúng một đối tượng JSON có các khóa INTRO, OBJECTIVE, MAIN_CONTENT, EXAMPLE, RECAP, COMMON_MISTAKE, giá trị là chuỗi.',
+    'Trong chuỗi JSON, mỗi dấu \\ của LaTeX phải viết thành \\\\ (ví dụ \\\\notin, \\\\neq, \\\\frac, \\\\times, \\\\right).',
   ]
     .filter((line) => line !== '')
     .join('\n');
@@ -253,10 +254,23 @@ function stripJsonFence(raw: string): string {
   return fenced ? fenced[1] : trimmed;
 }
 
+// A lone backslash before a LaTeX command whose name starts with a JSON escape
+// letter (\notin, \frac, \times, \beta, \right) would parse as a newline, form
+// feed, tab, backspace or carriage return and silently corrupt the formula.
+const AMBIGUOUS_LATEX_ESCAPE =
+  /(?<!\\)((?:\\\\)*)\\(?=(?:n(?:e|eq|eg|otin|abla)|t(?:imes|o|an|heta|ext|au|frac|riangle)|f(?:rac|orall)|b(?:eta|ar|inom|ig[a-z]*)|r(?:ight|ho))(?![A-Za-z]))/g;
+// Any other backslash that is not a valid JSON escape (\in, \le, \sqrt, \underline).
+const INVALID_JSON_ESCAPE = /(?<!\\)((?:\\\\)*)\\(?=[^"\\/bfnrtu]|u(?![0-9a-fA-F]{4}))/g;
+
+/** Doubles backslashes the model left single inside LaTeX so JSON.parse keeps them. */
+export function repairLatexEscapes(json: string): string {
+  return json.replace(AMBIGUOUS_LATEX_ESCAPE, '$1\\\\').replace(INVALID_JSON_ESCAPE, '$1\\\\');
+}
+
 export function parseLessonDraft(raw: string): AiLessonDraft {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(stripJsonFence(raw));
+    parsed = JSON.parse(repairLatexEscapes(stripJsonFence(raw)));
   } catch {
     throw new LessonDraftError('MALFORMED');
   }

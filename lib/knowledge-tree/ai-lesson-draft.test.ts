@@ -6,6 +6,7 @@ import {
   generateLessonDraft,
   parseLessonDraft,
   parseLessonDraftRequest,
+  repairLatexEscapes,
   sanitizeDraftText,
   withDraftLock,
   type LessonDraftContext,
@@ -54,6 +55,25 @@ describe('AI lesson draft', () => {
     expect(draft.OBJECTIVE).toContain('Phát biểu');
     expect(draft.MAIN_CONTENT).toContain('$\\lim_{h \\to 0}');
     expect(draft.COMMON_MISTAKE).toBe('');
+  });
+
+  it('keeps LaTeX commands the model escaped with a single backslash', () => {
+    // Raw provider text as received: one backslash before each LaTeX command.
+    const raw = String.raw`{"OBJECTIVE":"- Xét được tính đơn điệu của hàm số.","MAIN_CONTENT":"Với mọi $x_1, x_2 \in I$, $x_1 \notin J$, $f'(x) \ne 0$, $\frac{1}{2} \times 3 \to \beta$, $\left( x \right)$, $\theta$ và $\forall x$.\nDòng mới\tTab","EXAMPLE":"Cho $f(x) \ge 0$ và $\sqrt{x} \le 1$."}`;
+    const draft = parseLessonDraft(raw);
+    expect(draft.MAIN_CONTENT).toBe(
+      String.raw`Với mọi $x_1, x_2 \in I$, $x_1 \notin J$, $f'(x) \ne 0$, $\frac{1}{2} \times 3 \to \beta$, $\left( x \right)$, $\theta$ và $\forall x$.` +
+        '\nDòng mới\tTab'
+    );
+    expect(draft.EXAMPLE).toBe(String.raw`Cho $f(x) \ge 0$ và $\sqrt{x} \le 1$.`);
+  });
+
+  it('leaves correctly escaped JSON unchanged', () => {
+    const json = JSON.stringify(validDraft);
+    expect(repairLatexEscapes(json)).toBe(json);
+    expect(repairLatexEscapes(String.raw`"a\\notin b\nnext \"q\" é"`)).toBe(
+      String.raw`"a\\notin b\nnext \"q\" é"`
+    );
   });
 
   it('accepts JSON wrapped in a code fence', () => {
