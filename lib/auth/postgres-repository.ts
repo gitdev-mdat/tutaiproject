@@ -212,7 +212,12 @@ const repository: AuthRepository = {
   },
 
   async findSession(tokenHash) {
-    const [row] = await getSql()`
+    // Every page starts with this lookup. On Vercel it sometimes stalled after
+    // the pooler had parsed it, waiting for the second half of a parameterised
+    // query (bind/execute) that never arrived. A sha256 hex digest can be
+    // inlined safely, which lets it go out as one simple-protocol message.
+    if (!/^[0-9a-f]{64}$/.test(tokenHash)) return null;
+    const [row] = await getSql().unsafe(`
       select
         to_jsonb(u) as "user",
         to_jsonb(p) as profile,
@@ -221,7 +226,7 @@ const repository: AuthRepository = {
       join tutai.users u on u.id = s.user_id
       join tutai.student_profiles p on p.user_id = s.user_id
       left join tutai.learning_profiles l on l.student_id = p.id
-      where s.token_hash = ${tokenHash} and s.expires_at > now()`;
+      where s.token_hash = '${tokenHash}' and s.expires_at > now()`);
     if (!row) return null;
     return {
       user: toUser(row.user as Row),
