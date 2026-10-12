@@ -20,6 +20,10 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
  *
  * - `prepare: false`: a transaction-mode pooler hands each transaction to any
  *   server connection, so named prepared statements cannot be reused.
+ * - `max_pipeline: 1`: when a page runs more queries at once than it has
+ *   connections, postgres.js would otherwise pipeline them on one socket.
+ *   Through Supavisor that left statements stuck half-sent until the 15 s
+ *   statement timeout, so extra queries wait for a free connection instead.
  * - TLS is required for every non-local host. With DATABASE_CA_CERT (the
  *   Supabase root certificate, PEM) the server certificate and host name are
  *   verified; without it the connection is encrypted but not verified. An
@@ -46,6 +50,7 @@ export function databaseOptions(env: DatabaseEnv = process.env as DatabaseEnv): 
     max_lifetime: 5 * 60,
     connect_timeout: 10,
     prepare: false,
+    max_pipeline: 1,
     ...(ssl ? { ssl } : {}),
     onnotice: () => {},
   };
