@@ -132,21 +132,22 @@ describe('AI lesson draft', () => {
     await expect(withDraftLock('node-1', async () => 'again')).resolves.toBe('again');
   });
 
-  it('is unavailable in production and without a Gemini key', () => {
+  it('runs on production deployments when Gemini is configured; never with the mock', () => {
     expect(
       getLessonDraftAvailability({ NODE_ENV: 'production', GEMINI_API_KEY: 'set' }).available
-    ).toBe(false);
-    expect(getLessonDraftAvailability({ NODE_ENV: 'development' }).available).toBe(false);
-    expect(
-      getLessonDraftAvailability({ NODE_ENV: 'development', GEMINI_API_KEY: 'set' }).available
     ).toBe(true);
+    expect(getLessonDraftAvailability({ NODE_ENV: 'production' }).available).toBe(false);
+    expect(getLessonDraftAvailability({ NODE_ENV: 'development' }).available).toBe(false);
     expect(
       getLessonDraftAvailability({ NODE_ENV: 'development', KNOWLEDGE_AI_PROVIDER: 'mock' })
         .available
     ).toBe(true);
     expect(
-      getLessonDraftAvailability({ NODE_ENV: 'production', KNOWLEDGE_AI_PROVIDER: 'mock' })
-        .available
+      getLessonDraftAvailability({
+        NODE_ENV: 'production',
+        KNOWLEDGE_AI_PROVIDER: 'mock',
+        GEMINI_API_KEY: 'set',
+      }).available
     ).toBe(false);
   });
 });

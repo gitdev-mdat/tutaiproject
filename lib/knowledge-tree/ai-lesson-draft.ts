@@ -279,6 +279,11 @@ export function classifyProviderError(error: unknown): LessonDraftError {
   return new LessonDraftError('PROVIDER');
 }
 
+function redactProviderMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.replace(/AIza[0-9A-Za-z_-]{10,}/g, '[redacted]').slice(0, 300);
+}
+
 export async function generateLessonDraft(
   context: LessonDraftContext,
   provider: LessonDraftProvider,
@@ -291,7 +296,15 @@ export async function generateLessonDraft(
       options.timeoutMs ?? AI_DRAFT_LIMITS.timeoutMs
     );
   } catch (error) {
-    throw classifyProviderError(error);
+    const classified = classifyProviderError(error);
+    // Server log only: the code, HTTP status and a trimmed provider message help tell
+    // a wrong model id or a revoked key from a quota problem. Keys never appear here.
+    console.warn('[ai-draft] provider failure', {
+      code: classified.code,
+      status: (error as { status?: unknown } | null)?.status,
+      message: redactProviderMessage(error),
+    });
+    throw classified;
   }
   if (!raw?.trim()) throw new LessonDraftError('MALFORMED');
   return parseLessonDraft(raw);
