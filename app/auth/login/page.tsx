@@ -15,6 +15,22 @@ import { fetchAuthSession } from '@/lib/auth/client-session';
 // The login card must be the visual focus — no marketing content.
 // ─────────────────────────────────────────────────────────────────────────────
 
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  not_configured: 'Đăng nhập Google chưa được cấu hình trên máy chủ.',
+  account_exists:
+    'Email Google này đã có tài khoản đăng ký bằng mật khẩu. Hãy đăng nhập bằng mật khẩu, rồi vào Hồ sơ và chọn “Liên kết Google” để dùng chung một tài khoản.',
+  state_expired:
+    'Lượt đăng nhập Google đã hết hạn hoặc được mở ở tab khác. Vui lòng bấm “Tiếp tục với Google” lần nữa.',
+  session_expired: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi thử tiếp.',
+  unverified_google:
+    'Google chưa xác minh email của tài khoản này, nên chưa thể dùng để đăng nhập.',
+  cancelled: 'Bạn đã huỷ đăng nhập Google.',
+};
+
+function oauthErrorMessage(code: string): string {
+  return OAUTH_ERROR_MESSAGES[code] ?? 'Không thể đăng nhập với Google. Vui lòng thử lại.';
+}
+
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -162,12 +178,7 @@ function LoginPageContent() {
           {/* Server error banner */}
           {(serverError || oauthError) && (
             <div className="mb-4 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-600">
-              {serverError ||
-                (oauthError === 'not_configured'
-                  ? 'Đăng nhập Google chưa được cấu hình trên máy chủ.'
-                  : oauthError === 'account_exists'
-                    ? 'Email Google này đã gắn với một tài khoản mật khẩu. Hãy đăng nhập bằng tên đăng nhập và mật khẩu.'
-                    : 'Không thể đăng nhập với Google. Vui lòng thử lại.')}
+              {serverError || (oauthError && oauthErrorMessage(oauthError))}
             </div>
           )}
 

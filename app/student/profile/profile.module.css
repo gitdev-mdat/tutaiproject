@@ -433,3 +433,32 @@
     transition: none;
   }
 }
+.googleLink {
+  color: #1463ff;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.googleLinked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+  overflow-wrap: anywhere;
+}
+.googleNotice,
+.googleError {
+  margin: 12px 0 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.googleNotice {
+  background: #f0fdf4;
+  color: #15803d;
+}
+.googleError {
+  background: #fef2f2;
+  color: #dc2626;
+}

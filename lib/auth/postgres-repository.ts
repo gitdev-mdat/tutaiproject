@@ -2,7 +2,7 @@ import 'server-only';
 
 import type postgres from 'postgres';
 import { getSql, withDatabaseRetry } from '@/lib/db/postgres';
-import { AuthError, unverifiedAccountLinkError } from './errors';
+import { AuthError, googleLinkError, unverifiedAccountLinkError } from './errors';
 import type { AuthRepository, NewAccount } from './repository';
 import type {
   AssignmentAttempt,
@@ -173,6 +173,46 @@ const repository: AuthRepository = {
         if (attempt < 2 && uniqueViolation(error) !== null) continue;
         throw error;
       }
+    }
+  },
+
+  async linkGoogleIdentity({ userId, subject, email, identityId, displayName, avatarUrl, now }) {
+    try {
+      return await getSql().begin(async (tx) => {
+        const [user] = await tx`select * from tutai.users where id = ${userId} for update`;
+        if (!user) throw new AuthError('SESSION_EXPIRED', 'Phiên đăng nhập đã hết hạn.', 401);
+        const [linked] = await tx`
+          select user_id from tutai.identities
+          where provider = 'google' and provider_account_id = ${subject}`;
+        if (linked && linked.user_id !== userId) throw googleLinkError('GOOGLE_LINKED_ELSEWHERE');
+        if (linked) return toUser(user);
+        const [otherGoogle] = await tx`
+          select 1 from tutai.identities where user_id = ${userId} and provider = 'google'`;
+        if (otherGoogle) throw googleLinkError('ACCOUNT_HAS_OTHER_GOOGLE');
+        if (user.email && user.email !== email) throw googleLinkError('GOOGLE_EMAIL_MISMATCH');
+        const [emailOwner] = await tx`
+          select 1 from tutai.users where email = ${email} and id <> ${userId}`;
+        if (emailOwner) throw googleLinkError('GOOGLE_EMAIL_IN_USE');
+        const [updated] = await tx`
+          update tutai.users set
+            email = ${email},
+            email_verified_at = coalesce(email_verified_at, ${now}),
+            display_name = coalesce(nullif(display_name, ''), ${displayName}),
+            avatar_url = coalesce(nullif(avatar_url, ''), ${avatarUrl}),
+            updated_at = ${now}
+          where id = ${userId}
+          returning *`;
+        await tx`
+          insert into tutai.identities (id, user_id, provider, provider_account_id, password_hash, created_at)
+          values (${identityId}, ${userId}, 'google', ${subject}, null, ${now})`;
+        return toUser(updated);
+      });
+    } catch (error) {
+      // A concurrent sign-up or link took the email or the Google account first.
+      const constraint = uniqueViolation(error);
+      if (constraint === 'users_email_key') throw googleLinkError('GOOGLE_EMAIL_IN_USE');
+      if (constraint !== null) throw googleLinkError('GOOGLE_LINKED_ELSEWHERE');
+      throw error;
     }
   },
 

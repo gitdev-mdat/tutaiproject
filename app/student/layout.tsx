@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { redirect } from 'next/navigation';
+import { getAdminAccess } from '@/lib/auth/admin';
 import { getDemoStudentSession } from '@/lib/auth/demo-session';
 import { getAuthSession } from '@/lib/auth/session';
 import { lifecycleDestination, resolveAndEnsureStudentLifecycle } from '@/lib/student/lifecycle';
@@ -18,6 +19,12 @@ export default async function StudentLayout({ children }: { children: React.Reac
   if (!session) redirect('/auth/login');
 
   const shellModel = resolveStudentShellModel(session);
+  // The shortcut is only a link: /admin checks access again on every request.
+  const canAdmin = (await getAdminAccess()).allowed;
 
-  return <StudentShell model={shellModel}>{children}</StudentShell>;
+  return (
+    <StudentShell model={shellModel} canAdmin={canAdmin}>
+      {children}
+    </StudentShell>
+  );
 }

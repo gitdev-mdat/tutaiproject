@@ -27,6 +27,12 @@ export interface AuthRepository {
   findPasswordLogin(identifier: string): Promise<{ user: AuthUser; passwordHash: string } | null>;
   /** Finds the user for a Google subject, else links or creates one by verified email. */
   upsertGoogleUser(input: GoogleAccount): Promise<{ user: AuthUser; created: boolean }>;
+  /**
+   * Attaches a Google account to an existing user and marks the Google email
+   * as verified on it. Throws AuthError with a GOOGLE_LINK_ERRORS code when the
+   * Google account or its email belongs to someone else.
+   */
+  linkGoogleIdentity(input: GoogleLink): Promise<AuthUser>;
   createSession(record: AuthSessionRecord, replaceExisting: boolean): Promise<void>;
   findSession(tokenHash: string): Promise<SessionContext | null>;
   deleteSession(tokenHash: string): Promise<void>;
@@ -73,6 +79,16 @@ export type GoogleAccount = {
   avatarUrl: string | null;
   now: string;
   newAccount: NewAccount;
+};
+
+export type GoogleLink = {
+  userId: string;
+  subject: string;
+  email: string;
+  identityId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  now: string;
 };
 
 export type SessionContext = {

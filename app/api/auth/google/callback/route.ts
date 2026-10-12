@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { AuthError, findOrCreateGoogleUser } from '@/lib/auth/auth-service';
-import { ACCOUNT_LINK_REQUIRES_VERIFICATION } from '@/lib/auth/errors';
+import { AuthError, findOrCreateGoogleUser, linkGoogleToUser } from '@/lib/auth/auth-service';
+import { ACCOUNT_LINK_REQUIRES_VERIFICATION, GOOGLE_LINK_ERRORS } from '@/lib/auth/errors';
 import { destinationFor, getAuthSession, setSessionCookie } from '@/lib/auth/session';
 
 const OAUTH_COOKIE = 'tutai_google_oauth';
@@ -11,11 +11,21 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const rawState = cookieStore.get(OAUTH_COOKIE)?.value;
   cookieStore.delete(OAUTH_COOKIE);
+  let saved: { state?: string; returnTo?: string; linkUserId?: string } | null = null;
+  try {
+    saved = rawState ? JSON.parse(rawState) : null;
+  } catch {
+    saved = null;
+  }
+  const linkUserId = saved?.linkUserId;
+  const linkReturn = saved?.returnTo ?? '/student/profile';
   try {
     if (requestUrl.searchParams.get('error')) throw new Error('provider_denied');
-    const saved = rawState ? (JSON.parse(rawState) as { state?: string; returnTo?: string }) : null;
-    if (!saved?.state || saved.state !== requestUrl.searchParams.get('state'))
-      throw new Error('invalid_state');
+    if (!saved?.state || saved.state !== requestUrl.searchParams.get('state')) {
+      // The cookie is gone when the sign-in started on another address, took
+      // longer than ten minutes, or this callback was opened a second time.
+      throw new OAuthStateError(saved?.state ? 'state mismatch' : 'no state cookie');
+    }
     const code = requestUrl.searchParams.get('code');
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -48,6 +58,20 @@ export async function GET(request: Request) {
       name?: string;
       picture?: string;
     };
+    if (linkUserId) {
+      // Link only into the account that started the flow, and only while it is
+      // still the one signed in here.
+      const current = await getAuthSession();
+      if (current?.user.id !== linkUserId) throw new SessionChangedError();
+      await linkGoogleToUser(linkUserId, {
+        subject: google.sub,
+        email: google.email,
+        emailVerified: google.email_verified,
+        displayName: google.name,
+        avatarUrl: google.picture,
+      });
+      return NextResponse.redirect(withParam(linkReturn, 'google', 'linked', requestUrl.origin));
+    }
     const { user } = await findOrCreateGoogleUser({
       subject: google.sub,
       email: google.email,
@@ -64,14 +88,38 @@ export async function GET(request: Request) {
         : (saved.returnTo ?? requiredDestination);
     return NextResponse.redirect(new URL(destination, requestUrl.origin));
   } catch (error) {
-    const accountExists =
-      error instanceof AuthError && error.code === ACCOUNT_LINK_REQUIRES_VERIFICATION;
-    if (!accountExists) console.error('Google OAuth callback failed', error);
-    return NextResponse.redirect(
-      new URL(
-        `/auth/login?oauthError=${accountExists ? 'account_exists' : 'callback_failed'}`,
-        requestUrl.origin
-      )
-    );
+    if (linkUserId && error instanceof AuthError && error.code in GOOGLE_LINK_ERRORS) {
+      return NextResponse.redirect(
+        withParam(linkReturn, 'googleError', error.code, requestUrl.origin)
+      );
+    }
+    const code = oauthErrorCode(error);
+    if (code === 'state_expired') console.warn('Google OAuth callback:', (error as Error).message);
+    else if (code === 'callback_failed') console.error('Google OAuth callback failed', error);
+    // The login page sends signed-in visitors straight on and would hide the
+    // message, so a signed-in person hears about it on their profile instead.
+    if (code !== 'session_expired' && (linkUserId || (await getAuthSession().catch(() => null))))
+      return NextResponse.redirect(withParam(linkReturn, 'googleError', code, requestUrl.origin));
+    return NextResponse.redirect(new URL(`/auth/login?oauthError=${code}`, requestUrl.origin));
   }
+}
+
+class OAuthStateError extends Error {}
+class SessionChangedError extends Error {}
+
+function oauthErrorCode(error: unknown): string {
+  if (error instanceof OAuthStateError) return 'state_expired';
+  if (error instanceof SessionChangedError) return 'session_expired';
+  if (error instanceof AuthError) {
+    if (error.code === ACCOUNT_LINK_REQUIRES_VERIFICATION) return 'account_exists';
+    if (error.code === 'UNVERIFIED_GOOGLE_EMAIL') return 'unverified_google';
+  }
+  if (error instanceof Error && error.message === 'provider_denied') return 'cancelled';
+  return 'callback_failed';
+}
+
+function withParam(path: string, key: string, value: string, origin: string): URL {
+  const url = new URL(path, origin);
+  url.searchParams.set(key, value);
+  return url;
 }

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { NextResponse } from 'next/server';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { getAuthSession } from './session';
 
 /**
@@ -103,7 +103,9 @@ export async function requireAdmin(): Promise<string> {
 
 /**
  * For admin pages and layouts: sends signed-out visitors to the login page and
- * hides the admin area from signed-in non-admins.
+ * signed-in non-admins to a page that explains, without naming any admin, that
+ * the account has no admin access. Both are redirects, so nothing below the
+ * check renders.
  */
 export async function requireAdminPage(returnTo = '/admin'): Promise<string> {
   const access = await getAdminAccess();
@@ -111,5 +113,5 @@ export async function requireAdminPage(returnTo = '/admin'): Promise<string> {
   if (access.reason === 'unauthenticated') {
     redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
   }
-  notFound();
+  redirect('/auth/admin-access');
 }

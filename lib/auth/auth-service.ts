@@ -213,6 +213,35 @@ export async function findOrCreateGoogleUser(input: {
   });
 }
 
+/**
+ * Links a Google account to the signed-in user. The caller must have checked
+ * that the OAuth flow was started by this same session, so the person holds
+ * both the account and the Google login; that is what lets an unverified
+ * password account take on the verified Google email.
+ */
+export async function linkGoogleToUser(
+  userId: string,
+  input: {
+    subject: string;
+    email: string;
+    emailVerified: boolean;
+    displayName?: string | null;
+    avatarUrl?: string | null;
+  }
+): Promise<AuthUser> {
+  if (!input.emailVerified)
+    throw new AuthError('UNVERIFIED_GOOGLE_EMAIL', 'Google chưa xác minh email này.', 403);
+  return (await getAuthRepository()).linkGoogleIdentity({
+    userId,
+    subject: input.subject,
+    email: normalizeEmail(input.email),
+    identityId: randomUUID(),
+    displayName: input.displayName?.trim() || null,
+    avatarUrl: input.avatarUrl || null,
+    now: new Date().toISOString(),
+  });
+}
+
 export async function createSession(
   userId: string,
   remember = true,

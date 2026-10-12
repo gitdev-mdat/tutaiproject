@@ -23,3 +23,22 @@ export function unverifiedAccountLinkError(): AuthError {
     409
   );
 }
+
+/**
+ * Reasons a signed-in account cannot link a Google account. Linking needs the
+ * person to hold both the current session and the Google account, and never
+ * moves an email or a Google account away from another Tú Tài account.
+ */
+export const GOOGLE_LINK_ERRORS = {
+  GOOGLE_LINKED_ELSEWHERE: 'Tài khoản Google này đã gắn với một tài khoản Tú Tài khác.',
+  ACCOUNT_HAS_OTHER_GOOGLE: 'Tài khoản của bạn đã liên kết với một tài khoản Google khác.',
+  GOOGLE_EMAIL_IN_USE:
+    'Email của tài khoản Google này đang được một tài khoản Tú Tài khác sử dụng.',
+  GOOGLE_EMAIL_MISMATCH: 'Email của tài khoản Google khác với email bạn đã đăng ký.',
+} as const;
+
+export type GoogleLinkErrorCode = keyof typeof GOOGLE_LINK_ERRORS;
+
+export function googleLinkError(code: GoogleLinkErrorCode): AuthError {
+  return new AuthError(code, GOOGLE_LINK_ERRORS[code], 409);
+}

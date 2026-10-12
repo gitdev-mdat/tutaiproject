@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { AuthError, unverifiedAccountLinkError } from './errors';
+import { AuthError, googleLinkError, unverifiedAccountLinkError } from './errors';
 import type { AuthRepository } from './repository';
 import { authTransaction, readAuthDatabase } from './store';
 import type { AuthDatabase } from './types';
@@ -85,6 +85,37 @@ export const jsonAuthRepository: AuthRepository = {
       }
       database.identities.push({ ...newAccount.identity, userId: user.id });
       return { user, created };
+    });
+  },
+
+  async linkGoogleIdentity({ userId, subject, email, identityId, displayName, avatarUrl, now }) {
+    return authTransaction((database) => {
+      const user = database.users.find((candidate) => candidate.id === userId);
+      if (!user) throw new AuthError('SESSION_EXPIRED', 'Phiên đăng nhập đã hết hạn.', 401);
+      const linked = database.identities.find(
+        (identity) => identity.provider === 'google' && identity.providerAccountId === subject
+      );
+      if (linked && linked.userId !== userId) throw googleLinkError('GOOGLE_LINKED_ELSEWHERE');
+      if (linked) return user;
+      if (database.identities.some((i) => i.userId === userId && i.provider === 'google'))
+        throw googleLinkError('ACCOUNT_HAS_OTHER_GOOGLE');
+      if (user.email && user.email !== email) throw googleLinkError('GOOGLE_EMAIL_MISMATCH');
+      if (database.users.some((candidate) => candidate.email === email && candidate.id !== userId))
+        throw googleLinkError('GOOGLE_EMAIL_IN_USE');
+      user.email = email;
+      user.emailVerifiedAt = user.emailVerifiedAt ?? now;
+      user.displayName = user.displayName || displayName;
+      user.avatarUrl = user.avatarUrl || avatarUrl;
+      user.updatedAt = now;
+      database.identities.push({
+        id: identityId,
+        userId,
+        provider: 'google',
+        providerAccountId: subject,
+        passwordHash: null,
+        createdAt: now,
+      });
+      return user;
     });
   },
 

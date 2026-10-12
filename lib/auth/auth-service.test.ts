@@ -18,6 +18,7 @@ import {
 import { readAuthDatabase } from './store';
 import { evaluateAdminAccess } from './admin';
 import { ACCOUNT_LINK_REQUIRES_VERIFICATION } from './errors';
+import { runGoogleLinkScenario } from './google-link.scenario';
 
 describe.sequential('canonical authentication lifecycle', () => {
   let directory: string;
@@ -182,6 +183,10 @@ describe.sequential('canonical authentication lifecycle', () => {
         ADMIN_EMAILS: 'owner@example.com',
       })
     ).toEqual({ allowed: false, reason: 'forbidden' });
+  });
+
+  it('links Google into a signed-in password account without taking over any other', async () => {
+    await runGoogleLinkScenario('json');
   });
 
   it('caps password guesses per account and per client, and clears the count on success', async () => {
