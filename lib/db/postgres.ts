@@ -64,7 +64,7 @@ export function databaseOptions(env: DatabaseEnv = process.env as DatabaseEnv): 
     ...(ssl ? { ssl } : {}),
     onnotice: () => {},
     // Supported by postgres.js at runtime but missing from its type definitions.
-    ...({ max_pipeline: 1, socket: watchedSocket } as DatabaseOptions),
+    ...({ max_pipeline: 1, socket: watchedSocket, debug: recordQuery } as DatabaseOptions),
   };
 }
 
@@ -75,7 +75,16 @@ export const SOCKET_INACTIVITY_MS = 12_000;
  * or writes. postgres.js strips all listeners from the raw socket before it
  * upgrades to TLS, so the timeout listener is put back whenever that happens.
  */
+// TEMP diagnostics: the statements started recently, without parameters.
+const recentQueries: { at: number; connection: number; sql: string }[] = [];
+function recordQuery(connection: number, sql: string) {
+  recentQueries.push({ at: Date.now(), connection, sql: sql.replace(/\s+/g, ' ').slice(0, 80) });
+  if (recentQueries.length > 40) recentQueries.shift();
+}
+
 class WatchedSocket extends net.Socket {
+  private readonly createdAt = Date.now();
+
   constructor() {
     super();
     this.setTimeout(SOCKET_INACTIVITY_MS);
@@ -84,6 +93,18 @@ class WatchedSocket extends net.Socket {
 
   private watch() {
     this.on('timeout', () => {
+      const now = Date.now();
+      console.error(
+        '[db] socket stalled',
+        JSON.stringify({
+          ageMs: now - this.createdAt,
+          bytesRead: this.bytesRead,
+          bytesWritten: this.bytesWritten,
+          recent: recentQueries
+            .filter((q) => now - q.at < 20_000)
+            .map((q) => ({ ...q, at: q.at - now })),
+        })
+      );
       const error = Object.assign(new Error('Database socket stopped responding.'), {
         code: 'ETIMEDOUT',
       });
@@ -120,6 +141,7 @@ export function getSql(): Sql {
   if (!url) throw new Error('DATABASE_URL is not set.');
   // Queries already running on the old client may finish; new ones get fresh
   // connections instead of sockets that went quiet during the freeze.
+  if (frozen && globalForDb.tutaiSql) console.warn('[db] replacing client after freeze');
   void globalForDb.tutaiSql?.end({ timeout: 15 }).catch(() => {});
   globalForDb.tutaiSql = postgres(url, databaseOptions());
   globalForDb.tutaiHeartbeat = now;
