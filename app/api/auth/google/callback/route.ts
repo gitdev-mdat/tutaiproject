@@ -96,6 +96,10 @@ export async function GET(request: Request) {
     const code = oauthErrorCode(error);
     if (code === 'state_expired') console.warn('Google OAuth callback:', (error as Error).message);
     else if (code === 'callback_failed') console.error('Google OAuth callback failed', error);
+    // The login page sends signed-in visitors straight on and would hide the
+    // message, so a signed-in person hears about it on their profile instead.
+    if (code !== 'session_expired' && (linkUserId || (await getAuthSession().catch(() => null))))
+      return NextResponse.redirect(withParam(linkReturn, 'googleError', code, requestUrl.origin));
     return NextResponse.redirect(new URL(`/auth/login?oauthError=${code}`, requestUrl.origin));
   }
 }
