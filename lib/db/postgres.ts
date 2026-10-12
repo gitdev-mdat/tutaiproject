@@ -101,8 +101,8 @@ class WatchedSocket extends net.Socket {
           bytesRead: this.bytesRead,
           bytesWritten: this.bytesWritten,
           recent: recentQueries
-            .filter((q) => now - q.at < 20_000)
-            .map((q) => ({ ...q, at: q.at - now })),
+            .slice(-8)
+            .map((q) => `${q.at - now} c${q.connection} ${q.sql.slice(0, 50)}`),
         })
       );
       const error = Object.assign(new Error('Database socket stopped responding.'), {
