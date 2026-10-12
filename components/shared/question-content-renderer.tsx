@@ -10,9 +10,13 @@ function renderMathExpression(source: string, key: React.Key): React.ReactNode {
   const nodes: React.ReactNode[] = [];
   let cursor = 0;
   const token =
-    /(\\frac\{([^{}]*)\}\{([^{}]*)\}|\\sqrt(?:\[([^\]]+)\])?\{([^{}]*)\}|\\mathbb\{R\}|\^\{([^{}]+)\}|\^([A-Za-z0-9+-]+)|_\{([^{}]+)\}|_([A-Za-z0-9+-]+)|\\(?:leq?|geq?|neq|times|div|pm|infty|alpha|beta|gamma|pi|theta|Delta|int))/g;
+    /(\\d?frac\{([^{}]*)\}\{([^{}]*)\}|\\sqrt(?:\[([^\]]+)\])?\{([^{}]*)\}|\\mathbb\{[NZQRC]\}|\^\{([^{}]+)\}|\^([A-Za-z0-9+-]+)|_\{([^{}]+)\}|_([A-Za-z0-9+-]+)|\\text\{([^{}]*)\}|\\(?:leq?|geq?|neq?|times|div|pm|infty|alpha|beta|gamma|pi|theta|Delta|int|in|notin|cup|cap|subset|cdot|to|Rightarrow|Leftrightarrow|forall|exists|emptyset|varnothing|approx|lt|gt|sin|cos|tan|cot|log|ln|lim|left|right)(?![A-Za-z])|\\[{}]|\\[,;!])/g;
   const symbols: Record<string, string> = {
+    '\\mathbb{N}': 'ℕ',
+    '\\mathbb{Z}': 'ℤ',
+    '\\mathbb{Q}': 'ℚ',
     '\\mathbb{R}': 'ℝ',
+    '\\mathbb{C}': 'ℂ',
     '\\le': '≤',
     '\\leq': '≤',
     '\\ge': '≥',
@@ -29,6 +33,37 @@ function renderMathExpression(source: string, key: React.Key): React.ReactNode {
     '\\theta': 'θ',
     '\\Delta': 'Δ',
     '\\int': '∫',
+    '\\ne': '≠',
+    '\\in': '∈',
+    '\\notin': '∉',
+    '\\cup': '∪',
+    '\\cap': '∩',
+    '\\subset': '⊂',
+    '\\cdot': '·',
+    '\\to': '→',
+    '\\Rightarrow': '⇒',
+    '\\Leftrightarrow': '⇔',
+    '\\forall': '∀',
+    '\\exists': '∃',
+    '\\emptyset': '∅',
+    '\\varnothing': '∅',
+    '\\approx': '≈',
+    '\\lt': '<',
+    '\\gt': '>',
+    '\\sin': 'sin',
+    '\\cos': 'cos',
+    '\\tan': 'tan',
+    '\\cot': 'cot',
+    '\\log': 'log',
+    '\\ln': 'ln',
+    '\\lim': 'lim',
+    '\\left': '',
+    '\\right': '',
+    '\\{': '{',
+    '\\}': '}',
+    '\\,': ' ',
+    '\\;': ' ',
+    '\\!': '',
   };
   for (const match of source.matchAll(token)) {
     const index = match.index ?? 0;
@@ -55,9 +90,15 @@ function renderMathExpression(source: string, key: React.Key): React.ReactNode {
         </span>
       );
     } else if (match[6] !== undefined || match[7] !== undefined) {
-      nodes.push(<sup key={`${index}-s`}>{match[6] ?? match[7]}</sup>);
+      nodes.push(
+        <sup key={`${index}-s`}>{renderMathExpression(match[6] ?? match[7], `${index}-sv`)}</sup>
+      );
     } else if (match[8] !== undefined || match[9] !== undefined) {
-      nodes.push(<sub key={`${index}-b`}>{match[8] ?? match[9]}</sub>);
+      nodes.push(
+        <sub key={`${index}-b`}>{renderMathExpression(match[8] ?? match[9], `${index}-bv`)}</sub>
+      );
+    } else if (match[10] !== undefined) {
+      nodes.push(match[10]);
     } else nodes.push(symbols[match[0]] ?? match[0]);
     cursor = index + match[0].length;
   }

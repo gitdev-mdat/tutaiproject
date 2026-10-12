@@ -27,6 +27,7 @@ export default defineConfig({
       'features/roadmap/**/*.test.ts',
       'features/progress/**/*.test.ts',
       'features/student-experience/**/*.test.ts',
+      'components/shared/**/*.test.ts',
     ],
     testTimeout: 30_000,
     fileParallelism: false,
