@@ -56,7 +56,9 @@ Form/button      ──Server Action (app/**/actions.ts)─▶ lib/<domain> serv
   Google sign-in) is listed in `ADMIN_EMAILS` (comma-separated). Everyone else is denied,
   in every environment. For local work without Google sign-in, set `ADMIN_DEV_BYPASS=1`;
   it is honoured only under `next dev` (`NODE_ENV=development`) and ignored by
-  `next start`, previews and production.
+  `next start`, previews and production. For testing on Vercel Preview (staging database,
+  behind Vercel Authentication), `PREVIEW_ADMIN_USER_IDS` may list staging account ids; it
+  is honoured only when `VERCEL_ENV=preview` and still requires that account's own session.
   - Pages: `app/admin/layout.tsx` calls `requireAdminPage()`; admin pages that read data on
     the server call it again.
   - Route Handlers: every handler under `/api/knowledge-tree`, `/api/knowledge-graph`,
@@ -119,6 +121,7 @@ one group at a time, the same way accounts did.
 | ----------------------------------------------------------------- | --------------------------------------------- |
 | `ADMIN_EMAILS`                                                    | Admin allowlist (required in production)      |
 | `ADMIN_DEV_BYPASS=1`                                              | Open admin under `next dev` only (opt-in)     |
+| `PREVIEW_ADMIN_USER_IDS`                                          | Admin account ids, Vercel Preview only        |
 | `GEMINI_API_KEY`                                                  | Gemini calls (server only)                    |
 | `GEMINI_*_MODEL`, `KNOWLEDGE_AI_PROVIDER`                         | Model overrides, mock provider for local work |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Google sign-in                                |

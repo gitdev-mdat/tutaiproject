@@ -64,4 +64,35 @@ describe('admin access', () => {
     });
     expect(evaluateAdminAccess(null, env)).toEqual({ allowed: false, reason: 'unauthenticated' });
   });
+
+  it('honours preview admin account ids only on Vercel Preview, for that signed-in account', () => {
+    const passwordAccount = { id: 'user-preview', email: null, emailVerifiedAt: null };
+    const preview = {
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'preview',
+      PREVIEW_ADMIN_USER_IDS: ' x, user-preview ',
+    };
+    expect(evaluateAdminAccess(passwordAccount, preview)).toEqual({
+      allowed: true,
+      adminId: 'user-preview',
+      via: 'preview-account',
+    });
+    expect(evaluateAdminAccess({ ...passwordAccount, id: 'user-other' }, preview)).toEqual({
+      allowed: false,
+      reason: 'forbidden',
+    });
+    expect(evaluateAdminAccess(null, preview)).toEqual({
+      allowed: false,
+      reason: 'unauthenticated',
+    });
+    for (const VERCEL_ENV of ['production', 'development', undefined]) {
+      expect(evaluateAdminAccess(passwordAccount, { ...preview, VERCEL_ENV })).toEqual({
+        allowed: false,
+        reason: 'forbidden',
+      });
+    }
+    expect(
+      evaluateAdminAccess(passwordAccount, { ...preview, PREVIEW_ADMIN_USER_IDS: ' , ' })
+    ).toEqual({ allowed: false, reason: 'forbidden' });
+  });
 });
