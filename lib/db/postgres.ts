@@ -50,9 +50,10 @@ export function databaseOptions(env: DatabaseEnv = process.env as DatabaseEnv): 
     max_lifetime: 5 * 60,
     connect_timeout: 10,
     prepare: false,
-    max_pipeline: 1,
     ...(ssl ? { ssl } : {}),
     onnotice: () => {},
+    // Supported by postgres.js at runtime but missing from its type definitions.
+    ...({ max_pipeline: 1 } as DatabaseOptions),
   };
 }
 
