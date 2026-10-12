@@ -25,18 +25,17 @@ export interface LessonDraftAvailability {
 type Env = Record<string, string | undefined>;
 
 /**
- * The admin area has no authorization yet, so a production deployment would let
- * anyone spend the project's Gemini quota. AI drafting therefore only runs outside
- * production until admin auth exists.
+ * Whether drafting can run in this deployment. Who may run it is decided by the
+ * route's server-side admin guard; this only checks configuration. The mock
+ * provider never runs in production, so a stray env var cannot show fake drafts.
  */
 export function getLessonDraftAvailability(env: Env = process.env): LessonDraftAvailability {
-  if (env.NODE_ENV === 'production') {
-    return {
-      available: false,
-      reason: 'Đang tạm khóa trên bản triển khai vì trang quản trị chưa có phân quyền.',
-    };
+  if (providerName(env) === 'mock') {
+    return env.NODE_ENV === 'production'
+      ? { available: false, reason: 'Bản nháp giả lập không được dùng trên bản triển khai.' }
+      : { available: true };
   }
-  if (providerName(env) === 'gemini' && !env.GEMINI_API_KEY) {
+  if (!env.GEMINI_API_KEY) {
     return { available: false, reason: 'Máy chủ chưa cấu hình khóa Gemini.' };
   }
   return { available: true };
