@@ -30,9 +30,11 @@ const FOCUSABLE_ELEMENTS = [
 
 export function StudentShell({
   model,
+  canAdmin = false,
   children,
 }: {
   model: StudentShellModel;
+  canAdmin?: boolean;
   children: React.ReactNode;
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -107,7 +109,7 @@ export function StudentShell({
       <div className="flex min-h-[100dvh] w-full bg-[#F8FAFD]">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block lg:sticky lg:top-0 lg:h-screen">
-          <StudentSidebar model={model} />
+          <StudentSidebar model={model} canAdmin={canAdmin} />
         </div>
 
         {/* Mobile Drawer Overlay */}
@@ -142,7 +144,7 @@ export function StudentShell({
           >
             <X aria-hidden="true" size={20} />
           </button>
-          <StudentSidebar model={model} />
+          <StudentSidebar model={model} canAdmin={canAdmin} />
         </div>
 
         {/* A compact mobile-only trigger keeps navigation available without restoring a toolbar. */}

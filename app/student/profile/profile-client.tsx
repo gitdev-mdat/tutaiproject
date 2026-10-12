@@ -328,7 +328,38 @@ function DetailRows({ rows }: { rows: Array<{ label: string; value: React.ReactN
   );
 }
 
-export function ProfileClient({ initialProfile }: { initialProfile: StudentProfile }) {
+export type GoogleLinkState = {
+  linked: boolean;
+  email: string | null;
+  notice: string | null;
+  error: string | null;
+};
+
+function GoogleLinkRow({ google }: { google: GoogleLinkState }) {
+  if (google.linked) {
+    return (
+      <span className={styles.googleLinked}>
+        <Check size={15} aria-hidden="true" /> Đã liên kết{google.email ? ` (${google.email})` : ''}
+      </span>
+    );
+  }
+  return (
+    <a
+      className={styles.googleLink}
+      href={`/api/auth/google?intent=link&returnTo=${encodeURIComponent('/student/profile')}`}
+    >
+      Liên kết Google
+    </a>
+  );
+}
+
+export function ProfileClient({
+  initialProfile,
+  google,
+}: {
+  initialProfile: StudentProfile;
+  google: GoogleLinkState;
+}) {
   const [state, setState] = React.useState(() => loadStudentState(initialProfile));
   React.useEffect(() => {
     const hydration = window.setTimeout(() => setState(loadStudentState(initialProfile)), 0);
@@ -420,8 +451,14 @@ export function ProfileClient({ initialProfile }: { initialProfile: StudentProfi
             rows={[
               { label: 'Email đăng nhập', value: profile.email },
               { label: 'Mật khẩu', value: '••••••••••' },
+              { label: 'Google', value: <GoogleLinkRow google={google} /> },
             ]}
           />
+          {(google.notice || google.error) && (
+            <p role="status" className={google.error ? styles.googleError : styles.googleNotice}>
+              {google.error ?? google.notice}
+            </p>
+          )}
         </section>
         <section className={styles.infoCard}>
           <CardHeader

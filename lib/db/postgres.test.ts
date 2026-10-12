@@ -1,7 +1,13 @@
 // @vitest-environment node
 
+import postgres from 'postgres';
 import { describe, expect, it, vi } from 'vitest';
-import { databaseOptions, isRetryableDatabaseError, withDatabaseRetry } from './postgres';
+import {
+  databaseOptions,
+  isRetryableDatabaseError,
+  watchedSocket,
+  withDatabaseRetry,
+} from './postgres';
 
 const POOLER = 'postgres://app.ref:secret@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres';
 
@@ -65,4 +71,41 @@ describe('withDatabaseRetry', () => {
     await expect(withDatabaseRetry(broken, { idempotent: true })).rejects.toThrow();
     expect(broken).toHaveBeenCalledTimes(2);
   });
+});
+
+// Needs a PostgreSQL server that accepts TLS, e.g. a local one with ssl=on.
+const TLS_DATABASE_URL = process.env.TEST_DATABASE_TLS_URL;
+
+describe.skipIf(!TLS_DATABASE_URL)('watched database sockets over TLS', () => {
+  it('survives the socket timeout and the idle close firing together', async () => {
+    // A frozen Vercel function wakes with both timers due at once. Line them up
+    // here: a 2 s socket timeout and postgres.js's 2 s idle timeout.
+    const uncaught: unknown[] = [];
+    const onUncaught = (error: unknown) => uncaught.push(error);
+    process.on('uncaughtException', onUncaught);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const sql = postgres(TLS_DATABASE_URL!, {
+      ssl: 'require',
+      max: 1,
+      idle_timeout: 2,
+      prepare: false,
+      onnotice: () => {},
+      ...({
+        max_pipeline: 0,
+        socket: (options: { host: string[]; port: number[] }) => watchedSocket(options, 2000),
+      } as object),
+    });
+    try {
+      for (let round = 0; round < 4; round += 1) {
+        const [row] = await sql`select 1 as one`;
+        expect(row.one).toBe(1);
+        await new Promise((resolve) => setTimeout(resolve, 2500 + round * 300));
+      }
+      expect(uncaught).toEqual([]);
+    } finally {
+      await sql.end({ timeout: 2 }).catch(() => {});
+      process.off('uncaughtException', onUncaught);
+      warn.mockRestore();
+    }
+  }, 30_000);
 });

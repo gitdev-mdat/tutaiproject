@@ -1,7 +1,9 @@
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
-import { Bell, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bell, GraduationCap, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -43,8 +45,25 @@ export function AdminSidebarUtilities({
   onToggleCollapse?: () => void;
 }) {
   const contentClass = collapsed ? 'justify-center px-0' : 'gap-3 px-3';
+  const router = useRouter();
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+    router.push('/auth/login');
+    router.refresh();
+  };
   return (
     <div className="space-y-1" aria-label="Tiện ích quản trị">
+      <UtilityTooltip collapsed={collapsed} label="Xem giao diện học sinh">
+        <Link
+          href="/student/dashboard"
+          className={`${utilityClass} ${contentClass}`}
+          aria-label="Xem giao diện học sinh"
+        >
+          <GraduationCap className="size-4 shrink-0" />
+          <span className={collapsed ? 'sr-only' : ''}>Xem giao diện học sinh</span>
+        </Link>
+      </UtilityTooltip>
+
       {onToggleCollapse && (
         <UtilityTooltip
           collapsed={collapsed}
@@ -114,7 +133,7 @@ export function AdminSidebarUtilities({
           <DropdownMenuSeparator />
           <DropdownMenuItem render={<Link href="/admin/settings" />}>Cài đặt</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/auth/login" />} className="text-red-600">
+          <DropdownMenuItem onClick={logout} className="text-red-600">
             Đăng xuất
           </DropdownMenuItem>
         </DropdownMenuContent>

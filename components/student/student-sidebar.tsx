@@ -13,6 +13,7 @@ import {
   LogOut,
   Trophy,
   Swords,
+  ShieldCheck,
 } from 'lucide-react';
 import type { StudentShellModel } from '@/lib/student/types';
 
@@ -36,7 +37,13 @@ function isDestinationActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + '/');
 }
 
-export function StudentSidebar({ model }: { model: StudentShellModel }) {
+export function StudentSidebar({
+  model,
+  canAdmin = false,
+}: {
+  model: StudentShellModel;
+  canAdmin?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
@@ -122,6 +129,15 @@ export function StudentSidebar({ model }: { model: StudentShellModel }) {
             </React.Fragment>
           );
         })}
+        {canAdmin && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-[14px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+          >
+            <ShieldCheck size={18} strokeWidth={2} aria-hidden="true" />
+            Quản trị nội dung
+          </Link>
+        )}
       </nav>
 
       {/* Student Profile & Logout */}

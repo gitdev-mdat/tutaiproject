@@ -29,6 +29,7 @@ import { importAuthSnapshot, parseSnapshot, validateSnapshot } from './import-js
 import { readAuthDatabase } from './store';
 import { evaluateAdminAccess } from './admin';
 import { ACCOUNT_LINK_REQUIRES_VERIFICATION } from './errors';
+import { runGoogleLinkScenario } from './google-link.scenario';
 import { closeSql } from '@/lib/db/postgres';
 import { runMigrations } from '@/lib/db/migrations';
 import { ensureStudentAssignment, resolveStudentLifecycle } from '@/lib/student/lifecycle';
@@ -239,6 +240,10 @@ describe.skipIf(!TEST_DATABASE_URL).sequential('PostgreSQL auth store', () => {
         ADMIN_EMAILS: 'admin.owner@example.com',
       })
     ).toEqual({ allowed: false, reason: 'forbidden' });
+  });
+
+  it('links Google into a signed-in password account without taking over any other', async () => {
+    await runGoogleLinkScenario('pg');
   });
 
   it('throttles password guesses and password-reset requests in the database', async () => {

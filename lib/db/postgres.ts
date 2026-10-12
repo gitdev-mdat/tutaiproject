@@ -70,12 +70,20 @@ export const SOCKET_INACTIVITY_MS = 12_000;
  * A TCP socket that destroys itself after SOCKET_INACTIVITY_MS without reads
  * or writes. postgres.js strips all listeners from the raw socket before it
  * upgrades to TLS, so the timeout listener is put back whenever that happens.
+ *
+ * On Vercel a frozen function wakes with this timeout and postgres.js's own
+ * idle timeout both due in the same tick. Closing the socket in that tick
+ * pulls the file descriptor out from under the goodbye message postgres.js
+ * is writing, and the resulting EBADF reaches no listener and kills the
+ * process. So the socket closes one tick later, and keeps a listener for
+ * errors of its own after TLS has taken it over.
  */
 class WatchedSocket extends net.Socket {
-  constructor() {
+  constructor(inactivityMs: number) {
     super();
-    this.setTimeout(SOCKET_INACTIVITY_MS);
+    this.setTimeout(inactivityMs);
     this.watch();
+    this.on('error', ignoreError);
   }
 
   private watch() {
@@ -84,19 +92,28 @@ class WatchedSocket extends net.Socket {
       const error = Object.assign(new Error('Database socket stopped responding.'), {
         code: 'ETIMEDOUT',
       });
-      this.destroy(error);
+      setImmediate(() => this.destroy(error));
     });
   }
 
-  override removeAllListeners(event?: string | symbol): this {
-    super.removeAllListeners(event);
-    if (event === undefined || event === 'timeout') this.watch();
+  override removeAllListeners(...args: [event?: string | symbol]): this {
+    // Forward the call as made: removeAllListeners(undefined) only clears an
+    // event named "undefined", not every event.
+    super.removeAllListeners(...args);
+    const [event] = args;
+    if (args.length === 0 || event === 'timeout') this.watch();
+    if (args.length === 0 || event === 'error') this.on('error', ignoreError);
     return this;
   }
 }
 
-function watchedSocket(options: { host: string[]; port: number[] }): net.Socket {
-  const socket = new WatchedSocket();
+function ignoreError() {}
+
+export function watchedSocket(
+  options: { host: string[]; port: number[] },
+  inactivityMs = SOCKET_INACTIVITY_MS
+): net.Socket {
+  const socket = new WatchedSocket(inactivityMs);
   // postgres.js reads `host` to set the TLS server name.
   Object.assign(socket, { host: options.host[0] });
   return socket.connect(options.port[0], options.host[0]);
