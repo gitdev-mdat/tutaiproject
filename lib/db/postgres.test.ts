@@ -10,8 +10,7 @@ describe('databaseOptions', () => {
     expect(databaseOptions({ DATABASE_URL: POOLER })).toMatchObject({
       ssl: 'require',
       prepare: false,
-      max_pipeline: 1,
-      idle_timeout: 1,
+      max_pipeline: 0,
       max: 3,
       max_lifetime: 300,
     });

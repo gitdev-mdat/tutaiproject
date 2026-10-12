@@ -12,11 +12,7 @@ type DatabaseEnv = {
   DATABASE_CA_CERT?: string;
 };
 
-const globalForDb = globalThis as unknown as {
-  tutaiSql?: Sql;
-  tutaiHeartbeat?: number;
-  tutaiHeartbeatTimer?: ReturnType<typeof setInterval>;
-};
+const globalForDb = globalThis as unknown as { tutaiSql?: Sql };
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
@@ -26,21 +22,21 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
  *
  * - `prepare: false`: a transaction-mode pooler hands each transaction to any
  *   server connection, so named prepared statements cannot be reused.
- * - `max_pipeline: 1`: extra concurrent queries wait for a free connection
- *   instead of being pipelined behind a slow one.
+ * - `max_pipeline: 0`: a connection carries one statement at a time. When a
+ *   page ran more queries than it had connections, postgres.js pipelined the
+ *   extra one behind a running query on the same socket, and through the
+ *   pooler that second statement never got an answer. Extra queries now wait
+ *   for a free connection.
  * - TLS is required for every non-local host. With DATABASE_CA_CERT (the
  *   Supabase root certificate, PEM) the server certificate and host name are
  *   verified; without it the connection is encrypted but not verified. An
  *   explicit `sslmode` in the URL wins.
- * - Vercel freezes a function between invocations. A socket that was open
- *   across a freeze can be dead on the far side while Node still thinks it is
- *   alive, and a query sent on it waits for an answer that never comes, until
- *   the function's 300 s limit. So idle connections close after a second, and
- *   every socket is destroyed after SOCKET_INACTIVITY_MS without any traffic,
- *   which fails the query with ETIMEDOUT (retried by `withDatabaseRetry` for
- *   reads) instead of hanging the page. getSql() also replaces the client when
- *   a heartbeat timer shows the function was just frozen, so a request after
- *   a pause starts on fresh connections instead of waiting out the watchdog.
+ * - Every socket is destroyed after SOCKET_INACTIVITY_MS without any traffic,
+ *   so a statement that gets no answer (for example on a socket that died
+ *   while Vercel froze the function) fails with ETIMEDOUT, retried by
+ *   `withDatabaseRetry` for reads, instead of hanging until the function's
+ *   300 s limit. Connections are also short-lived (`idle_timeout`,
+ *   `max_lifetime`).
  * - Each instance holds at most DATABASE_POOL_MAX (default 3, capped at 10)
  *   connections.
  */
@@ -57,14 +53,14 @@ export function databaseOptions(env: DatabaseEnv = process.env as DatabaseEnv): 
   }
   return {
     max,
-    idle_timeout: 1,
+    idle_timeout: 20,
     max_lifetime: 5 * 60,
     connect_timeout: 10,
     prepare: false,
     ...(ssl ? { ssl } : {}),
     onnotice: () => {},
     // Supported by postgres.js at runtime but missing from its type definitions.
-    ...({ max_pipeline: 1, socket: watchedSocket, debug: recordQuery } as DatabaseOptions),
+    ...({ max_pipeline: 0, socket: watchedSocket } as DatabaseOptions),
   };
 }
 
@@ -75,16 +71,7 @@ export const SOCKET_INACTIVITY_MS = 12_000;
  * or writes. postgres.js strips all listeners from the raw socket before it
  * upgrades to TLS, so the timeout listener is put back whenever that happens.
  */
-// TEMP diagnostics: the statements started recently, without parameters.
-const recentQueries: { at: number; connection: number; sql: string }[] = [];
-function recordQuery(connection: number, sql: string) {
-  recentQueries.push({ at: Date.now(), connection, sql: sql.replace(/\s+/g, ' ').slice(0, 80) });
-  if (recentQueries.length > 40) recentQueries.shift();
-}
-
 class WatchedSocket extends net.Socket {
-  private readonly createdAt = Date.now();
-
   constructor() {
     super();
     this.setTimeout(SOCKET_INACTIVITY_MS);
@@ -93,18 +80,7 @@ class WatchedSocket extends net.Socket {
 
   private watch() {
     this.on('timeout', () => {
-      const now = Date.now();
-      console.error(
-        '[db] socket stalled',
-        JSON.stringify({
-          ageMs: now - this.createdAt,
-          bytesRead: this.bytesRead,
-          bytesWritten: this.bytesWritten,
-          recent: recentQueries
-            .slice(-8)
-            .map((q) => `${q.at - now} c${q.connection} ${q.sql.slice(0, 50)}`),
-        })
-      );
+      console.warn('[db] no traffic on a database socket; closing it');
       const error = Object.assign(new Error('Database socket stopped responding.'), {
         code: 'ETIMEDOUT',
       });
@@ -126,40 +102,51 @@ function watchedSocket(options: { host: string[]; port: number[] }): net.Socket 
   return socket.connect(options.port[0], options.host[0]);
 }
 
-// A timer that ticks while the process runs. If the last tick is much older
-// than its interval, the function was frozen, and every pooled socket may be
-// dead without Node knowing.
-const HEARTBEAT_MS = 250;
-const FROZEN_AFTER_MS = 1_000;
-
 export function getSql(): Sql {
-  const now = Date.now();
-  const frozen =
-    globalForDb.tutaiHeartbeat !== undefined && now - globalForDb.tutaiHeartbeat > FROZEN_AFTER_MS;
-  if (globalForDb.tutaiSql && !frozen) return globalForDb.tutaiSql;
+  if (globalForDb.tutaiSql) return globalForDb.tutaiSql;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set.');
-  // Queries already running on the old client may finish; new ones get fresh
-  // connections instead of sockets that went quiet during the freeze.
-  if (frozen && globalForDb.tutaiSql) console.warn('[db] replacing client after freeze');
-  void globalForDb.tutaiSql?.end({ timeout: 15 }).catch(() => {});
-  globalForDb.tutaiSql = postgres(url, databaseOptions());
-  globalForDb.tutaiHeartbeat = now;
-  if (!globalForDb.tutaiHeartbeatTimer) {
-    globalForDb.tutaiHeartbeatTimer = setInterval(() => {
-      globalForDb.tutaiHeartbeat = Date.now();
-    }, HEARTBEAT_MS);
-    globalForDb.tutaiHeartbeatTimer.unref();
+  const sql = postgres(url, databaseOptions());
+  // postgres.js begins a transaction through a hook that it skips when
+  // pipelining is off (max_pipeline: 0), so run transactions on a reserved
+  // connection instead. Same API for callers, begin(fn) or begin(mode, fn),
+  // except that savepoints are not supported.
+  sql.begin = ((mode: string | TransactionBody, body?: TransactionBody) =>
+    reservedTransaction(sql, mode, body)) as unknown as Sql['begin'];
+  globalForDb.tutaiSql = sql;
+  return sql;
+}
+
+type TransactionBody = (tx: postgres.ReservedSql) => unknown;
+
+async function reservedTransaction(
+  sql: Sql,
+  mode: string | TransactionBody,
+  body?: TransactionBody
+): Promise<unknown> {
+  const fn = typeof mode === 'function' ? mode : body;
+  if (!fn) throw new Error('begin() needs a transaction function.');
+  const options = typeof mode === 'string' ? mode.replace(/[^a-z ]/gi, '') : '';
+  const tx = await sql.reserve();
+  try {
+    await tx.unsafe(`begin ${options}`);
+    try {
+      const result = fn(tx);
+      const value = await (Array.isArray(result) ? Promise.all(result) : result);
+      await tx.unsafe('commit');
+      return value;
+    } catch (error) {
+      await tx.unsafe('rollback').catch(() => {});
+      throw error;
+    }
+  } finally {
+    tx.release();
   }
-  return globalForDb.tutaiSql;
 }
 
 export async function closeSql(): Promise<void> {
   const sql = globalForDb.tutaiSql;
   globalForDb.tutaiSql = undefined;
-  clearInterval(globalForDb.tutaiHeartbeatTimer);
-  globalForDb.tutaiHeartbeatTimer = undefined;
-  globalForDb.tutaiHeartbeat = undefined;
   await sql?.end({ timeout: 5 });
 }
 
