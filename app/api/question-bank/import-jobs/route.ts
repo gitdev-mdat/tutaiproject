@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server';
 import { listImportJobs } from '@/lib/question-bank/qb-storage';
 import { listImportSessions } from '@/lib/content-import/storage';
 import type { ImportJob } from '@/lib/question-bank/qb-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET() {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const [jobs, sessions] = await Promise.all([listImportJobs(), listImportSessions()]);
     const jobIds = new Set(jobs.map((job) => job.id));

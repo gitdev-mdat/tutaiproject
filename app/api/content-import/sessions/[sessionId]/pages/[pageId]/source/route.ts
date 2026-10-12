@@ -1,11 +1,14 @@
 import fs from 'fs/promises';
 import { NextResponse } from 'next/server';
 import { requireImportSession, sourcePageFile } from '@/lib/content-import/storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET(
   _request: Request,
   context: { params: Promise<{ sessionId: string; pageId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId, pageId } = await context.params;
     const session = await requireImportSession(sessionId);

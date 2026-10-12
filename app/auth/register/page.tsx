@@ -43,7 +43,8 @@ function RegisterPageContent() {
     let active = true;
     fetchAuthSession()
       .then((session) => {
-        if (active && session?.authenticated) router.replace(session.redirectTo);
+        if (active && session?.authenticated)
+          router.replace(session.redirectTo ?? '/student/dashboard');
       })
       .catch(() => undefined);
     return () => {

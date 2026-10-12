@@ -16,6 +16,7 @@ import {
   type ExamSelectionStrategy,
 } from '@/lib/exams/exam-selection';
 import type { ExamQuestionCriteria, ExamSelectionRule } from '@/lib/exams/exam-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 interface GenerateRequest {
   mode?: 'GENERATE' | 'CANDIDATES' | 'REPLACEMENT';
@@ -179,6 +180,8 @@ async function scanEligibleCandidates(
 }
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const parsed: unknown = await request.json();
     if (!isRecord(parsed)) {

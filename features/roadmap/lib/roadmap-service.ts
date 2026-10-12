@@ -5,6 +5,7 @@ import {
   type RoadmapService,
   type StudentRoadmap,
   type StudentRoadmapDashboard,
+  type StudentRoadmapSnapshot,
   type RoadmapWeek,
 } from './types';
 import { mockStudentRoadmap } from './mock-data';
@@ -15,6 +16,13 @@ const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 export class MockRoadmapService implements RoadmapService {
   private roadmap: StudentRoadmap = structuredClone(mockStudentRoadmap);
 
+  async getStudentRoadmapSnapshot(): Promise<StudentRoadmapSnapshot> {
+    const [roadmap, dashboard] = await Promise.all([
+      this.getStudentRoadmap(),
+      this.getStudentRoadmapDashboard(),
+    ]);
+    return { roadmap, dashboard };
+  }
   async getStudentRoadmap(): Promise<StudentRoadmap> {
     await delay();
     return structuredClone(this.roadmap);

@@ -2,7 +2,11 @@ import 'server-only';
 
 import { createHash } from 'node:crypto';
 import { getOwnedRoadmap, initializeOwnedRoadmap } from '@/features/roadmap/lib/roadmap-storage';
-import { authTransaction, readAuthDatabase } from '@/lib/auth/store';
+import {
+  getAuthRepository,
+  type AssignmentPlan,
+  type AssignmentState,
+} from '@/lib/auth/repository';
 import type { StudentLearningProfile, StoredStudentProfile } from '@/lib/auth/types';
 
 export type StudentLifecycleState =
@@ -64,51 +68,48 @@ const fingerprint = (profile: StoredStudentProfile, learning: StudentLearningPro
     )
     .digest('hex');
 
-/** Deterministic, idempotent assignment. The currently published curriculum is Mathematics grade 12. */
-export async function ensureStudentAssignment(studentId: string) {
-  const result = await authTransaction((db) => {
-    const profile = db.studentProfiles.find((item) => item.id === studentId);
-    const learning = db.learningProfiles.find((item) => item.studentId === studentId) ?? null;
-    if (!profile || !isOnboardingComplete(profile, learning))
-      throw new Error('INVALID_ONBOARDING_PROFILE');
-    const existing = db.enrollments.find(
-      (item) => item.studentId === studentId && item.status === 'active'
-    );
-    if (existing) return { enrollment: existing, targetScore: learning!.targetScore! };
-    const key = fingerprint(profile, learning!);
-    db.assignmentAttempts = db.assignmentAttempts.filter(
-      (item) => item.studentId !== studentId || item.profileFingerprint === key
-    );
-    if (profile.grade !== '12' || learning!.primarySubject !== 'MATH') {
-      let blocked = db.assignmentAttempts.find(
-        (item) => item.studentId === studentId && item.profileFingerprint === key
-      );
-      if (!blocked) {
-        blocked = {
-          studentId,
-          profileFingerprint: key,
-          status: 'blocked',
-          code: 'NO_ELIGIBLE_PROGRAM',
-          retryable: false,
-          incidentId: `assignment:${studentId}:${key.slice(0, 12)}`,
-          attemptedAt: new Date().toISOString(),
-        };
-        db.assignmentAttempts.push(blocked);
-      }
-      return { blocked };
-    }
-    const enrollment = {
+/** Decides the assignment from the student's current state. Pure; the repository applies it atomically. */
+export function planStudentAssignment(
+  studentId: string,
+  { profile, learning, enrollment, attempts }: AssignmentState,
+  now = new Date().toISOString()
+): AssignmentPlan {
+  if (!profile || !isOnboardingComplete(profile, learning))
+    throw new Error('INVALID_ONBOARDING_PROFILE');
+  if (enrollment) return { kind: 'existing', enrollment, targetScore: learning!.targetScore! };
+  const key = fingerprint(profile, learning!);
+  if (profile.grade !== '12' || learning!.primarySubject !== 'MATH') {
+    const blocked = attempts.find((item) => item.profileFingerprint === key) ?? {
+      studentId,
+      profileFingerprint: key,
+      status: 'blocked' as const,
+      code: 'NO_ELIGIBLE_PROGRAM' as const,
+      retryable: false,
+      incidentId: `assignment:${studentId}:${key.slice(0, 12)}`,
+      attemptedAt: now,
+    };
+    return { kind: 'blocked', blocked };
+  }
+  return {
+    kind: 'enroll',
+    enrollment: {
       id: `enrollment:${studentId}:math-12-v1`,
       studentId,
       programVersionId: 'math-12-v1',
-      status: 'active' as const,
-      assignedAt: new Date().toISOString(),
-    };
-    db.enrollments.push(enrollment);
-    db.assignmentAttempts = db.assignmentAttempts.filter((item) => item.studentId !== studentId);
-    return { enrollment, targetScore: learning!.targetScore! };
-  });
-  if ('blocked' in result) return result;
+      status: 'active',
+      assignedAt: now,
+    },
+    targetScore: learning!.targetScore!,
+  };
+}
+
+/** Deterministic, idempotent assignment. The currently published curriculum is Mathematics grade 12. */
+export async function ensureStudentAssignment(studentId: string) {
+  const plan = await (
+    await getAuthRepository()
+  ).ensureAssignment(studentId, (state) => planStudentAssignment(studentId, state));
+  if (plan.kind === 'blocked') return { blocked: plan.blocked };
+  const result = { enrollment: plan.enrollment, targetScore: plan.targetScore };
   try {
     const roadmap = await initializeOwnedRoadmap({ studentId, targetScore: result.targetScore });
     return { ...result, roadmap };
@@ -124,12 +125,10 @@ export async function resolveStudentLifecycle(session: Session): Promise<Student
     profile.fullName || session.user.displayName || session.user.username || undefined;
   if (!isOnboardingComplete(profile, learning))
     return { state: 'AUTHENTICATED_ONBOARDING_INCOMPLETE', studentId: profile.id, displayName };
-  const db = await readAuthDatabase();
-  const enrollment = db.enrollments.find(
-    (item) => item.studentId === profile.id && item.status === 'active'
-  );
+  const { enrollment, latestAttempt: blocked } = await (
+    await getAuthRepository()
+  ).findAssignment(profile.id);
   if (!enrollment) {
-    const blocked = db.assignmentAttempts.filter((item) => item.studentId === profile.id).at(-1);
     if (blocked)
       return {
         state: 'ASSIGNMENT_BLOCKED',

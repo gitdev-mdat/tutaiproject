@@ -59,6 +59,22 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
       <path d="M12 17h.01" />
     </svg>
   ),
+  '/admin/practice': (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 11l2 2 4-4" />
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+    </svg>
+  ),
   '/admin/roadmaps': (
     <svg
       width="16"

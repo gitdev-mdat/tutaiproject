@@ -38,6 +38,13 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
     keywords: ['roadmap', 'lộ trình', 'kế hoạch'],
   },
   {
+    id: 'lessons',
+    title: 'Bài học',
+    href: '/student/lessons',
+    description: 'Học theo chương và bài trong chương trình',
+    keywords: ['lessons', 'bài học', 'chương trình', 'kiến thức'],
+  },
+  {
     id: 'practice',
     title: 'Luyện đề',
     href: '/student/practice',

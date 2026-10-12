@@ -4,11 +4,14 @@ import {
   ImportStorageError,
   replaceSourcePage,
 } from '@/lib/content-import/storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function DELETE(
   _request: Request,
   context: { params: Promise<{ sessionId: string; pageId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId, pageId } = await context.params;
     return NextResponse.json(await deleteSourcePage(sessionId, pageId));
@@ -25,6 +28,8 @@ export async function PUT(
   request: Request,
   context: { params: Promise<{ sessionId: string; pageId: string }> }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { sessionId, pageId } = await context.params;
     const formData = await request.formData();

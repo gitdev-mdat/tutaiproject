@@ -1,4 +1,9 @@
-import type { KnowledgeTreeImportDraft, KnowledgeNodeType } from './knowledge-tree-types';
+import { createKnowledgeTreeNode } from './knowledge-tree';
+import type {
+  KnowledgeNodeType,
+  KnowledgeTreeDocument,
+  KnowledgeTreeImportDraft,
+} from './knowledge-tree-types';
 
 export interface ImportPreviewNode {
   temporaryId: string;
@@ -119,4 +124,54 @@ export function createImportDraft(preview: ImportPreviewResult): KnowledgeTreeIm
       nodeType: n.nodeType,
     })),
   };
+}
+
+/**
+ * Applies a reviewed import draft to a tree in memory. All-or-nothing: any domain
+ * error (duplicate title, missing parent) aborts the whole import.
+ */
+export function applyImportDraft(
+  tree: KnowledgeTreeDocument,
+  draft: KnowledgeTreeImportDraft,
+  destinationNodeId: string | null,
+  options: { createId: () => string; now: string }
+): KnowledgeTreeDocument {
+  if (draft.status !== 'REVIEWED') {
+    throw new Error('Không thể áp dụng dữ liệu chưa được xác nhận.');
+  }
+  const idMap = new Map<string, string>();
+  let current = tree;
+  // Parents always precede their children in parser output; keep that order.
+  for (const draftNode of draft.nodes) {
+    const parentId = draftNode.parentTemporaryId
+      ? idMap.get(draftNode.parentTemporaryId)
+      : destinationNodeId;
+    if (parentId === undefined) throw new Error('Không tìm thấy nhóm cha của mục nhập.');
+    const id = options.createId();
+    idMap.set(draftNode.temporaryId, id);
+    const result = createKnowledgeTreeNode(
+      current,
+      {
+        title: draftNode.title,
+        description: draftNode.description,
+        parentId,
+        kind: draftNode.kind,
+      },
+      { id, now: options.now }
+    );
+    current = {
+      ...result.tree,
+      nodes: result.tree.nodes.map((node) =>
+        node.id === id
+          ? {
+              ...node,
+              identitySource: 'TREE_IMPORT' as const,
+              ...(draftNode.nodeType ? { nodeType: draftNode.nodeType } : {}),
+              hasLearningContent: draftNode.kind === 'KNOWLEDGE',
+            }
+          : node
+      ),
+    };
+  }
+  return current;
 }

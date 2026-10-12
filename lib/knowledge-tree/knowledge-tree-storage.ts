@@ -3,6 +3,12 @@ import 'server-only';
 import fs from 'fs/promises';
 import path from 'path';
 import { readKnowledgeGraph } from '@/lib/knowledge-graph/kg-storage';
+import {
+  readContentDocument,
+  usesDatabaseContentStore,
+  writeContentDocument,
+  type ContentDocumentSource,
+} from '@/lib/content/document-store';
 import { buildKnowledgeTreeFromGraph } from './knowledge-tree';
 import type { KnowledgeTreeDocument } from './knowledge-tree-types';
 
@@ -10,13 +16,49 @@ const TREE_DIR = path.join(process.cwd(), 'data', 'knowledge-tree');
 const TREE_FILE = path.join(TREE_DIR, 'tree.json');
 
 let cachedTree: KnowledgeTreeDocument | null = null;
+// Route handlers and server components can load separate module instances, so the
+// cache is keyed by the file's mtime: a write from one instance invalidates the others.
+let cachedMtimeMs: number | null = null;
 
 export function clearKnowledgeTreeStorageCache() {
   cachedTree = null;
+  cachedMtimeMs = null;
 }
 
+async function treeFileMtime(): Promise<number | null> {
+  try {
+    return (await fs.stat(TREE_FILE)).mtimeMs;
+  } catch {
+    return null;
+  }
+}
+
+const treeSource: ContentDocumentSource<KnowledgeTreeDocument> = {
+  key: 'knowledge-tree/tree',
+  readFile: readTreeFile,
+  writeFile: writeTreeFile,
+};
+
+/**
+ * With DATABASE_URL the tree lives in PostgreSQL (seeded from tree.json) and
+ * is read on every call, since other function instances may have changed it.
+ */
 export async function readKnowledgeTree(): Promise<KnowledgeTreeDocument> {
-  if (cachedTree) return structuredClone(cachedTree);
+  if (!usesDatabaseContentStore()) return readTreeFile();
+  const tree = await readContentDocument(treeSource);
+  if (tree.schemaVersion !== 1 || !Array.isArray(tree.nodes)) {
+    throw new Error('Knowledge Tree schema không hợp lệ.');
+  }
+  return tree;
+}
+
+export async function writeKnowledgeTree(tree: KnowledgeTreeDocument): Promise<void> {
+  await writeContentDocument(treeSource, structuredClone(tree));
+}
+
+async function readTreeFile(): Promise<KnowledgeTreeDocument> {
+  const mtimeMs = await treeFileMtime();
+  if (cachedTree && mtimeMs === cachedMtimeMs) return structuredClone(cachedTree);
   try {
     const raw = await fs.readFile(TREE_FILE, 'utf8');
     const parsed = JSON.parse(raw) as KnowledgeTreeDocument;
@@ -29,14 +71,16 @@ export async function readKnowledgeTree(): Promise<KnowledgeTreeDocument> {
     // Compatibility read-model only: preserve every existing graph ID and do not write graph.json.
     cachedTree = buildKnowledgeTreeFromGraph(await readKnowledgeGraph());
   }
+  cachedMtimeMs = mtimeMs;
   return structuredClone(cachedTree);
 }
 
-export async function writeKnowledgeTree(tree: KnowledgeTreeDocument): Promise<void> {
+async function writeTreeFile(tree: KnowledgeTreeDocument): Promise<void> {
   const next = structuredClone(tree);
-  cachedTree = next;
   await fs.mkdir(TREE_DIR, { recursive: true });
   const temporaryFile = `${TREE_FILE}.tmp`;
   await fs.writeFile(temporaryFile, JSON.stringify(next, null, 2), 'utf8');
   await fs.rename(temporaryFile, TREE_FILE);
+  cachedTree = next;
+  cachedMtimeMs = await treeFileMtime();
 }

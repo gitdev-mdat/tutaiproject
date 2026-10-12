@@ -13,10 +13,13 @@ import {
 } from '@/lib/content-import/extraction';
 import { createDocumentImportSession, ImportStorageError } from '@/lib/content-import/storage';
 import { detectMissingQuestionVisuals } from '@/lib/content-import/visual-region-detection';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const formData = await request.formData();
     const file = formData.get('file');

@@ -4,7 +4,7 @@
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router, TypeScript)
+- **Framework:** Next.js 16 (App Router, TypeScript), used for both the UI and the backend (Route Handlers, Server Actions)
 - **Styling:** Tailwind CSS v4 + shadcn/ui
 - **Package Manager:** pnpm
 - **Linting:** ESLint + Prettier + lint-staged + Husky
@@ -30,88 +30,12 @@ pnpm format
 
 ## Architecture
 
-### Route Groups
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for where code lives, the request flow,
+authentication and admin access, persistence and environment variables.
 
-```
-app/
-├── (public)/          # Public website pages (SEO-optimized)
-├── (auth)/            # Authentication pages
-├── (student)/         # Authenticated student area
-├── (teacher)/         # Teacher portal
-├── (admin)/           # Admin panel
-└── api/               # API routes (future)
-```
-
-### Project Structure
-
-```
-├── app/                      # Next.js App Router
-│   ├── (public)/             # Public website
-│   │   ├── subjects/         # Subject listing + [subject] detail
-│   │   ├── topics/[topic]/   # Topic pages
-│   │   ├── lessons/[slug]/   # Lesson pages
-│   │   ├── practice/[slug]/  # Practice pages
-│   │   ├── mock-exams/[slug]/# Mock exam pages
-│   │   ├── teachers/[slug]/  # Teacher profile pages
-│   │   ├── pricing/          # Pricing page
-│   │   ├── blog/             # Blog
-│   │   ├── about/            # About page
-│   │   └── contact/          # Contact page
-│   ├── (student)/            # Student portal
-│   │   ├── dashboard/        # Main dashboard
-│   │   ├── roadmap/          # Personalized roadmap
-│   │   ├── flashcard/        # Flashcard sessions
-│   │   ├── review/           # Spaced review sessions
-│   │   └── profile/          # Student profile
-│   ├── (teacher)/            # Teacher portal
-│   │   ├── content/          # Content management
-│   │   ├── uploads/          # Document uploads
-│   │   ├── analytics/        # Performance analytics
-│   │   ├── revenue/          # Revenue tracking
-│   │   └── profile/          # Teacher profile
-│   ├── (admin)/              # Admin panel
-│   │   ├── users/            # User management
-│   │   ├── moderation/       # Content moderation
-│   │   ├── curriculum/       # Curriculum management
-│   │   ├── reports/          # Platform reports
-│   │   └── settings/         # Admin settings
-│   ├── api/                  # API routes (placeholder)
-│   ├── layout.tsx            # Root layout with SEO metadata
-│   ├── sitemap.ts            # Dynamic sitemap
-│   └── robots.ts             # robots.txt
-├── components/
-│   ├── ui/                   # shadcn/ui base components
-│   ├── layout/               # Layout components (Header, Footer, etc.)
-│   └── seo/                  # SEO components
-├── config/
-│   ├── site.ts               # Site-wide configuration
-│   └── navigation.ts          # Navigation structure
-├── constants/
-│   └── index.ts              # Application constants
-├── design-system/
-│   └── README.md             # Design system documentation
-├── features/                 # Feature-scoped modules
-│   ├── auth/
-│   ├── content/
-│   ├── quiz/
-│   ├── roadmap/
-│   ├── teacher/
-│   └── admin/
-├── hooks/                    # Custom React hooks
-├── lib/
-│   ├── utils.ts              # Utility functions (cn, etc.)
-│   ├── seo/                  # SEO helpers
-│   ├── auth/                 # Auth utilities (future)
-│   ├── db/                   # Database utilities (future)
-│   └── analytics/            # Analytics utilities (future)
-├── providers/                # React context providers
-├── public/                   # Static assets
-└── types/
-    ├── auth/                 # Auth types
-    ├── content/              # Content model types
-    ├── curriculum/           # Curriculum model types
-    └── roadmap/              # Roadmap model types
-```
+In short: `app/` holds routes, layouts and API entry points; domain code lives in
+`features/<domain>` (newer features) or `lib/<domain>` (older ones); `lib/auth`, `lib/ai`,
+`lib/db` and `lib/config` are infrastructure; `components/ui` holds shadcn primitives.
 
 ## SEO Architecture
 

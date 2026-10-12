@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { AuthError, authenticateCredential } from '@/lib/auth/auth-service';
 import { destinationFor, getAuthSession, setSessionCookie } from '@/lib/auth/session';
 import { safeReturnPath } from '@/lib/auth/safe-return-path';
+import { clientAddressFrom } from '@/lib/auth/client-address';
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,11 @@ export async function POST(request: Request) {
       remember?: boolean;
       returnTo?: string;
     };
-    const user = await authenticateCredential(body.identifier ?? '', body.password ?? '');
+    const user = await authenticateCredential(
+      body.identifier ?? '',
+      body.password ?? '',
+      clientAddressFrom(request)
+    );
     await setSessionCookie(user.id, Boolean(body.remember));
     const session = await getAuthSession();
     const defaultDestination = session ? destinationFor(session.profile) : '/onboarding/profile';

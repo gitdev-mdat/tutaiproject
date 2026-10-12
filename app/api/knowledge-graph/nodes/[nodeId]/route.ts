@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { updateKgNode, archiveKgNode, deleteKgNode } from '@/lib/knowledge-graph/kg-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ nodeId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const resolvedParams = await params;
     const body = await req.json();
@@ -13,6 +16,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ nodeId: 
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ nodeId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const resolvedParams = await params;
     const url = new URL(req.url);

@@ -4,11 +4,14 @@ import {
   writeImportData,
   clearImportCache,
 } from '@/lib/knowledge-graph/kg-import-storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     clearImportCache();
     const resolvedParams = await params;
@@ -27,6 +30,8 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     clearImportCache();
     const resolvedParams = await params;

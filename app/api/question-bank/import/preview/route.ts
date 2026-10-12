@@ -19,6 +19,7 @@ import type {
 import { createStructuredImportSession } from '@/lib/content-import/storage';
 import type { QuestionCandidate } from '@/lib/content-import/types';
 import { readKnowledgeTree } from '@/lib/knowledge-tree/knowledge-tree-storage';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 interface PreviewRequestBody {
   content: string;
@@ -44,6 +45,8 @@ function mappedRow(row: Record<string, unknown>, mappings: ColumnMapping[]) {
 }
 
 export async function POST(request: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const contentType = request.headers.get('content-type') ?? '';
     let rawRows: Array<Record<string, unknown>> = [];

@@ -3,8 +3,11 @@ import {
   addSecondaryDomainMembership,
   removeSecondaryDomainMembership,
 } from '@/lib/knowledge-graph/kg-service';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 export async function POST(req: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { conceptId, domainId } = body;
@@ -17,6 +20,8 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const url = new URL(req.url);
     const conceptId = url.searchParams.get('conceptId');

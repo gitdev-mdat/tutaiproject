@@ -6,6 +6,7 @@ import { GRADE_VALUES, SUBJECT_ID_VALUES } from '@/lib/question-bank/qb-types';
 import { isSelectableQuestion } from '@/lib/exams/exam-selection';
 import { deleteExam, getExam, publishExam, saveExam } from '@/lib/exams/exam-storage';
 import type { ExamDraftInput, ExamRecord } from '@/lib/exams/exam-types';
+import { adminApiGuard } from '@/lib/auth/admin';
 
 const MAX_EXAM_QUESTIONS = 500;
 
@@ -63,6 +64,8 @@ function publicationIssues(exam: ExamRecord, questions: Array<Question | null>) 
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ examId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { examId } = await context.params;
     const exam = await getExam(examId);
@@ -82,6 +85,8 @@ export async function GET(_request: Request, context: { params: Promise<{ examId
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ examId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { examId } = await context.params;
     const existing = await getExam(examId);
@@ -185,6 +190,8 @@ export async function PUT(request: Request, context: { params: Promise<{ examId:
 }
 
 export async function DELETE(_request: Request, context: { params: Promise<{ examId: string }> }) {
+  const denied = await adminApiGuard();
+  if (denied) return denied;
   try {
     const { examId } = await context.params;
     const deleted = await deleteExam(examId);

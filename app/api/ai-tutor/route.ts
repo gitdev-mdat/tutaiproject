@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { gemini } from '@/lib/ai/gemini-client';
+import { getAuthSession } from '@/lib/auth/session';
 
 export interface AITutorRequest {
   subject: string;
@@ -27,6 +27,15 @@ Quy tắc:
 - Sử dụng ký hiệu: ∞, ≤, ≥, ≠, →, ⇔, ∀, ∃, ∈ thay vì LaTeX.`;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // The tutor is only reachable from the signed-in practice session; reject
+  // anonymous callers so the Gemini quota cannot be spent from outside.
+  if (!(await getAuthSession())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: 'AI service unavailable' }, { status: 503 });
+  }
+
   let body: AITutorRequest;
   try {
     body = (await req.json()) as AITutorRequest;
@@ -81,6 +90,8 @@ ${contextBlock}
 Câu hỏi của học sinh: ${userMessage}`;
 
   try {
+    // Loaded on demand so the build does not need GEMINI_API_KEY.
+    const { gemini } = await import('@/lib/ai/gemini-client');
     const response = await gemini.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],

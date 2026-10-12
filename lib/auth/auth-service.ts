@@ -1,7 +1,8 @@
 import 'server-only';
 
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { authTransaction, readAuthDatabase } from './store';
+import { AuthError } from './errors';
+import { getAuthRepository, type NewAccount } from './repository';
 import { hashPassword, verifyPassword } from './password';
 import {
   isValidEmail,
@@ -11,7 +12,7 @@ import {
   normalizePhone,
   normalizeUsername,
 } from './normalization';
-import type { AuthDatabase, AuthUser, StoredStudentProfile } from './types';
+import type { AuthIdentity, AuthUser } from './types';
 import { findLegacyProvinceByCode } from '@/data/vietnam-provinces-legacy';
 import { findHighSchoolById, normalizeCustomHighSchoolName } from '@/data/vietnam-high-schools';
 import {
@@ -24,51 +25,45 @@ import {
 
 const GENERIC_CREDENTIAL_ERROR = 'Tên đăng nhập hoặc mật khẩu không đúng.';
 
-export class AuthError extends Error {
-  constructor(
-    public code: string,
-    message: string,
-    public status = 400
-  ) {
-    super(message);
-  }
-}
+export { AuthError };
 
 function tokenHash(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function createProfile(
-  database: AuthDatabase,
-  userId: string,
-  fullName = '',
+function newAccount(
+  user: AuthUser,
+  identity: Omit<AuthIdentity, 'userId'>,
+  fullName: string,
   phone: string | null = null
-): StoredStudentProfile {
-  const now = new Date().toISOString();
-  const profile: StoredStudentProfile = {
-    id: randomUUID(),
-    userId,
-    fullName,
-    phone,
-    provinceCode: null,
-    provinceName: null,
-    schoolId: null,
-    schoolName: null,
-    schoolSource: null,
-    grade: null,
-    onboardingCompletedAt: null,
-    createdAt: now,
-    updatedAt: now,
+): NewAccount {
+  const profileId = randomUUID();
+  return {
+    user,
+    identity: { ...identity, userId: user.id },
+    profile: {
+      id: profileId,
+      userId: user.id,
+      fullName,
+      phone,
+      provinceCode: null,
+      provinceName: null,
+      schoolId: null,
+      schoolName: null,
+      schoolSource: null,
+      grade: null,
+      onboardingCompletedAt: null,
+      createdAt: user.createdAt,
+      updatedAt: user.createdAt,
+    },
+    learning: {
+      studentId: profileId,
+      primarySubject: null,
+      currentScore: null,
+      targetScore: null,
+      updatedAt: user.createdAt,
+    },
   };
-  database.studentProfiles.push(profile);
-  database.learningProfiles.push({
-    studentId: profile.id,
-    primarySubject: null,
-    currentScore: null,
-    targetScore: null,
-    updatedAt: now,
-  });
-  return profile;
 }
 
 export async function registerCredential(input: {
@@ -95,62 +90,84 @@ export async function registerCredential(input: {
     throw new AuthError('INVALID_PASSWORD', 'Mật khẩu phải có ít nhất 8 ký tự.');
   const passwordHash = await hashPassword(input.password);
 
-  return authTransaction((database) => {
-    if (database.users.some((user) => user.username === username)) {
-      throw new AuthError('DUPLICATE_USERNAME', 'Tên đăng nhập đã được sử dụng.', 409);
-    }
-    if (email && database.users.some((user) => user.email === email)) {
-      throw new AuthError('DUPLICATE_EMAIL', 'Email đã được sử dụng.', 409);
-    }
-    const now = new Date().toISOString();
-    const user: AuthUser = {
-      id: randomUUID(),
-      username,
-      email,
-      emailVerifiedAt: null,
-      displayName: null,
-      avatarUrl: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    database.users.push(user);
-    database.identities.push({
-      id: randomUUID(),
-      userId: user.id,
-      provider: 'password',
-      providerAccountId: username,
-      passwordHash,
-      createdAt: now,
-    });
-    createProfile(database, user.id, fullName, phone);
-    return user;
-  });
+  const now = new Date().toISOString();
+  const user: AuthUser = {
+    id: randomUUID(),
+    username,
+    email,
+    emailVerifiedAt: null,
+    displayName: null,
+    avatarUrl: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const repository = await getAuthRepository();
+  await repository.createPasswordUser(
+    newAccount(
+      user,
+      {
+        id: randomUUID(),
+        provider: 'password',
+        providerAccountId: username,
+        passwordHash,
+        createdAt: now,
+      },
+      fullName,
+      phone
+    )
+  );
+  return user;
 }
 
+const RATE_WINDOW_LOGIN_MS = 15 * 60 * 1000;
+const RATE_WINDOW_RESET_MS = 60 * 60 * 1000;
+/** Attempts allowed per window. Accounts are keyed by identifier, clients by address. */
+export const RATE_LIMITS = {
+  loginPerAccount: 10,
+  loginPerClient: 50,
+  resetPerAccount: 3,
+  resetPerClient: 20,
+} as const;
+
+function rateKey(kind: string, value: string): string {
+  return `${kind}:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+/**
+ * Signs in with a password. Attempts are counted per account and per client
+ * address (when known) before the password is checked, so guessing is capped
+ * at RATE_LIMITS per 15 minutes; a successful sign-in clears the account count.
+ */
 export async function authenticateCredential(
   identifierInput: string,
-  password: string
+  password: string,
+  clientAddress?: string | null
 ): Promise<AuthUser> {
   const identifier = identifierInput.includes('@')
     ? normalizeEmail(identifierInput)
     : normalizeUsername(identifierInput);
-  const database = await readAuthDatabase();
-  const user = database.users.find(
-    (candidate) => candidate.username === identifier || candidate.email === identifier
-  );
-  const identity =
-    user &&
-    database.identities.find(
-      (candidate) => candidate.userId === user.id && candidate.provider === 'password'
+  const repository = await getAuthRepository();
+  const accountKey = rateKey('login-account', identifier);
+  const accountCount = await repository.consumeRateLimit(accountKey, RATE_WINDOW_LOGIN_MS);
+  const clientCount = clientAddress
+    ? await repository.consumeRateLimit(
+        rateKey('login-client', clientAddress),
+        RATE_WINDOW_LOGIN_MS
+      )
+    : 0;
+  if (accountCount > RATE_LIMITS.loginPerAccount || clientCount > RATE_LIMITS.loginPerClient) {
+    throw new AuthError(
+      'RATE_LIMITED',
+      'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 15 phút.',
+      429
     );
-  if (
-    !user ||
-    !identity?.passwordHash ||
-    !(await verifyPassword(password, identity.passwordHash))
-  ) {
+  }
+  const login = await repository.findPasswordLogin(identifier);
+  if (!login || !(await verifyPassword(password, login.passwordHash))) {
     throw new AuthError('INVALID_CREDENTIALS', GENERIC_CREDENTIAL_ERROR, 401);
   }
-  return user;
+  await repository.resetRateLimit(accountKey);
+  return login.user;
 }
 
 export async function findOrCreateGoogleUser(input: {
@@ -163,47 +180,36 @@ export async function findOrCreateGoogleUser(input: {
   if (!input.emailVerified)
     throw new AuthError('UNVERIFIED_GOOGLE_EMAIL', 'Google chưa xác minh email này.', 403);
   const email = normalizeEmail(input.email);
-  return authTransaction((database) => {
-    const existingIdentity = database.identities.find(
-      (identity) => identity.provider === 'google' && identity.providerAccountId === input.subject
-    );
-    if (existingIdentity) {
-      const user = database.users.find((candidate) => candidate.id === existingIdentity.userId);
-      if (!user) throw new AuthError('BROKEN_IDENTITY', 'Không thể khôi phục tài khoản.', 500);
-      return { user, created: false };
-    }
-    let user = database.users.find((candidate) => candidate.email === email);
-    const now = new Date().toISOString();
-    let created = false;
-    if (!user) {
-      created = true;
-      user = {
+  const now = new Date().toISOString();
+  const displayName = input.displayName?.trim() || null;
+  const avatarUrl = input.avatarUrl || null;
+  const user: AuthUser = {
+    id: randomUUID(),
+    username: null,
+    email,
+    emailVerifiedAt: now,
+    displayName,
+    avatarUrl,
+    createdAt: now,
+    updatedAt: now,
+  };
+  return (await getAuthRepository()).upsertGoogleUser({
+    subject: input.subject,
+    email,
+    displayName,
+    avatarUrl,
+    now,
+    newAccount: newAccount(
+      user,
+      {
         id: randomUUID(),
-        username: null,
-        email,
-        emailVerifiedAt: now,
-        displayName: input.displayName?.trim() || null,
-        avatarUrl: input.avatarUrl || null,
+        provider: 'google',
+        providerAccountId: input.subject,
+        passwordHash: null,
         createdAt: now,
-        updatedAt: now,
-      };
-      database.users.push(user);
-      createProfile(database, user.id, input.displayName?.trim() || '');
-    } else {
-      user.emailVerifiedAt = user.emailVerifiedAt ?? now;
-      user.displayName = user.displayName || input.displayName?.trim() || null;
-      user.avatarUrl = user.avatarUrl || input.avatarUrl || null;
-      user.updatedAt = now;
-    }
-    database.identities.push({
-      id: randomUUID(),
-      userId: user.id,
-      provider: 'google',
-      providerAccountId: input.subject,
-      passwordHash: null,
-      createdAt: now,
-    });
-    return { user, created };
+      },
+      displayName ?? ''
+    ),
   });
 }
 
@@ -214,47 +220,29 @@ export async function createSession(
 ): Promise<{ token: string; expiresAt: Date }> {
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + (remember ? 30 : 1) * 24 * 60 * 60 * 1000);
-  await authTransaction((database) => {
-    const now = new Date().toISOString();
-    database.sessions = database.sessions.filter(
-      (session) =>
-        new Date(session.expiresAt) > new Date() && (!replaceExisting || session.userId !== userId)
-    );
-    database.sessions.push({
+  await (
+    await getAuthRepository()
+  ).createSession(
+    {
       id: randomUUID(),
       userId,
       tokenHash: tokenHash(token),
       expiresAt: expiresAt.toISOString(),
-      createdAt: now,
-    });
-  });
+      createdAt: new Date().toISOString(),
+    },
+    replaceExisting
+  );
   return { token, expiresAt };
 }
 
 export async function resolveSession(token: string | undefined) {
   if (!token) return null;
-  const database = await readAuthDatabase();
-  const session = database.sessions.find(
-    (candidate) =>
-      candidate.tokenHash === tokenHash(token) && new Date(candidate.expiresAt) > new Date()
-  );
-  if (!session) return null;
-  const user = database.users.find((candidate) => candidate.id === session.userId);
-  const profile = database.studentProfiles.find((candidate) => candidate.userId === session.userId);
-  if (!user || !profile) return null;
-  const learning = database.learningProfiles.find(
-    (candidate) => candidate.studentId === profile.id
-  );
-  return { user, profile, learning: learning ?? null };
+  return (await getAuthRepository()).findSession(tokenHash(token));
 }
 
 export async function revokeSession(token: string | undefined): Promise<void> {
   if (!token) return;
-  await authTransaction((database) => {
-    database.sessions = database.sessions.filter(
-      (session) => session.tokenHash !== tokenHash(token)
-    );
-  });
+  await (await getAuthRepository()).deleteSession(tokenHash(token));
 }
 
 export async function saveOnboarding(
@@ -297,16 +285,11 @@ export async function saveOnboarding(
   ) {
     throw new AuthError('INCOMPLETE_ONBOARDING', 'Vui lòng hoàn thành các thông tin bắt buộc.');
   }
-  await authTransaction((database) => {
-    const profile = database.studentProfiles.find((candidate) => candidate.userId === userId);
-    if (!profile) throw new AuthError('PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.', 404);
-    const learning = database.learningProfiles.find(
-      (candidate) => candidate.studentId === profile.id
-    );
-    if (!learning)
-      throw new AuthError('PROFILE_INCOMPLETE', 'Hồ sơ chưa được khởi tạo đầy đủ.', 500);
-    const now = new Date().toISOString();
-    Object.assign(profile, {
+  const now = new Date().toISOString();
+  await (
+    await getAuthRepository()
+  ).saveOnboarding(userId, {
+    profile: {
       fullName: input.fullName.trim(),
       grade: input.grade.trim(),
       provinceCode: province.code,
@@ -321,86 +304,69 @@ export async function saveOnboarding(
       schoolSource: hasValidDatasetSchool ? 'dataset' : hasValidCustomSchool ? 'custom' : null,
       onboardingCompletedAt: now,
       updatedAt: now,
-    });
-    Object.assign(learning, {
+    },
+    learning: {
       primarySubject: input.primarySubject,
       currentScore,
       targetScore,
       updatedAt: now,
-    });
-    const acquisition = database.studentAcquisitions.find(
-      (candidate) => candidate.studentId === profile.id
-    );
-    const acquisitionData = {
-      studentId: profile.id,
+    },
+    acquisition: {
       source: input.acquisitionSource,
       sourceOther:
         input.acquisitionSource === 'Khác' ? input.acquisitionSourceOther?.trim() || null : null,
       recordedAt: now,
-    };
-    if (acquisition) Object.assign(acquisition, acquisitionData);
-    else database.studentAcquisitions.push(acquisitionData);
+    },
   });
 }
 
-export async function requestPasswordReset(identifierInput: string): Promise<string | null> {
+/** Returns null without creating a token when the account or client asked too often. */
+export async function requestPasswordReset(
+  identifierInput: string,
+  clientAddress?: string | null
+): Promise<string | null> {
   const identifier = identifierInput.includes('@')
     ? normalizeEmail(identifierInput)
     : normalizeUsername(identifierInput);
-  return authTransaction((database) => {
-    const user = database.users.find(
-      (candidate) => candidate.username === identifier || candidate.email === identifier
-    );
-    if (
-      !user ||
-      !database.identities.some(
-        (identity) => identity.userId === user.id && identity.provider === 'password'
+  const repository = await getAuthRepository();
+  const accountCount = await repository.consumeRateLimit(
+    rateKey('reset-account', identifier),
+    RATE_WINDOW_RESET_MS
+  );
+  const clientCount = clientAddress
+    ? await repository.consumeRateLimit(
+        rateKey('reset-client', clientAddress),
+        RATE_WINDOW_RESET_MS
       )
-    )
-      return null;
-    const token = randomBytes(32).toString('base64url');
-    const now = new Date();
-    database.passwordResets.push({
-      id: randomUUID(),
-      userId: user.id,
-      tokenHash: tokenHash(token),
-      expiresAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
-      usedAt: null,
-      createdAt: now.toISOString(),
-    });
-    return token;
+    : 0;
+  if (accountCount > RATE_LIMITS.resetPerAccount || clientCount > RATE_LIMITS.resetPerClient) {
+    return null;
+  }
+  const token = randomBytes(32).toString('base64url');
+  const now = new Date();
+  const created = await repository.createPasswordReset(identifier, {
+    id: randomUUID(),
+    tokenHash: tokenHash(token),
+    expiresAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
+    usedAt: null,
+    createdAt: now.toISOString(),
   });
+  return created ? token : null;
 }
 
 export async function resetPassword(token: string, password: string): Promise<void> {
   if (password.length < 8)
     throw new AuthError('INVALID_PASSWORD', 'Mật khẩu phải có ít nhất 8 ký tự.');
   const passwordHash = await hashPassword(password);
-  await authTransaction((database) => {
-    const record = database.passwordResets.find(
-      (candidate) =>
-        candidate.tokenHash === tokenHash(token) &&
-        !candidate.usedAt &&
-        new Date(candidate.expiresAt) > new Date()
-    );
-    if (!record)
-      throw new AuthError(
-        'INVALID_RESET_TOKEN',
-        'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
-        400
-      );
-    const identity = database.identities.find(
-      (candidate) => candidate.userId === record.userId && candidate.provider === 'password'
-    );
-    if (!identity)
-      throw new AuthError('PASSWORD_IDENTITY_NOT_FOUND', 'Tài khoản không hỗ trợ mật khẩu.', 400);
-    identity.passwordHash = passwordHash;
-    record.usedAt = new Date().toISOString();
-    database.sessions = database.sessions.filter((session) => session.userId !== record.userId);
-  });
+  await (
+    await getAuthRepository()
+  ).consumePasswordReset(tokenHash(token), passwordHash, new Date().toISOString());
 }
 
 export async function getProfileCount(userId: string): Promise<number> {
-  const database = await readAuthDatabase();
-  return database.studentProfiles.filter((profile) => profile.userId === userId).length;
+  return (await getAuthRepository()).countProfiles(userId);
+}
+
+export async function findStudentByUserId(userId: string) {
+  return (await getAuthRepository()).findStudentByUserId(userId);
 }
