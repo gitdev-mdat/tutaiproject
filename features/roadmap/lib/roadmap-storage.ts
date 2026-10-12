@@ -3,6 +3,7 @@ import 'server-only';
 import { randomUUID } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { getSql } from '@/lib/db/postgres';
 import { seededRoadmapDefinition, simulateRoadmap } from './roadmap-definition';
 import {
   calculateRoadmapProgress,
@@ -102,7 +103,46 @@ async function writeAll(records: StoredRoadmap[]) {
   );
   await fs.rename(/* turbopackIgnore: true */ temporary, /* turbopackIgnore: true */ file);
 }
-async function mutate<T>(operation: (records: StoredRoadmap[]) => T | Promise<T>): Promise<T> {
+/**
+ * With DATABASE_URL each student's record is a row in tutai.student_roadmaps
+ * (the file under data/ is read-only on Vercel). Without it the JSON file is
+ * used, which is only durable on a machine with a persistent disk.
+ */
+const usesDatabase = () => Boolean(process.env.DATABASE_URL);
+
+async function readStudent(studentId: string): Promise<StoredRoadmap | undefined> {
+  if (!usesDatabase()) return (await readAll()).find((item) => item.studentId === studentId);
+  const [row] = await getSql()`
+    select record from tutai.student_roadmaps where student_id = ${studentId}`;
+  return row ? (row.record as StoredRoadmap) : undefined;
+}
+
+/**
+ * Runs `operation` on the stored records and saves them. In the database only
+ * the given student's record is loaded, under a per-student lock, and saved.
+ */
+async function mutate<T>(
+  studentId: string,
+  operation: (records: StoredRoadmap[]) => T | Promise<T>
+): Promise<T> {
+  if (usesDatabase()) {
+    return getSql().begin(async (tx) => {
+      await tx`select pg_advisory_xact_lock(hashtext(${'tutai.student_roadmaps:' + studentId}))`;
+      const [row] = await tx`
+        select record from tutai.student_roadmaps where student_id = ${studentId}`;
+      const records: StoredRoadmap[] = row ? [row.record as StoredRoadmap] : [];
+      const value = await operation(records);
+      const record = records.find((item) => item.studentId === studentId);
+      if (record) {
+        await tx`
+          insert into tutai.student_roadmaps (student_id, record, updated_at)
+          values (${studentId}, ${tx.json(record as never)}, now())
+          on conflict (student_id) do update
+            set record = excluded.record, updated_at = excluded.updated_at`;
+      }
+      return value;
+    }) as Promise<T>;
+  }
   let resolve!: (value: T) => void;
   let reject!: (reason: unknown) => void;
   const result = new Promise<T>((yes, no) => {
@@ -217,7 +257,7 @@ export async function initializeOwnedRoadmap(input: {
   studentId: string;
   targetScore: number;
 }): Promise<StudentRoadmap> {
-  return mutate((records) => {
+  return mutate(input.studentId, (records) => {
     const existing = records.find((item) => item.studentId === input.studentId);
     if (existing) return clone(existing.roadmap);
     const now = new Date().toISOString();
@@ -244,13 +284,13 @@ export async function initializeOwnedRoadmap(input: {
 }
 
 export async function getOwnedRoadmap(studentId: string): Promise<StudentRoadmap | null> {
-  return clone((await readAll()).find((item) => item.studentId === studentId)?.roadmap ?? null);
+  return clone((await readStudent(studentId))?.roadmap ?? null);
 }
 export async function getOwnedAssignment(studentId: string): Promise<RoadmapAssignment | null> {
-  return clone((await readAll()).find((item) => item.studentId === studentId)?.assignment ?? null);
+  return clone((await readStudent(studentId))?.assignment ?? null);
 }
 export async function getOwnedLearningState(studentId: string) {
-  const record = (await readAll()).find((item) => item.studentId === studentId);
+  const record = await readStudent(studentId);
   if (!record) return null;
   return clone({
     diagnosticAttempts: record.diagnosticAttempts ?? [],
@@ -271,7 +311,7 @@ export async function assignFromDiagnostic(input: {
     input.evidence.some((item) => item.total < 1 || item.correct < 0 || item.correct > item.total)
   )
     throw new Error('INVALID_DIAGNOSTIC');
-  return mutate((records) => {
+  return mutate(input.studentId, (records) => {
     const existing = records.find((item) => item.studentId === input.studentId);
     if (existing) {
       const duplicate = input.submissionId
@@ -343,7 +383,7 @@ export async function transitionOwnedActivity(input: {
   requestId?: string;
   result?: CompleteActivityInput;
 }): Promise<RoadmapActivity> {
-  return mutate((records) => {
+  return mutate(input.studentId, (records) => {
     const record = records.find((item) => item.studentId === input.studentId);
     if (!record || record.roadmap.id !== input.roadmapId) throw new Error('ROADMAP_NOT_FOUND');
     const activities = record.roadmap.phases

@@ -292,6 +292,10 @@ describe.skipIf(!TEST_DATABASE_URL).sequential('PostgreSQL auth store', () => {
     const enrollments = await admin`
       select * from tutai.enrollments where student_id = ${session!.profile.id}`;
     expect(enrollments).toHaveLength(1);
+    const roadmaps = await admin`
+      select record from tutai.student_roadmaps where student_id = ${session!.profile.id}`;
+    expect(roadmaps).toHaveLength(1);
+    await expect(access(process.env.TUTAI_ROADMAPS_FILE!)).rejects.toThrow();
     const lifecycle = await resolveStudentLifecycle(session);
     expect(lifecycle.state).toBe('AUTHENTICATED_ACTIVE_STUDENT');
     expect(lifecycle.enrollmentId).toBe(`enrollment:${session!.profile.id}:math-12-v1`);
