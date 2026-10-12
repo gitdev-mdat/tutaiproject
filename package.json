@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
+    "postinstall": "node scripts/patch-postgres.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "tsx --conditions=react-server scripts/db/migrate.ts",

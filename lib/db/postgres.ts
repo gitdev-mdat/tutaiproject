@@ -34,7 +34,8 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
  *   the function's 300 s limit. So idle connections close after a second, and
  *   every socket is destroyed after SOCKET_INACTIVITY_MS without any traffic,
  *   which fails the query with ETIMEDOUT (retried by `withDatabaseRetry` for
- *   reads) instead of hanging the page.
+ *   reads) instead of hanging the page. scripts/patch-postgres.mjs (run on
+ *   install) fixes the other known cause of stuck queries.
  * - Each instance holds at most DATABASE_POOL_MAX (default 3, capped at 10)
  *   connections.
  */
