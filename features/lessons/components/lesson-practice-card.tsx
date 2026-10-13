@@ -15,7 +15,7 @@ export function LessonPracticeCard({
     return (
       <section
         id="luyen-tap"
-        className="mt-6 rounded-[20px] border border-[#E5EBF3] bg-white p-5 text-sm text-slate-500"
+        className="mt-5 scroll-mt-24 rounded-[20px] border border-[#E5EBF3] bg-white p-5 text-sm text-slate-500"
       >
         Chưa tải được phần luyện tập. Em tải lại trang sau ít phút nhé.
       </section>
@@ -25,7 +25,7 @@ export function LessonPracticeCard({
     return (
       <section
         id="luyen-tap"
-        className="mt-6 flex gap-4 rounded-[20px] border border-dashed border-[#D5DEEA] bg-white p-5 sm:p-6"
+        className="mt-5 scroll-mt-24 flex gap-4 rounded-[20px] border border-dashed border-[#D5DEEA] bg-white p-5 sm:p-6"
         data-testid="lesson-practice-card"
         data-state="empty"
       >
@@ -48,7 +48,7 @@ export function LessonPracticeCard({
   return (
     <section
       id="luyen-tap"
-      className="mt-6 overflow-hidden rounded-[20px] border border-blue-200 bg-gradient-to-br from-[#F4F8FF] to-white p-5 sm:p-6"
+      className="mt-5 scroll-mt-24 overflow-hidden rounded-[20px] border border-blue-200 bg-gradient-to-br from-[#F4F8FF] to-white p-5 sm:p-6"
       data-testid="lesson-practice-card"
       data-state={inProgress ? 'in-progress' : best ? 'done' : 'ready'}
     >
