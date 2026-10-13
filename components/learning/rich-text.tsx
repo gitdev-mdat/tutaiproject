@@ -9,7 +9,10 @@ import { QuestionMath } from '@/components/shared/question-content-renderer';
 const LIST_LINE = /^\s*(?:[-*•+]|\d+[.)])\s+/;
 const BOLD = /\*\*([^*]+?)\*\*/g;
 
-/** One line of text with **bold** and $math$. */
+/**
+ * One line of text with **bold** and $math$. Always a single element, so it
+ * stays one flex item when placed next to a bullet or icon.
+ */
 export function InlineText({ text }: { text: string }) {
   const parts: React.ReactNode[] = [];
   let last = 0;
@@ -24,7 +27,7 @@ export function InlineText({ text }: { text: string }) {
     last = index + match[0].length;
   }
   if (last < text.length) parts.push(<QuestionMath key={last} text={text.slice(last)} />);
-  return <>{parts}</>;
+  return <span className="min-w-0">{parts}</span>;
 }
 
 export function RichText({ content, className = '' }: { content: string; className?: string }) {
