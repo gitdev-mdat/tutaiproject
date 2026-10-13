@@ -94,6 +94,7 @@ describe('article blocks and server import', () => {
       'EXAMPLE',
       'RECAP',
       'COMMON_MISTAKE',
+      'GRAPH',
       'REFERENCES',
     ]);
     expect(blocks.find((block) => block.type === 'MAIN_CONTENT')).toMatchObject({

@@ -63,3 +63,19 @@ export function pickLessonSession(questions: Question[], lessonId: string): Ques
 export function isPassingScore(correct: number, total: number): boolean {
   return total > 0 && correct / total >= PRACTICE_PASS_RATIO;
 }
+
+/** At most this many quick questions are asked inside the lesson itself. */
+export const LESSON_CHECK_LIMIT = 2;
+
+/**
+ * The questions asked inside the lesson, right after the worked example.
+ * They come from the lesson's own practice questions: the ones the admin
+ * pinned with "Hỏi nhanh trong bài" (LESSON_CHECK), otherwise the easiest ones.
+ */
+export function pickLessonChecks(questions: Question[], lessonId: string): Question[] {
+  const pool = orderPracticeQuestions(questions.filter((q) => isInLessonPractice(q, lessonId)));
+  const pinned = pool.filter((q) => q.usageContexts.includes('LESSON_CHECK'));
+  if (pinned.length) return pinned.slice(0, LESSON_CHECK_LIMIT);
+  const foundational = pool.filter((q) => q.difficulty === 'FOUNDATIONAL');
+  return (foundational.length ? foundational : pool).slice(0, LESSON_CHECK_LIMIT);
+}

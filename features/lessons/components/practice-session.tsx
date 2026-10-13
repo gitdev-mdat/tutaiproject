@@ -21,11 +21,11 @@ import type { PracticeFeedback, PracticeQuestion } from '@/lib/practice/grading'
 import type { AttemptView } from '@/lib/practice/practice-service';
 
 type Lesson = { id: string; title: string; chapterTitle: string };
-type Answer =
+export type Answer =
   | { choice?: string; choices?: string[]; statements?: Record<string, boolean>; value?: string }
   | undefined;
 
-const TYPE_HINT: Record<PracticeQuestion['type'], string> = {
+export const TYPE_HINT: Record<PracticeQuestion['type'], string> = {
   MULTIPLE_CHOICE_SINGLE: 'Chọn một đáp án',
   MULTIPLE_CHOICE_MULTIPLE: 'Chọn tất cả đáp án đúng',
   TRUE_FALSE: 'Chọn Đúng hoặc Sai cho từng ý',
@@ -42,7 +42,7 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
-function isComplete(question: PracticeQuestion, answer: Answer): boolean {
+export function isComplete(question: PracticeQuestion, answer: Answer): boolean {
   if (!answer) return false;
   switch (question.type) {
     case 'MULTIPLE_CHOICE_SINGLE':
@@ -136,7 +136,7 @@ function ChoiceButton({
   );
 }
 
-function QuestionBody({
+export function QuestionBody({
   question,
   answer,
   setAnswer,
@@ -147,6 +147,7 @@ function QuestionBody({
   setAnswer: (answer: Answer) => void;
   feedback: PracticeFeedback | undefined;
 }) {
+  const numericId = React.useId();
   const locked = !!feedback;
   const shown = (feedback?.response as Answer) ?? answer;
   const expected = feedback?.answer as Answer;
@@ -258,11 +259,11 @@ function QuestionBody({
 
   return (
     <div className="space-y-2">
-      <label htmlFor="numeric-answer" className="text-sm font-semibold text-slate-700">
+      <label htmlFor={numericId} className="text-sm font-semibold text-slate-700">
         Đáp án của em
       </label>
       <input
-        id="numeric-answer"
+        id={numericId}
         inputMode="decimal"
         autoComplete="off"
         disabled={locked}
@@ -285,10 +286,16 @@ function QuestionBody({
   );
 }
 
-function FeedbackPanel({ feedback }: { feedback: PracticeFeedback }) {
+export function FeedbackPanel({
+  feedback,
+  id = 'practice-feedback',
+}: {
+  feedback: PracticeFeedback;
+  id?: string;
+}) {
   return (
     <div
-      id="practice-feedback"
+      id={id}
       tabIndex={-1}
       className={`mt-5 rounded-2xl border p-4 outline-none sm:p-5 ${feedback.correct ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
       role="status"

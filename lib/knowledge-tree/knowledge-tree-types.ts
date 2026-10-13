@@ -46,6 +46,7 @@ export interface KnowledgeArticleBlock {
     | 'EXAMPLE'
     | 'RECAP'
     | 'COMMON_MISTAKE'
+    | 'GRAPH'
     | 'REFERENCES';
   content: string;
 }

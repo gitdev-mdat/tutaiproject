@@ -15,7 +15,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
-import { LessonArticleView } from '@/components/learning/lesson-article-view';
+import { LessonJourney } from '@/components/learning/lesson-journey';
+import { GraphFieldStatus } from './graph-field-status';
+import { buildLessonJourney } from '@/lib/knowledge-tree/lesson-journey';
 import {
   ArticleValidationError,
   type ApiKnowledgeRepository,
@@ -83,6 +85,11 @@ function LessonEditor({
   const [blocks, setBlocks] = React.useState<KnowledgeArticleBlock[]>(normalizeArticleBlocks([]));
   const [dirty, setDirty] = React.useState(false);
   const [tab, setTab] = React.useState<'edit' | 'preview'>('edit');
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  // The preview is read from its first stage, not from wherever the editor was scrolled.
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [tab]);
   const [saving, setSaving] = React.useState<null | 'draft' | 'publish' | 'unpublish'>(null);
   const [error, setError] = React.useState<{ text: string; missing: string[] } | null>(null);
   const [confirmClose, setConfirmClose] = React.useState(false);
@@ -279,7 +286,7 @@ function LessonEditor({
       )}
 
       {/* Body */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-5 py-5 sm:px-6">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-5 py-5 sm:px-6">
         {loadState === 'loading' ? (
           <div className="space-y-4" aria-busy="true" aria-label="Đang tải bài học">
             {[0, 1, 2].map((item) => (
@@ -295,11 +302,21 @@ function LessonEditor({
             </Button>
           </div>
         ) : tab === 'preview' ? (
-          <article className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h1 className="mb-6 text-2xl font-extrabold tracking-tight text-[#091224]">
-              {title.trim() || node.title}
-            </h1>
-            <LessonArticleView blocks={blocks} />
+          <article className="mx-auto max-w-[1040px] rounded-2xl border border-slate-200 bg-[#FBFCFE] p-5 sm:p-8">
+            <LessonJourney
+              mode="preview"
+              studentKey={null}
+              lessonId={node.id}
+              title={title.trim() || node.title}
+              subjectTitle={breadcrumb[0] ?? ''}
+              chapterTitle={breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 1] : ''}
+              backHref={null}
+              journey={buildLessonJourney(blocks, { checks: 0 })}
+              checks={[]}
+              practice={null}
+              practiceHref="#"
+              next={null}
+            />
           </article>
         ) : (
           <div className="space-y-4">
@@ -379,8 +396,15 @@ function LessonEditor({
                     onChange={(event) => updateBlock(meta.type, event.target.value)}
                     placeholder={meta.editorHint}
                     aria-required={meta.required}
-                    className="min-h-[96px] resize-y rounded-none border-0 bg-transparent px-4 py-3 text-[15px] leading-7 shadow-none focus-visible:ring-0"
+                    className={`${meta.type === 'GRAPH' ? 'min-h-[56px] font-mono' : 'min-h-[96px]'} resize-y rounded-none border-0 bg-transparent px-4 py-3 text-[15px] leading-7 shadow-none focus-visible:ring-0`}
                   />
+                  {meta.type === 'GRAPH' && (
+                    <GraphFieldStatus
+                      value={block.content}
+                      example={blocks.find((item) => item.type === 'EXAMPLE')?.content ?? ''}
+                      onUse={(value) => updateBlock('GRAPH', value)}
+                    />
+                  )}
                 </div>
               );
             })}

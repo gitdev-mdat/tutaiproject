@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Question } from '@/lib/question-bank/qb-types';
-import { isPassingScore, pickLessonSession, practiceQuestionState } from './practice-rules';
+import {
+  isPassingScore,
+  pickLessonChecks,
+  pickLessonSession,
+  practiceQuestionState,
+} from './practice-rules';
 
 function question(overrides: Partial<Question>): Question {
   return {
@@ -72,5 +77,34 @@ describe('which questions students receive', () => {
     expect(isPassingScore(4, 5)).toBe(true);
     expect(isPassingScore(3, 5)).toBe(false);
     expect(isPassingScore(0, 0)).toBe(false);
+  });
+});
+
+describe('quick questions inside the lesson', () => {
+  const easy1 = question({ id: 'e1', createdAt: '2026-01-01T00:00:00.000Z' });
+  const easy2 = question({ id: 'e2', createdAt: '2026-01-02T00:00:00.000Z' });
+  const easy3 = question({ id: 'e3', createdAt: '2026-01-03T00:00:00.000Z' });
+  const hard = question({ id: 'h', difficulty: 'ADVANCED' });
+  const draft = question({ id: 'd', editorialStatus: 'DRAFT', usageContexts: ['LESSON_CHECK'] });
+
+  it('defaults to the two easiest practice questions of the lesson', () => {
+    expect(pickLessonChecks([hard, easy3, easy1, easy2], 'lesson').map((q) => q.id)).toEqual([
+      'e1',
+      'e2',
+    ]);
+  });
+
+  it('uses the questions the admin pinned, but only ones students may receive', () => {
+    const pinned = question({
+      id: 'p',
+      difficulty: 'ADVANCED',
+      usageContexts: ['OPEN_PRACTICE', 'LESSON_CHECK'],
+    });
+    expect(pickLessonChecks([easy1, pinned, draft], 'lesson').map((q) => q.id)).toEqual(['p']);
+  });
+
+  it('falls back to the easiest available, and to nothing for other lessons', () => {
+    expect(pickLessonChecks([hard], 'lesson').map((q) => q.id)).toEqual(['h']);
+    expect(pickLessonChecks([easy1], 'other')).toEqual([]);
   });
 });
