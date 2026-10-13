@@ -18,6 +18,7 @@ import {
   isInLessonPractice,
   isPassingScore,
   orderPracticeQuestions,
+  pickLessonChecks,
   pickLessonSession,
 } from './practice-rules';
 
@@ -149,27 +150,83 @@ export async function getLessonPracticeOverview(
   };
 }
 
-/** Results for every lesson the student practised, for the lesson list. */
-export async function getStudentPracticeResults(
-  studentId: string
-): Promise<Record<string, { best: number; total: number; passed: boolean }>> {
-  if (!process.env.DATABASE_URL) return {};
+export type LessonPracticeSummary = {
+  questionCount: number;
+  inProgress: { id: string; answeredCount: number; totalCount: number } | null;
+  best: { correctCount: number; totalCount: number; passed: boolean } | null;
+};
+
+/**
+ * Practice availability and results for every lesson, for the lesson list:
+ * one read of the question bank and one query for the student's attempts.
+ */
+export async function getStudentLessonSummaries(
+  studentId: string,
+  lessonIds: string[]
+): Promise<Record<string, LessonPracticeSummary>> {
+  if (!lessonIds.length) return {};
+  const { questions } = await listQuestions({ pageSize: 10_000 });
+  const summaries: Record<string, LessonPracticeSummary> = {};
+  for (const lessonId of lessonIds) {
+    const count = questions.filter((q) => isInLessonPractice(q, lessonId)).length;
+    summaries[lessonId] = {
+      questionCount: Math.min(count, PRACTICE_SESSION_SIZE),
+      inProgress: null,
+      best: null,
+    };
+  }
+  if (!process.env.DATABASE_URL) return summaries;
   const sql = getSql();
-  const rows = await sql<{ lesson_id: string; correct_count: number; total_count: number }[]>`
-    select distinct on (lesson_id) lesson_id, correct_count, total_count
-    from tutai.practice_attempts
-    where student_id = ${studentId} and status = 'COMPLETED' and mode = 'LESSON'
-    order by lesson_id, correct_count::float / total_count desc`;
-  return Object.fromEntries(
-    rows.map((row) => [
-      row.lesson_id,
-      {
-        best: row.correct_count,
-        total: row.total_count,
-        passed: isPassingScore(row.correct_count, row.total_count),
-      },
-    ])
+  const rows = await sql<AttemptRow[]>`
+    select a.*, (select count(*) from tutai.practice_answers x where x.attempt_id = a.id)::int as answered_count
+    from tutai.practice_attempts a
+    where a.student_id = ${studentId} and a.lesson_id in ${sql(lessonIds)}
+    order by a.started_at desc`;
+  for (const attempt of rows.map(summarize)) {
+    const summary = summaries[attempt.lessonId];
+    if (!summary) continue;
+    if (attempt.status === 'IN_PROGRESS') {
+      summary.inProgress ??= {
+        id: attempt.id,
+        answeredCount: attempt.answeredCount,
+        totalCount: attempt.totalCount,
+      };
+    } else if (attempt.mode === 'LESSON') {
+      const ratio = (attempt.correctCount ?? 0) / attempt.totalCount;
+      const best = summary.best;
+      if (!best || ratio > best.correctCount / best.totalCount) {
+        summary.best = {
+          correctCount: attempt.correctCount ?? 0,
+          totalCount: attempt.totalCount,
+          passed: attempt.passed,
+        };
+      }
+    }
+  }
+  return summaries;
+}
+
+/** The quick questions shown inside a lesson, without answers. */
+export async function getLessonChecks(lessonId: string): Promise<PracticeQuestion[]> {
+  return pickLessonChecks(await lessonQuestions(lessonId), lessonId).map(toPracticeQuestion);
+}
+
+/**
+ * Grades a quick question inside the lesson. Nothing is stored: these
+ * questions help the student check understanding, they are not a score.
+ */
+export async function gradeLessonCheck(
+  lessonId: string,
+  questionId: string,
+  rawResponse: unknown
+): Promise<PracticeFeedback> {
+  await requireVisibleLesson(lessonId);
+  const question = pickLessonChecks(await lessonQuestions(lessonId), lessonId).find(
+    (q) => q.id === questionId
   );
+  if (!question) throw new PracticeError(404, 'Câu hỏi không thuộc bài học này.');
+  const response = parsePracticeResponse(question, rawResponse);
+  return toPracticeFeedback(question, response, gradePracticeResponse(question, response));
 }
 
 export async function startPracticeAttempt(

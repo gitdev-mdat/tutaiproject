@@ -82,6 +82,10 @@ function QuestionCard({
   }
 
   const withPractice = [...new Set([...question.usageContexts, 'OPEN_PRACTICE'])];
+  const pinned = question.usageContexts.includes('LESSON_CHECK');
+  const togglePinned = pinned
+    ? question.usageContexts.filter((context) => context !== 'LESSON_CHECK')
+    : [...question.usageContexts, 'LESSON_CHECK'];
   const button =
     'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors disabled:opacity-50';
 
@@ -102,6 +106,9 @@ function QuestionCard({
             <Sparkles className="mr-1 size-3" />
             AI gợi ý
           </Chip>
+        )}
+        {pinned && state === 'IN_PRACTICE' && (
+          <Chip tone="bg-sky-50 text-sky-700 ring-sky-200">Hỏi nhanh trong bài</Chip>
         )}
       </div>
       <div className="mt-2 text-sm leading-relaxed whitespace-pre-line text-slate-900">
@@ -249,6 +256,25 @@ function QuestionCard({
               Trả về nháp
             </button>
           </>
+        )}
+        {state === 'IN_PRACTICE' && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              run(
+                { usageContexts: togglePinned },
+                pinned
+                  ? 'Đã bỏ khỏi phần hỏi nhanh trong bài.'
+                  : 'Học sinh sẽ gặp câu này ngay trong bài, sau ví dụ mẫu.'
+              )
+            }
+            title="Tối đa 2 câu được hỏi ngay trong bài. Nếu chưa chọn, Tú Tài dùng 2 câu cơ bản nhất."
+            className={`${button} border border-sky-200 text-sky-800 hover:bg-sky-50`}
+            data-testid="action-toggle-lesson-check"
+          >
+            {pinned ? 'Bỏ khỏi hỏi nhanh' : 'Hỏi nhanh trong bài'}
+          </button>
         )}
         {state === 'PUBLISHED_ELSEWHERE' && question.accessTier === 'OPEN' && (
           <button

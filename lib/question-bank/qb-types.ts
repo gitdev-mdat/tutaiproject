@@ -23,6 +23,7 @@ export const USAGE_CONTEXT_VALUES = [
   'CHAPTER_REVIEW',
   'SEMESTER_EXAM',
   'NATIONAL_EXAM_MOCK',
+  'LESSON_CHECK',
 ] as const;
 export type UsageContext = (typeof USAGE_CONTEXT_VALUES)[number];
 
@@ -528,6 +529,7 @@ export const USAGE_CONTEXT_LABELS: Record<UsageContext, string> = {
   CHAPTER_REVIEW: 'Ôn chương',
   SEMESTER_EXAM: 'Thi học kỳ',
   NATIONAL_EXAM_MOCK: 'Mô phỏng THPT',
+  LESSON_CHECK: 'Hỏi nhanh trong bài',
 };
 
 export const ROADMAP_PURPOSE_LABELS: Record<RoadmapPurpose, string> = {

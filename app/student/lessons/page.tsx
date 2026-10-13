@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 import { getLearningCatalog } from '@/lib/knowledge-tree/knowledge-tree-service';
+import { flattenSubjectLessons } from '@/lib/knowledge-tree/learning-visibility';
 import { LessonsOverview } from '@/features/lessons/components/lessons-overview';
 import { getDemoStudentSession } from '@/lib/auth/demo-session';
-import { getStudentPracticeResults } from '@/lib/practice/practice-service';
+import { getStudentLessonSummaries } from '@/lib/practice/practice-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,8 +45,13 @@ export default async function StudentLessonsPage({
 
   const subject = catalog.find((item) => item.id === subjectId) ?? catalog[0];
   const student = await getDemoStudentSession();
-  const practiceResults = student
-    ? await getStudentPracticeResults(student.id).catch(() => ({}))
+  // Practice availability and results come from the database; reading
+  // progress lives in the browser and is merged in on the client.
+  const summaries = student
+    ? await getStudentLessonSummaries(
+        student.id,
+        flattenSubjectLessons(subject).map((lesson) => lesson.id)
+      ).catch(() => ({}))
     : {};
-  return <LessonsOverview catalog={catalog} subject={subject} practiceResults={practiceResults} />;
+  return <LessonsOverview catalog={catalog} subject={subject} summaries={summaries} />;
 }

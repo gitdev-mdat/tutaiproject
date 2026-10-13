@@ -100,6 +100,14 @@ export const ARTICLE_BODY_BLOCKS: Array<{
     required: false,
   },
   {
+    type: 'GRAPH',
+    editorLabel: 'Hàm số minh hoạ (đồ thị tương tác)',
+    editorHint:
+      'Tuỳ chọn, cho bài về hàm số. Ví dụ: y = x^3 - 3x hoặc y = \\dfrac{x - 1}{x + 2}. Học sinh sẽ dự đoán chiều biến thiên trên đồ thị, kéo điểm để xem dấu đạo hàm và xem bảng biến thiên. Để trống nếu bài không cần đồ thị.',
+    readerHeading: 'Đồ thị',
+    required: false,
+  },
+  {
     type: 'REFERENCES',
     editorLabel: 'Nguồn tham khảo',
     editorHint: 'Sách giáo khoa, trang, tài liệu.',

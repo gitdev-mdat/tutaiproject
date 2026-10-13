@@ -23,6 +23,7 @@ export default defineConfig({
       'lib/auth/**/*.test.ts',
       'lib/db/**/*.test.ts',
       'lib/practice/**/*.test.ts',
+      'lib/learning/**/*.test.ts',
       'lib/content/**/*.test.ts',
       'features/roadmap/**/*.test.ts',
       'features/progress/**/*.test.ts',
