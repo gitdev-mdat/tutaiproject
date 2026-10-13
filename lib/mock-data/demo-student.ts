@@ -25,6 +25,8 @@ export const DEMO_STUDENT: StudentProfile = {
 const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   {
     id: 'dashboard',
+    group: 'learn',
+    hint: 'Hôm nay học gì',
     title: 'Trang chủ',
     href: '/student/dashboard',
     description: 'Tổng quan học tập hôm nay',
@@ -32,6 +34,8 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   },
   {
     id: 'roadmap',
+    group: 'learn',
+    hint: 'Kế hoạch của riêng em',
     title: 'Lộ trình',
     href: '/student/roadmap',
     description: 'Lộ trình học tập cá nhân hoá',
@@ -39,6 +43,8 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   },
   {
     id: 'lessons',
+    group: 'learn',
+    hint: 'Học bài, luyện ngay sau bài',
     title: 'Bài học',
     href: '/student/lessons',
     description: 'Học theo chương và bài trong chương trình',
@@ -46,6 +52,8 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   },
   {
     id: 'practice',
+    group: 'learn',
+    hint: 'Đề theo bài, theo chương',
     title: 'Luyện đề',
     href: '/student/practice',
     description: 'Luyện tập theo bài hoặc theo chương',
@@ -53,6 +61,8 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   },
   {
     id: 'exams',
+    group: 'extra',
+    hint: 'Thi thử phạm vi lớn',
     title: 'Luyện thi',
     href: '/student/exams',
     description: 'Làm bài thi thử theo phạm vi lớn',
@@ -60,6 +70,7 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   },
   {
     id: 'rankings',
+    group: 'compete',
     title: 'Thứ hạng',
     href: '/student/rankings',
     description: 'Xem xếp hạng từ kết quả đủ điều kiện',
@@ -67,6 +78,7 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   },
   {
     id: 'arena',
+    group: 'compete',
     title: 'Đấu trường',
     href: '/student/arena',
     description: 'Tham gia các sự kiện tranh tài học thuật',
@@ -74,6 +86,7 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   },
   {
     id: 'profile',
+    group: 'account',
     title: 'Hồ sơ',
     href: '/student/profile',
     description: 'Thông tin cá nhân và cài đặt',

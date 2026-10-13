@@ -28,10 +28,16 @@ export interface StudentNotification {
   read: boolean;
 }
 
+/** Where a destination sits in the sidebar: the learning path first, competition and account last. */
+export type StudentDestinationGroup = 'learn' | 'extra' | 'compete' | 'account';
+
 export interface StudentDestination {
   id: string;
   title: string;
   href: string;
+  group: StudentDestinationGroup;
+  /** A few words shown under learning-path items in the sidebar. */
+  hint?: string;
   description?: string;
   keywords?: string[];
 }
