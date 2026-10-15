@@ -113,7 +113,7 @@ function ChoiceButton({
       aria-checked={selected}
       disabled={disabled}
       onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition sm:p-4 ${tone} disabled:cursor-default`}
+      className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:p-4 ${tone} disabled:cursor-default`}
       data-testid={`choice-${label}`}
     >
       <span
@@ -130,11 +130,19 @@ function ChoiceButton({
       <span className="pt-1 text-[15px] leading-6 text-[#091224]">
         <QuestionMath text={content} />
         {state === 'missed' && (
-          <span className="ml-2 text-xs font-semibold text-emerald-700">Đáp án đúng</span>
+          <span className="block text-xs font-semibold text-emerald-700">Đáp án đúng</span>
         )}
       </span>
     </button>
   );
+}
+
+/** Roughly how long an option reads, without LaTeX markup. */
+function visibleLength(content: string) {
+  return content
+    .replace(/\\[a-zA-Z]+/g, 'x')
+    .replace(/[$\\{}]/g, '')
+    .trim().length;
 }
 
 export function QuestionBody({
@@ -142,11 +150,14 @@ export function QuestionBody({
   answer,
   setAnswer,
   feedback,
+  compact = false,
 }: {
   question: PracticeQuestion;
   answer: Answer;
   setAnswer: (answer: Answer) => void;
   feedback: PracticeFeedback | undefined;
+  /** Lay short answer choices out two per row, so the whole question fits on screen. */
+  compact?: boolean;
 }) {
   const numericId = React.useId();
   const locked = !!feedback;
@@ -158,7 +169,14 @@ export function QuestionBody({
     const picked = multiple ? (shown?.choices ?? []) : shown?.choice ? [shown.choice] : [];
     const right = expected?.choices ?? [];
     return (
-      <div className="space-y-2.5" role={multiple ? 'group' : 'radiogroup'}>
+      <div
+        className={
+          compact && question.options.every((option) => visibleLength(option.content) <= 22)
+            ? 'grid grid-cols-2 gap-2.5'
+            : 'space-y-2.5'
+        }
+        role={multiple ? 'group' : 'radiogroup'}
+      >
         {question.options.map((option) => {
           const selected = picked.includes(option.key);
           const state = !feedback

@@ -163,7 +163,7 @@ export function StudentShell({
           <main
             id="main-content"
             tabIndex={-1}
-            className="flex-1 overflow-x-hidden px-4 pb-4 pt-16 focus:outline-none md:p-6 lg:px-7 lg:py-6 xl:px-8"
+            className="flex-1 overflow-x-clip px-4 pb-4 pt-16 focus:outline-none md:p-6 lg:px-7 lg:py-6 xl:px-8"
           >
             <div className="mx-auto w-full max-w-[1360px]">{children}</div>
           </main>
