@@ -51,6 +51,13 @@ export const GEMINI_MODELS = {
 
   /** Admin-initiated lesson drafting in the curriculum editor; structured JSON output. */
   lessonDrafting: process.env.GEMINI_LESSON_DRAFT_MODEL ?? 'gemini-3.5-flash',
+
+  /**
+   * Student "Chưa hiểu chỗ này?" help: short structured JSON, low thinking,
+   * capped output. Point GEMINI_STUDENT_ASSIST_MODEL at a cheaper model once
+   * one is available to this key; the maths is re-checked by the engine anyway.
+   */
+  studentAssist: process.env.GEMINI_STUDENT_ASSIST_MODEL ?? 'gemini-3.5-flash',
 } as const;
 
 export type GeminiModelStage = keyof typeof GEMINI_MODELS;

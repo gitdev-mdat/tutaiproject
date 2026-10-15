@@ -4,6 +4,7 @@ import { Lock } from 'lucide-react';
 import { StudentLessonJourney } from '@/features/lessons/components/student-lesson-journey';
 import { LessonPracticeCard } from '@/features/lessons/components/lesson-practice-card';
 import { getDemoStudentSession } from '@/lib/auth/demo-session';
+import { getAssistAvailability } from '@/lib/learning/lesson-assist-service';
 import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
 import { buildLessonJourney } from '@/lib/knowledge-tree/lesson-journey';
 import { getLessonChecks, getLessonPracticeOverview } from '@/lib/practice/practice-service';
@@ -88,6 +89,11 @@ export default async function StudentLessonPage({ params }: Props) {
       practiceHref={`/student/lessons/${encodeURIComponent(lesson.id)}/practice`}
       next={next ? { id: next.id, title: next.title } : null}
       practiceCard={<LessonPracticeCard lessonId={lesson.id} overview={practice} />}
+      assist={{
+        lessonId: lesson.id,
+        contentVersion: article.updatedAt,
+        available: getAssistAvailability().available,
+      }}
     />
   );
 }

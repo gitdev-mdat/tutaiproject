@@ -373,3 +373,52 @@ export async function answerPracticeQuestion(
     attempt: summarize(result.attempt),
   };
 }
+
+export type GradedQuestion = { question: Question; response: unknown; correct: boolean };
+
+/**
+ * A quick question inside the lesson, graded again on the server from the
+ * response the student submitted. Used by the lesson assistant, which may only
+ * explain a question after the student has answered it.
+ */
+export async function gradeLessonCheckForAssist(
+  lessonId: string,
+  questionId: string,
+  rawResponse: unknown
+): Promise<GradedQuestion> {
+  const question = pickLessonChecks(await lessonQuestions(lessonId), lessonId).find(
+    (q) => q.id === questionId
+  );
+  if (!question) throw new PracticeError(404, 'Câu hỏi không thuộc bài học này.');
+  const response = parsePracticeResponse(question, rawResponse);
+  return { question, response, correct: gradePracticeResponse(question, response).correct };
+}
+
+/**
+ * A practice question the student has already answered in one of their own
+ * attempts, with the stored response. Null when it has not been answered yet,
+ * so help never comes before the student has tried.
+ */
+export async function getAnsweredPracticeQuestion(
+  studentId: string,
+  lessonId: string,
+  attemptId: string,
+  questionId: string
+): Promise<GradedQuestion | null> {
+  const sql = requireDatabase();
+  const row = await ownedAttempt(sql, studentId, attemptId);
+  if (row.lesson_id !== lessonId || !row.question_ids.includes(questionId)) {
+    throw new PracticeError(404, 'Câu hỏi không thuộc lượt luyện tập này.');
+  }
+  const [stored] = await sql<{ response: unknown; is_correct: boolean }[]>`
+    select response, is_correct from tutai.practice_answers
+    where attempt_id = ${attemptId} and question_id = ${questionId}`;
+  if (!stored) return null;
+  const question = await getQuestion(questionId);
+  if (!question) throw new PracticeError(410, 'Câu hỏi này đã bị gỡ.');
+  return {
+    question,
+    response: parsePracticeResponse(question, stored.response),
+    correct: stored.is_correct,
+  };
+}
