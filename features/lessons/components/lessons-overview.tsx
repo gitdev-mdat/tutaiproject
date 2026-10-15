@@ -154,7 +154,7 @@ export function LessonsOverview({
 function learningLabel(state: LessonLearningState) {
   if (state.kind === 'learned') return 'Đã học xong';
   if (state.kind === 'started')
-    return state.total > 0 ? `Đang học · chặng ${state.stage}/${state.total}` : 'Đã mở xem';
+    return state.total > 0 ? `Đang học · phần ${state.stage}/${state.total}` : 'Đã mở xem';
   return null;
 }
 
@@ -308,7 +308,7 @@ function pickNextStep(
       return {
         eyebrow: 'Em đang học dở',
         lesson,
-        detail: `Dừng ở chặng ${current.stage}/${current.total}. Bài sẽ mở lại đúng chỗ đó.`,
+        detail: `Dừng ở phần ${current.stage}/${current.total}. Bài sẽ mở lại đúng chỗ đó.`,
         href: lessonHref(lesson.id),
         cta: 'Học tiếp',
         icon: PlayCircle,

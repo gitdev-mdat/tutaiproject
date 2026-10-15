@@ -20,6 +20,8 @@ export interface LessonStageProgress {
   reached: number;
   /** Number of stages the lesson had at that time. */
   total: number;
+  /** Id of that stage ("vi-du"), so progress survives stages being regrouped. Absent in older saves. */
+  stageId?: string;
   /** Set when the student reached the last stage. */
   completedAt: string | null;
 }
@@ -70,28 +72,65 @@ export function recordLessonViewed(studentId: string, lessonId: string) {
   });
 }
 
-/** Records that the student opened stage `reached` of `total`; never moves progress backwards. */
+/**
+ * Records that the student opened stage `reached` of `total`; never moves
+ * progress backwards. `stageIds` are the lesson's current stage ids.
+ */
 export function recordLessonStage(
   studentId: string,
   lessonId: string,
   reached: number,
-  total: number
+  stageIds: string[]
 ) {
+  const total = stageIds.length;
   const current = readLessonProgress(studentId);
   const previous = current.stages[lessonId];
-  const furthest = Math.max(reached, previous?.reached ?? 0);
+  // A save from an older stage layout is compared by where it maps to now.
+  const before =
+    previous && previous.total === total && !previous.stageId
+      ? previous.reached
+      : previous?.stageId
+        ? Math.max(stageIds.indexOf(previous.stageId), 0)
+        : 0;
+  const furthest = Math.min(Math.max(reached, before), total - 1);
   const done = furthest >= total - 1;
   write(studentId, {
     ...current,
     stages: {
       ...current.stages,
       [lessonId]: {
-        reached: Math.min(furthest, total - 1),
+        reached: furthest,
         total,
+        stageId: stageIds[furthest],
         completedAt: previous?.completedAt ?? (done ? new Date().toISOString() : null),
       },
     },
   });
+}
+
+/**
+ * Where to reopen a lesson: the stage the student had reached, found by id,
+ * or through the older layout's order for saves made before stages were
+ * regrouped (`legacyStageIds[i]` is the stage that now holds old stage i).
+ */
+export function restoreStageIndex(
+  saved: LessonStageProgress | undefined,
+  stageIds: string[],
+  legacyStageIds: string[]
+): number {
+  const last = stageIds.length - 1;
+  if (!saved) return 0;
+  if (saved.completedAt) return last;
+  if (saved.stageId) {
+    const index = stageIds.indexOf(saved.stageId);
+    if (index >= 0) return index;
+  }
+  if (saved.total === stageIds.length) return Math.min(saved.reached, last);
+  if (saved.total === legacyStageIds.length) {
+    const index = stageIds.indexOf(legacyStageIds[saved.reached] ?? '');
+    if (index >= 0) return index;
+  }
+  return saved.total > 1 ? Math.round((saved.reached / (saved.total - 1)) * last) : 0;
 }
 
 export type LessonLearningState =

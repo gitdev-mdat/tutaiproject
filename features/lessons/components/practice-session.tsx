@@ -16,6 +16,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import { LessonAssist } from '@/components/learning/lesson-assist';
 import { QuestionMath } from '@/components/shared/question-content-renderer';
 import type { PracticeFeedback, PracticeQuestion } from '@/lib/practice/grading';
 import type { AttemptView } from '@/lib/practice/practice-service';
@@ -289,9 +290,12 @@ export function QuestionBody({
 export function FeedbackPanel({
   feedback,
   id = 'practice-feedback',
+  children,
 }: {
   feedback: PracticeFeedback;
   id?: string;
+  /** Extra help under the solution, e.g. "Vì sao em sai?". */
+  children?: React.ReactNode;
 }) {
   return (
     <div
@@ -316,6 +320,7 @@ export function FeedbackPanel({
           </div>
         </div>
       )}
+      {children && <div className="mt-3 border-t border-black/5 pt-3">{children}</div>}
     </div>
   );
 }
@@ -762,7 +767,18 @@ export function PracticeSession({
             setAnswer={(next) => setAnswers((all) => ({ ...all, [question.id]: next }))}
           />
         </div>
-        {feedback && <FeedbackPanel feedback={feedback} />}
+        {feedback && (
+          <FeedbackPanel feedback={feedback}>
+            {!feedback.correct && (
+              <LessonAssist
+                key={question.id}
+                target={{ kind: 'practice', attemptId: view.attempt.id, questionId: question.id }}
+                topic={`Câu ${index + 1}`}
+                label="Vì sao em sai?"
+              />
+            )}
+          </FeedbackPanel>
+        )}
         {submitError && (
           <p
             className="mt-4 text-sm font-medium text-rose-700"

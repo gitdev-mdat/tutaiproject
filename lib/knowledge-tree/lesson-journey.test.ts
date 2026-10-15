@@ -121,13 +121,12 @@ describe('buildLessonJourney', () => {
       'bat-dau',
       'y-1',
       'y-2',
-      'y-3',
       'vi-du',
       'thu-suc',
-      'bay',
       'tong-ket',
     ]);
     expect(journey.graphSource).toBeNull();
+    expect(journey.keyIdea).toBe("$f' > 0$ thì đồng biến.");
     expect(journey.stages.every((stage) => !('graph' in stage) || stage.graph === null)).toBe(true);
   });
 
@@ -136,11 +135,66 @@ describe('buildLessonJourney', () => {
       checks: 0,
     });
     const graphs = withGraph.stages.map((stage) => ('graph' in stage ? stage.graph : null));
-    expect(graphs).toEqual(['predict', 'values', 'derivative', null, null, null, null]);
+    expect(graphs).toEqual(['predict', 'values', 'derivative', null, null, null]);
     expect(withGraph.stages.some((stage) => stage.kind === 'check')).toBe(false);
 
     const broken = buildLessonJourney([...PRODUCTION, block('GRAPH', 'y = sin x')], { checks: 0 });
     expect(broken.graphSource).toBeNull();
+  });
+
+  it('applies the procedure in the worked example and reads the traps before trying', () => {
+    const journey = buildLessonJourney(PRODUCTION, { checks: 2 });
+    const example = journey.stages.find((stage) => stage.kind === 'example');
+    expect(example?.kind === 'example' && example.method).toEqual({
+      title: 'Các bước xét tính đơn điệu',
+      steps: [
+        'Tìm tập xác định.',
+        "Tính $f'(x)$, tìm các điểm làm $f'(x) = 0$ hoặc không xác định.",
+        "Lập bảng xét dấu $f'(x)$.",
+        'Kết luận các khoảng đồng biến, nghịch biến.',
+      ],
+    });
+    const check = journey.stages.find((stage) => stage.kind === 'check');
+    expect(check?.kind === 'check' && check.mistakes).toHaveLength(2);
+  });
+
+  it('maps progress saved with the older eight-stage order onto the new stages', () => {
+    const journey = buildLessonJourney(PRODUCTION, { checks: 2 });
+    // bat-dau, y-1, y-2, y-3, vi-du, thu-suc, bay, tong-ket
+    expect(journey.legacyStageIds).toEqual([
+      'bat-dau',
+      'y-1',
+      'y-2',
+      'vi-du',
+      'vi-du',
+      'thu-suc',
+      'thu-suc',
+      'tong-ket',
+    ]);
+    const noChecks = buildLessonJourney(PRODUCTION, { checks: 0 });
+    expect(noChecks.stages.map((stage) => stage.id)).toEqual([
+      'bat-dau',
+      'y-1',
+      'y-2',
+      'vi-du',
+      'bay',
+      'tong-ket',
+    ]);
+    expect(noChecks.legacyStageIds).toEqual([
+      'bat-dau',
+      'y-1',
+      'y-2',
+      'vi-du',
+      'vi-du',
+      'bay',
+      'tong-ket',
+    ]);
+  });
+
+  it('keeps a procedure as its own idea when there is no example to apply it to', () => {
+    const journey = buildLessonJourney([block('MAIN_CONTENT', MAIN)], { checks: 0 });
+    expect(journey.stages.map((stage) => stage.id)).toEqual(['y-1', 'y-2', 'y-3', 'tong-ket']);
+    expect(journey.legacyStageIds).toEqual(['y-1', 'y-2', 'y-3', 'tong-ket']);
   });
 
   it('handles a sparse lesson with only a main idea', () => {

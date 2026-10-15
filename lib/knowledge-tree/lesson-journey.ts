@@ -2,7 +2,8 @@
  * Turns an admin-authored article into a lesson journey: a short sequence of
  * stages a student works through one at a time.
  *
- *   problem → idea → demonstration → worked example → try it → traps → wrap-up
+ *   problem → idea (+ graph) → procedure applied to a worked example
+ *           → traps, then try it → wrap-up
  *
  * The stages are derived from the saved blocks only. Which stages exist, and
  * how many ideas the explanation is split into, follows the content: a lesson
@@ -134,15 +135,20 @@ const EXAMPLE_LABEL = /^(?:\*\*)?\s*(Ví dụ\s*\d*)\s*[.:]?\s*(?:\*\*)?\s*[.:]?
 const PROBLEM_LABEL = /^(?:\*\*)?\s*Đề bài\s*[.:]?\s*(?:\*\*)?\s*[.:]?\s*/i;
 const SOLUTION_LABEL = /(?:\*\*)?\s*Lời giải\s*[.:]?\s*(?:\*\*)?\s*[.:]?\s*/i;
 
-/** The first "$y = …$" or "$f(x) = …$" in a problem statement, parsed; null otherwise. */
-export function problemFunction(problem: string): RationalFunction | null {
+/** The first "$y = …$" or "$f(x) = …$" in a text that the engine can read, as "y = …"; null otherwise. */
+export function problemFunctionSource(problem: string): string | null {
   for (const match of problem.matchAll(/\$([^$]+)\$/g)) {
     const formula = /^\s*(?:y|f\s*\(\s*x\s*\))\s*=\s*(.+)$/.exec(match[1]);
-    if (!formula) continue;
-    const parsed = parseFunction(formula[1]);
-    if (parsed.ok) return parsed.fn;
+    if (formula && parseFunction(formula[1]).ok) return `y = ${formula[1].trim()}`;
   }
   return null;
+}
+
+/** The first "$y = …$" or "$f(x) = …$" in a problem statement, parsed; null otherwise. */
+export function problemFunction(problem: string): RationalFunction | null {
+  const source = problemFunctionSource(problem);
+  const parsed = source ? parseFunction(source) : null;
+  return parsed?.ok ? parsed.fn : null;
 }
 
 function parseOneExample(text: string, index: number): WorkedExample {
@@ -245,8 +251,24 @@ export type JourneyStage =
       body: string;
       graph: GraphLayer | null;
     }
-  | { id: 'vi-du'; kind: 'example'; title: string; examples: WorkedExample[] }
-  | { id: 'thu-suc'; kind: 'check'; title: string }
+  | {
+      id: 'vi-du';
+      kind: 'example';
+      title: string;
+      examples: WorkedExample[];
+      /**
+       * The procedure the author wrote just before the examples ("Các bước …"),
+       * shown beside the worked example so each step is applied right away.
+       */
+      method: { title: string; steps: string[] } | null;
+    }
+  | {
+      id: 'thu-suc';
+      kind: 'check';
+      title: string;
+      /** Common mistakes, read just before trying the questions. */
+      mistakes: string[];
+    }
   | { id: 'bay'; kind: 'mistakes'; title: string; items: string[] }
   | {
       id: 'tong-ket';
@@ -262,11 +284,28 @@ export interface LessonJourney {
   /** The GRAPH block's function, when it parses; null otherwise. */
   graphSource: string | null;
   minutes: number;
+  /** The lesson's central idea in one line (first "Ghi nhớ" item, else first objective). */
+  keyIdea: string | null;
+  /**
+   * For progress saved before stages were merged: the stage id that now holds
+   * what used to be stage i, in the older one-block-per-stage order.
+   */
+  legacyStageIds: string[];
+}
+
+/** A labelled idea whose body is a numbered procedure ("1. … 2. …"). */
+export function isProcedure(chunk: ConceptChunk): boolean {
+  const lines = chunk.body
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const numbered = lines.filter((line) => /^\d+[.)]\s+/.test(line)).length;
+  return numbered >= 2 && numbered >= lines.length - 1;
 }
 
 /**
  * Builds the stages for one article.
- * - `graphOk`: the GRAPH block parsed; only then do graph interactions appear.
+ * - Graph interactions appear only when the GRAPH block parses.
  * - `checks`: number of quick-check questions available for this lesson.
  */
 export function buildLessonJourney(
@@ -284,7 +323,18 @@ export function buildLessonJourney(
   const objectives = listItems(blockText(blocks, 'OBJECTIVE'));
   const references = blockText(blocks, 'REFERENCES');
 
+  // A procedure written last ("Các bước …") is applied in the worked example
+  // right after it, so the two share a stage instead of sitting apart.
+  const lastConcept = concepts[concepts.length - 1];
+  const method =
+    examples.length && concepts.length > 1 && lastConcept.title && isProcedure(lastConcept)
+      ? { title: lastConcept.title, steps: listItems(lastConcept.body) }
+      : null;
+  const ideas = method ? concepts.slice(0, -1) : concepts;
+  const hasCheck = options.checks > 0;
+
   const stages: JourneyStage[] = [];
+  const legacy: string[] = [];
   if (intro || graphOk) {
     stages.push({
       id: 'bat-dau',
@@ -294,11 +344,12 @@ export function buildLessonJourney(
       graph: graphOk ? 'predict' : null,
       goals: graphOk ? [] : objectives,
     });
+    legacy.push('bat-dau');
   }
   // The first idea is shown with values on the graph (x₁ < x₂ ⇒ compare y),
   // the second with the tangent and the sign of f′. Later ideas, usually a
   // procedure, lead straight into the worked example.
-  concepts.forEach((chunk, index) => {
+  ideas.forEach((chunk, index) => {
     const graph: GraphLayer | null = !graphOk
       ? null
       : concepts.length === 1
@@ -315,25 +366,42 @@ export function buildLessonJourney(
       body: chunk.body,
       graph,
     });
+    legacy.push(`y-${index + 1}`);
   });
+  if (method) legacy.push('vi-du');
   if (examples.length) {
     stages.push({
       id: 'vi-du',
       kind: 'example',
-      title: examples.length > 1 ? 'Ví dụ mẫu' : 'Cùng làm một ví dụ',
+      title: method
+        ? `${method.title.replace(/\.$/, '')}: làm cùng một ví dụ`
+        : examples.length > 1
+          ? 'Ví dụ mẫu'
+          : 'Cùng làm một ví dụ',
       examples,
+      method,
     });
+    legacy.push('vi-du');
   }
-  if (options.checks > 0) stages.push({ id: 'thu-suc', kind: 'check', title: 'Đến lượt em' });
-  if (mistakes.length)
+  if (hasCheck) {
+    // Traps are read just before trying the questions, where they help most.
+    stages.push({ id: 'thu-suc', kind: 'check', title: 'Đến lượt em', mistakes });
+    legacy.push('thu-suc');
+    if (mistakes.length) legacy.push('thu-suc');
+  } else if (mistakes.length) {
     stages.push({ id: 'bay', kind: 'mistakes', title: 'Những bẫy hay gặp', items: mistakes });
+    legacy.push('bay');
+  }
   stages.push({ id: 'tong-ket', kind: 'finish', title: 'Tóm tắt', recap, objectives, references });
+  legacy.push('tong-ket');
 
   const interactions = (graphOk ? 2 : 0) + options.checks;
   return {
     stages,
     graphSource: graphOk ? graphText : null,
     minutes: estimateReadingMinutes(blocks, interactions),
+    keyIdea: recap[0] ?? objectives[0] ?? null,
+    legacyStageIds: legacy,
   };
 }
 

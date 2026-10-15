@@ -10,6 +10,7 @@ import {
   type Answer,
 } from '@/features/lessons/components/practice-session';
 import type { PracticeFeedback, PracticeQuestion } from '@/lib/practice/grading';
+import { LessonAssist } from './lesson-assist';
 import { InlineText } from './rich-text';
 
 /**
@@ -128,7 +129,17 @@ function CheckQuestion({
           )}
         </div>
       )}
-      {feedback && <FeedbackPanel feedback={feedback} id={feedbackId} />}
+      {feedback && (
+        <FeedbackPanel feedback={feedback} id={feedbackId}>
+          {!feedback.correct && (
+            <LessonAssist
+              target={{ kind: 'check', questionId: question.id, response: feedback.response }}
+              topic={number ? `Câu ${number}` : 'Câu hỏi'}
+              label="Vì sao em sai?"
+            />
+          )}
+        </FeedbackPanel>
+      )}
     </div>
   );
 }

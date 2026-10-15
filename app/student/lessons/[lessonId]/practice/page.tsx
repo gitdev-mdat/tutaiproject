@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
+import { AssistProvider } from '@/components/learning/lesson-assist';
 import { PracticeSession } from '@/features/lessons/components/practice-session';
+import { getAssistAvailability } from '@/lib/learning/lesson-assist-service';
 import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
 import { getLearningCatalog } from '@/lib/knowledge-tree/knowledge-tree-service';
 
@@ -38,10 +40,18 @@ export default async function LessonPracticePage({ params, searchParams }: Props
   const { lesson, lessons, index } = found;
   const next = lessons[index + 1];
   return (
-    <PracticeSession
-      lesson={{ id: lesson.id, title: lesson.title, chapterTitle: lesson.chapterTitle }}
-      next={next ? { id: next.id, title: next.title } : null}
-      initialAttemptId={attempt ?? null}
-    />
+    <AssistProvider
+      settings={{
+        lessonId: lesson.id,
+        contentVersion: '',
+        available: getAssistAvailability().available,
+      }}
+    >
+      <PracticeSession
+        lesson={{ id: lesson.id, title: lesson.title, chapterTitle: lesson.chapterTitle }}
+        next={next ? { id: next.id, title: next.title } : null}
+        initialAttemptId={attempt ?? null}
+      />
+    </AssistProvider>
   );
 }
