@@ -7,7 +7,12 @@ import { getDemoStudentSession } from '@/lib/auth/demo-session';
 import { getAssistAvailability } from '@/lib/learning/lesson-assist-service';
 import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
 import { buildLessonJourney } from '@/lib/knowledge-tree/lesson-journey';
-import { getLessonChecks, getLessonPracticeOverview } from '@/lib/practice/practice-service';
+import {
+  getLessonChecks,
+  getLessonPracticeOverview,
+  getStudentLessonSummaries,
+} from '@/lib/practice/practice-service';
+import { scopeLessonsFor, withFrom } from '@/features/lessons/lib/study-plan';
 import {
   getKnowledgeArticle,
   getLearningCatalog,
@@ -15,14 +20,17 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: Promise<{ lessonId: string }> };
+type Props = {
+  params: Promise<{ lessonId: string }>;
+  searchParams: Promise<{ from?: string }>;
+};
 
 async function loadLesson(lessonId: string) {
   const catalog = await getLearningCatalog();
   const found = findLessonInCatalog(catalog, lessonId);
   if (!found) return null;
   const article = await getKnowledgeArticle(lessonId);
-  return article ? { ...found, article } : null;
+  return article ? { ...found, article, catalog } : null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -31,8 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: data ? `${data.article.title} | Tú Tài` : 'Bài học | Tú Tài' };
 }
 
-export default async function StudentLessonPage({ params }: Props) {
+export default async function StudentLessonPage({ params, searchParams }: Props) {
   const { lessonId: rawId } = await params;
+  // Opened from the Roadmap: lead back there, not to the lesson list.
+  const from = (await searchParams).from === 'roadmap' ? 'roadmap' : null;
   const lessonId = decodeURIComponent(rawId);
   const data = await loadLesson(lessonId);
 
@@ -59,9 +69,10 @@ export default async function StudentLessonPage({ params }: Props) {
     );
   }
 
-  const { subject, lesson, index, lessons, article } = data;
+  const { subject, lesson, article, catalog } = data;
   const student = await getDemoStudentSession();
-  const [practice, checks] = await Promise.all([
+  const scope = scopeLessonsFor(catalog, lesson.id);
+  const [practice, checks, summaries] = await Promise.all([
     student
       ? getLessonPracticeOverview(student.id, lesson.id).catch((error) => {
           console.error('[lesson-practice]', error);
@@ -72,9 +83,18 @@ export default async function StudentLessonPage({ params }: Props) {
       console.error('[lesson-checks]', error);
       return [];
     }),
+    student
+      ? getStudentLessonSummaries(
+          student.id,
+          scope.map((item) => item.id)
+        ).catch(() => ({}))
+      : {},
   ]);
   const journey = buildLessonJourney(article.blocks, { checks: checks.length });
-  const next = lessons[index + 1];
+  const next = scope[scope.findIndex((item) => item.id === lesson.id) + 1];
+  const backHref = from
+    ? '/student/roadmap'
+    : `/student/lessons?subject=${encodeURIComponent(subject.id)}`;
 
   return (
     <StudentLessonJourney
@@ -82,18 +102,20 @@ export default async function StudentLessonPage({ params }: Props) {
       title={article.title}
       subjectTitle={subject.title}
       chapterTitle={lesson.chapterTitle}
-      backHref={`/student/lessons?subject=${encodeURIComponent(subject.id)}`}
+      backHref={backHref}
+      backLabel={from ? 'Lộ trình' : 'Bài học'}
       journey={journey}
       checks={checks}
       practice={practice}
-      practiceHref={`/student/lessons/${encodeURIComponent(lesson.id)}/practice`}
+      practiceHref={withFrom(`/student/lessons/${encodeURIComponent(lesson.id)}/practice`, from)}
       next={next ? { id: next.id, title: next.title } : null}
       practiceCard={
         <LessonNextStep
           lessonId={lesson.id}
           overview={practice}
-          next={next ? { id: next.id, title: next.title } : null}
-          backHref={`/student/lessons?subject=${encodeURIComponent(subject.id)}`}
+          lessons={scope}
+          summaries={summaries}
+          from={from}
         />
       }
       assist={{

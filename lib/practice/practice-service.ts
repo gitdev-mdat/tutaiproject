@@ -114,6 +114,15 @@ async function requireVisibleLesson(lessonId: string) {
   }
 }
 
+/**
+ * The session the student can resume: only the newest one, when it is still
+ * open. A session left open and then followed by a newer one (started from
+ * another page or tab) is superseded; its answers stay stored.
+ */
+function openAttempt<T extends { status: AttemptSummary['status'] }>(newestFirst: T[]): T | null {
+  return newestFirst[0]?.status === 'IN_PROGRESS' ? newestFirst[0] : null;
+}
+
 /** What the lesson page shows: how many questions there are and the student's results so far. */
 export async function getLessonPracticeOverview(
   studentId: string,
@@ -143,7 +152,7 @@ export async function getLessonPracticeOverview(
   return {
     lessonId,
     questionCount: Math.min(questions.length, PRACTICE_SESSION_SIZE),
-    inProgress: attempts.find((a) => a.status === 'IN_PROGRESS') ?? null,
+    inProgress: openAttempt(attempts),
     lastCompleted: completed[0] ?? null,
     best,
     completedCount: completed.length,
@@ -182,15 +191,19 @@ export async function getStudentLessonSummaries(
     from tutai.practice_attempts a
     where a.student_id = ${studentId} and a.lesson_id in ${sql(lessonIds)}
     order by a.started_at desc`;
+  const newest = new Set<string>();
   for (const attempt of rows.map(summarize)) {
     const summary = summaries[attempt.lessonId];
     if (!summary) continue;
+    const isNewest = !newest.has(attempt.lessonId);
+    newest.add(attempt.lessonId);
     if (attempt.status === 'IN_PROGRESS') {
-      summary.inProgress ??= {
-        id: attempt.id,
-        answeredCount: attempt.answeredCount,
-        totalCount: attempt.totalCount,
-      };
+      if (isNewest)
+        summary.inProgress = {
+          id: attempt.id,
+          answeredCount: attempt.answeredCount,
+          totalCount: attempt.totalCount,
+        };
     } else if (attempt.mode === 'LESSON') {
       const ratio = (attempt.correctCount ?? 0) / attempt.totalCount;
       const best = summary.best;
