@@ -1,126 +1,185 @@
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, ClipboardCheck, Clock3, RotateCcw } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import type { LessonPracticeOverview } from '@/lib/practice/practice-service';
 
-/** The end-of-lesson call to action: practise, continue, or see how it went. */
-export function LessonPracticeCard({
+type Action = { href: string; label: string; testId?: string };
+
+const primaryClass =
+  'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-center text-[15px] font-bold text-white shadow-[0_8px_20px_rgba(0,82,255,0.2)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';
+const linkClass =
+  'inline-flex min-h-10 items-center gap-1 rounded-lg text-[14px] font-semibold text-slate-600 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+
+/**
+ * What to do after the lesson, as one decision: a status line about the
+ * lesson's practice, a single primary action and at most two quiet links.
+ * Practice comes first until it is passed; then the next lesson does.
+ */
+export function LessonNextStep({
   lessonId,
   overview,
+  next,
+  backHref,
 }: {
   lessonId: string;
   overview: LessonPracticeOverview | null;
+  next: { id: string; title: string } | null;
+  backHref: string | null;
 }) {
-  const href = `/student/lessons/${encodeURIComponent(lessonId)}/practice`;
-  if (!overview) {
-    return (
-      <section
-        id="luyen-tap"
-        className="mt-5 scroll-mt-24 rounded-[20px] border border-[#E5EBF3] bg-white p-5 text-sm text-slate-500"
-      >
-        Chưa tải được phần luyện tập. Em tải lại trang sau ít phút nhé.
-      </section>
-    );
-  }
-  if (overview.questionCount === 0 && !overview.lastCompleted) {
-    return (
-      <section
-        id="luyen-tap"
-        className="mt-5 scroll-mt-24 flex gap-4 rounded-[20px] border border-dashed border-[#D5DEEA] bg-white p-5 sm:p-6"
-        data-testid="lesson-practice-card"
-        data-state="empty"
-      >
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-500">
-          <ClipboardCheck className="size-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h2 className="text-[17px] font-bold text-[#091224]">Bài này chưa có câu luyện tập</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Thầy cô đang soạn câu hỏi cho bài này. Em có thể học tiếp bài sau và quay lại luyện tập
-            khi có câu mới.
-          </p>
-        </div>
-      </section>
-    );
+  const practiceHref = `/student/lessons/${encodeURIComponent(lessonId)}/practice`;
+  const nextLesson: Action | null = next
+    ? {
+        href: `/student/lessons/${encodeURIComponent(next.id)}`,
+        label: next.title,
+        testId: 'next-lesson-link',
+      }
+    : null;
+  const toList: Action | null = backHref ? { href: backHref, label: 'Về danh sách bài học' } : null;
+
+  const inProgress = overview?.inProgress ?? null;
+  const best = overview?.best ?? null;
+  const hasQuestions = !!overview && overview.questionCount > 0;
+
+  let state: 'unavailable' | 'empty' | 'ready' | 'in-progress' | 'passed' | 'retry';
+  if (!overview) state = 'unavailable';
+  else if (inProgress) state = 'in-progress';
+  else if (best?.passed) state = 'passed';
+  else if (best) state = 'retry';
+  else if (hasQuestions) state = 'ready';
+  else state = 'empty';
+
+  let title: string;
+  let detail: React.ReactNode;
+  let primary: Action | null;
+  const links: Action[] = [];
+
+  switch (state) {
+    case 'in-progress':
+      title = 'Em đang luyện tập dở';
+      detail = `Đã làm ${inProgress!.answeredCount}/${inProgress!.totalCount} câu. Kết quả được lưu, em làm tiếp từ câu đang dừng.`;
+      primary = {
+        href: `${practiceHref}?attempt=${inProgress!.id}`,
+        label: 'Làm tiếp luyện tập',
+        testId: 'practice-continue',
+      };
+      if (nextLesson) links.push({ ...nextLesson, label: `Để sau, học bài tiếp: ${next!.title}` });
+      break;
+    case 'ready':
+      title = 'Luyện tập để chắc bài';
+      detail = `${overview!.questionCount} câu, chấm ngay từng câu và có lời giải. Đạt 80% là em đã nắm bài.`;
+      primary = { href: practiceHref, label: 'Bắt đầu luyện tập', testId: 'practice-start' };
+      if (nextLesson) links.push({ ...nextLesson, label: `Để sau, học bài tiếp: ${next!.title}` });
+      break;
+    case 'retry':
+      title = 'Luyện thêm để chắc bài hơn';
+      detail = (
+        <>
+          Tốt nhất <BestScore overview={overview!} /> · cần đạt 80%.
+        </>
+      );
+      primary = { href: practiceHref, label: 'Luyện tập lại', testId: 'practice-start' };
+      if (overview!.lastCompleted)
+        links.push({
+          href: `${practiceHref}?attempt=${overview!.lastCompleted.id}`,
+          label: 'Xem bài đã làm',
+        });
+      if (nextLesson) links.push({ ...nextLesson, label: `Học bài tiếp: ${next!.title}` });
+      break;
+    case 'passed':
+      title = 'Em đã nắm bài này';
+      detail = (
+        <>
+          Luyện tập đạt <BestScore overview={overview!} />.
+        </>
+      );
+      primary = nextLesson ? { ...nextLesson, label: `Học bài tiếp: ${next!.title}` } : toList;
+      links.push({ href: practiceHref, label: 'Luyện tập lại', testId: 'practice-start' });
+      if (overview!.lastCompleted)
+        links.push({
+          href: `${practiceHref}?attempt=${overview!.lastCompleted.id}`,
+          label: 'Xem bài đã làm',
+        });
+      break;
+    case 'empty':
+      title = nextLesson ? 'Học tiếp bài sau' : 'Em đã học xong bài này';
+      detail = 'Bài này chưa có câu luyện tập. Khi thầy cô thêm câu mới, em quay lại luyện nhé.';
+      primary = nextLesson ? { ...nextLesson, label: `Học bài tiếp: ${next!.title}` } : toList;
+      break;
+    default:
+      title = nextLesson ? 'Học tiếp bài sau' : 'Em đã học xong bài này';
+      detail = 'Chưa tải được phần luyện tập. Em tải lại trang sau ít phút nhé.';
+      primary = nextLesson ? { ...nextLesson, label: `Học bài tiếp: ${next!.title}` } : toList;
   }
 
-  const best = overview.best;
-  const inProgress = overview.inProgress;
   return (
     <section
       id="luyen-tap"
-      className="mt-5 scroll-mt-24 overflow-hidden rounded-[20px] border border-blue-200 bg-gradient-to-br from-[#F4F8FF] to-white p-5 sm:p-6"
+      aria-labelledby="next-step-title"
+      className="scroll-mt-24 rounded-2xl bg-[#F4F8FF] p-5 sm:p-6"
       data-testid="lesson-practice-card"
-      data-state={inProgress ? 'in-progress' : best ? 'done' : 'ready'}
+      data-state={state === 'passed' || state === 'retry' ? 'done' : state}
     >
-      <div className="flex gap-4">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#0052FF] text-white">
-          <ClipboardCheck className="size-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold tracking-wider text-blue-600 uppercase">
-            Luyện tập sau bài học
-          </p>
-          <h2 className="mt-0.5 text-[19px] font-extrabold leading-snug text-[#091224]">
-            {inProgress
-              ? `Em đang làm dở: ${inProgress.answeredCount}/${inProgress.totalCount} câu`
-              : best
-                ? best.passed
-                  ? 'Em đã nắm bài này'
-                  : 'Luyện thêm để chắc bài hơn'
-                : `${overview.questionCount} câu để kiểm tra em đã hiểu bài chưa`}
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            {best ? (
-              <>
-                Kết quả tốt nhất{' '}
-                <strong className="text-[#091224]" data-testid="practice-best">
-                  {best.correctCount}/{best.totalCount} câu đúng
-                </strong>
-                {best.passed ? ' · Đạt' : ' · Cần đạt 80% để hoàn thành'}
-                {overview.completedCount > 1 && ` · ${overview.completedCount} lượt`}
-              </>
-            ) : (
-              'Chấm ngay từng câu, có lời giải chi tiết. Kết quả được lưu lại để em theo dõi.'
-            )}
-          </p>
+      <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">
+        Bước tiếp theo
+      </p>
+      <h3
+        id="next-step-title"
+        className="mt-1 flex items-center gap-2 text-[19px] font-extrabold leading-snug text-[#091224]"
+      >
+        {state === 'passed' && (
+          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-600 text-white">
+            <Check className="size-3.5" aria-hidden="true" />
+          </span>
+        )}
+        {title}
+      </h3>
+      <p className="mt-1 text-[15px] leading-6 text-slate-600">{detail}</p>
+      {state === 'in-progress' && (
+        <div
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100"
+          role="progressbar"
+          aria-label="Tiến độ luyện tập"
+          aria-valuemin={0}
+          aria-valuemax={inProgress!.totalCount}
+          aria-valuenow={inProgress!.answeredCount}
+        >
+          <div
+            className="h-full rounded-full bg-[#0052FF]"
+            style={{
+              width: `${Math.round((inProgress!.answeredCount / Math.max(1, inProgress!.totalCount)) * 100)}%`,
+            }}
+          />
         </div>
-      </div>
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-        {inProgress ? (
-          <Link
-            href={`${href}?attempt=${inProgress.id}`}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            data-testid="practice-continue"
-          >
-            <Clock3 className="size-4" aria-hidden="true" /> Làm tiếp
-          </Link>
-        ) : (
-          <Link
-            href={href}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            data-testid="practice-start"
-          >
-            {best ? (
-              <>
-                <RotateCcw className="size-4" aria-hidden="true" /> Luyện tập lại
-              </>
-            ) : (
-              <>
-                Bắt đầu luyện tập <ArrowRight className="size-4" aria-hidden="true" />
-              </>
-            )}
-          </Link>
-        )}
-        {overview.lastCompleted && (
-          <Link
-            href={`${href}?attempt=${overview.lastCompleted.id}`}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D5DEEA] bg-white px-5 text-[15px] font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <CheckCircle2 className="size-4 text-emerald-600" aria-hidden="true" /> Xem kết quả lần
-            trước
-          </Link>
-        )}
-      </div>
+      )}
+      {primary && (
+        <Link href={primary.href} className={`${primaryClass} mt-5`} data-testid={primary.testId}>
+          {primary.label}
+          <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+        </Link>
+      )}
+      {links.length > 0 && (
+        <p className="mt-3 flex flex-col items-start gap-x-4 sm:flex-row sm:flex-wrap">
+          {links.map((link) => (
+            <Link
+              key={link.href + link.label}
+              href={link.href}
+              className={linkClass}
+              data-testid={link.testId}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </p>
+      )}
     </section>
+  );
+}
+
+function BestScore({ overview }: { overview: LessonPracticeOverview }) {
+  const best = overview.best!;
+  return (
+    <strong className="text-[#091224]" data-testid="practice-best">
+      {best.correctCount}/{best.totalCount} câu đúng
+      {overview.completedCount > 1 ? ` sau ${overview.completedCount} lượt` : ''}
+    </strong>
   );
 }

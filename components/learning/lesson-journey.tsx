@@ -178,21 +178,39 @@ function StudentJourney(props: LessonJourneyProps) {
         className="mt-4 sm:mt-7"
         data-stage={stage.kind}
       >
-        <StageHeading stage={stage}>
-          {resumedAt !== null && current === resumedAt && (
-            <p className="text-[13px] text-slate-500" data-testid="resume-note">
-              {learned ? 'Em đã học xong bài này.' : 'Em đang học tiếp từ chỗ đã dừng.'}{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setResumedAt(null);
-                  show(0);
-                }}
-                className="font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                Xem lại từ đầu
-              </button>
-            </p>
+        <StageHeading
+          stage={stage}
+          title={stage.kind === 'finish' ? 'Em đã học xong bài này' : undefined}
+        >
+          {stage.kind === 'finish' ? (
+            <button
+              type="button"
+              onClick={() => {
+                setResumedAt(null);
+                show(0);
+              }}
+              className="self-start text-[14px] font-semibold text-slate-500 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 @2xl:self-auto"
+              data-testid="review-from-start"
+            >
+              Xem lại từ đầu
+            </button>
+          ) : (
+            resumedAt !== null &&
+            current === resumedAt && (
+              <p className="text-[13px] text-slate-500" data-testid="resume-note">
+                {learned ? 'Em đã học xong bài này.' : 'Em đang học tiếp từ chỗ đã dừng.'}{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResumedAt(null);
+                    show(0);
+                  }}
+                  className="font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  Xem lại từ đầu
+                </button>
+              </p>
+            )
           )}
         </StageHeading>
         <div className="mt-3 sm:mt-4">
@@ -208,12 +226,9 @@ function StudentJourney(props: LessonJourneyProps) {
             onExampleDone={() => setExampleDone(true)}
             onChecksDone={() => setChecksDone(true)}
             practiceCard={props.practiceCard}
-            hasPractice={!!props.practice?.questionCount}
-            next={props.next}
-            backHref={props.backHref}
           />
         </div>
-        <PartDock
+        <PartEnd
           stage={stage}
           index={current}
           stages={stages}
@@ -374,7 +389,7 @@ function PartBar({
         <span className="inline-flex shrink-0 items-center gap-1 text-[13px] text-slate-400">
           <Clock3 className="size-3.5" aria-hidden="true" /> ~{minutes} phút
         </span>
-        {inProgress && (
+        {inProgress && stages[current].kind !== 'finish' && (
           <Link
             href={`${practiceHref}?attempt=${inProgress.id}`}
             className="inline-flex min-h-9 w-full items-center gap-1.5 rounded-lg text-[13px] font-semibold text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -454,7 +469,16 @@ function PartBar({
   );
 }
 
-function StageHeading({ stage, children }: { stage: JourneyStage; children?: React.ReactNode }) {
+function StageHeading({
+  stage,
+  title,
+  children,
+}: {
+  stage: JourneyStage;
+  /** Replaces the part's own title, e.g. the wrap-up says the lesson is done. */
+  title?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1 @2xl:flex-row @2xl:items-end @2xl:justify-between @2xl:gap-6">
       <div className="min-w-0">
@@ -466,7 +490,7 @@ function StageHeading({ stage, children }: { stage: JourneyStage; children?: Rea
           tabIndex={-1}
           className="mt-0.5 text-[20px] font-extrabold leading-snug tracking-tight text-[#091224] focus:outline-none sm:text-[23px]"
         >
-          <InlineText text={stage.title} />
+          <InlineText text={title ?? stage.title} />
         </h2>
       </div>
       {children}
@@ -475,11 +499,12 @@ function StageHeading({ stage, children }: { stage: JourneyStage; children?: Rea
 }
 
 /**
- * The next step, always in reach: a bar pinned to the bottom of the screen
- * with what the part asks for, or what comes next, and the button to go on.
- * Forward waits for the part's activity the first time.
+ * Where the part ends, the way on: a quiet link back and the next part, named,
+ * as the button forward. It sits after the content, not over it, and until the
+ * part's activity is done it says what is left. When the activity unlocks it,
+ * it scrolls into view so the student never has to look for it.
  */
-function PartDock({
+function PartEnd({
   stage,
   index,
   stages,
@@ -496,71 +521,102 @@ function PartDock({
   onBack: () => void;
   onContinue: () => void;
 }) {
+  const box = React.useRef<HTMLElement>(null);
+  const wasReady = React.useRef(ready);
+  React.useEffect(() => {
+    const unlocked = ready && !wasReady.current && atFrontier;
+    wasReady.current = ready;
+    if (!unlocked) return;
+    // Once the activity's feedback has laid out, nudge the way on into view
+    // when it sits just below the fold. A long explanation is left to be read
+    // first: the button follows right after it.
+    const timer = window.setTimeout(() => {
+      const rect = box.current?.getBoundingClientRect();
+      const hidden = rect ? rect.bottom + 24 - window.innerHeight : 0;
+      if (hidden > 0 && hidden <= window.innerHeight * 0.35) {
+        window.scrollBy({ top: hidden, behavior: 'smooth' });
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [ready, atFrontier]);
+
   const nextStage = stages[index + 1];
+  if (!nextStage) return null;
   const waiting =
     stage.kind === 'hook'
-      ? 'Trả lời câu hỏi trên đồ thị để đi tiếp.'
+      ? 'Trả lời câu hỏi trên đồ thị để mở phần tiếp theo.'
       : stage.kind === 'example'
-        ? 'Mở hết lời giải để đi tiếp.'
+        ? 'Xem hết lời giải để mở phần tiếp theo.'
         : stage.kind === 'check'
-          ? 'Làm các câu trên để đi tiếp.'
+          ? 'Làm xong các câu để mở phần tiếp theo.'
           : null;
-  const back =
-    index > 0 ? (
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label="Phần trước"
-        className="inline-flex size-11 shrink-0 items-center justify-center gap-1.5 rounded-xl text-[15px] font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:w-auto sm:px-3"
-        data-testid="part-back"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        <span className="hidden sm:inline">Phần trước</span>
-      </button>
-    ) : null;
-  if (!nextStage) {
-    return back ? <div className="mt-8 border-t border-slate-200 pt-4">{back}</div> : null;
-  }
+  const starting = index === 0 && stage.kind === 'hook' && !stage.graph;
+
   return (
-    <div
-      className="sticky bottom-0 z-20 -mx-4 mt-8 border-t border-slate-200 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:-mx-6 md:px-6 lg:bottom-4 lg:mx-0 lg:rounded-2xl lg:border lg:px-4 lg:pb-3 lg:shadow-[0_12px_32px_rgba(9,18,36,0.12)]"
-      data-testid="part-dock"
+    <nav
+      ref={box}
+      aria-label="Chuyển phần"
+      className="mt-10 flex scroll-mb-6 flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-start sm:justify-between"
+      data-testid="part-end"
     >
-      <div className="flex items-center gap-2 sm:gap-3">
-        {back}
-        <div className="min-w-0 flex-1 text-[13px] leading-5 sm:text-[14px]">
-          {ready || !atFrontier ? (
-            <p className="truncate text-slate-500">
-              <span className="hidden sm:inline">Tiếp theo: </span>
-              <span className="font-semibold text-slate-700">
-                <InlineText text={nextStage.title} />
-              </span>
-            </p>
-          ) : stage.kind === 'check' ? (
-            <button
-              type="button"
-              onClick={onContinue}
-              className="font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
-              data-testid="check-skip"
-            >
-              Để sau, đi tiếp
-            </button>
-          ) : (
-            waiting && <p className="text-slate-500">{waiting}</p>
-          )}
-        </div>
+      {index > 0 ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex min-h-11 items-center gap-1.5 self-start rounded-xl px-2 text-[15px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:-ml-2"
+          data-testid="part-back"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" /> Phần trước
+        </button>
+      ) : (
+        <span className="hidden sm:block" />
+      )}
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:max-w-[420px] sm:items-end">
         <button
           type="button"
           disabled={!ready}
           onClick={onContinue}
-          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white shadow-[0_8px_20px_rgba(0,82,255,0.22)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none sm:px-6"
+          className="group flex w-full min-w-0 items-center gap-4 rounded-2xl border border-slate-200 bg-white py-3 pl-5 pr-3 text-left transition hover:border-blue-300 hover:bg-[#F4F8FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 sm:min-w-[340px]"
           data-testid="stage-continue"
         >
-          {index === 0 && stage.kind === 'hook' && !stage.graph ? 'Bắt đầu học' : 'Tiếp tục'}
-          <ArrowRight className="size-4" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[12px] font-bold uppercase tracking-[0.1em] text-blue-600 group-disabled:text-slate-400">
+              {starting ? 'Bắt đầu học' : `Tiếp tục · Phần ${index + 2}`}
+            </span>
+            <span className="mt-0.5 block truncate text-[16px] font-bold text-[#091224] group-disabled:text-slate-400">
+              <InlineText text={nextStage.title} />
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-[#0052FF] text-white shadow-[0_6px_16px_rgba(0,82,255,0.25)] transition group-hover:translate-x-0.5 group-disabled:bg-slate-200 group-disabled:text-slate-400 group-disabled:shadow-none"
+          >
+            {ready ? <ArrowRight className="size-5" /> : <Lock className="size-4" />}
+          </span>
         </button>
+        {!ready && atFrontier && waiting && (
+          <p
+            className="text-[13px] leading-5 text-slate-500 sm:text-right"
+            data-testid="part-waiting"
+          >
+            {waiting}
+            {stage.kind === 'check' && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  onClick={onContinue}
+                  className="font-semibold text-slate-600 underline underline-offset-2 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  data-testid="check-skip"
+                >
+                  Để sau, đi tiếp
+                </button>
+              </>
+            )}
+          </p>
+        )}
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -596,9 +652,6 @@ function PreviewJourney(props: LessonJourneyProps) {
                 onPredicted={() => undefined}
                 onExampleDone={() => undefined}
                 onChecksDone={() => undefined}
-                hasPractice={false}
-                next={null}
-                backHref={null}
               />
             </div>
           </section>
@@ -624,9 +677,6 @@ function StageBody({
   onExampleDone,
   onChecksDone,
   practiceCard,
-  hasPractice,
-  next,
-  backHref,
 }: {
   stage: JourneyStage;
   journey: Journey;
@@ -639,9 +689,6 @@ function StageBody({
   onExampleDone: () => void;
   onChecksDone: () => void;
   practiceCard?: React.ReactNode;
-  hasPractice: boolean;
-  next: { id: string; title: string } | null;
-  backHref: string | null;
 }) {
   const recap = journey.stages.find((s) => s.kind === 'finish');
   const recapFallback =
@@ -767,78 +814,64 @@ function StageBody({
           ))}
         </ul>
       );
-    case 'finish':
+    case 'finish': {
+      const more = stage.objectives.length > 0 || !!stage.references;
       return (
-        <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @4xl:items-start @4xl:gap-x-10">
-          {stage.recap.length > 0 && (
-            <div>
-              <h3 className="text-[15px] font-bold text-slate-500">Điều cần nhớ</h3>
-              <ol className="mt-3 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
-                {stage.recap.map((item, index) => (
-                  <li key={index} className="flex gap-3 px-4 py-3.5">
-                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#091224] text-[12px] font-bold text-white">
-                      {index + 1}
-                    </span>
-                    <span className="text-[16px] leading-7 text-slate-800">
-                      <InlineText text={item} />
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-          <div
-            className="flex flex-col gap-3 [&>*:first-child]:mt-0 @4xl:col-start-2 @4xl:row-span-2 @4xl:row-start-1"
-            data-testid="finish-next"
-          >
-            {practiceCard}
-            {next && (
-              <Link
-                href={`/student/lessons/${encodeURIComponent(next.id)}`}
-                className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:bg-[#F4F8FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-blue-600">
-                  Bài tiếp theo <ArrowRight className="size-3.5" aria-hidden="true" />
-                </span>
-                <span className="mt-1 block text-[16px] font-semibold text-[#091224]">
-                  {next.title}
-                </span>
-              </Link>
+        <div className="grid gap-8 @4xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] @4xl:items-start @4xl:gap-x-14">
+          <div className="min-w-0 max-w-[680px]">
+            {stage.recap.length > 0 && (
+              <>
+                <h3 className="text-[15px] font-bold text-[#091224]">Điều cần nhớ</h3>
+                <ol className="mt-3 space-y-3" data-testid="recap">
+                  {stage.recap.map((item, index) => (
+                    <li key={index} className="flex gap-3.5">
+                      <span
+                        aria-hidden="true"
+                        className="w-4 shrink-0 pt-px text-right text-[15px] font-extrabold leading-7 tabular-nums text-blue-600 sm:leading-8"
+                      >
+                        {index + 1}
+                      </span>
+                      <span className={prose}>
+                        <InlineText text={item} />
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </>
             )}
-            {backHref && (
-              <Link
-                href={backHref}
-                className="inline-flex h-11 items-center gap-1.5 self-start rounded-xl px-3 text-[15px] font-semibold text-slate-600 hover:bg-slate-100"
+            {more && (
+              <details
+                className="group mt-6 border-t border-slate-200 pt-3"
+                data-testid="finish-more"
               >
-                <ArrowLeft className="size-4" aria-hidden="true" /> Về danh sách bài học
-              </Link>
-            )}
-          </div>
-          {(stage.objectives.length > 0 || stage.references) && (
-            <div className="space-y-6 @4xl:col-start-1">
-              {stage.objectives.length > 0 && (
-                <div>
-                  <h3 className="text-[15px] font-bold text-slate-500">Bài này giúp em</h3>
-                  <PlainList items={stage.objectives} muted />
-                  {practiceCard && hasPractice && (
-                    <p className="mt-2 text-[14px] text-slate-500">
-                      Phần luyện tập cho em biết mình đã làm được những điều này chưa.
-                    </p>
+                <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-1.5 rounded-lg text-[14px] font-semibold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
+                  <ChevronDown
+                    className="size-4 transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                  {stage.objectives.length > 0 && stage.references
+                    ? 'Mục tiêu bài học và tài liệu tham khảo'
+                    : stage.objectives.length > 0
+                      ? 'Mục tiêu bài học'
+                      : 'Tài liệu tham khảo'}
+                </summary>
+                <div className="space-y-4 pb-2 pt-1">
+                  {stage.objectives.length > 0 && <PlainList items={stage.objectives} muted />}
+                  {stage.references && (
+                    <RichText content={stage.references} className="text-[14px] text-slate-500" />
                   )}
                 </div>
-              )}
-              {stage.references && (
-                <div className="text-[14px] text-slate-500">
-                  <h3 className="text-[12px] font-bold uppercase tracking-wider text-slate-400">
-                    Tham khảo
-                  </h3>
-                  <RichText content={stage.references} className="mt-1" />
-                </div>
-              )}
+              </details>
+            )}
+          </div>
+          {practiceCard && (
+            <div className="min-w-0 @4xl:sticky @4xl:top-6" data-testid="finish-next">
+              {practiceCard}
             </div>
           )}
         </div>
       );
+    }
   }
 }
 

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import { StudentLessonJourney } from '@/features/lessons/components/student-lesson-journey';
-import { LessonPracticeCard } from '@/features/lessons/components/lesson-practice-card';
+import { LessonNextStep } from '@/features/lessons/components/lesson-practice-card';
 import { getDemoStudentSession } from '@/lib/auth/demo-session';
 import { getAssistAvailability } from '@/lib/learning/lesson-assist-service';
 import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
@@ -88,7 +88,14 @@ export default async function StudentLessonPage({ params }: Props) {
       practice={practice}
       practiceHref={`/student/lessons/${encodeURIComponent(lesson.id)}/practice`}
       next={next ? { id: next.id, title: next.title } : null}
-      practiceCard={<LessonPracticeCard lessonId={lesson.id} overview={practice} />}
+      practiceCard={
+        <LessonNextStep
+          lessonId={lesson.id}
+          overview={practice}
+          next={next ? { id: next.id, title: next.title } : null}
+          backHref={`/student/lessons?subject=${encodeURIComponent(subject.id)}`}
+        />
+      }
       assist={{
         lessonId: lesson.id,
         contentVersion: article.updatedAt,
