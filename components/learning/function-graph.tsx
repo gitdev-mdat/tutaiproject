@@ -125,7 +125,7 @@ function Plot({
   const clipId = React.useId().replace(/:/g, '');
   // Drawn at the container's real width so labels keep a readable size on phones.
   const [boxRef, W] = useMeasuredWidth();
-  const PLOT_H = Math.round(Math.min(330, Math.max(230, W * 0.6)));
+  const PLOT_H = Math.round(Math.min(330, Math.max(210, W * 0.6)));
   const sx = (x: number) => PAD + ((x - view.xMin) / (view.xMax - view.xMin)) * (W - 2 * PAD);
   const sy = (y: number) => PAD + ((view.yMax - y) / (view.yMax - view.yMin)) * (PLOT_H - 2 * PAD);
   const span = view.yMax - view.yMin;

@@ -152,48 +152,50 @@ function StudentJourney(props: LessonJourneyProps) {
 
   return (
     <div
-      className="@container mx-auto w-full max-w-[1040px] pb-16"
+      className="@container mx-auto w-full max-w-[1120px] pb-6"
       data-testid="lesson-journey"
       data-opened={opened}
       data-current={current}
     >
       <div ref={top} className="scroll-mt-20 lg:scroll-mt-6" />
-      <LessonHeader {...props} />
-      <PartBar
-        stages={stages}
-        current={current}
-        reachable={reachable}
-        learned={learned}
-        minutes={journey.minutes}
-        onSelect={show}
-        practice={props.practice}
-        practiceHref={props.practiceHref}
-      />
-      {resumedAt !== null && current === resumedAt && (
-        <p className="mt-3 text-[14px] text-slate-500" data-testid="resume-note">
-          {learned ? 'Em đã học xong bài này.' : 'Em đang học tiếp từ chỗ đã dừng.'}{' '}
-          <button
-            type="button"
-            onClick={() => {
-              setResumedAt(null);
-              show(0);
-            }}
-            className="font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            Xem lại từ đầu
-          </button>
-        </p>
-      )}
+      <LessonHeader {...props} besideMenu>
+        <PartBar
+          stages={stages}
+          current={current}
+          reachable={reachable}
+          learned={learned}
+          minutes={journey.minutes}
+          onSelect={show}
+          practice={props.practice}
+          practiceHref={props.practiceHref}
+        />
+      </LessonHeader>
 
       <section
         key={stage.id}
         id={stage.id}
         aria-labelledby={`${stage.id}-title`}
-        className="mt-6 sm:mt-8"
+        className="mt-4 sm:mt-7"
         data-stage={stage.kind}
       >
-        <StageHeading stage={stage} />
-        <div className="mt-4">
+        <StageHeading stage={stage}>
+          {resumedAt !== null && current === resumedAt && (
+            <p className="text-[13px] text-slate-500" data-testid="resume-note">
+              {learned ? 'Em đã học xong bài này.' : 'Em đang học tiếp từ chỗ đã dừng.'}{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setResumedAt(null);
+                  show(0);
+                }}
+                className="font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Xem lại từ đầu
+              </button>
+            </p>
+          )}
+        </StageHeading>
+        <div className="mt-3 sm:mt-4">
           <StageBody
             stage={stage}
             journey={journey}
@@ -211,7 +213,7 @@ function StudentJourney(props: LessonJourneyProps) {
             backHref={props.backHref}
           />
         </div>
-        <PartNav
+        <PartDock
           stage={stage}
           index={current}
           stages={stages}
@@ -225,43 +227,59 @@ function StudentJourney(props: LessonJourneyProps) {
   );
 }
 
-function LessonHeader(props: LessonJourneyProps) {
+/**
+ * Title, the lesson's central idea and, beside them on wide screens, where the
+ * student is. On phones the first row sits beside the menu button instead of
+ * under it, so the lesson starts higher.
+ */
+function LessonHeader(
+  props: LessonJourneyProps & { children?: React.ReactNode; besideMenu?: boolean }
+) {
   const { journey } = props;
   return (
-    <header className="max-w-[760px]">
-      <p className="ml-12 flex min-h-10 min-w-0 items-center gap-1.5 text-[14px] text-slate-500 lg:ml-0">
-        {props.backHref && (
-          <>
-            <Link
-              href={props.backHref}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg py-1.5 font-semibold hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              <ArrowLeft className="size-4" aria-hidden="true" /> Bài học
-            </Link>
-            <span aria-hidden="true">·</span>
-          </>
-        )}
-        <span className="truncate">{props.chapterTitle || props.subjectTitle}</span>
-      </p>
-      <h1 className="mt-1 text-[26px] font-extrabold leading-[1.15] tracking-tight text-[#091224] sm:text-[32px]">
-        {props.title}
-      </h1>
-      {journey.keyIdea && (
-        <p
-          className="mt-2 text-[15px] leading-7 text-slate-600 sm:text-[16px]"
-          data-testid="key-idea"
-        >
-          <span className="font-semibold text-blue-700">Ý chính: </span>
-          <InlineText text={journey.keyIdea} />
+    <header
+      className={`flex flex-col gap-3 @4xl:flex-row @4xl:items-end @4xl:justify-between @4xl:gap-10 ${
+        props.besideMenu ? '-mt-12 md:mt-0' : ''
+      }`}
+    >
+      <div className="min-w-0 max-w-[720px]">
+        <p className="ml-12 flex min-h-10 min-w-0 items-center gap-1.5 text-[13px] text-slate-500 sm:text-[14px] lg:ml-0 lg:min-h-0">
+          {props.backHref && (
+            <>
+              <Link
+                href={props.backHref}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg py-1.5 font-semibold hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <ArrowLeft className="size-4" aria-hidden="true" /> Bài học
+              </Link>
+              <span aria-hidden="true">·</span>
+            </>
+          )}
+          <span className="truncate">{props.chapterTitle || props.subjectTitle}</span>
         </p>
-      )}
+        <h1 className="mt-1 text-[22px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[26px]">
+          {props.title}
+        </h1>
+        {journey.keyIdea && (
+          <p
+            className="mt-1 text-[14px] leading-6 text-slate-600 sm:text-[15px]"
+            data-testid="key-idea"
+          >
+            <span className="font-semibold text-blue-700">Ý chính: </span>
+            <InlineText text={journey.keyIdea} />
+          </p>
+        )}
+      </div>
+      {props.children}
     </header>
   );
 }
 
 /**
- * Where the student is, in one row: a thin progress line, "Phần 3/6" with the
- * part's name (opens the outline), and a resume link for unfinished practice.
+ * Where the student is: one segment per part (parts already open can be
+ * revisited directly) and "Phần 3/6 · Áp dụng", which opens the outline with
+ * every part's name. The part's own name is the heading right below, so it is
+ * not repeated here.
  */
 function PartBar({
   stages,
@@ -302,50 +320,64 @@ function PartBar({
   }, [open]);
 
   return (
-    <nav aria-label="Các phần của bài" className="mt-4 max-w-[760px]" data-testid="part-bar">
-      <div className="flex gap-1" aria-hidden="true">
-        {stages.map((stage, index) => (
-          <span
-            key={stage.id}
-            className={`h-1 flex-1 rounded-full ${
-              index < current || (learned && index !== current)
-                ? 'bg-[#0052FF]'
-                : index === current
-                  ? 'bg-[#0052FF]/55'
-                  : index <= reachable
-                    ? 'bg-blue-200'
-                    : 'bg-slate-200'
-            }`}
-          />
-        ))}
-      </div>
-      <div
-        ref={box}
-        className="relative mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1"
-      >
+    <nav
+      aria-label="Các phần của bài"
+      className="w-full shrink-0 @4xl:w-[360px]"
+      data-testid="part-bar"
+    >
+      <div ref={box} className="relative flex flex-wrap items-center gap-x-3">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           aria-controls={listId}
-          className="-ml-1.5 inline-flex min-h-10 min-w-0 max-w-full items-center gap-1.5 rounded-lg px-1.5 text-[14px] text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          aria-label={`Phần ${current + 1}/${stages.length}: ${EYEBROW[stages[current].kind]}. Xem các phần của bài`}
+          className="-ml-1.5 inline-flex min-h-10 shrink-0 items-center gap-1 rounded-lg px-1.5 text-[14px] font-semibold text-[#091224] hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           data-testid="outline-toggle"
         >
-          <span className="shrink-0 font-semibold text-[#091224]">
-            Phần {current + 1}/{stages.length}
-          </span>
-          <span className="truncate">
-            · <InlineText text={stages[current].title} />
-          </span>
+          Phần {current + 1}/{stages.length}
           <ChevronDown
-            className={`size-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+            className={`size-4 shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
             aria-hidden="true"
           />
         </button>
+        <ol className="flex min-w-0 flex-1 gap-1" aria-label="Tiến độ">
+          {stages.map((stage, index) => {
+            const available = index <= reachable;
+            return (
+              <li key={stage.id} className="min-w-0 flex-1">
+                <button
+                  type="button"
+                  disabled={!available}
+                  onClick={() => onSelect(index)}
+                  title={`Phần ${index + 1} · ${EYEBROW[stage.kind]}`}
+                  aria-label={`Phần ${index + 1}: ${EYEBROW[stage.kind]}${available ? '' : ' (chưa mở)'}`}
+                  aria-current={index === current ? 'step' : undefined}
+                  className="group block w-full py-2 focus-visible:outline-none disabled:cursor-default"
+                >
+                  <span
+                    className={`block h-1.5 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-blue-500 ${
+                      index === current
+                        ? 'bg-[#0052FF]'
+                        : index < current || learned
+                          ? 'bg-[#0052FF]/45 group-hover:bg-[#0052FF]/70'
+                          : available
+                            ? 'bg-blue-200 group-hover:bg-blue-300'
+                            : 'bg-slate-200'
+                    }`}
+                  />
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        <span className="inline-flex shrink-0 items-center gap-1 text-[13px] text-slate-400">
+          <Clock3 className="size-3.5" aria-hidden="true" /> ~{minutes} phút
+        </span>
         {inProgress && (
           <Link
             href={`${practiceHref}?attempt=${inProgress.id}`}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg text-[14px] font-semibold text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="inline-flex min-h-9 w-full items-center gap-1.5 rounded-lg text-[13px] font-semibold text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             data-testid="practice-resume"
           >
             <ClipboardCheck className="size-4" aria-hidden="true" />
@@ -355,7 +387,7 @@ function PartBar({
         {open && (
           <div
             id={listId}
-            className="absolute left-0 top-full z-30 mt-1 w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_16px_40px_rgba(9,18,36,0.14)]"
+            className="absolute left-0 top-full z-30 mt-1 w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_16px_40px_rgba(9,18,36,0.14)] @4xl:left-auto @4xl:right-0"
             data-testid="outline"
           >
             <p className="flex items-center gap-1.5 px-3 pb-1 pt-2 text-[12px] font-semibold text-slate-500">
@@ -422,25 +454,32 @@ function PartBar({
   );
 }
 
-function StageHeading({ stage }: { stage: JourneyStage }) {
+function StageHeading({ stage, children }: { stage: JourneyStage; children?: React.ReactNode }) {
   return (
-    <>
-      <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">
-        {EYEBROW[stage.kind]}
-      </p>
-      <h2
-        id={`${stage.id}-title`}
-        tabIndex={-1}
-        className="mt-1 text-[22px] font-extrabold leading-snug tracking-tight text-[#091224] focus:outline-none sm:text-[26px]"
-      >
-        <InlineText text={stage.title} />
-      </h2>
-    </>
+    <div className="flex flex-col gap-1 @2xl:flex-row @2xl:items-end @2xl:justify-between @2xl:gap-6">
+      <div className="min-w-0">
+        <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">
+          {EYEBROW[stage.kind]}
+        </p>
+        <h2
+          id={`${stage.id}-title`}
+          tabIndex={-1}
+          className="mt-0.5 text-[20px] font-extrabold leading-snug tracking-tight text-[#091224] focus:outline-none sm:text-[23px]"
+        >
+          <InlineText text={stage.title} />
+        </h2>
+      </div>
+      {children}
+    </div>
   );
 }
 
-/** Back and forward between parts; forward waits for the part's activity the first time. */
-function PartNav({
+/**
+ * The next step, always in reach: a bar pinned to the bottom of the screen
+ * with what the part asks for, or what comes next, and the button to go on.
+ * Forward waits for the part's activity the first time.
+ */
+function PartDock({
   stage,
   index,
   stages,
@@ -463,50 +502,64 @@ function PartNav({
       ? 'Trả lời câu hỏi trên đồ thị để đi tiếp.'
       : stage.kind === 'example'
         ? 'Mở hết lời giải để đi tiếp.'
-        : null;
+        : stage.kind === 'check'
+          ? 'Làm các câu trên để đi tiếp.'
+          : null;
   const back =
     index > 0 ? (
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex h-11 items-center gap-1.5 rounded-xl px-3 text-[15px] font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        aria-label="Phần trước"
+        className="inline-flex size-11 shrink-0 items-center justify-center gap-1.5 rounded-xl text-[15px] font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:w-auto sm:px-3"
         data-testid="part-back"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Phần trước
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        <span className="hidden sm:inline">Phần trước</span>
       </button>
     ) : null;
   if (!nextStage) {
-    return back ? <div className="mt-8 border-t border-slate-200 pt-5">{back}</div> : null;
+    return back ? <div className="mt-8 border-t border-slate-200 pt-4">{back}</div> : null;
   }
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-6">
-      <button
-        type="button"
-        disabled={!ready}
-        onClick={onContinue}
-        className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[16px] font-bold text-white shadow-[0_8px_20px_rgba(0,82,255,0.22)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-        data-testid="stage-continue"
-      >
-        {index === 0 && stage.kind === 'hook' && !stage.graph ? 'Bắt đầu học' : 'Tiếp tục'}
-        <ArrowRight className="size-4" aria-hidden="true" />
-      </button>
-      {ready || !atFrontier ? (
-        <span className="min-w-0 text-[14px] text-slate-500">
-          Tiếp theo: <InlineText text={nextStage.title} />
-        </span>
-      ) : stage.kind === 'check' ? (
+    <div
+      className="sticky bottom-0 z-20 -mx-4 mt-8 border-t border-slate-200 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:-mx-6 md:px-6 lg:bottom-4 lg:mx-0 lg:rounded-2xl lg:border lg:px-4 lg:pb-3 lg:shadow-[0_12px_32px_rgba(9,18,36,0.12)]"
+      data-testid="part-dock"
+    >
+      <div className="flex items-center gap-2 sm:gap-3">
+        {back}
+        <div className="min-w-0 flex-1 text-[13px] leading-5 sm:text-[14px]">
+          {ready || !atFrontier ? (
+            <p className="truncate text-slate-500">
+              <span className="hidden sm:inline">Tiếp theo: </span>
+              <span className="font-semibold text-slate-700">
+                <InlineText text={nextStage.title} />
+              </span>
+            </p>
+          ) : stage.kind === 'check' ? (
+            <button
+              type="button"
+              onClick={onContinue}
+              className="font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
+              data-testid="check-skip"
+            >
+              Để sau, đi tiếp
+            </button>
+          ) : (
+            waiting && <p className="text-slate-500">{waiting}</p>
+          )}
+        </div>
         <button
           type="button"
+          disabled={!ready}
           onClick={onContinue}
-          className="text-[14px] font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
-          data-testid="check-skip"
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white shadow-[0_8px_20px_rgba(0,82,255,0.22)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none sm:px-6"
+          data-testid="stage-continue"
         >
-          Để sau, đi tiếp
+          {index === 0 && stage.kind === 'hook' && !stage.graph ? 'Bắt đầu học' : 'Tiếp tục'}
+          <ArrowRight className="size-4" aria-hidden="true" />
         </button>
-      ) : (
-        waiting && <span className="text-[14px] text-slate-500">{waiting}</span>
-      )}
-      {back && <span className="ml-auto">{back}</span>}
+      </div>
     </div>
   );
 }
@@ -516,7 +569,7 @@ function PartNav({
 function PreviewJourney(props: LessonJourneyProps) {
   const { journey } = props;
   return (
-    <div className="@container mx-auto w-full max-w-[1040px] pb-16" data-testid="lesson-journey">
+    <div className="@container mx-auto w-full max-w-[1120px] pb-16" data-testid="lesson-journey">
       <LessonHeader {...props} />
       <p className="mt-4 max-w-[760px] rounded-xl bg-blue-50 px-4 py-3 text-[14px] leading-6 text-blue-900">
         Bản xem trước mở sẵn mọi phần. Học sinh đi lần lượt từng phần, mỗi lần một phần; câu hỏi
@@ -557,7 +610,7 @@ function PreviewJourney(props: LessonJourneyProps) {
 
 // ─── Stage bodies ────────────────────────────────────────────────────────────
 
-const prose = 'text-[16px] leading-8 text-slate-800 sm:text-[17px]';
+const prose = 'text-[16px] leading-7 text-slate-800 sm:text-[17px] sm:leading-8';
 
 function StageBody({
   stage,
@@ -596,13 +649,8 @@ function StageBody({
   switch (stage.kind) {
     case 'hook':
       return (
-        <div className="space-y-6">
-          {stage.intro && (
-            <RichText
-              content={stage.intro}
-              className={`${prose} max-w-[680px] sm:text-[18px] sm:leading-9`}
-            />
-          )}
+        <div className="space-y-4 sm:space-y-6">
+          {stage.intro && <RichText content={stage.intro} className={`${prose} max-w-[720px]`} />}
           {stage.goals.length > 0 && (
             <div className="max-w-[680px] rounded-2xl border border-slate-200 bg-white p-5">
               <p className="text-[14px] font-bold text-[#091224]">Học xong bài này, em sẽ:</p>
@@ -675,48 +723,34 @@ function StageBody({
       if (!stage.method) return <div className="max-w-[720px] space-y-10">{examples}</div>;
       return (
         <div className="grid gap-6 @3xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] @3xl:items-start">
-          <MethodCard title={stage.method.title} steps={stage.method.steps} />
-          <div className="min-w-0 space-y-10">{examples}</div>
+          <MethodCard
+            title={stage.method.title}
+            steps={stage.method.steps}
+            className="hidden @3xl:block"
+          />
+          <div className="min-w-0">
+            <MethodDisclosure
+              title={stage.method.title}
+              steps={stage.method.steps}
+              className="mb-4 @3xl:hidden"
+            />
+            <div className="space-y-10">{examples}</div>
+          </div>
         </div>
       );
     }
-    case 'check':
+    case 'check': {
+      const example = journey.stages.find((s) => s.kind === 'example');
       return (
-        <div className="max-w-[720px]">
-          {stage.mistakes.length > 0 && (
-            <div
-              className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4"
-              data-testid="check-traps"
-            >
-              <p className="flex items-center gap-2 text-[14px] font-bold text-amber-900">
-                <AlertTriangle className="size-4" aria-hidden="true" /> Trước khi làm, tránh các bẫy
-                này
-              </p>
-              <ul className="mt-2 space-y-1.5 text-[15px] leading-7 text-slate-800">
-                {stage.mistakes.map((item, index) => (
-                  <li key={index} className="flex gap-2.5">
-                    <span
-                      aria-hidden="true"
-                      className="mt-3 size-1.5 shrink-0 rounded-full bg-amber-500"
-                    />
-                    <span>
-                      <InlineText text={item} />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <p className={`${prose} mb-5`}>
-            Chọn đáp án rồi bấm Kiểm tra. Em sẽ thấy lời giải ngay, và nếu sai thì hỏi được vì sao.
-          </p>
-          <QuickCheck
-            lessonId={lessonId}
-            questions={checks}
-            onAnswered={(count) => count >= checks.length && onChecksDone()}
-          />
-        </div>
+        <QuickCheck
+          lessonId={lessonId}
+          questions={checks}
+          hint={example?.kind === 'example' ? example.method : null}
+          traps={stage.mistakes}
+          onAnswered={(count) => count >= checks.length && onChecksDone()}
+        />
       );
+    }
     case 'mistakes':
       return (
         <ul className="max-w-[720px] space-y-3">
@@ -735,7 +769,7 @@ function StageBody({
       );
     case 'finish':
       return (
-        <div className="max-w-[720px] space-y-8">
+        <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] @4xl:items-start @4xl:gap-x-10">
           {stage.recap.length > 0 && (
             <div>
               <h3 className="text-[15px] font-bold text-slate-500">Điều cần nhớ</h3>
@@ -753,23 +787,15 @@ function StageBody({
               </ol>
             </div>
           )}
-          {stage.objectives.length > 0 && (
-            <div>
-              <h3 className="text-[15px] font-bold text-slate-500">Bài này giúp em</h3>
-              <PlainList items={stage.objectives} muted />
-              {practiceCard && hasPractice && (
-                <p className="mt-2 text-[15px] text-slate-500">
-                  Phần luyện tập dưới đây cho em biết mình đã làm được những điều này chưa.
-                </p>
-              )}
-            </div>
-          )}
-          {practiceCard}
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div
+            className="flex flex-col gap-3 [&>*:first-child]:mt-0 @4xl:col-start-2 @4xl:row-span-2 @4xl:row-start-1"
+            data-testid="finish-next"
+          >
+            {practiceCard}
             {next && (
               <Link
                 href={`/student/lessons/${encodeURIComponent(next.id)}`}
-                className="group flex-1 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:bg-[#F4F8FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:bg-[#F4F8FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <span className="flex items-center gap-1.5 text-[13px] font-semibold text-blue-600">
                   Bài tiếp theo <ArrowRight className="size-3.5" aria-hidden="true" />
@@ -782,18 +808,33 @@ function StageBody({
             {backHref && (
               <Link
                 href={backHref}
-                className="inline-flex h-11 items-center gap-1.5 self-start rounded-xl px-3 text-[15px] font-semibold text-slate-600 hover:bg-slate-100 sm:self-center"
+                className="inline-flex h-11 items-center gap-1.5 self-start rounded-xl px-3 text-[15px] font-semibold text-slate-600 hover:bg-slate-100"
               >
                 <ArrowLeft className="size-4" aria-hidden="true" /> Về danh sách bài học
               </Link>
             )}
           </div>
-          {stage.references && (
-            <div className="text-[14px] text-slate-500">
-              <h3 className="text-[12px] font-bold uppercase tracking-wider text-slate-400">
-                Tham khảo
-              </h3>
-              <RichText content={stage.references} className="mt-1" />
+          {(stage.objectives.length > 0 || stage.references) && (
+            <div className="space-y-6 @4xl:col-start-1">
+              {stage.objectives.length > 0 && (
+                <div>
+                  <h3 className="text-[15px] font-bold text-slate-500">Bài này giúp em</h3>
+                  <PlainList items={stage.objectives} muted />
+                  {practiceCard && hasPractice && (
+                    <p className="mt-2 text-[14px] text-slate-500">
+                      Phần luyện tập cho em biết mình đã làm được những điều này chưa.
+                    </p>
+                  )}
+                </div>
+              )}
+              {stage.references && (
+                <div className="text-[14px] text-slate-500">
+                  <h3 className="text-[12px] font-bold uppercase tracking-wider text-slate-400">
+                    Tham khảo
+                  </h3>
+                  <RichText content={stage.references} className="mt-1" />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -822,10 +863,18 @@ function PlainList({ items, muted = false }: { items: string[]; muted?: boolean 
 }
 
 /** The procedure, kept in view beside the example that applies it. */
-function MethodCard({ title, steps }: { title: string; steps: string[] }) {
+function MethodCard({
+  title,
+  steps,
+  className = '',
+}: {
+  title: string;
+  steps: string[];
+  className?: string;
+}) {
   return (
     <aside
-      className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 @3xl:sticky @3xl:top-6"
+      className={`rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 @3xl:sticky @3xl:top-6 ${className}`}
       aria-label={title}
       data-testid="method-card"
     >
@@ -848,6 +897,50 @@ function MethodCard({ title, steps }: { title: string; steps: string[] }) {
         Ví dụ bên cạnh làm đúng theo các bước này.
       </p>
     </aside>
+  );
+}
+
+/**
+ * On narrow screens the procedure folds into one line above the example, so the
+ * problem and the first "try it" prompt stay on the first screen.
+ */
+function MethodDisclosure({
+  title,
+  steps,
+  className = '',
+}: {
+  title: string;
+  steps: string[];
+  className?: string;
+}) {
+  return (
+    <details
+      className={`group rounded-2xl border border-slate-200 bg-white ${className}`}
+      data-testid="method-disclosure"
+    >
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[14px] font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
+        <ListChecks className="size-4 shrink-0 text-blue-600" aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          Các bước làm <span className="font-normal text-slate-500">({steps.length} bước)</span>
+        </span>
+        <ChevronDown
+          className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <ol className="space-y-2 px-4 pb-4" aria-label={title}>
+        {steps.map((step, index) => (
+          <li key={index} className="flex gap-3 text-[15px] leading-7 text-slate-800">
+            <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-blue-50 text-[12px] font-bold text-blue-700">
+              {index + 1}
+            </span>
+            <span className="min-w-0">
+              <InlineText text={step} />
+            </span>
+          </li>
+        ))}
+      </ol>
+    </details>
   );
 }
 
