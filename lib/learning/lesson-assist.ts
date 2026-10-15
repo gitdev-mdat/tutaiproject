@@ -234,7 +234,7 @@ export function buildAssistPrompt(context: AssistContext): string {
     context.contextFunction
       ? `Nếu dùng hàm số, hãy dùng đúng hàm của bài: y = ${cleanContextText(context.contextFunction.replace(/^\s*y\s*=\s*/, ''), 120)}.`
       : 'Nếu cần một hàm số để minh hoạ, chọn một đa thức đơn giản, hệ số nguyên nhỏ.',
-    'Trong chuỗi JSON, mỗi dấu \\ của LaTeX phải viết thành \\\\.',
+    'Trong lời văn, vô cực viết là $+\\infty$ hoặc $-\\infty$; "-inf" và "+inf" chỉ dùng trong math.',
   ];
   return lines.filter((line) => line !== '').join('\n');
 }
@@ -295,6 +295,7 @@ export function cleanAssistText(value: string, limit: number): string {
     .replace(/\b(?:https?|javascript|data):\S*/gi, '')
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\\text\{\s*inf\s*\}/g, '\\infty')
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
     .replace(/[ \t]+$/gm, '')
     .replace(/\n{3,}/g, '\n\n')
@@ -383,10 +384,26 @@ function stripJsonFence(raw: string): string {
   return fenced ? fenced[1] : trimmed;
 }
 
+/**
+ * Structured output already escapes LaTeX for JSON; the model sometimes
+ * escapes it twice, leaving "\\mathbb" in the decoded text. A double
+ * backslash before a letter is never a line break in these short texts.
+ */
+function singleBackslashes(value: unknown): unknown {
+  if (typeof value === 'string') return value.replace(/\\\\(?=[A-Za-z])/g, '\\');
+  if (Array.isArray(value)) return value.map(singleBackslashes);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, singleBackslashes(item)])
+    );
+  }
+  return value;
+}
+
 export function parseAssistOutput(raw: string): RawAssist {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(repairLatexEscapes(stripJsonFence(raw)));
+    parsed = singleBackslashes(JSON.parse(repairLatexEscapes(stripJsonFence(raw))));
   } catch {
     throw new AssistError('MALFORMED');
   }

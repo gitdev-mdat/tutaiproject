@@ -261,6 +261,17 @@ describe('output validation', () => {
       '{"summary": "Hàm số xác định trên $\\mathbb{R}$ nên xét được.", "keyIdea": "$x \\neq 1$", "steps": []}';
     expect(parseAssistOutput(raw).keyIdea).toBe('$x \\neq 1$');
     expect(() => parseAssistOutput('{"summary": 1}')).toThrow(AssistError);
+    // Seen from gemini-3.5-flash: LaTeX escaped twice inside structured output.
+    const twice = parseAssistOutput(
+      JSON.stringify({
+        summary: 'Trên $D = \\\\mathbb{R}$.',
+        keyIdea: '$(-\\\\infty; 0)$',
+        steps: [],
+      })
+    );
+    expect(twice.summary).toBe('Trên $D = \\mathbb{R}$.');
+    expect(twice.keyIdea).toBe('$(-\\infty; 0)$');
+    expect(cleanAssistText('Khoảng $(-\\text{inf}; 2)$', 100)).toBe('Khoảng $(-\\infty; 2)$');
     expect(() => parseAssistOutput('không phải JSON')).toThrow(AssistError);
   });
 });
