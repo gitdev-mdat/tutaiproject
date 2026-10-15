@@ -1,15 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  CircleDashed,
-  ClipboardCheck,
-  PlayCircle,
-  RotateCcw,
-} from 'lucide-react';
+import { ArrowRight, Check, CircleDashed, ClipboardCheck, PlayCircle } from 'lucide-react';
 import { useStudentShell } from '@/components/student/student-shell';
 import {
   flattenSubjectLessons,
@@ -23,10 +15,7 @@ import {
   type LessonLearningState,
   type LessonProgressState,
 } from '../lib/lesson-progress';
-
-type Summaries = Record<string, LessonPracticeSummary>;
-
-const lessonHref = (id: string) => `/student/lessons/${encodeURIComponent(id)}`;
+import { lessonHref, lessonStanding, pickNextStep, type Summaries } from '../lib/study-plan';
 
 export function LessonsOverview({
   catalog,
@@ -41,8 +30,6 @@ export function LessonsOverview({
   const progress = useLessonProgress(model.identity.id);
   const lessons = flattenSubjectLessons(subject);
   const stateOf = (id: string) => lessonLearningState(progress, id);
-  const learnedCount = lessons.filter((lesson) => stateOf(lesson.id).kind === 'learned').length;
-  const passedCount = lessons.filter((lesson) => summaries[lesson.id]?.best?.passed).length;
   const chapterCount = subject.grades.reduce((sum, grade) => sum + grade.chapters.length, 0);
 
   return (
@@ -77,15 +64,9 @@ export function LessonsOverview({
       </header>
 
       {progress ? (
-        <NextStep
-          lessons={lessons}
-          progress={progress}
-          summaries={summaries}
-          learnedCount={learnedCount}
-          passedCount={passedCount}
-        />
+        <ResumeOrRoadmap lessons={lessons} progress={progress} summaries={summaries} />
       ) : (
-        <div aria-hidden="true" className="mt-6 h-[188px] rounded-[20px] bg-[#F4F8FF]" />
+        <div aria-hidden="true" className="mt-5 h-10" />
       )}
 
       <div className="mt-8 space-y-8">
@@ -134,6 +115,9 @@ export function LessonsOverview({
                           key={lesson.id}
                           lesson={lesson}
                           state={progress ? stateOf(lesson.id) : null}
+                          completed={
+                            !!progress && lessonStanding(lesson.id, progress, summaries).completed
+                          }
                           summary={summaries[lesson.id]}
                         />
                       ))}
@@ -181,10 +165,13 @@ function practiceLabel(summary: LessonPracticeSummary | undefined) {
 function LessonRow({
   lesson,
   state,
+  completed,
   summary,
 }: {
   lesson: LearningLesson;
   state: LessonLearningState | null;
+  /** Same rule as the Roadmap: practice passed, or read to the end when there is no practice. */
+  completed: boolean;
   summary?: LessonPracticeSummary;
 }) {
   const learning = state ? learningLabel(state) : null;
@@ -196,8 +183,9 @@ function LessonRow({
         className="group flex items-start gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-[#F4F8FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         data-testid="lesson-row"
         data-state={state?.kind ?? 'unknown'}
+        data-completed={completed}
       >
-        <StateIcon state={state} />
+        <StateIcon state={state} completed={completed} />
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-semibold leading-snug text-slate-800 group-hover:text-[#091224]">
             {lesson.title}
@@ -241,8 +229,14 @@ function LessonRow({
   );
 }
 
-function StateIcon({ state }: { state: LessonLearningState | null }) {
-  if (state?.kind === 'learned')
+function StateIcon({
+  state,
+  completed,
+}: {
+  state: LessonLearningState | null;
+  completed: boolean;
+}) {
+  if (completed)
     return (
       <span
         aria-hidden="true"
@@ -251,7 +245,7 @@ function StateIcon({ state }: { state: LessonLearningState | null }) {
         <Check className="size-3.5" strokeWidth={3} />
       </span>
     );
-  if (state?.kind === 'started')
+  if (state && state.kind !== 'new')
     return (
       <span aria-hidden="true" className="mt-0.5 grid size-6 shrink-0 place-items-center">
         <CircleDashed className="size-6 text-blue-500" strokeWidth={2.25} />
@@ -265,167 +259,56 @@ function StateIcon({ state }: { state: LessonLearningState | null }) {
   );
 }
 
-// ─── The single next step ────────────────────────────────────────────────────
-
-type Step = {
-  eyebrow: string;
-  lesson: LearningLesson;
-  detail: string;
-  href: string;
-  cta: string;
-  icon: typeof BookOpen;
-};
+// ─── Resume, or the way to the Roadmap ───────────────────────────────────────
 
 /**
- * One recommendation, in the order a teacher would ask: finish the practice
- * you left open, finish the lesson you left open, practise a lesson you
- * finished reading, then start the next lesson you have not opened.
+ * The lesson list is for browsing. It does not recommend: that is the
+ * Roadmap's job. It only offers to resume what the student left unfinished
+ * (the same step the Roadmap would show), and otherwise points to the Roadmap.
  */
-function pickNextStep(
-  lessons: LearningLesson[],
-  progress: LessonProgressState,
-  summaries: Summaries
-): Step | null {
-  const state = (id: string) => lessonLearningState(progress, id);
-  const last = progress.lastLessonId;
-  const byRecency = [...lessons].sort((a, b) => (a.id === last ? -1 : b.id === last ? 1 : 0));
-
-  for (const lesson of byRecency) {
-    const open = summaries[lesson.id]?.inProgress;
-    if (open)
-      return {
-        eyebrow: 'Em đang làm dở',
-        lesson,
-        detail: `Phần luyện tập còn ${open.totalCount - open.answeredCount} câu chưa trả lời.`,
-        href: `${lessonHref(lesson.id)}/practice?attempt=${open.id}`,
-        cta: 'Làm tiếp luyện tập',
-        icon: ClipboardCheck,
-      };
-  }
-  for (const lesson of byRecency) {
-    const current = state(lesson.id);
-    if (current.kind === 'started' && current.total > 0)
-      return {
-        eyebrow: 'Em đang học dở',
-        lesson,
-        detail: `Dừng ở phần ${current.stage}/${current.total}. Bài sẽ mở lại đúng chỗ đó.`,
-        href: lessonHref(lesson.id),
-        cta: 'Học tiếp',
-        icon: PlayCircle,
-      };
-  }
-  for (const lesson of byRecency) {
-    const summary = summaries[lesson.id];
-    if (
-      state(lesson.id).kind === 'learned' &&
-      summary &&
-      summary.questionCount > 0 &&
-      !summary.best?.passed
-    )
-      return {
-        eyebrow: summary.best ? 'Nên luyện lại' : 'Đã học xong, chưa luyện tập',
-        lesson,
-        detail: summary.best
-          ? `Lần tốt nhất ${summary.best.correctCount}/${summary.best.totalCount} câu đúng. Cần 80% để đạt.`
-          : `${summary.questionCount} câu, chấm ngay từng câu, có lời giải.`,
-        href: `${lessonHref(lesson.id)}/practice`,
-        cta: summary.best ? 'Luyện tập lại' : 'Luyện tập',
-        icon: summary.best ? RotateCcw : ClipboardCheck,
-      };
-  }
-  const next = lessons.find((lesson) => state(lesson.id).kind !== 'learned');
-  if (next) {
-    const fresh = state(next.id).kind === 'new';
-    const started = lessons.some((lesson) => state(lesson.id).kind !== 'new');
-    return {
-      eyebrow: started ? 'Bài tiếp theo' : 'Bắt đầu từ đây',
-      lesson: next,
-      detail: next.description || next.chapterTitle,
-      href: lessonHref(next.id),
-      cta: fresh ? 'Bắt đầu học' : 'Học bài này',
-      icon: BookOpen,
-    };
-  }
-  return null;
-}
-
-function NextStep({
+function ResumeOrRoadmap({
   lessons,
   progress,
   summaries,
-  learnedCount,
-  passedCount,
 }: {
   lessons: LearningLesson[];
   progress: LessonProgressState;
   summaries: Summaries;
-  learnedCount: number;
-  passedCount: number;
 }) {
   const step = pickNextStep(lessons, progress, summaries);
-  const percent = lessons.length ? Math.round((learnedCount / lessons.length) * 100) : 0;
-  const Icon = step?.icon ?? RotateCcw;
-
-  return (
-    <section
-      aria-label="Bước tiếp theo"
-      className="mt-6 rounded-[20px] border border-blue-100 bg-gradient-to-br from-[#F4F8FF] to-white p-5 sm:p-6"
-      data-testid="next-step"
-    >
-      {step ? (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-blue-600">{step.eyebrow}</p>
-            <p className="mt-1 text-lg font-bold leading-snug text-[#091224]">
-              {step.lesson.title}
-            </p>
-            <p className="mt-1 line-clamp-2 text-[14px] leading-6 text-slate-600">{step.detail}</p>
-          </div>
-          <Link
-            href={step.href}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white shadow-[0_6px_18px_rgba(0,82,255,0.22)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            data-testid="next-step-cta"
-          >
-            <Icon className="size-[18px]" aria-hidden="true" />
-            {step.cta}
-          </Link>
-        </div>
-      ) : (
-        <div>
-          <p className="text-[13px] font-semibold text-emerald-700">Hoàn thành</p>
-          <p className="mt-1 text-lg font-bold leading-snug text-[#091224]">
-            Em đã học xong và luyện đạt mọi bài đang mở.
-          </p>
-          <p className="mt-1 text-[14px] leading-6 text-slate-600">
-            Bài mới sẽ hiện ở đây khi thầy cô mở thêm. Em có thể ôn lại bất kỳ bài nào bên dưới.
-          </p>
-        </div>
-      )}
-      <div className="mt-5 border-t border-blue-100/80 pt-4">
-        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-[13px] text-slate-600">
-          <span>
-            Đã học xong{' '}
-            <strong className="font-semibold text-[#091224]">
-              {learnedCount}/{lessons.length}
-            </strong>{' '}
-            bài
-          </span>
-          <span>
-            Luyện tập đạt <strong className="font-semibold text-[#091224]">{passedCount}</strong>{' '}
-            bài
-          </span>
-        </div>
-        <div
-          className="mt-1.5 h-2 overflow-hidden rounded-full bg-blue-100"
-          role="progressbar"
-          aria-label="Số bài đã học xong"
-          aria-valuemin={0}
-          aria-valuemax={lessons.length}
-          aria-valuenow={learnedCount}
+  if (step && (step.kind === 'resume-practice' || step.kind === 'resume-lesson')) {
+    const Icon = step.kind === 'resume-practice' ? ClipboardCheck : PlayCircle;
+    return (
+      <section
+        aria-label="Đang học dở"
+        className="mt-6 flex flex-col gap-3 rounded-2xl border border-blue-100 bg-[#F4F8FF] px-5 py-4 sm:flex-row sm:items-center"
+        data-testid="next-step"
+        data-kind={step.kind}
+      >
+        <p className="min-w-0 flex-1 text-[14px] leading-6 text-slate-600">
+          <span className="font-semibold text-blue-700">Em đang học dở: </span>
+          <span className="font-semibold text-[#091224]">{step.lesson.title}</span>
+        </p>
+        <Link
+          href={step.href}
+          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-4 text-[14px] font-bold text-white transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          data-testid="next-step-cta"
         >
-          <div className="h-full rounded-full bg-[#0052FF]" style={{ width: `${percent}%` }} />
-        </div>
-      </div>
-    </section>
+          <Icon className="size-4" aria-hidden="true" />
+          {step.cta}
+        </Link>
+      </section>
+    );
+  }
+  return (
+    <p className="mt-5 text-[14px] text-slate-500" data-testid="next-step" data-kind="roadmap">
+      Chưa biết học bài nào tiếp?{' '}
+      <Link
+        href="/student/roadmap"
+        className="inline-flex items-center gap-1 font-semibold text-blue-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      >
+        Xem bước tiếp theo trong Lộ trình <ArrowRight className="size-3.5" aria-hidden="true" />
+      </Link>
+    </p>
   );
 }

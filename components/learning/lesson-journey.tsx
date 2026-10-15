@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  ClipboardCheck,
   Clock3,
   Eye,
   ListChecks,
@@ -62,6 +61,8 @@ export interface LessonJourneyProps {
   subjectTitle: string;
   chapterTitle: string;
   backHref: string | null;
+  /** What the back link says: where the student came from ("Bài học" or "Lộ trình"). */
+  backLabel?: string;
   journey: Journey;
   checks: PracticeQuestion[];
   practice: LessonPracticeOverview | null;
@@ -166,8 +167,6 @@ function StudentJourney(props: LessonJourneyProps) {
           learned={learned}
           minutes={journey.minutes}
           onSelect={show}
-          practice={props.practice}
-          practiceHref={props.practiceHref}
         />
       </LessonHeader>
 
@@ -178,39 +177,18 @@ function StudentJourney(props: LessonJourneyProps) {
         className="mt-4 sm:mt-7"
         data-stage={stage.kind}
       >
+        {/* Going back to any part, the start included, is the part bar's job:
+            no separate "Xem lại từ đầu" competes with the way forward. */}
         <StageHeading
           stage={stage}
           title={stage.kind === 'finish' ? 'Em đã học xong bài này' : undefined}
         >
-          {stage.kind === 'finish' ? (
-            <button
-              type="button"
-              onClick={() => {
-                setResumedAt(null);
-                show(0);
-              }}
-              className="self-start text-[14px] font-semibold text-slate-500 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 @2xl:self-auto"
-              data-testid="review-from-start"
-            >
-              Xem lại từ đầu
-            </button>
-          ) : (
-            resumedAt !== null &&
-            current === resumedAt && (
-              <p className="text-[13px] text-slate-500" data-testid="resume-note">
-                {learned ? 'Em đã học xong bài này.' : 'Em đang học tiếp từ chỗ đã dừng.'}{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResumedAt(null);
-                    show(0);
-                  }}
-                  className="font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  Xem lại từ đầu
-                </button>
-              </p>
-            )
+          {stage.kind !== 'finish' && resumedAt !== null && current === resumedAt && (
+            <p className="text-[13px] text-slate-500" data-testid="resume-note">
+              {learned
+                ? 'Em đã học xong bài này, đang xem lại.'
+                : 'Em đang học tiếp từ chỗ đã dừng.'}
+            </p>
           )}
         </StageHeading>
         <div className="mt-3 sm:mt-4">
@@ -265,7 +243,7 @@ function LessonHeader(
                 href={props.backHref}
                 className="inline-flex shrink-0 items-center gap-1 rounded-lg py-1.5 font-semibold hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                <ArrowLeft className="size-4" aria-hidden="true" /> Bài học
+                <ArrowLeft className="size-4" aria-hidden="true" /> {props.backLabel ?? 'Bài học'}
               </Link>
               <span aria-hidden="true">·</span>
             </>
@@ -303,8 +281,6 @@ function PartBar({
   learned,
   minutes,
   onSelect,
-  practice,
-  practiceHref,
 }: {
   stages: JourneyStage[];
   current: number;
@@ -312,13 +288,10 @@ function PartBar({
   learned: boolean;
   minutes: number;
   onSelect: (index: number) => void;
-  practice: LessonPracticeOverview | null;
-  practiceHref: string;
 }) {
   const [open, setOpen] = React.useState(false);
   const listId = React.useId();
   const box = React.useRef<HTMLDivElement>(null);
-  const inProgress = practice?.inProgress;
 
   React.useEffect(() => {
     if (!open) return;
@@ -389,16 +362,6 @@ function PartBar({
         <span className="inline-flex shrink-0 items-center gap-1 text-[13px] text-slate-400">
           <Clock3 className="size-3.5" aria-hidden="true" /> ~{minutes} phút
         </span>
-        {inProgress && stages[current].kind !== 'finish' && (
-          <Link
-            href={`${practiceHref}?attempt=${inProgress.id}`}
-            className="inline-flex min-h-9 w-full items-center gap-1.5 rounded-lg text-[13px] font-semibold text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            data-testid="practice-resume"
-          >
-            <ClipboardCheck className="size-4" aria-hidden="true" />
-            Làm tiếp luyện tập {inProgress.answeredCount}/{inProgress.totalCount}
-          </Link>
-        )}
         {open && (
           <div
             id={listId}

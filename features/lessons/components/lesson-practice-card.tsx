@@ -1,6 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
+import { useStudentShell } from '@/components/student/student-shell';
+import type { LearningLesson } from '@/lib/knowledge-tree/learning-visibility';
 import type { LessonPracticeOverview } from '@/lib/practice/practice-service';
+import { useLessonProgress } from '../lib/lesson-progress';
+import { pickNextStep, withFrom, type NextStep, type Summaries } from '../lib/study-plan';
 
 type Action = { href: string; label: string; testId?: string };
 
@@ -9,31 +15,44 @@ const primaryClass =
 const linkClass =
   'inline-flex min-h-10 items-center gap-1 rounded-lg text-[14px] font-semibold text-slate-600 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
 
+const later = (action: Action): Action => ({
+  ...action,
+  label: `Để sau, ${action.label.charAt(0).toLocaleLowerCase('vi-VN')}${action.label.slice(1)}`,
+});
+
+/** The label of a button that takes the student to the plan's next step. */
+export function nextStepLabel(step: NextStep) {
+  return `${step.cta}: ${step.lesson.title}`;
+}
+
 /**
  * What to do after the lesson, as one decision: a status line about the
- * lesson's practice, a single primary action and at most two quiet links.
- * Practice comes first until it is passed; then the next lesson does.
+ * lesson's practice, one primary action and at most one quiet alternative.
+ * Practice comes first until it is passed; then the plan's next step does,
+ * chosen by the same rule as the Roadmap (features/lessons/lib/study-plan).
  */
 export function LessonNextStep({
   lessonId,
   overview,
-  next,
-  backHref,
+  lessons,
+  summaries,
+  from,
 }: {
   lessonId: string;
   overview: LessonPracticeOverview | null;
-  next: { id: string; title: string } | null;
-  backHref: string | null;
+  /** The lessons the next step is chosen from, in curriculum order. */
+  lessons: LearningLesson[];
+  summaries: Summaries;
+  from: 'roadmap' | null;
 }) {
-  const practiceHref = `/student/lessons/${encodeURIComponent(lessonId)}/practice`;
-  const nextLesson: Action | null = next
-    ? {
-        href: `/student/lessons/${encodeURIComponent(next.id)}`,
-        label: next.title,
-        testId: 'next-lesson-link',
-      }
-    : null;
-  const toList: Action | null = backHref ? { href: backHref, label: 'Về danh sách bài học' } : null;
+  const { model } = useStudentShell();
+  const progress = useLessonProgress(model.identity.id);
+  const practicePath = `/student/lessons/${encodeURIComponent(lessonId)}/practice`;
+  const practiceHref = withFrom(practicePath, from);
+  const plan = progress ? pickNextStep(lessons, progress, summaries, { exclude: lessonId }) : null;
+  const nextStep: Action = plan
+    ? { href: withFrom(plan.href, from), label: nextStepLabel(plan), testId: 'next-lesson-link' }
+    : { href: '/student/roadmap', label: 'Xem lộ trình của em', testId: 'next-roadmap-link' };
 
   const inProgress = overview?.inProgress ?? null;
   const best = overview?.best ?? null;
@@ -49,28 +68,30 @@ export function LessonNextStep({
 
   let title: string;
   let detail: React.ReactNode;
-  let primary: Action | null;
+  let primary: Action;
   const links: Action[] = [];
 
   switch (state) {
     case 'in-progress':
       title = 'Em đang luyện tập dở';
-      detail = `Đã làm ${inProgress!.answeredCount}/${inProgress!.totalCount} câu. Kết quả được lưu, em làm tiếp từ câu đang dừng.`;
+      detail = `Đã làm ${inProgress!.answeredCount}/${inProgress!.totalCount} câu. Bài làm được lưu, em làm tiếp từ câu đang dừng.`;
       primary = {
-        href: `${practiceHref}?attempt=${inProgress!.id}`,
+        href: withFrom(`${practicePath}?attempt=${inProgress!.id}`, from),
         label: 'Làm tiếp luyện tập',
         testId: 'practice-continue',
       };
-      if (nextLesson) links.push({ ...nextLesson, label: `Để sau, học bài tiếp: ${next!.title}` });
+      if (plan) links.push(later(nextStep));
       break;
     case 'ready':
-      title = 'Luyện tập để chắc bài';
-      detail = `${overview!.questionCount} câu, chấm ngay từng câu và có lời giải. Đạt 80% là em đã nắm bài.`;
+      title = 'Luyện tập để hoàn thành bài';
+      detail = `${overview!.questionCount} câu, chấm ngay từng câu và có lời giải. Đạt 80% là bài này hoàn thành.`;
       primary = { href: practiceHref, label: 'Bắt đầu luyện tập', testId: 'practice-start' };
-      if (nextLesson) links.push({ ...nextLesson, label: `Để sau, học bài tiếp: ${next!.title}` });
+      if (plan) links.push(later(nextStep));
       break;
     case 'retry':
-      title = 'Luyện thêm để chắc bài hơn';
+      // Failed: try again, or first look at what went wrong. Moving on stays
+      // one tap away on the Roadmap, but it is not what this moment calls for.
+      title = 'Luyện thêm để hoàn thành bài';
       detail = (
         <>
           Tốt nhất <BestScore overview={overview!} /> · cần đạt 80%.
@@ -79,35 +100,30 @@ export function LessonNextStep({
       primary = { href: practiceHref, label: 'Luyện tập lại', testId: 'practice-start' };
       if (overview!.lastCompleted)
         links.push({
-          href: `${practiceHref}?attempt=${overview!.lastCompleted.id}`,
-          label: 'Xem bài đã làm',
+          href: withFrom(`${practicePath}?attempt=${overview!.lastCompleted.id}`, from),
+          label: 'Xem lại bài đã làm',
+          testId: 'practice-review',
         });
-      if (nextLesson) links.push({ ...nextLesson, label: `Học bài tiếp: ${next!.title}` });
       break;
     case 'passed':
-      title = 'Em đã nắm bài này';
+      title = 'Em đã hoàn thành bài này';
       detail = (
         <>
           Luyện tập đạt <BestScore overview={overview!} />.
         </>
       );
-      primary = nextLesson ? { ...nextLesson, label: `Học bài tiếp: ${next!.title}` } : toList;
+      primary = nextStep;
       links.push({ href: practiceHref, label: 'Luyện tập lại', testId: 'practice-start' });
-      if (overview!.lastCompleted)
-        links.push({
-          href: `${practiceHref}?attempt=${overview!.lastCompleted.id}`,
-          label: 'Xem bài đã làm',
-        });
       break;
     case 'empty':
-      title = nextLesson ? 'Học tiếp bài sau' : 'Em đã học xong bài này';
-      detail = 'Bài này chưa có câu luyện tập. Khi thầy cô thêm câu mới, em quay lại luyện nhé.';
-      primary = nextLesson ? { ...nextLesson, label: `Học bài tiếp: ${next!.title}` } : toList;
+      title = 'Em đã học xong bài này';
+      detail = 'Bài này chưa có câu luyện tập, nên học hết bài là hoàn thành.';
+      primary = nextStep;
       break;
     default:
-      title = nextLesson ? 'Học tiếp bài sau' : 'Em đã học xong bài này';
+      title = 'Em đã học xong bài này';
       detail = 'Chưa tải được phần luyện tập. Em tải lại trang sau ít phút nhé.';
-      primary = nextLesson ? { ...nextLesson, label: `Học bài tiếp: ${next!.title}` } : toList;
+      primary = nextStep;
   }
 
   return (

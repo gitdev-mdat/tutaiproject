@@ -25,6 +25,7 @@ export default defineConfig({
       'lib/practice/**/*.test.ts',
       'lib/learning/**/*.test.ts',
       'lib/content/**/*.test.ts',
+      'features/lessons/**/*.test.ts',
       'features/roadmap/**/*.test.ts',
       'features/progress/**/*.test.ts',
       'features/student-experience/**/*.test.ts',

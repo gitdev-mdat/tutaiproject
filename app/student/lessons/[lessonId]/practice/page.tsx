@@ -6,19 +6,23 @@ import { PracticeSession } from '@/features/lessons/components/practice-session'
 import { getAssistAvailability } from '@/lib/learning/lesson-assist-service';
 import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
 import { getLearningCatalog } from '@/lib/knowledge-tree/knowledge-tree-service';
+import { getDemoStudentSession } from '@/lib/auth/demo-session';
+import { getStudentLessonSummaries } from '@/lib/practice/practice-service';
+import { scopeLessonsFor } from '@/features/lessons/lib/study-plan';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Luyện tập | Tú Tài' };
 
 type Props = {
   params: Promise<{ lessonId: string }>;
-  searchParams: Promise<{ attempt?: string }>;
+  searchParams: Promise<{ attempt?: string; from?: string }>;
 };
 
 export default async function LessonPracticePage({ params, searchParams }: Props) {
   const lessonId = decodeURIComponent((await params).lessonId);
-  const { attempt } = await searchParams;
-  const found = findLessonInCatalog(await getLearningCatalog(), lessonId);
+  const { attempt, from } = await searchParams;
+  const catalog = await getLearningCatalog();
+  const found = findLessonInCatalog(catalog, lessonId);
   if (!found) {
     return (
       <div className="mx-auto max-w-[520px] py-16 text-center">
@@ -37,8 +41,16 @@ export default async function LessonPracticePage({ params, searchParams }: Props
       </div>
     );
   }
-  const { lesson, lessons, index } = found;
-  const next = lessons[index + 1];
+  const { lesson } = found;
+  // The next step after practice is chosen by the Roadmap's rule, from these lessons.
+  const scope = scopeLessonsFor(catalog, lesson.id);
+  const student = await getDemoStudentSession();
+  const summaries = student
+    ? await getStudentLessonSummaries(
+        student.id,
+        scope.map((item) => item.id)
+      ).catch(() => ({}))
+    : {};
   return (
     <AssistProvider
       settings={{
@@ -49,8 +61,10 @@ export default async function LessonPracticePage({ params, searchParams }: Props
     >
       <PracticeSession
         lesson={{ id: lesson.id, title: lesson.title, chapterTitle: lesson.chapterTitle }}
-        next={next ? { id: next.id, title: next.title } : null}
+        lessons={scope}
+        summaries={summaries}
         initialAttemptId={attempt ?? null}
+        from={from === 'roadmap' ? 'roadmap' : null}
       />
     </AssistProvider>
   );
