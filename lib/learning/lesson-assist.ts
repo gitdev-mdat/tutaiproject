@@ -37,7 +37,8 @@ export const ASSIST_LIMITS = {
   questionChars: 320,
   answerChars: 480,
   timeoutMs: 25_000,
-  maxOutputTokens: 2048,
+  // Thinking tokens count toward this cap on Gemini 3.x; at 2048 a real wrong-answer reply came back unparseable.
+  maxOutputTokens: 4096,
 } as const;
 
 // ─── Request ─────────────────────────────────────────────────────────────────
@@ -575,5 +576,12 @@ export async function generateAssist(
     throw classified;
   }
   if (!raw?.trim()) throw new AssistError('MALFORMED');
-  return finalizeAssist(parseAssistOutput(raw), context, providerName);
+  let parsed: RawAssist;
+  try {
+    parsed = parseAssistOutput(raw);
+  } catch (error) {
+    console.warn('[lesson-assist] malformed output', { length: raw.length });
+    throw error;
+  }
+  return finalizeAssist(parsed, context, providerName);
 }

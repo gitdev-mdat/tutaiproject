@@ -80,7 +80,16 @@ const geminiProvider: AssistProvider = async (prompt, signal) => {
       abortSignal: signal,
     },
   });
-  return (response as { text?: string }).text ?? '';
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== 'STOP') {
+    // Counts only: a cut-off answer shows up as MALFORMED for the student.
+    console.warn('[lesson-assist] gemini stopped early', {
+      finishReason,
+      outputTokens: response.usageMetadata?.candidatesTokenCount,
+      thinkingTokens: response.usageMetadata?.thoughtsTokenCount,
+    });
+  }
+  return response.text ?? '';
 };
 
 export type MockFailure = 'quota' | 'timeout' | 'malformed' | 'wrong-math';
