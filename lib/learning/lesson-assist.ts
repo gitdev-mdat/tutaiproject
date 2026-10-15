@@ -37,8 +37,9 @@ export const ASSIST_LIMITS = {
   questionChars: 320,
   answerChars: 480,
   timeoutMs: 25_000,
-  // Thinking tokens count toward this cap on Gemini 3.x; at 2048 a real wrong-answer reply came back unparseable.
-  maxOutputTokens: 4096,
+  // A normal reply is under 1000 tokens. The cap ends a runaway reply early
+  // (seen once on the real model: 4077 tokens, 13.6k characters, unparseable).
+  maxOutputTokens: 2048,
 } as const;
 
 // ─── Request ─────────────────────────────────────────────────────────────────
@@ -242,7 +243,7 @@ export function buildAssistPrompt(context: AssistContext): string {
 
 const intervalSchema = {
   type: 'object',
-  properties: { from: { type: 'string' }, to: { type: 'string' } },
+  properties: { from: { type: 'string', maxLength: 30 }, to: { type: 'string', maxLength: 30 } },
   required: ['from', 'to'],
 } as const;
 
@@ -250,30 +251,37 @@ const intervalSchema = {
 export const ASSIST_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
-    summary: { type: 'string' },
-    keyIdea: { type: 'string' },
+    summary: { type: 'string', maxLength: ASSIST_LIMITS.summaryChars },
+    keyIdea: { type: 'string', maxLength: ASSIST_LIMITS.keyIdeaChars },
     steps: {
       type: 'array',
+      maxItems: ASSIST_LIMITS.maxSteps - 1,
       items: {
         type: 'object',
-        properties: { title: { type: 'string' }, detail: { type: 'string' } },
+        properties: {
+          title: { type: 'string', maxLength: ASSIST_LIMITS.stepTitleChars },
+          detail: { type: 'string', maxLength: ASSIST_LIMITS.stepDetailChars },
+        },
         required: ['title', 'detail'],
       },
     },
     checkQuestion: {
       type: 'object',
-      properties: { question: { type: 'string' }, answer: { type: 'string' } },
+      properties: {
+        question: { type: 'string', maxLength: ASSIST_LIMITS.questionChars },
+        answer: { type: 'string', maxLength: ASSIST_LIMITS.answerChars },
+      },
       required: ['question', 'answer'],
     },
     visual: { type: 'string', enum: ['graph', 'table', 'none'] },
     math: {
       type: 'object',
       properties: {
-        function: { type: 'string' },
-        derivative: { type: 'string' },
-        criticalPoints: { type: 'array', items: { type: 'string' } },
-        increasing: { type: 'array', items: intervalSchema },
-        decreasing: { type: 'array', items: intervalSchema },
+        function: { type: 'string', maxLength: 120 },
+        derivative: { type: 'string', maxLength: 200 },
+        criticalPoints: { type: 'array', maxItems: 8, items: { type: 'string', maxLength: 30 } },
+        increasing: { type: 'array', maxItems: 6, items: intervalSchema },
+        decreasing: { type: 'array', maxItems: 6, items: intervalSchema },
       },
     },
   },
