@@ -17,6 +17,7 @@ import {
   EXAM_SCOPE_SHORT,
   type ExamScope,
 } from '@/lib/exams/student-exam-rules';
+import { AdminPreviewNote } from './admin-preview-note';
 import { DifficultyLadder } from './difficulty-ladder';
 import { PLUS_SURFACE, PlusRibbon, PlusTag, PlusTexture } from './plus-mark';
 import { EXAMS_PAGE, examAttemptHref, examHref } from '../lib/links';
@@ -361,6 +362,21 @@ export function ExamCatalogView({
         </ul>
       </header>
 
+      {catalog.previewAsAdmin && catalog.hiddenFromStudents && (
+        <AdminPreviewNote>
+          Đề Plus đã xuất bản mở để bạn kiểm tra mà không cần gói Plus; học sinh không có Plus vẫn
+          bị khoá.{' '}
+          <span data-testid="admin-preview-counts">
+            Học sinh làm được {catalog.exams.length} đề (
+            {catalog.exams.filter((exam) => exam.accessTier === 'PLUS').length} đề Plus).
+            {catalog.hiddenFromStudents.drafts > 0 &&
+              ` ${catalog.hiddenFromStudents.drafts} đề còn là bản nháp.`}
+            {catalog.hiddenFromStudents.notTakeable > 0 &&
+              ` ${catalog.hiddenFromStudents.notTakeable} đề đã xuất bản nhưng chưa làm được trên web.`}
+          </span>
+        </AdminPreviewNote>
+      )}
+
       {resume && <ResumeExam exam={resume} />}
 
       {catalog.exams.length === 0 ? (
@@ -401,9 +417,11 @@ export function ExamCatalogView({
                 className="mt-1 max-w-[70ch] text-[14px] leading-6 text-slate-600"
                 data-testid="plus-shelf-note"
               >
-                {catalog.hasPlus
-                  ? 'Tài khoản của em có Tú Tài Plus: các đề này đã mở.'
-                  : 'Đề được Tú Tài chọn riêng cho tài khoản Plus. Em vẫn xem được cấu trúc của từng đề.'}
+                {catalog.previewAsAdmin
+                  ? 'Đang mở để Admin kiểm tra. Tài khoản này không có gói Plus.'
+                  : catalog.hasPlus
+                    ? 'Tài khoản của em có Tú Tài Plus: các đề này đã mở.'
+                    : 'Đề được Tú Tài chọn riêng cho tài khoản Plus. Em vẫn xem được cấu trúc của từng đề.'}
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {plus.map((exam) => (

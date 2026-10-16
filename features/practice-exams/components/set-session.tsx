@@ -28,6 +28,7 @@ import type { PracticeFeedback } from '@/lib/practice/grading';
 import type { SetContext } from '@/lib/practice/practice-catalog';
 import type { AttemptView } from '@/lib/practice/practice-service';
 import { SET_SEGMENTS } from '@/lib/practice/practice-sets';
+import { AdminPreviewTag } from './admin-preview-note';
 import { DifficultyLadder } from './difficulty-ladder';
 import { PLUS_SURFACE, PlusRibbon, PlusTexture } from './plus-mark';
 import { practicePageHref, setHref } from '../lib/links';
@@ -99,7 +100,10 @@ function SetHeader({ context }: { context: SetContext }) {
           className={`flex items-center gap-1.5 text-[12px] font-extrabold uppercase tracking-[0.14em] ${plus ? 'text-[#F5B83D]' : 'text-[#0052FF]'}`}
         >
           {plus ? (
-            'Tổng hợp · Tú Tài Plus'
+            <>
+              Tổng hợp · Tú Tài Plus
+              {context.previewAsAdmin && <AdminPreviewTag />}
+            </>
           ) : (
             <>
               <Layers className="size-3.5" aria-hidden="true" /> Ôn chương · Miễn phí

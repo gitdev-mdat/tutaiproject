@@ -17,6 +17,7 @@ import type {
   SetEntry,
 } from '@/lib/practice/practice-catalog';
 import { lessonHref, practiceHref } from '@/features/lessons/lib/study-plan';
+import { AdminPreviewNote } from './admin-preview-note';
 import { DifficultyLadder } from './difficulty-ladder';
 import { PLUS_SURFACE, PlusRibbon, PlusTag, PlusTexture } from './plus-mark';
 import { practicePageHref, setHref, type PracticeView } from '../lib/links';
@@ -482,6 +483,21 @@ function ResumeCard({ catalog }: { catalog: PracticeCatalog }) {
 }
 
 function PlusNote({ catalog }: { catalog: PracticeCatalog }) {
+  if (catalog.previewAsAdmin) {
+    const total = catalog.chapters.length;
+    const open = catalog.chapters.filter((chapter) => chapter.synthesis).length;
+    const review = catalog.chapters.filter((chapter) => chapter.review).length;
+    return (
+      <AdminPreviewNote>
+        Bộ Tổng hợp đã xuất bản mở để bạn kiểm tra mà không cần gói Plus; học sinh không có Plus vẫn
+        bị khoá.{' '}
+        <span data-testid="admin-preview-counts">
+          {catalog.program?.title}: {open}/{total} chương có bộ Tổng hợp, {review}/{total} chương có
+          bộ Ôn chương.
+        </span>
+      </AdminPreviewNote>
+    );
+  }
   if (!catalog.chapters.some((chapter) => chapter.synthesis)) return null;
   return (
     <p

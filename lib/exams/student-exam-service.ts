@@ -2,7 +2,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { getSql } from '@/lib/db/postgres';
-import { hasPlusAccess } from '@/lib/access/plus-access';
+import { getPremiumAccess } from '@/lib/access/premium-access';
 import {
   parsePracticeResponse,
   gradePracticeResponse,
@@ -194,11 +194,23 @@ async function studentRows(studentId: string, examIds?: string[]): Promise<Attem
         order by started_at desc`;
 }
 
-export type StudentExamCatalog = { hasPlus: boolean; exams: ExamCard[] };
+export type StudentExamCatalog = {
+  /** Plus exams are open: through a Plus membership or an admin's preview. */
+  hasPlus: boolean;
+  /** Open only because the account is an admin previewing, not a member. */
+  previewAsAdmin: boolean;
+  exams: ExamCard[];
+  /**
+   * For an admin only: exams that exist but students cannot open, so an empty
+   * page is not mistaken for missing access. Null for everyone else.
+   */
+  hiddenFromStudents: { drafts: number; notTakeable: number } | null;
+};
 
 /** Every exam a student can take, newest first, with their own attempts. */
 export async function listStudentExams(studentId: string): Promise<StudentExamCatalog> {
-  const [all, hasPlus] = await Promise.all([listExams(), hasPlusAccess(studentId)]);
+  const [all, access] = await Promise.all([listExams(), getPremiumAccess(studentId)]);
+  const hasPlus = access.allowed;
   const exams = all
     .filter(isExamTakeable)
     .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
@@ -210,8 +222,18 @@ export async function listStudentExams(studentId: string): Promise<StudentExamCa
   if (rows.some((row) => row.status === 'IN_PROGRESS' && isPastDeadline(row.deadline_at))) {
     rows = await closeExpired(getSql(), rows, byId);
   }
+  const previewAsAdmin = access.via === 'ADMIN_PREVIEW';
   return {
     hasPlus,
+    previewAsAdmin,
+    hiddenFromStudents: previewAsAdmin
+      ? {
+          drafts: all.filter((exam) => exam.publishStatus !== 'PUBLISHED').length,
+          notTakeable: all.filter(
+            (exam) => exam.publishStatus === 'PUBLISHED' && !isExamTakeable(exam)
+          ).length,
+        }
+      : null,
     exams: exams.map((exam) =>
       toCard(
         exam,
@@ -225,6 +247,7 @@ export async function listStudentExams(studentId: string): Promise<StudentExamCa
 export type StudentExamDetail = {
   exam: ExamCard;
   hasPlus: boolean;
+  previewAsAdmin: boolean;
   history: ExamAttemptSummary[];
 };
 
@@ -235,12 +258,18 @@ export async function getStudentExam(
 ): Promise<StudentExamDetail | null> {
   const exam = await getExam(examId);
   if (!exam || !isExamTakeable(exam)) return null;
-  const hasPlus = await hasPlusAccess(studentId);
+  const access = await getPremiumAccess(studentId);
+  const hasPlus = access.allowed;
   let rows = await studentRows(studentId, [examId]);
   if (rows.some((row) => row.status === 'IN_PROGRESS' && isPastDeadline(row.deadline_at))) {
     rows = await closeExpired(getSql(), rows, new Map([[exam.id, exam]]));
   }
-  return { exam: toCard(exam, rows, hasPlus), hasPlus, history: rows.map(summarize) };
+  return {
+    exam: toCard(exam, rows, hasPlus),
+    hasPlus,
+    previewAsAdmin: examAccessTier(exam) === 'PLUS' && access.via === 'ADMIN_PREVIEW',
+    history: rows.map(summarize),
+  };
 }
 
 async function requireTakeableExam(examId: string): Promise<ExamRecord> {
@@ -250,7 +279,7 @@ async function requireTakeableExam(examId: string): Promise<ExamRecord> {
 }
 
 async function requireAccess(studentId: string, exam: ExamRecord) {
-  if (examAccessTier(exam) === 'PLUS' && !(await hasPlusAccess(studentId))) {
+  if (examAccessTier(exam) === 'PLUS' && !(await getPremiumAccess(studentId)).allowed) {
     throw new PracticeError(403, EXAM_PLUS_REQUIRED);
   }
 }

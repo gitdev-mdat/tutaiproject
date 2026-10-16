@@ -2,7 +2,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { getSql } from '@/lib/db/postgres';
-import { hasPlusAccess } from '@/lib/access/plus-access';
+import { getPremiumAccess } from '@/lib/access/premium-access';
 import { getLearningCatalog } from '@/lib/knowledge-tree/knowledge-tree-service';
 import { listQuestions } from '@/lib/question-bank/qb-storage';
 import type { Question } from '@/lib/question-bank/qb-types';
@@ -98,7 +98,10 @@ export type ProgramLink = { id: string; title: string; subjectId: string; gradeI
 export type PracticeCatalog = {
   program: ProgramLink | null;
   programs: ProgramLink[];
+  /** Plus sets are open: through a Plus membership or an admin's preview. */
   hasPlus: boolean;
+  /** Open only because the account is an admin previewing, not a member. */
+  previewAsAdmin: boolean;
   chapters: ChapterEntry[];
   resume: ResumeEntry | null;
 };
@@ -168,14 +171,17 @@ export async function getPracticeCatalog(
   subjectId?: string | null,
   gradeId?: string | null
 ): Promise<PracticeCatalog> {
-  const [catalog, { questions }, hasPlus] = await Promise.all([
+  const [catalog, { questions }, access] = await Promise.all([
     getLearningCatalog(),
     listQuestions({ pageSize: 100_000 }),
-    hasPlusAccess(studentId),
+    getPremiumAccess(studentId),
   ]);
+  const hasPlus = access.allowed;
+  const previewAsAdmin = access.via === 'ADMIN_PREVIEW';
   const programs = learningPrograms(catalog);
   const program = selectProgram(programs, subjectId, gradeId);
-  if (!program) return { program: null, programs: [], hasPlus, chapters: [], resume: null };
+  if (!program)
+    return { program: null, programs: [], hasPlus, previewAsAdmin, chapters: [], resume: null };
 
   const lessonIds = program.lessons.map((lesson) => lesson.id);
   const chapterIds = program.chapters.map((chapter) => chapter.id);
@@ -250,6 +256,7 @@ export async function getPracticeCatalog(
     program: link(program),
     programs: programs.map(link),
     hasPlus,
+    previewAsAdmin,
     chapters,
     resume: resume
       ? {
@@ -278,6 +285,7 @@ export type SetContext = {
   facts: SetFacts;
   locked: boolean;
   hasPlus: boolean;
+  previewAsAdmin: boolean;
   state: AttemptState;
 };
 
@@ -310,7 +318,8 @@ export async function getSetContext(
   const scope = scopeOf(found.chapter);
   const picked = pickSet(kind, questions, scope);
   if (!isSetReady(picked)) return null;
-  const hasPlus = await hasPlusAccess(studentId);
+  const access = await getPremiumAccess(studentId);
+  const hasPlus = access.allowed;
   const rows = (await studentAttempts(studentId, [chapterId])).filter((row) => row.mode === kind);
   return {
     kind,
@@ -328,6 +337,7 @@ export async function getSetContext(
     facts: setFacts(picked, scope),
     locked: kind === 'SYNTHESIS' && !hasPlus,
     hasPlus,
+    previewAsAdmin: kind === 'SYNTHESIS' && access.via === 'ADMIN_PREVIEW',
     state: attemptState(rows, () => true),
   };
 }
@@ -342,7 +352,7 @@ export async function startSetAttempt(
   chapterId: string
 ): Promise<AttemptView> {
   const sql = requireDatabase();
-  if (kind === 'SYNTHESIS' && !(await hasPlusAccess(studentId))) {
+  if (kind === 'SYNTHESIS' && !(await getPremiumAccess(studentId)).allowed) {
     throw new PracticeError(403, PLUS_REQUIRED_MESSAGE);
   }
   const { picked } = await setQuestions(kind, chapterId);
