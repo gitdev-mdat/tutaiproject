@@ -23,7 +23,16 @@ import type { AttemptView } from '@/lib/practice/practice-service';
 import { useStudentShell } from '@/components/student/student-shell';
 import { JourneyCheckpoint } from '@/features/roadmap/components/journey-checkpoint';
 import { useLessonProgress } from '../lib/lesson-progress';
-import { pickNextStep, programHref, type StudyScope, type Summaries } from '../lib/study-plan';
+import {
+  lessonHref,
+  lessonSummaryHref,
+  pickNextStep,
+  practiceHref,
+  programHref,
+  type PracticeOrigin,
+  type StudyScope,
+  type Summaries,
+} from '../lib/study-plan';
 import { nextStepLabel } from './lesson-practice-card';
 
 type Lesson = { id: string; title: string; chapterTitle: string };
@@ -67,16 +76,43 @@ type Plan = { href: string; label: string } | null;
 
 /** The lesson's program on the Roadmap. */
 const ProgramContext = React.createContext<StudyScope | null>(null);
+/** Where this session was opened from: its way back returns there. */
+const OriginContext = React.createContext<PracticeOrigin>('roadmap');
 
+/**
+ * The page, under its way back. Opened from the lesson, it returns to the
+ * lesson's summary, where practice was started; from anywhere else (the
+ * Roadmap, a bookmark, a typed URL) it returns to the lesson's journey on the
+ * Roadmap. Browser Back follows real history on its own.
+ */
 function Shell({ lesson, children }: { lesson: Lesson; children: React.ReactNode }) {
+  const program = React.useContext(ProgramContext);
+  const origin = React.useContext(OriginContext);
   return (
     <div className="mx-auto w-full max-w-[720px] pb-28 sm:pb-12">
-      <Link
-        href={`/student/lessons/${encodeURIComponent(lesson.id)}`}
-        className="inline-flex items-center gap-1.5 rounded-lg py-1 text-[13px] font-semibold text-slate-500 hover:text-blue-600"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" /> {lesson.title}
-      </Link>
+      <p className="-mt-12 ml-12 flex min-h-10 items-center md:mt-0 lg:ml-0 lg:min-h-0">
+        {origin === 'lesson' ? (
+          <Link
+            href={lessonSummaryHref(lesson.id)}
+            className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-lg py-1 text-[13px] font-semibold text-slate-500 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            data-testid="practice-back"
+            data-origin="lesson"
+          >
+            <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{lesson.title}</span>
+          </Link>
+        ) : (
+          <Link
+            href={programHref(program)}
+            className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded-full bg-[#0A1F5C] pl-2.5 pr-3.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#15307A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            data-testid="practice-back"
+            data-origin="roadmap"
+          >
+            <ArrowLeft className="size-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">{program ? `Hành trình ${program.title}` : 'Lộ trình'}</span>
+          </Link>
+        )}
+      </p>
       {children}
     </div>
   );
@@ -387,7 +423,8 @@ function Results({
   const wrong = attempt.totalCount - correct;
   const fixedMistakes = attempt.mode === 'MISTAKES' && wrong === 0;
   const [open, setOpen] = React.useState<string | null>(null);
-  const lessonLink = `/student/lessons/${encodeURIComponent(lesson.id)}`;
+  // To read the lesson again from the start: the place to understand mistakes.
+  const lessonLink = lessonHref(lesson.id);
   const primaryClass =
     'inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:opacity-60';
   const secondaryClass =
@@ -418,7 +455,6 @@ function Results({
               progress={reading}
               summaries={withThisPass}
               lessonId={lesson.id}
-              linked={!!plan}
             />
           </div>
         )}
@@ -535,17 +571,21 @@ function Results({
 
 export function PracticeSession({
   program,
+  origin,
   ...props
 }: {
   lesson: Lesson;
   /** The lesson's program on the Roadmap: the next step is chosen from its lessons. */
   program: StudyScope | null;
+  origin: PracticeOrigin;
   summaries: Summaries;
   initialAttemptId: string | null;
 }) {
   return (
     <ProgramContext.Provider value={program}>
-      <PracticeFlow {...props} />
+      <OriginContext.Provider value={origin}>
+        <PracticeFlow {...props} />
+      </OriginContext.Provider>
     </ProgramContext.Provider>
   );
 }
@@ -561,6 +601,7 @@ function PracticeFlow({
 }) {
   const router = useRouter();
   const program = React.useContext(ProgramContext);
+  const origin = React.useContext(OriginContext);
   const { model } = useStudentShell();
   const reading = useLessonProgress(model.identity.id);
   const nextStep = reading
@@ -637,13 +678,9 @@ function PracticeFlow({
       setIndex(0);
       setView(started);
       setShowResults(false);
-      // The attempt id in the address keeps refresh and back navigation on this attempt.
-      router.replace(
-        `/student/lessons/${encodeURIComponent(lesson.id)}/practice?attempt=${started.attempt.id}`,
-        {
-          scroll: true,
-        }
-      );
+      // The attempt id in the address keeps refresh and back navigation on
+      // this attempt; replacing the entry keeps one history step per visit.
+      router.replace(practiceHref(lesson.id, started.attempt.id, origin), { scroll: true });
     } catch (cause) {
       setSubmitError((cause as Error).message);
     } finally {
