@@ -5,7 +5,7 @@ import { QuestionBankPage } from '@/components/admin/question-bank/qb-page';
 export const metadata: Metadata = {
   title: 'Ngân hàng câu hỏi | Tú Tài Admin',
   description:
-    'Quản lý, nhập liệu và phân loại câu hỏi dùng cho bộ đề mở, Tú Tài Plus và lộ trình cá nhân hóa.',
+    'Quản lý, nhập liệu và phân loại câu hỏi dùng cho luyện tập theo bài, Tú Tài Plus và đề thi.',
 };
 
 export default function QuestionBankAdminPage() {

@@ -37,6 +37,8 @@ export interface AuthRepository {
   findSession(tokenHash: string): Promise<SessionContext | null>;
   deleteSession(tokenHash: string): Promise<void>;
   saveOnboarding(userId: string, update: OnboardingUpdate): Promise<void>;
+  /** Updates a finished profile's grade and learning goals (subject, scores). */
+  saveLearningGoals(userId: string, update: LearningGoalsUpdate): Promise<void>;
   /** Returns false when no account with a password matches the identifier. */
   createPasswordReset(
     identifier: string,
@@ -95,6 +97,14 @@ export type SessionContext = {
   user: AuthUser;
   profile: StoredStudentProfile;
   learning: StudentLearningProfile | null;
+};
+
+export type LearningGoalsUpdate = {
+  grade: string;
+  learning: Pick<
+    StudentLearningProfile,
+    'primarySubject' | 'currentScore' | 'targetScore' | 'updatedAt'
+  >;
 };
 
 export type OnboardingUpdate = {

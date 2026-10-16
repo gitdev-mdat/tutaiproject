@@ -173,6 +173,21 @@ export const jsonAuthRepository: AuthRepository = {
     });
   },
 
+  async saveLearningGoals(userId, { grade, learning }) {
+    await authTransaction((database) => {
+      const profile = database.studentProfiles.find((candidate) => candidate.userId === userId);
+      if (!profile) throw new AuthError('PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.', 404);
+      const current = database.learningProfiles.find(
+        (candidate) => candidate.studentId === profile.id
+      );
+      if (!current)
+        throw new AuthError('PROFILE_INCOMPLETE', 'Hồ sơ chưa được khởi tạo đầy đủ.', 500);
+      profile.grade = grade;
+      profile.updatedAt = learning.updatedAt;
+      Object.assign(current, learning);
+    });
+  },
+
   async createPasswordReset(identifier, record) {
     return authTransaction((database) => {
       const user = findByIdentifier(database, identifier);

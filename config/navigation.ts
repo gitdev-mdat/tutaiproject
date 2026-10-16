@@ -37,30 +37,67 @@ export const teacherNav: NavItem[] = [
   { title: 'Hồ sơ', href: '/teacher/profile' },
 ];
 
+/**
+ * The admin workspace, in the order content moves through it: the curriculum
+ * (Knowledge Tree) comes first because every lesson, question, practice set and
+ * exam is attached to one of its nodes; assessment tools build on published
+ * questions; the student group shows what students receive from all of it.
+ * Every entry is a working, database-backed page; nothing here is a placeholder.
+ */
 export const adminNav: NavSection[] = [
   {
     title: 'TỔNG QUAN',
-    items: [{ title: 'Tổng quan', href: '/admin' }],
-  },
-  {
-    title: 'NỘI DUNG',
     items: [
-      { title: 'Chương trình & Kiến thức', href: '/admin/knowledge' },
-      { title: 'Ngân hàng câu hỏi', href: '/admin/question-bank' },
-      { title: 'Luyện tập theo bài', href: '/admin/practice' },
-      { title: 'Đề thi', href: '/admin/exams' },
-      { title: 'Lộ trình học', href: '/admin/roadmaps' },
+      {
+        title: 'Tổng quan',
+        href: '/admin',
+        description: 'Nội dung đã mở và việc cần làm',
+      },
     ],
   },
   {
-    title: 'VẬN HÀNH',
+    title: 'CHƯƠNG TRÌNH',
     items: [
-      { title: 'Hàng chờ xử lý', href: '/admin/queue' },
-      { title: 'Học sinh', href: '/admin/students' },
+      {
+        title: 'Chương trình & Kiến thức',
+        href: '/admin/knowledge',
+        description: 'Cây môn, lớp, chương, bài và nội dung bài',
+      },
     ],
   },
   {
-    title: 'HỆ THỐNG',
-    items: [{ title: 'Cài đặt', href: '/admin/settings' }],
+    title: 'CÂU HỎI & ĐÁNH GIÁ',
+    items: [
+      {
+        title: 'Ngân hàng câu hỏi',
+        href: '/admin/question-bank',
+        description: 'Soạn, nhập, duyệt mọi câu hỏi',
+      },
+      {
+        title: 'Luyện tập theo bài',
+        href: '/admin/practice',
+        description: 'Câu học sinh nhận ở từng bài, chương',
+      },
+      {
+        title: 'Đề thi',
+        href: '/admin/exams',
+        description: 'Ghép đề tính giờ từ câu đã duyệt',
+      },
+    ],
+  },
+  {
+    title: 'HỌC SINH',
+    items: [
+      {
+        title: 'Lộ trình học sinh',
+        href: '/admin/roadmaps',
+        description: 'Học sinh nhận chương trình nào',
+      },
+      {
+        title: 'Thanh toán Plus',
+        href: '/admin/payments',
+        description: 'Duyệt chuyển khoản nâng cấp',
+      },
+    ],
   },
 ];

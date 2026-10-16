@@ -18,7 +18,6 @@ import {
 import type { StudentDestination, StudentShellModel } from '@/lib/student/types';
 
 const DESTINATION_ICONS: Record<string, typeof LayoutDashboard> = {
-  dashboard: LayoutDashboard,
   roadmap: Map,
   practice: Dumbbell,
   exams: FileText,
@@ -29,11 +28,6 @@ const DESTINATION_ICONS: Record<string, typeof LayoutDashboard> = {
 
 function isDestinationActive(pathname: string, destination: StudentDestination): boolean {
   const { href } = destination;
-  if (href === '/student/dashboard') {
-    // Treat the bare /student redirect target as part of the dashboard destination
-    // without letting it ambiguously activate any other entry.
-    return pathname === href || pathname === '/student' || pathname.startsWith(href + '/');
-  }
   return [href, ...(destination.includes ?? [])].some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix + '/')
   );
@@ -79,7 +73,7 @@ export function StudentSidebar({
     <aside className="flex h-full w-[244px] flex-col border-r border-[#E5EBF3] bg-white">
       {/* Logo */}
       <div className="flex h-[76px] shrink-0 items-center px-6">
-        <Link href="/student/dashboard" className="flex items-center gap-2.5">
+        <Link href="/student/roadmap" className="flex items-center gap-2.5">
           <svg width="38" height="38" viewBox="0 0 28 28" fill="none">
             <rect width="28" height="28" rx="8" fill={`url(#${logoGradient})`} />
             <path

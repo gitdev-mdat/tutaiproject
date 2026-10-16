@@ -275,9 +275,9 @@ describe('roadmapScope', () => {
     expect(selectProgram([], 'subj_math')).toBeNull();
   });
 
-  it('links to a program on the Roadmap, with the plain URL for the default one', () => {
+  it('links to a named program on the Roadmap; the plain URL is the profile program', () => {
     const programs = learningPrograms(catalog);
-    expect(programHref(programs[2])).toBe('/student/roadmap');
+    expect(programHref(programs[2])).toBe('/student/roadmap?subject=subj_math&grade=grade_12');
     expect(programHref(programs[0])).toBe('/student/roadmap?subject=subj_phys&grade=g');
     expect(programHref(null)).toBe('/student/roadmap');
   });

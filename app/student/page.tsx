@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-/** `/student/dashboard` is the canonical student home surface. */
+/** The Roadmap is the student's home. */
 export default function StudentIndexPage() {
-  redirect('/student/dashboard');
+  redirect('/student/roadmap');
 }

@@ -48,7 +48,9 @@ export default async function OnboardingLayout({ children }: { children: React.R
             </svg>
             <span className="text-[18px] font-extrabold tracking-tight text-[#091224]">Tú Tài</span>
           </Link>
-          <div className="text-xs font-semibold text-slate-400">Lộ trình học cá nhân hóa</div>
+          <div className="text-xs font-semibold text-slate-400">
+            Lộ trình theo môn và lớp của em
+          </div>
         </div>
       </header>
 

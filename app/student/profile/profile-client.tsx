@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
   BookOpen,
@@ -22,12 +23,24 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { loadStudentState, updateStudentProfile } from '@/lib/student/student-service';
+import { PRIMARY_SUBJECTS } from '@/lib/onboarding/onboarding-model';
 import type { StudentProfile, StudentState } from '@/lib/student/types';
 import styles from './profile.module.css';
 
+/** The learning goals from onboarding, as stored; the Roadmap is chosen from these. */
+export interface LearningGoals {
+  grade: string;
+  primarySubject: string | null;
+  currentScore: number | null;
+  targetScore: number | null;
+}
+
+const subjectName = (code: string | null) =>
+  PRIMARY_SUBJECTS.find((subject) => subject.code === code)?.label ?? '—';
+const gradeName = (grade: string) => (/^\d+$/.test(grade) ? `Lớp ${grade}` : grade || '—');
+const score = (value: number | null) => (value === null ? '—' : String(value));
+
 const PROFILE_PRESENTATION = {
-  examLabel: 'THPT Quốc Gia 2027',
-  subjects: ['Toán', 'Vật lý', 'Hóa học'],
   birthDate: '—',
   school: '—',
   planName: 'Tú Tài Free',
@@ -79,14 +92,12 @@ function ProfileEditDialog({
   const [form, setForm] = React.useState({
     name: state.profile.name,
     email: state.profile.email,
-    grade: String(state.profile.grade),
   });
   const changeOpen = (nextOpen: boolean) => {
     if (nextOpen) {
       setForm({
         name: state.profile.name,
         email: state.profile.email,
-        grade: String(state.profile.grade),
       });
     }
     setOpen(nextOpen);
@@ -98,7 +109,6 @@ function ProfileEditDialog({
         updateStudentProfile(state, {
           name: form.name,
           email: form.email,
-          grade: Number(form.grade),
         })
       );
       setError('');
@@ -143,17 +153,6 @@ function ProfileEditDialog({
               required
             />
           </label>
-          <label>
-            Lớp
-            <input
-              type="number"
-              min="1"
-              max="12"
-              value={form.grade}
-              onChange={(event) => setForm({ ...form, grade: event.target.value })}
-              required
-            />
-          </label>
           {error && <p className={styles.formError}>{error}</p>}
           <button type="submit" className={styles.saveButton}>
             <Check size={16} /> Lưu thay đổi
@@ -164,37 +163,52 @@ function ProfileEditDialog({
   );
 }
 
-function GoalEditDialog({
-  state,
-  onChange,
-}: {
-  state: StudentState;
-  onChange: (next: StudentState) => void;
-}) {
+/**
+ * Edits the learning goals in the database (not this browser): grade, the
+ * subject to improve and the two scores. The Roadmap is chosen from the grade
+ * and subject, so it changes on the next visit.
+ */
+function LearningGoalsDialog({ goals }: { goals: LearningGoals }) {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
-  const [targetScore, setTargetScore] = React.useState(String(state.profile.targetScore));
-  const [examBlock, setExamBlock] = React.useState(state.profile.examBlock);
+  const [form, setForm] = React.useState(() => toForm(goals));
   const [error, setError] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
   const changeOpen = (nextOpen: boolean) => {
     if (nextOpen) {
-      setTargetScore(String(state.profile.targetScore));
-      setExamBlock(state.profile.examBlock);
+      setForm(toForm(goals));
+      setError('');
     }
     setOpen(nextOpen);
   };
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setSaving(true);
+    setError('');
     try {
-      onChange(updateStudentProfile(state, { targetScore: Number(targetScore), examBlock }));
-      setError('');
+      const response = await fetch('/api/student/learning-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grade: form.grade,
+          primarySubject: form.primarySubject,
+          currentScore: form.currentScore.replace(',', '.'),
+          targetScore: form.targetScore.replace(',', '.'),
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { message?: string };
+      if (!response.ok) throw new Error(data.message ?? 'Không thể lưu mục tiêu.');
       setOpen(false);
+      router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể cập nhật mục tiêu');
+      setError(caught instanceof Error ? caught.message : 'Không thể lưu mục tiêu.');
+    } finally {
+      setSaving(false);
     }
   };
   return (
     <Dialog open={open} onOpenChange={changeOpen}>
-      <DialogTrigger>
+      <DialogTrigger data-testid="learning-goals-edit">
         <OutlineAction>
           <Pencil size={15} /> Cập nhật mục tiêu
         </OutlineAction>
@@ -203,38 +217,90 @@ function GoalEditDialog({
         <DialogHeader>
           <DialogTitle>Cập nhật mục tiêu học tập</DialogTitle>
           <DialogDescription>
-            Điều chỉnh mục tiêu để Tú Tài đồng hành sát hơn với em.
+            Lộ trình của em mở theo môn và lớp ở đây. Điểm em nhập chỉ là mục tiêu, không dùng để bỏ
+            qua bài nào.
           </DialogDescription>
         </DialogHeader>
-        <form className={styles.editForm} onSubmit={submit}>
+        <form className={styles.editForm} onSubmit={submit} data-testid="learning-goals-form">
           <label>
-            Điểm mục tiêu
+            Môn em muốn cải thiện nhất
+            <select
+              value={form.primarySubject}
+              onChange={(event) => setForm({ ...form, primarySubject: event.target.value })}
+              required
+              name="primarySubject"
+            >
+              {PRIMARY_SUBJECTS.map((subject) => (
+                <option key={subject.code} value={subject.code}>
+                  {subject.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Lớp
+            <select
+              value={form.grade}
+              onChange={(event) => setForm({ ...form, grade: event.target.value })}
+              required
+              name="grade"
+            >
+              {['10', '11', '12', 'Khác'].map((grade) => (
+                <option key={grade} value={grade}>
+                  {grade}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Điểm hiện tại
             <input
               type="number"
               min="0"
-              max="30"
-              step="0.1"
-              value={targetScore}
-              onChange={(event) => setTargetScore(event.target.value)}
+              max="10"
+              step="0.01"
+              inputMode="decimal"
+              name="currentScore"
+              value={form.currentScore}
+              onChange={(event) => setForm({ ...form, currentScore: event.target.value })}
               required
             />
           </label>
           <label>
-            Khối thi
+            Điểm em muốn đạt
             <input
-              value={examBlock}
-              onChange={(event) => setExamBlock(event.target.value)}
+              type="number"
+              min="0"
+              max="10"
+              step="0.01"
+              inputMode="decimal"
+              name="targetScore"
+              value={form.targetScore}
+              onChange={(event) => setForm({ ...form, targetScore: event.target.value })}
               required
             />
           </label>
-          {error && <p className={styles.formError}>{error}</p>}
-          <button type="submit" className={styles.saveButton}>
-            <Check size={16} /> Lưu mục tiêu
+          {error && (
+            <p className={styles.formError} role="alert">
+              {error}
+            </p>
+          )}
+          <button type="submit" className={styles.saveButton} disabled={saving}>
+            <Check size={16} /> {saving ? 'Đang lưu…' : 'Lưu mục tiêu'}
           </button>
         </form>
       </DialogContent>
     </Dialog>
   );
+}
+
+function toForm(goals: LearningGoals) {
+  return {
+    grade: goals.grade || '12',
+    primarySubject: goals.primarySubject ?? 'MATH',
+    currentScore: goals.currentScore === null ? '' : String(goals.currentScore),
+    targetScore: goals.targetScore === null ? '' : String(goals.targetScore),
+  };
 }
 
 function PasswordDialog({ email }: { email: string }) {
@@ -356,9 +422,11 @@ function GoogleLinkRow({ google }: { google: GoogleLinkState }) {
 export function ProfileClient({
   initialProfile,
   google,
+  learning,
 }: {
   initialProfile: StudentProfile;
   google: GoogleLinkState;
+  learning: LearningGoals;
 }) {
   const [state, setState] = React.useState(() => loadStudentState(initialProfile));
   React.useEffect(() => {
@@ -383,11 +451,11 @@ export function ProfileClient({
           <p>{profile.email}</p>
           <div>
             <span>
-              <GraduationCap size={18} /> {PROFILE_PRESENTATION.examLabel} · Mục tiêu{' '}
-              {profile.targetScore}+
+              <GraduationCap size={18} /> {gradeName(learning.grade)} · Mục tiêu{' '}
+              {score(learning.targetScore)} điểm
             </span>
             <span>
-              <BookOpen size={18} /> {PROFILE_PRESENTATION.subjects.join(' · ')}
+              <BookOpen size={18} /> {subjectName(learning.primarySubject)}
             </span>
           </div>
         </div>
@@ -409,34 +477,23 @@ export function ProfileClient({
               { label: 'Email', value: profile.email },
               { label: 'Ngày sinh', value: PROFILE_PRESENTATION.birthDate },
               { label: 'Trường', value: PROFILE_PRESENTATION.school },
-              { label: 'Lớp', value: profile.grade },
+              { label: 'Lớp', value: gradeName(learning.grade) },
             ]}
           />
         </section>
-        <section className={styles.infoCard}>
+        <section className={styles.infoCard} id="muc-tieu" data-testid="learning-goals">
           <CardHeader
             icon={<Target size={21} />}
             title="Mục tiêu học tập"
-            subtitle="Đặt mục tiêu để có động lực học tập mỗi ngày."
-            action={<GoalEditDialog state={state} onChange={setState} />}
+            subtitle="Lộ trình của em mở theo môn và lớp ở đây."
+            action={<LearningGoalsDialog goals={learning} />}
           />
           <DetailRows
             rows={[
-              { label: 'Kỳ thi', value: PROFILE_PRESENTATION.examLabel },
-              { label: 'Mục tiêu', value: `${profile.targetScore}+` },
-              {
-                label: 'Môn đang học',
-                value: (
-                  <>
-                    <span>3 môn</span>
-                    <span className={styles.subjects}>
-                      {PROFILE_PRESENTATION.subjects.map((subject) => (
-                        <i key={subject}>{subject}</i>
-                      ))}
-                    </span>
-                  </>
-                ),
-              },
+              { label: 'Môn ưu tiên', value: subjectName(learning.primarySubject) },
+              { label: 'Lớp', value: gradeName(learning.grade) },
+              { label: 'Điểm hiện tại', value: score(learning.currentScore) },
+              { label: 'Điểm muốn đạt', value: score(learning.targetScore) },
             ]}
           />
         </section>

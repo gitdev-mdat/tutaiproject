@@ -280,7 +280,8 @@
   font-size: 12px;
   font-weight: 700;
 }
-.editForm input {
+.editForm input,
+.editForm select {
   height: 42px;
   border: 1px solid #d9e2ee;
   border-radius: 10px;
@@ -290,7 +291,8 @@
   font-size: 13px;
   outline: none;
 }
-.editForm input:focus {
+.editForm input:focus,
+.editForm select:focus {
   border-color: #1463ff;
   box-shadow: 0 0 0 3px rgba(20, 99, 255, 0.1);
 }

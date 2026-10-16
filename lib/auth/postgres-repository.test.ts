@@ -23,6 +23,7 @@ import {
   resetPassword,
   resolveSession,
   revokeSession,
+  saveLearningGoals,
   saveOnboarding,
 } from './auth-service';
 import { importAuthSnapshot, parseSnapshot, validateSnapshot } from './import-json';
@@ -32,7 +33,11 @@ import { ACCOUNT_LINK_REQUIRES_VERIFICATION } from './errors';
 import { runGoogleLinkScenario } from './google-link.scenario';
 import { closeSql } from '@/lib/db/postgres';
 import { runMigrations } from '@/lib/db/migrations';
-import { ensureStudentAssignment, resolveStudentLifecycle } from '@/lib/student/lifecycle';
+import {
+  ensureStudentAssignment,
+  resolveAndEnsureStudentLifecycle,
+  resolveStudentLifecycle,
+} from '@/lib/student/lifecycle';
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
@@ -306,21 +311,58 @@ describe.skipIf(!TEST_DATABASE_URL).sequential('PostgreSQL auth store', () => {
     expect(lifecycle.enrollmentId).toBe(`enrollment:${session!.profile.id}:math-12-v1`);
   });
 
-  it('records a blocked assignment and clears it when the profile changes', async () => {
+  it('enrolls a student of any subject and grade, and keeps their learning goals editable', async () => {
     const user = await register();
-    await saveOnboarding(user.id, { ...onboarding, grade: '11' });
+    await saveOnboarding(user.id, { ...onboarding, grade: '11', primarySubject: 'PHYSICS' });
     const { token } = await createSession(user.id);
     const session = await resolveSession(token);
     const first = await ensureStudentAssignment(session!.profile.id);
     const second = await ensureStudentAssignment(session!.profile.id);
     expect(first).toEqual(second);
-    expect((await resolveStudentLifecycle(session)).state).toBe('ASSIGNMENT_BLOCKED');
+    const lifecycle = await resolveStudentLifecycle(session);
+    expect(lifecycle.state).toBe('AUTHENTICATED_ACTIVE_STUDENT');
+    expect(lifecycle.programVersionId).toBe('physics-11');
 
-    await saveOnboarding(user.id, onboarding);
-    await ensureStudentAssignment(session!.profile.id);
-    const attempts = await admin`
-      select * from tutai.assignment_attempts where student_id = ${session!.profile.id}`;
-    expect(attempts).toHaveLength(0);
+    await saveLearningGoals(user.id, {
+      grade: '12',
+      primarySubject: 'CHEMISTRY',
+      currentScore: '5,5',
+      targetScore: 9,
+    });
+    const [row] = await admin`
+      select p.grade, l.primary_subject, l.current_score, l.target_score
+      from tutai.student_profiles p join tutai.learning_profiles l on l.student_id = p.id
+      where p.user_id = ${user.id}`;
+    expect(row).toMatchObject({
+      grade: '12',
+      primary_subject: 'CHEMISTRY',
+      current_score: 5.5,
+      target_score: 9,
+    });
+    await expect(
+      saveLearningGoals(user.id, {
+        grade: '13',
+        primarySubject: 'MATH',
+        currentScore: 5,
+        targetScore: 8,
+      })
+    ).rejects.toMatchObject({ code: 'INVALID_LEARNING_GOALS' });
+  });
+
+  it('enrolls a student blocked by the former Mathematics-12-only rule', async () => {
+    const user = await register();
+    await saveOnboarding(user.id, { ...onboarding, primarySubject: 'BIOLOGY' });
+    const { token } = await createSession(user.id);
+    const session = await resolveSession(token);
+    await admin`
+      insert into tutai.assignment_attempts (student_id, profile_fingerprint, status, code,
+        retryable, incident_id, attempted_at)
+      values (${session!.profile.id}, 'legacy', 'blocked', 'NO_ELIGIBLE_PROGRAM', false,
+        'assignment:legacy', now())`;
+    expect((await resolveStudentLifecycle(session)).state).toBe('ASSIGNMENT_BLOCKED');
+    const lifecycle = await resolveAndEnsureStudentLifecycle(session);
+    expect(lifecycle.state).toBe('AUTHENTICATED_ACTIVE_STUDENT');
+    expect(lifecycle.programVersionId).toBe('biology-12');
   });
 
   it('resets a password once and signs the user out everywhere', async () => {

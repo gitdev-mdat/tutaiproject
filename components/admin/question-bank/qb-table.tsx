@@ -246,7 +246,7 @@ export function QuestionBankTable({
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm" role="grid" aria-label="Danh sách câu hỏi">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">

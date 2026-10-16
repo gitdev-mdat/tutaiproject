@@ -27,7 +27,14 @@ function normalizeNodeTitle(title: string): string {
     .toLowerCase();
 }
 
-function resolveSubjectId(node: KnowledgeTreeNode): SubjectId | undefined {
+/**
+ * The subject code (MATH, PHYSICS…) of a subject node, read from its id and
+ * title. The question bank, exams and the student's onboarding subject all use
+ * these codes; the Knowledge Tree names the subject node.
+ */
+export function resolveSubjectId(
+  node: Pick<KnowledgeTreeNode, 'id' | 'title'>
+): SubjectId | undefined {
   const identity = normalizeNodeTitle(`${node.id} ${node.title}`).replace(/đ/g, 'd');
   if (/\b(math|toan)\b/.test(identity)) return 'MATH';
   if (/\b(physics|vat ly|vat li)\b/.test(identity)) return 'PHYSICS';
@@ -36,7 +43,7 @@ function resolveSubjectId(node: KnowledgeTreeNode): SubjectId | undefined {
   return undefined;
 }
 
-function resolveGrade(title: string, id: string): Grade | undefined {
+export function resolveGrade(title: string, id: string): Grade | undefined {
   const match = `${title} ${id}`.match(/(?:^|\D)(10|11|12)(?:\D|$)/);
   return match ? (Number(match[1]) as Grade) : undefined;
 }

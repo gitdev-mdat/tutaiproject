@@ -69,8 +69,12 @@ export default function ProfileOnboardingPage() {
   const [error, setError] = React.useState('');
   const [scoreWarning, setScoreWarning] = React.useState('');
   const [scoreWarningAcknowledged, setScoreWarningAcknowledged] = React.useState(false);
+  const [blocked, setBlocked] = React.useState(false);
 
   React.useEffect(() => {
+    // Sent back here when the profile is complete but no Roadmap could be opened.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBlocked(new URLSearchParams(window.location.search).get('assignment') === 'blocked');
     const stored = readDraft();
     // Hydrate the client-only draft after mount; the server cannot access sessionStorage.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -253,6 +257,16 @@ export default function ProfileOnboardingPage() {
         onSubmit={submit}
         className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
       >
+        {blocked && !error ? (
+          <div
+            role="status"
+            data-testid="assignment-blocked"
+            className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800"
+          >
+            Tú Tài chưa mở được lộ trình cho hồ sơ này. Em kiểm tra lại thông tin rồi bấm Hoàn tất
+            lần nữa nhé.
+          </div>
+        ) : null}
         {error ? (
           <div
             role="alert"

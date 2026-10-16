@@ -1,13 +1,10 @@
-import type { Metadata } from 'next';
-import { AdminRoadmapEditor } from '@/features/roadmap/components/admin-roadmaps';
-export const metadata: Metadata = { title: 'Chỉnh sửa lộ trình | Tú Tài Admin' };
-export default async function Page({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ roadmapId: string }>;
-  searchParams: Promise<{ preview?: string }>;
-}) {
-  const [{ roadmapId }, query] = await Promise.all([params, searchParams]);
-  return <AdminRoadmapEditor roadmapId={roadmapId} initialPreview={query.preview === '1'} />;
+import { redirect } from 'next/navigation';
+
+/**
+ * The former roadmap editor kept its programs in server memory, linked to
+ * sample content and was never read by a student page. Students now receive
+ * the published curriculum directly; old links open the page that shows it.
+ */
+export default function Page() {
+  redirect('/admin/roadmaps');
 }
