@@ -202,12 +202,16 @@ export const lessonHref = (id: string) => `/student/lessons/${encodeURIComponent
 /**
  * Where a practice session was opened from, so its way back returns there.
  * The Roadmap is the default (its links, direct URLs and bookmarks); only the
- * lesson's own summary marks itself, with `from=lesson`. Nothing else in the
+ * lesson's own summary marks itself, with `from=lesson`, and the Practice page
+ * with `from=practice`. Nothing else in the
  * parameter is ever used as an address.
  */
-export type PracticeOrigin = 'roadmap' | 'lesson';
+export type PracticeOrigin = 'roadmap' | 'lesson' | 'practice';
 export const practiceOrigin = (value: unknown): PracticeOrigin =>
-  value === 'lesson' ? 'lesson' : 'roadmap';
+  value === 'lesson' ? 'lesson' : value === 'practice' ? 'practice' : 'roadmap';
+
+/** The Practice page (Luyện tập), where lesson and chapter sets are listed. */
+export const PRACTICE_HREF = '/student/practice';
 
 /** The lesson's last part (Tổng kết), where its practice is started from. */
 export const LESSON_SUMMARY_HASH = 'tong-ket';
@@ -216,7 +220,7 @@ export const lessonSummaryHref = (id: string) => `${lessonHref(id)}#${LESSON_SUM
 export function practiceHref(id: string, attemptId?: string, from: PracticeOrigin = 'roadmap') {
   const query = new URLSearchParams();
   if (attemptId) query.set('attempt', attemptId);
-  if (from === 'lesson') query.set('from', 'lesson');
+  if (from !== 'roadmap') query.set('from', from);
   const search = query.toString();
   return `${lessonHref(id)}/practice${search ? `?${search}` : ''}`;
 }

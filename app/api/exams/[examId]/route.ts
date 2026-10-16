@@ -4,7 +4,14 @@ import { getQuestion } from '@/lib/question-bank/qb-storage';
 import type { Question } from '@/lib/question-bank/qb-types';
 import { GRADE_VALUES, SUBJECT_ID_VALUES } from '@/lib/question-bank/qb-types';
 import { isSelectableQuestion } from '@/lib/exams/exam-selection';
-import { deleteExam, getExam, publishExam, saveExam } from '@/lib/exams/exam-storage';
+import {
+  deleteExam,
+  getExam,
+  publishExam,
+  saveExam,
+  updateExamAccess,
+} from '@/lib/exams/exam-storage';
+import { parseExamAccess } from '@/lib/exams/exam-access';
 import type { ExamDraftInput, ExamRecord } from '@/lib/exams/exam-types';
 import { adminApiGuard } from '@/lib/auth/admin';
 
@@ -95,7 +102,20 @@ export async function PUT(request: Request, context: { params: Promise<{ examId:
     if (!isRecord(parsed)) {
       return NextResponse.json({ error: 'INVALID_REQUEST_BODY' }, { status: 400 });
     }
-    const body = parsed as Partial<ExamDraftInput> & { action?: 'PUBLISH' };
+    const body = parsed as Partial<ExamDraftInput> & { action?: 'PUBLISH' | 'SET_ACCESS' };
+
+    // Access (Free or Plus) and the curator's note can change at any time,
+    // including after publishing: they are not part of the published content.
+    if (body.action === 'SET_ACCESS') {
+      const access = parseExamAccess(body, existing);
+      if (!access.ok) {
+        return NextResponse.json(
+          { error: 'INVALID_ACCESS', message: access.message },
+          { status: 422 }
+        );
+      }
+      return NextResponse.json(await updateExamAccess(examId, access.value));
+    }
 
     if (body.action === 'PUBLISH') {
       if (existing.publishStatus === 'PUBLISHED' && existing.publishedSnapshot) {
@@ -155,8 +175,18 @@ export async function PUT(request: Request, context: { params: Promise<{ examId:
       return NextResponse.json({ error: 'INVALID_DURATION' }, { status: 422 });
     }
 
+    const access = parseExamAccess(body, existing);
+    if (!access.ok) {
+      return NextResponse.json(
+        { error: 'INVALID_ACCESS', message: access.message },
+        { status: 422 }
+      );
+    }
+
     const updated: ExamRecord = {
       ...existing,
+      accessTier: access.value.accessTier,
+      curatorNote: access.value.curatorNote,
       name,
       subjectId: body.subjectId ?? existing.subjectId,
       grade: body.grade ?? existing.grade,

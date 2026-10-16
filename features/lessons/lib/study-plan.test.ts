@@ -198,6 +198,10 @@ describe('labels and helpers', () => {
     for (const value of [undefined, '', 'roadmap', 'https://evil.example', '//evil', ['lesson']])
       expect(practiceOrigin(value)).toBe('roadmap');
     expect(practiceOrigin('lesson')).toBe('lesson');
+    expect(practiceOrigin('practice')).toBe('practice');
+    expect(practiceHref('a', undefined, 'practice')).toBe(
+      '/student/lessons/a/practice?from=practice'
+    );
   });
 });
 

@@ -7,7 +7,9 @@ import { OrderStatus, PaymentMethod, PlusOrder, PlusSubscription } from './payme
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'mock-orders.json');
-const SUBSCRIPTIONS_FILE = path.join(DATA_DIR, 'mock-subscriptions.json');
+// TUTAI_SUBSCRIPTIONS_FILE points tests at an isolated copy, like TUTAI_EXAMS_FILE.
+const SUBSCRIPTIONS_FILE =
+  process.env.TUTAI_SUBSCRIPTIONS_FILE ?? path.join(DATA_DIR, 'mock-subscriptions.json');
 
 // Ensure files exist
 function ensureDBFiles() {

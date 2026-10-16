@@ -64,7 +64,7 @@ async function lessonStats(): Promise<Map<string, LessonCoverage['students']>> {
   >`
     select lesson_id, count(*)::int as attempts, count(distinct student_id)::int as students,
       avg(correct_count::float / total_count) filter (where status = 'COMPLETED') as average
-    from tutai.practice_attempts group by lesson_id`;
+    from tutai.practice_attempts where mode in ('LESSON', 'MISTAKES') group by lesson_id`;
   return new Map(
     rows.map((row) => [
       row.lesson_id,
@@ -80,7 +80,7 @@ async function questionStats(
   const rows = await getSql()<{ question_id: string; answers: number; correct: number }[]>`
     select x.question_id, count(*)::int as answers, count(*) filter (where x.is_correct)::int as correct
     from tutai.practice_answers x join tutai.practice_attempts a on a.id = x.attempt_id
-    where a.lesson_id = ${lessonId} group by x.question_id`;
+    where a.lesson_id = ${lessonId} and a.mode in ('LESSON', 'MISTAKES') group by x.question_id`;
   return new Map(
     rows.map((row) => [row.question_id, { answers: row.answers, correct: row.correct }])
   );

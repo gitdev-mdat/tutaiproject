@@ -5,6 +5,7 @@ import { getSql } from '@/lib/db/postgres';
 import { getQuestion, listQuestions } from '@/lib/question-bank/qb-storage';
 import type { Question } from '@/lib/question-bank/qb-types';
 import { getVisibleLessonArticle } from '@/lib/knowledge-tree/knowledge-tree-service';
+import { hasPlusAccess } from '@/lib/access/plus-access';
 import {
   gradePracticeResponse,
   parsePracticeResponse,
@@ -28,7 +29,11 @@ import {
  * server, and attempts and answers are stored in PostgreSQL.
  */
 
-export type PracticeMode = 'LESSON' | 'MISTAKES';
+/**
+ * LESSON and MISTAKES belong to one lesson. CHAPTER and SYNTHESIS are the
+ * chapter-wide sets of `practice-sets.ts`; their lesson_id is the chapter id.
+ */
+export type PracticeMode = 'LESSON' | 'MISTAKES' | 'CHAPTER' | 'SYNTHESIS';
 
 export class PracticeError extends Error {
   constructor(
@@ -67,14 +72,14 @@ export type AttemptView = {
   feedback: Record<string, PracticeFeedback>;
 };
 
-function requireDatabase() {
+export function requireDatabase() {
   if (!process.env.DATABASE_URL) {
     throw new PracticeError(503, 'Luyện tập cần kết nối cơ sở dữ liệu.');
   }
   return getSql();
 }
 
-type AttemptRow = {
+export type AttemptRow = {
   id: string;
   student_id: string;
   lesson_id: string;
@@ -88,7 +93,7 @@ type AttemptRow = {
   answered_count?: number;
 };
 
-function summarize(row: AttemptRow): AttemptSummary {
+export function summarize(row: AttemptRow): AttemptSummary {
   return {
     id: row.id,
     lessonId: row.lesson_id,
@@ -136,6 +141,7 @@ export async function getLessonPracticeOverview(
     select a.*, (select count(*) from tutai.practice_answers x where x.attempt_id = a.id)::int as answered_count
     from tutai.practice_attempts a
     where a.student_id = ${studentId} and a.lesson_id = ${lessonId}
+      and a.mode in ('LESSON', 'MISTAKES')
     order by a.started_at desc`;
   const attempts = rows.map(summarize);
   const completed = attempts.filter((a) => a.status === 'COMPLETED');
@@ -190,6 +196,7 @@ export async function getStudentLessonSummaries(
     select a.*, (select count(*) from tutai.practice_answers x where x.attempt_id = a.id)::int as answered_count
     from tutai.practice_attempts a
     where a.student_id = ${studentId} and a.lesson_id in ${sql(lessonIds)}
+      and a.mode in ('LESSON', 'MISTAKES')
     order by a.started_at desc`;
   const newest = new Set<string>();
   for (const attempt of rows.map(summarize)) {
@@ -256,7 +263,8 @@ export async function startPracticeAttempt(
     if (!fromAttemptId) throw new PracticeError(400, 'Thiếu lượt làm cần luyện lại.');
     const [source] = await sql<AttemptRow[]>`
       select * from tutai.practice_attempts
-      where id = ${fromAttemptId} and student_id = ${studentId} and lesson_id = ${lessonId}`;
+      where id = ${fromAttemptId} and student_id = ${studentId} and lesson_id = ${lessonId}
+        and mode in ('LESSON', 'MISTAKES')`;
     if (!source || source.status !== 'COMPLETED') {
       throw new PracticeError(404, 'Không tìm thấy lượt làm đã hoàn thành.');
     }
@@ -284,14 +292,24 @@ export async function startPracticeAttempt(
   return { attempt: summarize(row), questions: picked.map(toPracticeQuestion), feedback: {} };
 }
 
+export const PLUS_REQUIRED_MESSAGE = 'Bộ Tổng hợp dành cho tài khoản Tú Tài Plus.';
+
+/**
+ * The student's own attempt. A "Tổng hợp" attempt holds Plus questions, so
+ * its questions, answers and solutions are served only while the student has
+ * Plus, whatever page or request asks for them.
+ */
 async function ownedAttempt(sql: ReturnType<typeof getSql>, studentId: string, attemptId: string) {
   const [row] = await sql<AttemptRow[]>`
     select * from tutai.practice_attempts where id = ${attemptId} and student_id = ${studentId}`;
   if (!row) throw new PracticeError(404, 'Không tìm thấy lượt luyện tập.');
+  if (row.mode === 'SYNTHESIS' && !(await hasPlusAccess(studentId))) {
+    throw new PracticeError(403, PLUS_REQUIRED_MESSAGE);
+  }
   return row;
 }
 
-async function attemptQuestions(ids: string[]): Promise<Map<string, Question>> {
+export async function attemptQuestions(ids: string[]): Promise<Map<string, Question>> {
   const found = await Promise.all(ids.map((id) => getQuestion(id)));
   return new Map(found.filter((q): q is Question => q !== null).map((q) => [q.id, q]));
 }

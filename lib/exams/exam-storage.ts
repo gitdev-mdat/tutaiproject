@@ -3,6 +3,11 @@ import 'server-only';
 import { randomUUID } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import {
+  readContentDocument,
+  updateContentDocument,
+  type ContentDocumentSource,
+} from '@/lib/content/document-store';
 import type { Question } from '@/lib/question-bank/qb-types';
 import { isSelectableQuestion } from './exam-selection';
 import type { ExamRecord, PublishedExamSnapshot } from './exam-types';
@@ -17,31 +22,49 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-async function readExams(): Promise<ExamRecord[]> {
+function normalize(records: Array<ExamRecord & Record<string, unknown>>): ExamRecord[] {
+  return records.map((record) => {
+    const normalized = { ...record };
+    // Remove the legacy per-question blueprint cache; replacements derive live taxonomy.
+    delete normalized.selectionCriteriaByQuestionId;
+    return normalized;
+  });
+}
+
+async function readExamsFile(): Promise<ExamRecord[]> {
   const file = examsFile();
   try {
-    const parsed = JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file, 'utf8')) as Array<
-      ExamRecord & Record<string, unknown>
-    >;
-    return parsed.map((record) => {
-      const normalized = { ...record };
-      // Remove the legacy per-question blueprint cache; replacements derive live taxonomy.
-      delete normalized.selectionCriteriaByQuestionId;
-      return normalized;
-    });
+    return JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file, 'utf8')) as ExamRecord[];
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
     throw error;
   }
 }
 
-async function writeExams(exams: ExamRecord[]): Promise<void> {
+async function writeExamsFile(exams: ExamRecord[]): Promise<void> {
   const file = examsFile();
   const directory = path.dirname(file);
   await fs.mkdir(/* turbopackIgnore: true */ directory, { recursive: true });
   const temporary = `${file}.${randomUUID()}.tmp`;
   await fs.writeFile(/* turbopackIgnore: true */ temporary, JSON.stringify(exams, null, 2), 'utf8');
   await fs.rename(/* turbopackIgnore: true */ temporary, /* turbopackIgnore: true */ file);
+}
+
+/**
+ * Exams live in the content document store like the question bank: a row of
+ * tutai.content_documents when DATABASE_URL is set (durable on Vercel), the
+ * JSON file otherwise (local development and tests).
+ */
+const examsDocument: ContentDocumentSource<ExamRecord[]> = {
+  key: 'exams/exams',
+  readFile: readExamsFile,
+  writeFile: writeExamsFile,
+};
+
+async function readExams(): Promise<ExamRecord[]> {
+  return normalize(
+    (await readContentDocument(examsDocument)) as Array<ExamRecord & Record<string, unknown>>
+  );
 }
 
 async function mutate<T>(operation: (exams: ExamRecord[]) => Promise<T> | T): Promise<T> {
@@ -55,9 +78,12 @@ async function mutate<T>(operation: (exams: ExamRecord[]) => Promise<T> | T): Pr
     .catch(() => undefined)
     .then(async () => {
       try {
-        const exams = await readExams();
-        const value = await operation(exams);
-        await writeExams(exams);
+        let value!: T;
+        await updateContentDocument(examsDocument, async (current) => {
+          const exams = normalize(current as Array<ExamRecord & Record<string, unknown>>);
+          value = await operation(exams);
+          return exams;
+        });
         resolveResult(value);
       } catch (error: unknown) {
         rejectResult(error);
@@ -168,5 +194,29 @@ export async function publishExam(
     };
     exams[index] = published;
     return clone(published);
+  });
+}
+
+/**
+ * Who may take an exam, and the editor's note shown on a Plus exam. These are
+ * access settings, not exam content, so they can change after publishing; the
+ * published questions and answers stay untouched.
+ */
+export async function updateExamAccess(
+  id: string,
+  access: Pick<ExamRecord, 'accessTier' | 'curatorNote'>
+): Promise<ExamRecord> {
+  return mutate((exams) => {
+    const index = exams.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error('EXAM_NOT_FOUND');
+    const next: ExamRecord = {
+      ...exams[index],
+      accessTier: access.accessTier,
+      curatorNote: access.curatorNote,
+      updatedAt: new Date().toISOString(),
+    };
+    if (!next.curatorNote) delete next.curatorNote;
+    exams[index] = next;
+    return clone(next);
   });
 }
