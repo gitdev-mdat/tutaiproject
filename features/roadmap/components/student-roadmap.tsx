@@ -23,6 +23,7 @@ import {
   pickNextStep,
   planProgress,
   programHref,
+  ROADMAP_HREF,
   standingLabel,
   type LessonStanding,
   type NextStep,
@@ -30,6 +31,16 @@ import {
   type Summaries,
 } from '@/features/lessons/lib/study-plan';
 import type { LessonProgressState } from '@/features/lessons/lib/lesson-progress';
+import type { ProgramBasis } from '@/features/lessons/lib/program-match';
+
+/** Why the Roadmap shows this program; see program-match. */
+export interface RoadmapChoice {
+  basis: ProgramBasis;
+  /** The program the profile asks for, e.g. "Vật lý 12". */
+  requested: string | null;
+  /** The published program the profile leads to. */
+  profileProgram: { id: string; title: string } | null;
+}
 
 /**
  * The Roadmap is the student's one place to learn: every published program
@@ -48,11 +59,13 @@ import type { LessonProgressState } from '@/features/lessons/lib/lesson-progress
 export function StudentRoadmap({
   programs,
   program: scope,
+  choice,
   summaries,
   targetScore,
 }: {
   programs: StudyScope[];
   program: StudyScope | null;
+  choice?: RoadmapChoice;
   summaries: Summaries | null;
   targetScore: number | null;
 }) {
@@ -88,6 +101,7 @@ export function StudentRoadmap({
           targetScore={targetScore}
           tabs={tabs}
         />
+        {choice && <ProgramBasisNote choice={choice} title={scope.title} />}
         <div
           aria-hidden="true"
           className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]"
@@ -115,6 +129,7 @@ export function StudentRoadmap({
         tabs={tabs}
         journey={{ scope, standings, completed, total, currentLessonId: step?.lesson.id ?? null }}
       />
+      {choice && <ProgramBasisNote choice={choice} title={scope.title} />}
       {summaries === null && (
         <p className="mt-3 text-[13px] text-amber-800" role="status">
           Chưa tải được kết quả luyện tập. Bước tiếp theo đang dựa trên phần em đã đọc.
@@ -133,6 +148,64 @@ export function StudentRoadmap({
         />
       </div>
     </Page>
+  );
+}
+
+/**
+ * Why the student sees this program, in their words: what in their profile
+ * chose it, or why another program stands in. Says plainly that the
+ * self-reported scores set a goal and do not skip any lesson.
+ */
+function ProgramBasisNote({ choice, title }: { choice: RoadmapChoice; title: string }) {
+  const { basis, requested, profileProgram } = choice;
+  let text: string;
+  if (basis === 'PROFILE')
+    text = `Chọn theo hồ sơ của em: ${requested ?? title}. Các bài theo thứ tự chương trình; bước tiếp theo đổi theo bài em đã học và kết quả luyện tập.`;
+  else if (basis === 'OTHER_GRADE')
+    text = `Hồ sơ của em là ${requested}, nhưng chương trình lớp đó chưa mở. Em đang học ${title}, chương trình gần nhất của cùng môn.`;
+  else if (basis === 'NO_SUBJECT_PROGRAM')
+    text = `${requested ? `Môn ${requested} em chọn` : 'Môn em chọn'} chưa có bài nào được mở. Trong lúc chờ, em có thể học ${title}. Khi có bài, lộ trình sẽ tự mở đúng môn của em.`;
+  else
+    text = profileProgram
+      ? `Em đang xem ${title}. Lộ trình theo hồ sơ của em là ${profileProgram.title}.`
+      : `Em đang xem ${title}.`;
+  return (
+    <div
+      className="mt-3 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[13px] leading-5 text-slate-600 sm:flex-row sm:items-center sm:justify-between"
+      data-testid="roadmap-basis"
+      data-basis={basis}
+    >
+      <p className="flex min-w-0 gap-2">
+        <Info className="mt-0.5 size-4 shrink-0 text-blue-600" aria-hidden="true" />
+        <span>
+          {text}
+          {basis !== 'CHOSEN' && (
+            <span className="text-slate-500">
+              {' '}
+              Tú Tài chưa kiểm tra trình độ đầu vào, nên điểm em nhập chỉ là mục tiêu, không dùng để
+              bỏ qua bài nào.
+            </span>
+          )}
+        </span>
+      </p>
+      {basis === 'CHOSEN' && profileProgram ? (
+        <Link
+          href={ROADMAP_HREF}
+          className="shrink-0 font-semibold text-blue-700 hover:underline"
+          data-testid="roadmap-basis-back"
+        >
+          Về lộ trình của em
+        </Link>
+      ) : (
+        <Link
+          href="/student/profile#muc-tieu"
+          className="shrink-0 font-semibold text-blue-700 hover:underline"
+          data-testid="roadmap-basis-edit"
+        >
+          Đổi môn, lớp hoặc mục tiêu
+        </Link>
+      )}
+    </div>
   );
 }
 

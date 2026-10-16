@@ -1,6 +1,5 @@
 import 'server-only';
 
-import { createHash } from 'node:crypto';
 import { getOwnedRoadmap, initializeOwnedRoadmap } from '@/features/roadmap/lib/roadmap-storage';
 import {
   getAuthRepository,
@@ -56,46 +55,21 @@ export function isOnboardingComplete(
   );
 }
 
-const fingerprint = (profile: StoredStudentProfile, learning: StudentLearningProfile) =>
-  createHash('sha256')
-    .update(
-      JSON.stringify([
-        profile.grade,
-        learning.primarySubject,
-        learning.currentScore,
-        learning.targetScore,
-      ])
-    )
-    .digest('hex');
-
 /** Decides the assignment from the student's current state. Pure; the repository applies it atomically. */
 export function planStudentAssignment(
   studentId: string,
-  { profile, learning, enrollment, attempts }: AssignmentState,
+  { profile, learning, enrollment }: AssignmentState,
   now = new Date().toISOString()
 ): AssignmentPlan {
   if (!profile || !isOnboardingComplete(profile, learning))
     throw new Error('INVALID_ONBOARDING_PROFILE');
   if (enrollment) return { kind: 'existing', enrollment, targetScore: learning!.targetScore! };
-  const key = fingerprint(profile, learning!);
-  if (profile.grade !== '12' || learning!.primarySubject !== 'MATH') {
-    const blocked = attempts.find((item) => item.profileFingerprint === key) ?? {
-      studentId,
-      profileFingerprint: key,
-      status: 'blocked' as const,
-      code: 'NO_ELIGIBLE_PROGRAM' as const,
-      retryable: false,
-      incidentId: `assignment:${studentId}:${key.slice(0, 12)}`,
-      attemptedAt: now,
-    };
-    return { kind: 'blocked', blocked };
-  }
   return {
     kind: 'enroll',
     enrollment: {
-      id: `enrollment:${studentId}:math-12-v1`,
+      id: `enrollment:${studentId}:${programVersionFor(profile, learning!)}`,
       studentId,
-      programVersionId: 'math-12-v1',
+      programVersionId: programVersionFor(profile, learning!),
       status: 'active',
       assignedAt: now,
     },
@@ -103,7 +77,23 @@ export function planStudentAssignment(
   };
 }
 
-/** Deterministic, idempotent assignment. The currently published curriculum is Mathematics grade 12. */
+/**
+ * The program a student is enrolled in: their declared subject and grade.
+ * Mathematics grade 12 keeps its original id. The Roadmap reads the published
+ * Knowledge Tree for the matching program on every visit (program-match), so
+ * a student whose program is not published yet is enrolled anyway and gets it
+ * as soon as the admin publishes it, instead of being blocked at onboarding.
+ */
+export function programVersionFor(
+  profile: Pick<StoredStudentProfile, 'grade'>,
+  learning: Pick<StudentLearningProfile, 'primarySubject'>
+): string {
+  const subject = (learning.primarySubject ?? 'unknown').toLowerCase();
+  const grade = /^\d+$/.test(profile.grade ?? '') ? profile.grade : 'other';
+  return subject === 'math' && grade === '12' ? 'math-12-v1' : `${subject}-${grade}`;
+}
+
+/** Deterministic, idempotent assignment of every student with a complete onboarding. */
 export async function ensureStudentAssignment(studentId: string) {
   const plan = await (
     await getAuthRepository()
@@ -160,7 +150,10 @@ export async function resolveAndEnsureStudentLifecycle(
   if (
     session &&
     (lifecycle.state === 'AUTHENTICATED_READY_FOR_ASSIGNMENT' ||
-      lifecycle.state === 'AUTHENTICATED_PROGRAM_ASSIGNED')
+      lifecycle.state === 'AUTHENTICATED_PROGRAM_ASSIGNED' ||
+      // Students blocked by the former Mathematics-12-only rule are enrolled now.
+      (lifecycle.state === 'ASSIGNMENT_BLOCKED' &&
+        lifecycle.blocked?.code === 'NO_ELIGIBLE_PROGRAM'))
   ) {
     await ensureStudentAssignment(session.profile.id);
     lifecycle = await resolveStudentLifecycle(session);

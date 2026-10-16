@@ -23,7 +23,10 @@ function StatusBadge({ status }: { status: ExamRecord['publishStatus'] }) {
   );
 }
 
-export function ExamsPage() {
+/** An exam's curriculum coverage, from its questions (lib/exams/exam-coverage). */
+export type ExamCoverageLabel = { summary: string; chapters: string[] };
+
+export function ExamsPage({ coverage = {} }: { coverage?: Record<string, ExamCoverageLabel> }) {
   const [exams, setExams] = React.useState<ExamRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -46,7 +49,8 @@ export function ExamsPage() {
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold tracking-tight text-slate-900">Đề thi</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Biên soạn, sắp xếp và xuất bản đề từ các câu hỏi chuẩn hóa trong ngân hàng.
+            Ghép đề tính giờ từ câu đã xuất bản trong Ngân hàng câu hỏi. Phạm vi kiến thức của đề
+            lấy từ bài mà mỗi câu được gắn trên cây, nên một đề có thể phủ nhiều chương.
           </p>
         </div>
         <Button nativeButton={false} render={<Link href="/admin/exams/new" />}>
@@ -65,11 +69,12 @@ export function ExamsPage() {
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[860px] text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">Tên đề</th>
                 <th className="px-3 py-3">Môn / Lớp</th>
+                <th className="px-3 py-3">Phạm vi kiến thức</th>
                 <th className="px-3 py-3">Cấu trúc</th>
                 <th className="px-3 py-3">Trạng thái</th>
                 <th className="px-4 py-3 text-right">Cập nhật</th>
@@ -78,13 +83,13 @@ export function ExamsPage() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="h-64 px-4 text-center text-sm text-slate-500">
+                  <td colSpan={6} className="h-64 px-4 text-center text-sm text-slate-500">
                     Đang tải danh sách đề…
                   </td>
                 </tr>
               ) : exams.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="h-64 px-4 text-center">
+                  <td colSpan={6} className="h-64 px-4 text-center">
                     <span className="mx-auto grid size-10 place-items-center rounded-xl bg-slate-100 text-slate-500">
                       <FileText className="size-5" aria-hidden="true" />
                     </span>
@@ -128,6 +133,19 @@ export function ExamsPage() {
                     <td className="px-3 py-3 text-xs text-slate-600">
                       {exam.subjectId ? SUBJECT_LABELS[exam.subjectId] : 'Chưa chọn'}
                       {exam.grade ? ` · Lớp ${exam.grade}` : ''}
+                    </td>
+                    <td
+                      className="max-w-[240px] px-3 py-3 text-xs text-slate-600"
+                      data-testid="exam-coverage"
+                    >
+                      <span className="font-semibold text-slate-800">
+                        {coverage[exam.id]?.summary ?? '—'}
+                      </span>
+                      {coverage[exam.id]?.chapters.length ? (
+                        <span className="mt-0.5 block truncate text-slate-500">
+                          {coverage[exam.id].chapters.join(' · ')}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-3 text-xs text-slate-600">
                       {exam.questionIds.length} câu

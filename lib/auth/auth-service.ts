@@ -349,6 +349,48 @@ export async function saveOnboarding(
   });
 }
 
+export const GRADE_CHOICES = ['10', '11', '12', 'Khác'] as const;
+
+/**
+ * Changes the learning goals a student gave at onboarding: grade, the subject
+ * to improve and the self-reported scores. The Roadmap reads these on every
+ * visit, so the change shows there at once. Only a finished profile can be
+ * updated; the rest of onboarding is not touched.
+ */
+export async function saveLearningGoals(
+  userId: string,
+  input: {
+    grade: unknown;
+    primarySubject: unknown;
+    currentScore: unknown;
+    targetScore: unknown;
+  }
+): Promise<void> {
+  const currentScore = parseOnboardingScore(input.currentScore);
+  const targetScore = parseOnboardingScore(input.targetScore);
+  const grade = typeof input.grade === 'string' ? input.grade.trim() : '';
+  if (
+    !(GRADE_CHOICES as readonly string[]).includes(grade) ||
+    !isPrimarySubjectCode(input.primarySubject) ||
+    currentScore === null ||
+    targetScore === null
+  )
+    throw new AuthError('INVALID_LEARNING_GOALS', 'Chọn lớp, môn và nhập điểm từ 0 đến 10.', 400);
+  const repository = await getAuthRepository();
+  const student = await repository.findStudentByUserId(userId);
+  if (!student?.profile.onboardingCompletedAt)
+    throw new AuthError('INCOMPLETE_ONBOARDING', 'Em cần hoàn thành hồ sơ trước.', 409);
+  await repository.saveLearningGoals(userId, {
+    grade,
+    learning: {
+      primarySubject: input.primarySubject,
+      currentScore,
+      targetScore,
+      updatedAt: new Date().toISOString(),
+    },
+  });
+}
+
 /** Returns null without creating a token when the account or client asked too often. */
 export async function requestPasswordReset(
   identifierInput: string,

@@ -304,6 +304,24 @@ const repository: AuthRepository = {
     });
   },
 
+  async saveLearningGoals(userId, { grade, learning }) {
+    await getSql().begin(async (tx) => {
+      const [updated] = await tx`
+        update tutai.student_profiles set grade = ${grade}, updated_at = ${learning.updatedAt}
+        where user_id = ${userId}
+        returning id`;
+      if (!updated) throw new AuthError('PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.', 404);
+      const [learningRow] = await tx`
+        update tutai.learning_profiles set
+          primary_subject = ${learning.primarySubject}, current_score = ${learning.currentScore},
+          target_score = ${learning.targetScore}, updated_at = ${learning.updatedAt}
+        where student_id = ${updated.id as string}
+        returning student_id`;
+      if (!learningRow)
+        throw new AuthError('PROFILE_INCOMPLETE', 'Hồ sơ chưa được khởi tạo đầy đủ.', 500);
+    });
+  },
+
   async createPasswordReset(identifier, record) {
     const rows = await getSql()`
       insert into tutai.password_resets (id, user_id, token_hash, expires_at, used_at, created_at)

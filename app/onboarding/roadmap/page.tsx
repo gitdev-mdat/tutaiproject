@@ -1,8 +1,10 @@
-import { isDemoStudentAuthenticated } from '@/lib/auth/demo-session';
-import { RoadmapResultClient } from './roadmap-result-client';
+import { redirect } from 'next/navigation';
 
-export default async function GeneratedRoadmapPage() {
-  const isAuthenticated = await isDemoStudentAuthenticated();
-
-  return <RoadmapResultClient isAuthenticated={isAuthenticated} />;
+/**
+ * Onboarding is the three-step profile form. This earlier pre-registration
+ * step kept answers in the browser only and showed a sample roadmap that no
+ * student received, so it opens the form instead.
+ */
+export default function Page() {
+  redirect('/onboarding/profile');
 }

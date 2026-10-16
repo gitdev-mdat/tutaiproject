@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, GraduationCap, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
+import { GraduationCap, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -55,7 +55,7 @@ export function AdminSidebarUtilities({
     <div className="space-y-1" aria-label="Tiện ích quản trị">
       <UtilityTooltip collapsed={collapsed} label="Xem giao diện học sinh">
         <Link
-          href="/student/dashboard"
+          href="/student/roadmap"
           className={`${utilityClass} ${contentClass}`}
           aria-label="Xem giao diện học sinh"
         >
@@ -99,20 +99,6 @@ export function AdminSidebarUtilities({
         </button>
       </UtilityTooltip>
 
-      <UtilityTooltip collapsed={collapsed} label="Thông báo, 3 thông báo mới">
-        <button
-          type="button"
-          className={`${utilityClass} ${contentClass} relative`}
-          aria-label="Thông báo, 3 thông báo mới"
-        >
-          <span className="relative">
-            <Bell className="size-4" />
-            <span className="absolute -right-1 -top-1 size-2 rounded-full bg-red-500 ring-2 ring-white" />
-          </span>
-          <span className={collapsed ? 'sr-only' : ''}>Thông báo</span>
-        </button>
-      </UtilityTooltip>
-
       <DropdownMenu>
         <DropdownMenuTrigger
           className={`${utilityClass} ${contentClass}`}
@@ -128,10 +114,7 @@ export function AdminSidebarUtilities({
         <DropdownMenuContent align="end" side="right" className="w-52">
           <DropdownMenuLabel className="font-normal">
             <p className="text-sm font-semibold text-slate-900">Quản trị viên</p>
-            <p className="text-xs text-slate-500">admin@tutai.vn</p>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/admin/settings" />}>Cài đặt</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout} className="text-red-600">
             Đăng xuất

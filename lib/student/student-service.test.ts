@@ -42,7 +42,6 @@ describe('resolveStudentShellModel', () => {
     const hrefs = model.destinations.map((destination) => destination.href);
 
     expect(hrefs).toEqual([
-      '/student/dashboard',
       '/student/roadmap',
       '/student/practice',
       '/student/exams',

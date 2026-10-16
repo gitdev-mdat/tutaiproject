@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { requireDemoStudentSession } from '@/lib/auth/demo-session';
 import { GOOGLE_LINK_ERRORS } from '@/lib/auth/errors';
 import { getAuthSession } from '@/lib/auth/session';
-import { ProfileClient, type GoogleLinkState } from './profile-client';
+import { ProfileClient, type GoogleLinkState, type LearningGoals } from './profile-client';
 
 export const metadata: Metadata = {
   title: 'Hồ sơ',
@@ -40,5 +40,11 @@ export default async function ProfilePage({
     notice: params.google === 'linked' ? 'Đã liên kết Google với tài khoản của em.' : null,
     error: errorCode ? googleErrorMessage(errorCode) : null,
   };
-  return <ProfileClient initialProfile={profile} google={google} />;
+  const learning: LearningGoals = {
+    grade: session?.profile.grade ?? '',
+    primarySubject: session?.learning?.primarySubject ?? null,
+    currentScore: session?.learning?.currentScore ?? null,
+    targetScore: session?.learning?.targetScore ?? null,
+  };
+  return <ProfileClient initialProfile={profile} google={google} learning={learning} />;
 }

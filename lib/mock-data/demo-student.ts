@@ -23,15 +23,6 @@ export const DEMO_STUDENT: StudentProfile = {
 // Only verified, routable student destinations are exposed here. Adding a
 // destination requires a corresponding real route under app/student/**.
 const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
-  {
-    id: 'dashboard',
-    group: 'learn',
-    hint: 'Hôm nay học gì',
-    title: 'Trang chủ',
-    href: '/student/dashboard',
-    description: 'Tổng quan học tập hôm nay',
-    keywords: ['dashboard', 'tổng quan', 'trang chủ'],
-  },
   // The one place to learn: every published lesson by subject and chapter,
   // the next step and progress. Lessons (/student/lessons/…) open from it.
   {

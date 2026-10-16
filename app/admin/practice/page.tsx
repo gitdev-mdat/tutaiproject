@@ -71,12 +71,19 @@ export default async function PracticeCoveragePage() {
     groups.set(key, [...(groups.get(key) ?? []), lesson]);
   }
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
       <div>
         <h1 className="text-xl font-bold tracking-tight text-slate-900">Luyện tập theo bài</h1>
         <p className="mt-0.5 max-w-2xl text-sm text-slate-500">
           Sau mỗi bài học, học sinh làm các câu đã xuất bản gắn với bài đó. Mỗi câu cần đáp án và
           lời giải do người soạn kiểm tra.
+        </p>
+        <p className="mt-1 max-w-2xl text-xs text-slate-500" data-testid="practice-source-note">
+          Trang này không giữ câu hỏi riêng: câu soạn ở đây được lưu trong{' '}
+          <Link href="/admin/question-bank" className="font-semibold text-blue-700 hover:underline">
+            Ngân hàng câu hỏi
+          </Link>{' '}
+          và gắn vào bài trên cây. Ôn chương và Tổng hợp tự lấy câu từ các bài của chương.
         </p>
       </div>
 

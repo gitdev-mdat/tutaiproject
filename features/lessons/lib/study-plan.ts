@@ -37,6 +37,7 @@ export interface StudyScope {
   subjectId: string;
   subjectTitle: string;
   gradeId: string;
+  gradeTitle: string;
   chapters: { id: string; title: string; lessons: LearningLesson[] }[];
   lessons: LearningLesson[];
 }
@@ -60,6 +61,7 @@ export function learningPrograms(catalog: LearningSubject[]): StudyScope[] {
           subjectId: subject.id,
           subjectTitle: subject.title,
           gradeId: grade.id,
+          gradeTitle: grade.title,
           chapters: grade.chapters,
           lessons,
         };
@@ -116,15 +118,15 @@ export function scopeLessonsFor(catalog: LearningSubject[], lessonId: string): L
 
 export const ROADMAP_HREF = '/student/roadmap';
 
-/** The journey page, open on this program. The default program has the plain URL. */
+/**
+ * The journey page, open on this program. The plain URL opens the program of
+ * the student's own profile (see program-match), so a link to one particular
+ * program always names it.
+ */
 export function programHref(
   program: Pick<StudyScope, 'subjectId' | 'gradeId'> | null | undefined
 ): string {
-  if (
-    !program ||
-    (program.subjectId === ROADMAP_PROGRAM.subjectId && program.gradeId === ROADMAP_PROGRAM.gradeId)
-  )
-    return ROADMAP_HREF;
+  if (!program) return ROADMAP_HREF;
   return `${ROADMAP_HREF}?subject=${encodeURIComponent(program.subjectId)}&grade=${encodeURIComponent(program.gradeId)}`;
 }
 

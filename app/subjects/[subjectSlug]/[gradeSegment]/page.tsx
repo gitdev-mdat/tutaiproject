@@ -132,7 +132,7 @@ export default async function SubjectGradePage({ params }: Props) {
     {
       Icon: Map,
       title: 'Lộ trình',
-      description: 'Lộ trình cá nhân hóa theo năng lực của em.',
+      description: 'Lộ trình theo chương trình đã mở, bước tiếp theo theo kết quả của em.',
       href: `/student/roadmap`,
     },
     {
