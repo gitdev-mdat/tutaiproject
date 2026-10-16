@@ -8,19 +8,20 @@ import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
 import { getLearningCatalog } from '@/lib/knowledge-tree/knowledge-tree-service';
 import { getDemoStudentSession } from '@/lib/auth/demo-session';
 import { getStudentLessonSummaries } from '@/lib/practice/practice-service';
-import { programFor, ROADMAP_HREF } from '@/features/lessons/lib/study-plan';
+import { practiceOrigin, programFor, ROADMAP_HREF } from '@/features/lessons/lib/study-plan';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Luyện tập | Tú Tài' };
 
 type Props = {
   params: Promise<{ lessonId: string }>;
-  searchParams: Promise<{ attempt?: string }>;
+  /** `from=lesson` when opened from the lesson's summary; anything else means the Roadmap. */
+  searchParams: Promise<{ attempt?: string; from?: string }>;
 };
 
 export default async function LessonPracticePage({ params, searchParams }: Props) {
   const lessonId = decodeURIComponent((await params).lessonId);
-  const { attempt } = await searchParams;
+  const { attempt, from } = await searchParams;
   const catalog = await getLearningCatalog();
   const found = findLessonInCatalog(catalog, lessonId);
   if (!found) {
@@ -63,6 +64,7 @@ export default async function LessonPracticePage({ params, searchParams }: Props
       <PracticeSession
         lesson={{ id: lesson.id, title: lesson.title, chapterTitle: lesson.chapterTitle }}
         program={program}
+        origin={practiceOrigin(from)}
         summaries={summaries}
         initialAttemptId={attempt ?? null}
       />

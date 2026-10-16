@@ -198,8 +198,28 @@ export interface NextStep {
 }
 
 export const lessonHref = (id: string) => `/student/lessons/${encodeURIComponent(id)}`;
-export const practiceHref = (id: string, attemptId?: string) =>
-  `${lessonHref(id)}/practice${attemptId ? `?attempt=${encodeURIComponent(attemptId)}` : ''}`;
+
+/**
+ * Where a practice session was opened from, so its way back returns there.
+ * The Roadmap is the default (its links, direct URLs and bookmarks); only the
+ * lesson's own summary marks itself, with `from=lesson`. Nothing else in the
+ * parameter is ever used as an address.
+ */
+export type PracticeOrigin = 'roadmap' | 'lesson';
+export const practiceOrigin = (value: unknown): PracticeOrigin =>
+  value === 'lesson' ? 'lesson' : 'roadmap';
+
+/** The lesson's last part (Tổng kết), where its practice is started from. */
+export const LESSON_SUMMARY_HASH = 'tong-ket';
+export const lessonSummaryHref = (id: string) => `${lessonHref(id)}#${LESSON_SUMMARY_HASH}`;
+
+export function practiceHref(id: string, attemptId?: string, from: PracticeOrigin = 'roadmap') {
+  const query = new URLSearchParams();
+  if (attemptId) query.set('attempt', attemptId);
+  if (from === 'lesson') query.set('from', 'lesson');
+  const search = query.toString();
+  return `${lessonHref(id)}/practice${search ? `?${search}` : ''}`;
+}
 
 /**
  * The single next step, in the order a teacher would ask:
@@ -279,21 +299,6 @@ export function pickNextStep(
         : 'Bài tiếp theo em chưa hoàn thành, theo thứ tự của chương trình.',
     href: lessonHref(next.id),
   };
-}
-
-/** The first lesson after `lessonId`, in curriculum order, that is not completed. */
-export function nextFreshLesson(
-  lessons: LearningLesson[],
-  progress: LessonProgressState | null,
-  summaries: Summaries,
-  lessonId: string
-): LearningLesson | null {
-  const index = lessons.findIndex((lesson) => lesson.id === lessonId);
-  return (
-    lessons
-      .slice(index + 1)
-      .find((lesson) => !lessonStanding(lesson.id, progress, summaries).completed) ?? null
-  );
 }
 
 /** Lessons completed out of all lessons in scope; nothing is estimated. */

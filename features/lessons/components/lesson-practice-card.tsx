@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
 import { useStudentShell } from '@/components/student/student-shell';
 import type { LessonPracticeOverview } from '@/lib/practice/practice-service';
-import { JourneyCheckpoint } from '@/features/roadmap/components/journey-checkpoint';
 import { useLessonProgress } from '../lib/lesson-progress';
 import {
   pickNextStep,
+  practiceHref,
   programHref,
   type NextStep,
   type StudyScope,
@@ -21,23 +21,18 @@ const primaryClass =
 const linkClass =
   'inline-flex min-h-10 items-center gap-1 rounded-lg text-[14px] font-semibold text-slate-600 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
 
-const later = (action: Action): Action => ({
-  ...action,
-  label: `Để sau, ${action.label.charAt(0).toLocaleLowerCase('vi-VN')}${action.label.slice(1)}`,
-});
-
 /** The label of a button that takes the student to the plan's next step. */
 export function nextStepLabel(step: NextStep) {
   return `${step.cta}: ${step.lesson.title}`;
 }
 
 /**
- * What to do after the lesson, as one decision: where the lesson leaves the
- * student on their journey (the Roadmap's progress, updated), a status line
- * about the lesson's practice, one primary action and at most one quiet
- * alternative. Practice comes first until it is passed; then the plan's next
- * step does, chosen by the same rule as the Roadmap
- * (features/lessons/lib/study-plan).
+ * The end of the lesson, about this lesson only: its practice, with one
+ * primary action and at most one quiet alternative. Practice comes first until
+ * it is passed; then the plan's next step does, chosen by the Roadmap's rule
+ * (features/lessons/lib/study-plan). The journey as a whole (progress across
+ * lessons, what else is open) belongs to the Roadmap and is not repeated here:
+ * the lesson's header already leads back to it.
  */
 export function LessonNextStep({
   lessonId,
@@ -53,7 +48,8 @@ export function LessonNextStep({
 }) {
   const { model } = useStudentShell();
   const progress = useLessonProgress(model.identity.id);
-  const practiceHref = `/student/lessons/${encodeURIComponent(lessonId)}/practice`;
+  // Practice opened from here comes back here (the lesson's summary).
+  const practice = (attemptId?: string) => practiceHref(lessonId, attemptId, 'lesson');
   const lessons = program?.lessons ?? [];
   const plan = progress ? pickNextStep(lessons, progress, summaries, { exclude: lessonId }) : null;
   const nextStep: Action = plan
@@ -82,31 +78,28 @@ export function LessonNextStep({
       title = 'Em đang luyện tập dở';
       detail = `Đã làm ${inProgress!.answeredCount}/${inProgress!.totalCount} câu. Bài làm được lưu, em làm tiếp từ câu đang dừng.`;
       primary = {
-        href: `${practiceHref}?attempt=${inProgress!.id}`,
+        href: practice(inProgress!.id),
         label: 'Làm tiếp luyện tập',
         testId: 'practice-continue',
       };
-      if (plan) links.push(later(nextStep));
       break;
     case 'ready':
       title = 'Luyện tập để hoàn thành bài';
       detail = `${overview!.questionCount} câu, chấm ngay từng câu và có lời giải. Đạt 80% là bài này hoàn thành.`;
-      primary = { href: practiceHref, label: 'Bắt đầu luyện tập', testId: 'practice-start' };
-      if (plan) links.push(later(nextStep));
+      primary = { href: practice(), label: 'Bắt đầu luyện tập', testId: 'practice-start' };
       break;
     case 'retry':
-      // Failed: try again, or first look at what went wrong. Moving on stays
-      // one tap away on the Roadmap, but it is not what this moment calls for.
+      // Failed: try again, or first look at what went wrong.
       title = 'Luyện thêm để hoàn thành bài';
       detail = (
         <>
           Tốt nhất <BestScore overview={overview!} /> · cần đạt 80%.
         </>
       );
-      primary = { href: practiceHref, label: 'Luyện tập lại', testId: 'practice-start' };
+      primary = { href: practice(), label: 'Luyện tập lại', testId: 'practice-start' };
       if (overview!.lastCompleted)
         links.push({
-          href: `${practiceHref}?attempt=${overview!.lastCompleted.id}`,
+          href: practice(overview!.lastCompleted.id),
           label: 'Xem lại bài đã làm',
           testId: 'practice-review',
         });
@@ -119,16 +112,16 @@ export function LessonNextStep({
         </>
       );
       primary = nextStep;
-      links.push({ href: practiceHref, label: 'Luyện tập lại', testId: 'practice-start' });
+      links.push({ href: practice(), label: 'Luyện tập lại', testId: 'practice-start' });
       break;
     case 'empty':
-      title = 'Em đã học xong bài này';
-      detail = 'Bài này chưa có câu luyện tập, nên học hết bài là hoàn thành.';
+      title = 'Bài này đã hoàn thành';
+      detail = 'Bài chưa có câu luyện tập, nên học hết bài là hoàn thành.';
       primary = nextStep;
       break;
     default:
-      title = 'Em đã học xong bài này';
-      detail = 'Chưa tải được phần luyện tập. Em tải lại trang sau ít phút nhé.';
+      title = 'Chưa tải được phần luyện tập';
+      detail = 'Em tải lại trang sau ít phút nhé.';
       primary = nextStep;
   }
 
@@ -136,21 +129,13 @@ export function LessonNextStep({
     <section
       id="luyen-tap"
       aria-labelledby="next-step-title"
-      className="scroll-mt-24 overflow-hidden rounded-2xl border border-[#DCE6F7] bg-[#F4F8FF]"
+      className="scroll-mt-24 rounded-2xl border border-[#DCE6F7] bg-[#F4F8FF]"
       data-testid="lesson-practice-card"
       data-state={state === 'passed' || state === 'retry' ? 'done' : state}
     >
-      {program && progress && (
-        <JourneyCheckpoint
-          program={program}
-          progress={progress}
-          summaries={summaries}
-          lessonId={lessonId}
-        />
-      )}
       <div className="p-5 sm:p-6">
         <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">
-          Bước tiếp theo
+          {state === 'passed' || state === 'empty' ? 'Bước tiếp theo' : 'Luyện tập bài này'}
         </p>
         <h3
           id="next-step-title"

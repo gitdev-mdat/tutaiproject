@@ -3,13 +3,15 @@ import type { LearningLesson, LearningSubject } from '@/lib/knowledge-tree/learn
 import type { LessonProgressState } from './lesson-progress';
 import {
   lessonStanding,
-  nextFreshLesson,
   pickNextStep,
   planProgress,
   roadmapScope,
   scopeLessonsFor,
   standingLabel,
   learningPrograms,
+  lessonSummaryHref,
+  practiceHref,
+  practiceOrigin,
   programFor,
   programHref,
   selectProgram,
@@ -185,8 +187,17 @@ describe('labels and helpers', () => {
     }
   });
 
-  it('finds the next lesson after one, and keeps the Roadmap context in links', () => {
-    expect(nextFreshLesson(lessons, fresh, withQuestions, 'a')?.id).toBe('b');
+  it('links practice with where it was opened from, and nothing else', () => {
+    expect(practiceHref('a')).toBe('/student/lessons/a/practice');
+    expect(practiceHref('a', 'pa-1')).toBe('/student/lessons/a/practice?attempt=pa-1');
+    expect(practiceHref('a', 'pa-1', 'lesson')).toBe(
+      '/student/lessons/a/practice?attempt=pa-1&from=lesson'
+    );
+    expect(practiceHref('a', undefined, 'lesson')).toBe('/student/lessons/a/practice?from=lesson');
+    expect(lessonSummaryHref('a')).toBe('/student/lessons/a#tong-ket');
+    for (const value of [undefined, '', 'roadmap', 'https://evil.example', '//evil', ['lesson']])
+      expect(practiceOrigin(value)).toBe('roadmap');
+    expect(practiceOrigin('lesson')).toBe('lesson');
   });
 });
 

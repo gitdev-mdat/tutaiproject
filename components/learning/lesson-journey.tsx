@@ -28,6 +28,7 @@ import {
   restoreStageIndex,
   useLessonProgress,
 } from '@/features/lessons/lib/lesson-progress';
+import { LESSON_SUMMARY_HASH } from '@/features/lessons/lib/study-plan';
 import { FunctionGraph, VariationTable } from './function-graph';
 import { AssistContext, LessonAssist, type AssistSettings } from './lesson-assist';
 import { QuickCheck } from './quick-check';
@@ -111,12 +112,17 @@ function StudentJourney(props: LessonJourneyProps) {
     if (studentKey) recordLessonViewed(studentKey, lessonId);
   }, [studentKey, lessonId]);
 
-  // Saved progress is read after mount; adopt it once, during render.
+  // Saved progress is read after mount; adopt it once, during render. A
+  // lesson in progress resumes where the student stopped. A lesson already
+  // learned opens at the start to be read again, every part open and nothing
+  // reset, except when the way back from its practice asks for the summary.
   if (!restored && progress) {
-    const index = restoreStageIndex(saved, stageIds, journey.legacyStageIds);
+    const atSummary = window.location.hash === `#${LESSON_SUMMARY_HASH}`;
+    const index =
+      learned && !atSummary ? 0 : restoreStageIndex(saved, stageIds, journey.legacyStageIds);
     setOpened(index);
     setCurrent(index);
-    setResumedAt(index > 0 ? index : null);
+    setResumedAt(learned || index > 0 ? index : null);
     setRestored(true);
   }
 

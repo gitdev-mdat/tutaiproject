@@ -7,6 +7,7 @@ import {
   BookOpen,
   Check,
   ChevronDown,
+  ChevronRight,
   ClipboardCheck,
   Flag,
   Info,
@@ -19,7 +20,6 @@ import { useLessonProgress } from '@/features/lessons/lib/lesson-progress';
 import {
   lessonHref,
   lessonStanding,
-  nextFreshLesson,
   pickNextStep,
   planProgress,
   programHref,
@@ -122,13 +122,7 @@ export function StudentRoadmap({
       )}
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="lg:sticky lg:top-6">
-          <NextStepCard
-            step={step}
-            scope={scope}
-            progress={progress}
-            summaries={safeSummaries}
-            standings={standings}
-          />
+          <NextStepCard step={step} scope={scope} standings={standings} />
         </div>
         <JourneyMap
           scope={scope}
@@ -330,14 +324,10 @@ function HeroArt({ subject }: { subject: string }) {
 function NextStepCard({
   step,
   scope,
-  progress,
-  summaries,
   standings,
 }: {
   step: NextStep | null;
   scope: StudyScope;
-  progress: LessonProgressState;
-  summaries: Summaries;
   standings: Map<string, LessonStanding>;
 }) {
   if (!step)
@@ -366,19 +356,14 @@ function NextStepCard({
 
   const position = scope.lessons.findIndex((lesson) => lesson.id === step.lesson.id) + 1;
   const chapterIndex = scope.chapters.findIndex((c) => c.id === step.lesson.chapterId) + 1;
+  // When the step is this lesson's practice, the lesson itself stays one tap
+  // away: reading it again never costs an attempt or resets anything. Moving
+  // on to another lesson is the map's job, right below.
   let alternative: { href: string; label: string } | null = null;
-  if (step.kind === 'practice') {
-    const later = nextFreshLesson(scope.lessons, progress, summaries, step.lesson.id);
-    if (later)
-      alternative = {
-        href: lessonHref(later.id),
-        label: `Để sau, học bài tiếp: ${later.title}`,
-      };
+  if (step.kind === 'practice' || step.kind === 'resume-practice') {
+    alternative = { href: lessonHref(step.lesson.id), label: 'Xem lại bài học' };
   } else if (step.kind === 'retry') {
-    alternative = {
-      href: lessonHref(step.lesson.id),
-      label: 'Ôn lại bài trước khi luyện',
-    };
+    alternative = { href: lessonHref(step.lesson.id), label: 'Ôn lại bài trước khi luyện' };
   }
   const standing = standings.get(step.lesson.id)!;
 
@@ -734,10 +719,16 @@ function Stop({
             {isNext && <span className="sr-only"> (bước tiếp theo)</span>}
           </span>
         </span>
-        {isNext && (
+        {isNext ? (
           <span className="shrink-0 rounded-full bg-[#0052FF] px-2 py-0.5 text-[11px] font-bold text-white">
             Em ở đây
           </span>
+        ) : (
+          // Every stop opens its lesson, finished ones included: to read again.
+          <ChevronRight
+            className="size-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-500"
+            aria-hidden="true"
+          />
         )}
       </Link>
     </li>
