@@ -5,7 +5,7 @@ import { getSql } from '@/lib/db/postgres';
 import { getQuestion, listQuestions } from '@/lib/question-bank/qb-storage';
 import type { Question } from '@/lib/question-bank/qb-types';
 import { getVisibleLessonArticle } from '@/lib/knowledge-tree/knowledge-tree-service';
-import { hasPlusAccess } from '@/lib/access/plus-access';
+import { getPremiumAccess } from '@/lib/access/premium-access';
 import {
   gradePracticeResponse,
   parsePracticeResponse,
@@ -303,7 +303,7 @@ async function ownedAttempt(sql: ReturnType<typeof getSql>, studentId: string, a
   const [row] = await sql<AttemptRow[]>`
     select * from tutai.practice_attempts where id = ${attemptId} and student_id = ${studentId}`;
   if (!row) throw new PracticeError(404, 'Không tìm thấy lượt luyện tập.');
-  if (row.mode === 'SYNTHESIS' && !(await hasPlusAccess(studentId))) {
+  if (row.mode === 'SYNTHESIS' && !(await getPremiumAccess(studentId)).allowed) {
     throw new PracticeError(403, PLUS_REQUIRED_MESSAGE);
   }
   return row;

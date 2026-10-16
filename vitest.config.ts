@@ -21,6 +21,7 @@ export default defineConfig({
       'lib/content-import/**/*.test.ts',
       'lib/admin/**/*.test.ts',
       'lib/auth/**/*.test.ts',
+      'lib/access/**/*.test.ts',
       'lib/db/**/*.test.ts',
       'lib/practice/**/*.test.ts',
       'lib/learning/**/*.test.ts',

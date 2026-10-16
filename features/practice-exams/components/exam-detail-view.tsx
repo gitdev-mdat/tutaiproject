@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Clock3, ListChecks, Lock, Timer } from 'lucide-react';
 import type { StudentExamDetail } from '@/lib/exams/student-exam-service';
 import { EXAM_SCOPE_LABELS } from '@/lib/exams/student-exam-rules';
+import { AdminPreviewTag } from './admin-preview-note';
 import { DifficultyLadder } from './difficulty-ladder';
 import { PLUS_SURFACE, PlusRibbon, PlusTexture } from './plus-mark';
 import { StartExamButton } from './start-exam-button';
@@ -47,9 +48,10 @@ export function ExamDetailView({ detail }: { detail: StudentExamDetail }) {
         )}
         <div className="relative">
           <p
-            className={`text-[12px] font-extrabold uppercase tracking-[0.14em] ${plus ? 'text-[#F5B83D]' : 'text-[#0052FF]'}`}
+            className={`flex flex-wrap items-center gap-2 text-[12px] font-extrabold uppercase tracking-[0.14em] ${plus ? 'text-[#F5B83D]' : 'text-[#0052FF]'}`}
           >
             {plus ? 'Đề tuyển chọn · Tú Tài Plus' : EXAM_SCOPE_LABELS[exam.scope]}
+            {detail.previewAsAdmin && <AdminPreviewTag />}
           </p>
           <h1
             className={`mt-1.5 pr-10 text-[24px] font-extrabold leading-tight tracking-tight sm:text-[30px] ${plus ? 'text-white' : 'text-[#091224]'}`}

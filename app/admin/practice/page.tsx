@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { getPracticeCoverage, type LessonCoverage } from '@/lib/practice/practice-admin';
 import { Chip, READINESS } from '@/components/admin/practice/practice-labels';
+import { PremiumReadinessPanel } from '@/components/admin/practice/premium-readiness-panel';
+import { getPremiumReadiness } from '@/lib/practice/premium-readiness-service';
 
 export const metadata: Metadata = { title: 'Luyện tập theo bài | Tú Tài Admin' };
 export const dynamic = 'force-dynamic';
@@ -61,7 +63,7 @@ function LessonRow({ lesson }: { lesson: LessonCoverage }) {
 }
 
 export default async function PracticeCoveragePage() {
-  const lessons = await getPracticeCoverage();
+  const [lessons, readiness] = await Promise.all([getPracticeCoverage(), getPremiumReadiness()]);
   const open = lessons.filter((l) => l.publication === 'PUBLISHED');
   const groups = new Map<string, LessonCoverage[]>();
   for (const lesson of lessons) {
@@ -127,6 +129,8 @@ export default async function PracticeCoveragePage() {
           </section>
         ))
       )}
+
+      <PremiumReadinessPanel readiness={readiness} />
     </div>
   );
 }
