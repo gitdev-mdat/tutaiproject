@@ -22,41 +22,110 @@ import {
 
 export type Summaries = Record<string, LessonPracticeSummary>;
 
-/** The program the Roadmap follows: the published Mathematics grade 12 curriculum (math-12-v1). */
+/** The program the Roadmap opens on by default: the published Mathematics grade 12 curriculum (math-12-v1). */
 export const ROADMAP_PROGRAM = { subjectId: 'subj_math', gradeId: 'grade_12', title: 'Toán 12' };
 
+/**
+ * One program of the learning journey: a subject's published lessons for one
+ * grade, in curriculum order. Every published lesson belongs to exactly one.
+ */
 export interface StudyScope {
+  /** `${subjectId}:${gradeId}` */
+  id: string;
+  /** "Toán 12", "Vật lí 12". */
   title: string;
   subjectId: string;
+  subjectTitle: string;
+  gradeId: string;
   chapters: { id: string; title: string; lessons: LearningLesson[] }[];
   lessons: LearningLesson[];
 }
 
-/** The Roadmap's lessons, in curriculum order; null when nothing is published for the program. */
-export function roadmapScope(catalog: LearningSubject[]): StudyScope | null {
-  const subject =
-    catalog.find((item) => item.id === ROADMAP_PROGRAM.subjectId) ??
-    catalog.find((item) => item.title.toLocaleLowerCase('vi-VN').startsWith('toán'));
-  if (!subject) return null;
-  const grades = subject.grades.some((grade) => grade.id === ROADMAP_PROGRAM.gradeId)
-    ? subject.grades.filter((grade) => grade.id === ROADMAP_PROGRAM.gradeId)
-    : subject.grades;
-  const chapters = grades.flatMap((grade) => grade.chapters);
-  const lessons = chapters.flatMap((chapter) => chapter.lessons);
-  if (!lessons.length) return null;
-  return { title: ROADMAP_PROGRAM.title, subjectId: subject.id, chapters, lessons };
+/** "Toán học" + "Lớp 12" → "Toán 12"; other subjects keep their name. */
+export function programTitle(subjectTitle: string, gradeTitle: string) {
+  const subject = subjectTitle.replace(/^Toán học$/i, 'Toán');
+  const grade = gradeTitle.match(/\d+/)?.[0];
+  return grade ? `${subject} ${grade}` : `${subject} · ${gradeTitle}`;
 }
 
-/** The lessons a lesson's "next step" is chosen from: the Roadmap's when it is in it, else its subject's. */
-export function scopeLessonsFor(catalog: LearningSubject[], lessonId: string): LearningLesson[] {
-  const roadmap = roadmapScope(catalog);
-  if (roadmap?.lessons.some((lesson) => lesson.id === lessonId)) return roadmap.lessons;
-  const subject = catalog.find((item) =>
-    item.grades.some((grade) =>
-      grade.chapters.some((chapter) => chapter.lessons.some((lesson) => lesson.id === lessonId))
-    )
+/** Every program with published lessons, in catalog order. */
+export function learningPrograms(catalog: LearningSubject[]): StudyScope[] {
+  return catalog.flatMap((subject) =>
+    subject.grades
+      .map((grade) => {
+        const lessons = grade.chapters.flatMap((chapter) => chapter.lessons);
+        return {
+          id: `${subject.id}:${grade.id}`,
+          title: programTitle(subject.title, grade.title),
+          subjectId: subject.id,
+          subjectTitle: subject.title,
+          gradeId: grade.id,
+          chapters: grade.chapters,
+          lessons,
+        };
+      })
+      .filter((program) => program.lessons.length > 0)
   );
-  return subject ? subject.grades.flatMap((g) => g.chapters.flatMap((c) => c.lessons)) : [];
+}
+
+/** The program shown when none is asked for: Mathematics grade 12, else the first one. */
+export function defaultProgram(programs: StudyScope[]): StudyScope | null {
+  return (
+    programs.find(
+      (p) => p.subjectId === ROADMAP_PROGRAM.subjectId && p.gradeId === ROADMAP_PROGRAM.gradeId
+    ) ??
+    programs.find((p) => p.subjectTitle.toLocaleLowerCase('vi-VN').startsWith('toán')) ??
+    programs[0] ??
+    null
+  );
+}
+
+/** The program a link asks for (`?subject=…&grade=…`), falling back to the default. */
+export function selectProgram(
+  programs: StudyScope[],
+  subjectId?: string | null,
+  gradeId?: string | null
+): StudyScope | null {
+  const ofSubject = programs.filter((p) => p.subjectId === subjectId);
+  return (
+    ofSubject.find((p) => p.gradeId === gradeId) ??
+    // A subject alone (old /student/lessons?subject= links) opens its highest grade.
+    ofSubject[ofSubject.length - 1] ??
+    defaultProgram(programs)
+  );
+}
+
+/** The Roadmap's default program; null when nothing is published. */
+export function roadmapScope(catalog: LearningSubject[]): StudyScope | null {
+  return defaultProgram(learningPrograms(catalog));
+}
+
+/** The program a lesson belongs to. */
+export function programFor(catalog: LearningSubject[], lessonId: string): StudyScope | null {
+  return (
+    learningPrograms(catalog).find((program) =>
+      program.lessons.some((lesson) => lesson.id === lessonId)
+    ) ?? null
+  );
+}
+
+/** The lessons a lesson's "next step" is chosen from: those of its own program. */
+export function scopeLessonsFor(catalog: LearningSubject[], lessonId: string): LearningLesson[] {
+  return programFor(catalog, lessonId)?.lessons ?? [];
+}
+
+export const ROADMAP_HREF = '/student/roadmap';
+
+/** The journey page, open on this program. The default program has the plain URL. */
+export function programHref(
+  program: Pick<StudyScope, 'subjectId' | 'gradeId'> | null | undefined
+): string {
+  if (
+    !program ||
+    (program.subjectId === ROADMAP_PROGRAM.subjectId && program.gradeId === ROADMAP_PROGRAM.gradeId)
+  )
+    return ROADMAP_HREF;
+  return `${ROADMAP_HREF}?subject=${encodeURIComponent(program.subjectId)}&grade=${encodeURIComponent(program.gradeId)}`;
 }
 
 export interface LessonStanding {
@@ -131,12 +200,6 @@ export interface NextStep {
 export const lessonHref = (id: string) => `/student/lessons/${encodeURIComponent(id)}`;
 export const practiceHref = (id: string, attemptId?: string) =>
   `${lessonHref(id)}/practice${attemptId ? `?attempt=${encodeURIComponent(attemptId)}` : ''}`;
-
-/** Adds `from=roadmap` so the lesson and practice pages lead back to the Roadmap. */
-export function withFrom(href: string, from: 'roadmap' | null | undefined) {
-  if (from !== 'roadmap') return href;
-  return `${href}${href.includes('?') ? '&' : '?'}from=roadmap`;
-}
 
 /**
  * The single next step, in the order a teacher would ask:

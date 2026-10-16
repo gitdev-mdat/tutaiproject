@@ -61,8 +61,10 @@ export interface LessonJourneyProps {
   subjectTitle: string;
   chapterTitle: string;
   backHref: string | null;
-  /** What the back link says: where the student came from ("Bài học" or "Lộ trình"). */
+  /** What the back link says: the journey the lesson belongs to ("Hành trình Toán 12"). */
   backLabel?: string;
+  /** Where the lesson sits in that journey: "Chương 1 · Bài 2/3". */
+  trail?: string;
   journey: Journey;
   checks: PracticeQuestion[];
   practice: LessonPracticeOverview | null;
@@ -236,19 +238,35 @@ function LessonHeader(
       }`}
     >
       <div className="min-w-0 max-w-[720px]">
-        <p className="ml-12 flex min-h-10 min-w-0 items-center gap-1.5 text-[13px] text-slate-500 sm:text-[14px] lg:ml-0 lg:min-h-0">
+        {/* The way back is the journey itself, in the Roadmap's colours: the
+            lesson reads as a stop on it, not as a separate page. */}
+        <p className="ml-12 flex min-h-10 min-w-0 items-center gap-2 text-[13px] text-slate-500 lg:ml-0 lg:min-h-0">
           {props.backHref && (
-            <>
-              <Link
-                href={props.backHref}
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg py-1.5 font-semibold hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <ArrowLeft className="size-4" aria-hidden="true" /> {props.backLabel ?? 'Bài học'}
-              </Link>
-              <span aria-hidden="true">·</span>
-            </>
+            <Link
+              href={props.backHref}
+              className="inline-flex h-8 min-w-0 shrink items-center gap-1.5 rounded-full bg-[#0A1F5C] pl-2.5 pr-3.5 font-semibold text-white transition-colors hover:bg-[#15307A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              data-testid="journey-back"
+            >
+              <ArrowLeft className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">{props.backLabel ?? 'Lộ trình'}</span>
+            </Link>
           )}
-          <span className="truncate">{props.chapterTitle || props.subjectTitle}</span>
+          {/* The admin preview shows the same header, without leaving the editor. */}
+          {!props.backHref && props.mode === 'preview' && props.backLabel && (
+            <span className="inline-flex h-8 min-w-0 shrink items-center rounded-full bg-[#0A1F5C] px-3.5 font-semibold text-white">
+              <span className="truncate">{props.backLabel}</span>
+            </span>
+          )}
+          <span className="min-w-0 shrink-0 truncate" data-testid="lesson-trail">
+            {props.trail ? (
+              <>
+                {props.trail}
+                <span className="hidden @2xl:inline"> · {props.chapterTitle}</span>
+              </>
+            ) : (
+              props.chapterTitle || props.subjectTitle
+            )}
+          </span>
         </p>
         <h1 className="mt-1 text-[22px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[26px]">
           {props.title}

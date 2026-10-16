@@ -4,7 +4,6 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  BookOpen,
   LayoutDashboard,
   Map,
   User,
@@ -21,7 +20,6 @@ import type { StudentDestination, StudentShellModel } from '@/lib/student/types'
 const DESTINATION_ICONS: Record<string, typeof LayoutDashboard> = {
   dashboard: LayoutDashboard,
   roadmap: Map,
-  lessons: BookOpen,
   practice: Dumbbell,
   exams: FileText,
   rankings: Trophy,
@@ -29,13 +27,16 @@ const DESTINATION_ICONS: Record<string, typeof LayoutDashboard> = {
   profile: User,
 };
 
-function isDestinationActive(pathname: string, href: string): boolean {
+function isDestinationActive(pathname: string, destination: StudentDestination): boolean {
+  const { href } = destination;
   if (href === '/student/dashboard') {
     // Treat the bare /student redirect target as part of the dashboard destination
     // without letting it ambiguously activate any other entry.
     return pathname === href || pathname === '/student' || pathname.startsWith(href + '/');
   }
-  return pathname === href || pathname.startsWith(href + '/');
+  return [href, ...(destination.includes ?? [])].some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/')
+  );
 }
 
 export function StudentSidebar({
@@ -56,7 +57,7 @@ export function StudentSidebar({
   const extra = inGroup('extra');
   const compete = inGroup('compete');
   const profile = inGroup('account')[0];
-  const profileActive = profile ? isDestinationActive(pathname, profile.href) : false;
+  const profileActive = profile ? isDestinationActive(pathname, profile) : false;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -123,7 +124,7 @@ export function StudentSidebar({
             className="absolute bottom-6 left-[27px] top-6 w-px bg-gradient-to-b from-blue-200 via-blue-100 to-transparent"
           />
           {learn.map((item) => {
-            const isActive = isDestinationActive(pathname, item.href);
+            const isActive = isDestinationActive(pathname, item);
             const Icon = DESTINATION_ICONS[item.id] ?? Map;
             return (
               <li key={item.id} className="relative">
@@ -175,7 +176,7 @@ export function StudentSidebar({
                 </p>
                 <ul className="space-y-0.5">
                   {section.items.map((item) => {
-                    const isActive = isDestinationActive(pathname, item.href);
+                    const isActive = isDestinationActive(pathname, item);
                     const Icon = DESTINATION_ICONS[item.id] ?? Map;
                     return (
                       <li key={item.id}>

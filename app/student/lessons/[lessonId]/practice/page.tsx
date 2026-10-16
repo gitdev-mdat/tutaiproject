@@ -8,19 +8,19 @@ import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
 import { getLearningCatalog } from '@/lib/knowledge-tree/knowledge-tree-service';
 import { getDemoStudentSession } from '@/lib/auth/demo-session';
 import { getStudentLessonSummaries } from '@/lib/practice/practice-service';
-import { scopeLessonsFor } from '@/features/lessons/lib/study-plan';
+import { programFor, ROADMAP_HREF } from '@/features/lessons/lib/study-plan';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Luyện tập | Tú Tài' };
 
 type Props = {
   params: Promise<{ lessonId: string }>;
-  searchParams: Promise<{ attempt?: string; from?: string }>;
+  searchParams: Promise<{ attempt?: string }>;
 };
 
 export default async function LessonPracticePage({ params, searchParams }: Props) {
   const lessonId = decodeURIComponent((await params).lessonId);
-  const { attempt, from } = await searchParams;
+  const { attempt } = await searchParams;
   const catalog = await getLearningCatalog();
   const found = findLessonInCatalog(catalog, lessonId);
   if (!found) {
@@ -33,17 +33,18 @@ export default async function LessonPracticePage({ params, searchParams }: Props
           Bài học này chưa mở
         </h1>
         <Link
-          href="/student/lessons"
+          href={ROADMAP_HREF}
           className="mt-6 inline-flex h-11 items-center rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white"
         >
-          Về danh sách bài học
+          Về lộ trình
         </Link>
       </div>
     );
   }
   const { lesson } = found;
-  // The next step after practice is chosen by the Roadmap's rule, from these lessons.
-  const scope = scopeLessonsFor(catalog, lesson.id);
+  // The next step after practice is chosen by the Roadmap's rule, from the lesson's program.
+  const program = programFor(catalog, lesson.id);
+  const scope = program?.lessons ?? [];
   const student = await getDemoStudentSession();
   const summaries = student
     ? await getStudentLessonSummaries(
@@ -61,10 +62,9 @@ export default async function LessonPracticePage({ params, searchParams }: Props
     >
       <PracticeSession
         lesson={{ id: lesson.id, title: lesson.title, chapterTitle: lesson.chapterTitle }}
-        lessons={scope}
+        program={program}
         summaries={summaries}
         initialAttemptId={attempt ?? null}
-        from={from === 'roadmap' ? 'roadmap' : null}
       />
     </AssistProvider>
   );

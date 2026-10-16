@@ -44,7 +44,6 @@ describe('resolveStudentShellModel', () => {
     expect(hrefs).toEqual([
       '/student/dashboard',
       '/student/roadmap',
-      '/student/lessons',
       '/student/practice',
       '/student/exams',
       '/student/rankings',
@@ -73,6 +72,12 @@ describe('searchStudentDestinations', () => {
   it('returns every destination for an empty query', () => {
     expect(searchStudentDestinations(destinations, '')).toHaveLength(destinations.length);
     expect(searchStudentDestinations(destinations, '   ')).toHaveLength(destinations.length);
+  });
+
+  it('finds lessons under the Roadmap, the one place to learn', () => {
+    const result = searchStudentDestinations(destinations, 'bài học');
+    expect(result.map((destination) => destination.href)).toContain('/student/roadmap');
+    expect(result.map((destination) => destination.href)).not.toContain('/student/lessons');
   });
 
   it('filters destinations by title, description, or keywords', () => {
