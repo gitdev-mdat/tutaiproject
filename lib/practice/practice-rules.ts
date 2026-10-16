@@ -28,7 +28,12 @@ export function practiceQuestionState(question: Question): {
   const exclusion = practiceExclusionReason(question);
   if (exclusion) return { state: 'NOT_USABLE', reason: exclusion };
   if (question.accessTier !== 'OPEN') {
-    return { state: 'PUBLISHED_ELSEWHERE', reason: 'Câu dành cho gói Plus.' };
+    return {
+      state: 'PUBLISHED_ELSEWHERE',
+      reason: question.usageContexts.includes('PLUS_SPECIAL')
+        ? 'Câu Plus: nằm trong bộ Tổng hợp của chương.'
+        : 'Câu dành cho gói Plus.',
+    };
   }
   if (!question.usageContexts.includes('OPEN_PRACTICE')) {
     return { state: 'PUBLISHED_ELSEWHERE', reason: 'Chưa bật "Luyện tập mở".' };

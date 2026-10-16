@@ -7,6 +7,7 @@ import { GRADE_VALUES, SUBJECT_ID_VALUES } from '@/lib/question-bank/qb-types';
 import { isSelectableQuestion } from '@/lib/exams/exam-selection';
 import { listExams, saveExam } from '@/lib/exams/exam-storage';
 import type { ExamDraftInput, ExamRecord } from '@/lib/exams/exam-types';
+import { parseExamAccess } from '@/lib/exams/exam-access';
 import { adminApiGuard } from '@/lib/auth/admin';
 
 const MAX_EXAM_QUESTIONS = 500;
@@ -98,6 +99,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const access = parseExamAccess(body);
+    if (!access.ok) {
+      return NextResponse.json(
+        { error: 'VALIDATION_ERROR', message: access.message },
+        { status: 422 }
+      );
+    }
+
     const now = new Date().toISOString();
     const exam: ExamRecord = {
       id: randomUUID(),
@@ -120,6 +129,8 @@ export async function POST(request: Request) {
       updatedAt: now,
       createdBy: 'admin',
       updatedBy: 'admin',
+      accessTier: access.value.accessTier,
+      ...(access.value.curatorNote ? { curatorNote: access.value.curatorNote } : {}),
     };
     await saveExam(exam);
     return NextResponse.json(exam, { status: 201 });

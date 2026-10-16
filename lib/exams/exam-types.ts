@@ -112,10 +112,25 @@ export interface ExamRecord {
   updatedBy?: string;
   publishedAt?: string;
   publishedSnapshot?: PublishedExamSnapshot;
+  /** Who may take the published exam. Missing means FREE, as every exam was before. */
+  accessTier?: ExamAccessTier;
+  /** Editor's one-line note on why a Plus exam is worth taking; shown to students. */
+  curatorNote?: string;
 }
+
+export type ExamAccessTier = 'FREE' | 'PLUS';
+export const EXAM_ACCESS_TIERS: readonly ExamAccessTier[] = ['FREE', 'PLUS'];
+export const CURATOR_NOTE_MAX_LENGTH = 160;
+
+export const EXAM_ACCESS_LABELS: Record<ExamAccessTier, string> = {
+  FREE: 'Miễn phí',
+  PLUS: 'Tú Tài Plus',
+};
 
 export interface ExamDraftInput {
   name: string;
+  accessTier?: ExamAccessTier;
+  curatorNote?: string;
   subjectId?: SubjectId;
   grade?: Grade;
   examType?: ExamType;

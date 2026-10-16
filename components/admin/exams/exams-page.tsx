@@ -135,6 +135,11 @@ export function ExamsPage() {
                     </td>
                     <td className="px-3 py-3">
                       <StatusBadge status={exam.publishStatus} />
+                      {exam.accessTier === 'PLUS' && (
+                        <span className="ml-1.5 inline-flex rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                          Plus
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-xs text-slate-500">
                       {new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short' }).format(

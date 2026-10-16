@@ -28,6 +28,7 @@ import {
   lessonSummaryHref,
   pickNextStep,
   practiceHref,
+  PRACTICE_HREF,
   programHref,
   type PracticeOrigin,
   type StudyScope,
@@ -91,7 +92,17 @@ function Shell({ lesson, children }: { lesson: Lesson; children: React.ReactNode
   return (
     <div className="mx-auto w-full max-w-[720px] pb-28 sm:pb-12">
       <p className="-mt-12 ml-12 flex min-h-10 items-center md:mt-0 lg:ml-0 lg:min-h-0">
-        {origin === 'lesson' ? (
+        {origin === 'practice' ? (
+          <Link
+            href={PRACTICE_HREF}
+            className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-lg py-1 text-[13px] font-semibold text-slate-500 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            data-testid="practice-back"
+            data-origin="practice"
+          >
+            <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">Luyện tập</span>
+          </Link>
+        ) : origin === 'lesson' ? (
           <Link
             href={lessonSummaryHref(lesson.id)}
             className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-lg py-1 text-[13px] font-semibold text-slate-500 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"

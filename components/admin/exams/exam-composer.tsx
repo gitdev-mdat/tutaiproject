@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KnowledgeNodePicker } from '@/components/admin/question-bank/knowledge-node-picker';
+import { ExamAccessPanel } from './exam-access-panel';
 import type {
   ExamDraftInput,
   ExamQuestionCriteria,
@@ -536,6 +537,8 @@ export function ExamComposer({ examId }: { examId?: string }) {
           </label>
         </div>
       </section>
+
+      <ExamAccessPanel key={record?.id ?? 'new'} record={record} onSaved={setRecord} />
 
       {!published && (
         <div className="grid gap-5 xl:grid-cols-2">
