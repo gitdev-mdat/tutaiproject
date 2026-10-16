@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/
 import { LessonJourney } from '@/components/learning/lesson-journey';
 import { GraphFieldStatus } from './graph-field-status';
 import { buildLessonJourney } from '@/lib/knowledge-tree/lesson-journey';
+import { programTitle } from '@/features/lessons/lib/study-plan';
 import {
   ArticleValidationError,
   type ApiKnowledgeRepository,
@@ -311,6 +312,11 @@ function LessonEditor({
               subjectTitle={breadcrumb[0] ?? ''}
               chapterTitle={breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 1] : ''}
               backHref={null}
+              backLabel={
+                breadcrumb.length > 2
+                  ? `Hành trình ${programTitle(breadcrumb[0], breadcrumb[1])}`
+                  : undefined
+              }
               journey={buildLessonJourney(blocks, { checks: 0 })}
               checks={[]}
               practice={null}

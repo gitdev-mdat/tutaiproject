@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   MapPin,
   Trophy,
 } from 'lucide-react';
+import { JourneyTrack } from './journey-track';
 import { useStudentShell } from '@/components/student/student-shell';
 import { useLessonProgress } from '@/features/lessons/lib/lesson-progress';
 import {
@@ -20,8 +22,8 @@ import {
   nextFreshLesson,
   pickNextStep,
   planProgress,
+  programHref,
   standingLabel,
-  withFrom,
   type LessonStanding,
   type NextStep,
   type StudyScope,
@@ -30,26 +32,29 @@ import {
 import type { LessonProgressState } from '@/features/lessons/lib/lesson-progress';
 
 /**
- * The Roadmap is the student's journey through one program, not a catalog:
- * where they are on it, how far they have come, and the one step to take
- * next. Every mark on it comes from the published curriculum, the student's
- * practice results and their reading progress; nothing is a template.
+ * The Roadmap is the student's one place to learn: every published program
+ * (a subject's lessons for one grade), where they are on it, how far they
+ * have come and the one step to take next. Lessons open from it and lead back
+ * to it; there is no separate lesson catalog. Every mark on it comes from the
+ * published curriculum, the student's practice results and their reading
+ * progress; nothing is a template.
  *
- * - The hero places the student on the whole program (chapters as stages).
+ * - The hero names the program (with a switch between programs when there
+ *   are several) and places the student on it (chapters as stages).
  * - The next-step card says what to do, why, and what finishing that lesson takes.
- * - The map shows the road: chapters as milestones, lessons as stops, a pin
- *   where the student is. It does not repeat the next step's details.
+ * - The map lists every lesson of the program: chapters as milestones, lessons
+ *   as stops, a pin where the student is. Any lesson opens from it.
  */
 export function StudentRoadmap({
-  scope,
+  programs,
+  program: scope,
   summaries,
   targetScore,
-  otherSubjects,
 }: {
-  scope: StudyScope | null;
+  programs: StudyScope[];
+  program: StudyScope | null;
   summaries: Summaries | null;
   targetScore: number | null;
-  otherSubjects: string[];
 }) {
   const { model } = useStudentShell();
   const progress = useLessonProgress(model.identity.id);
@@ -58,15 +63,31 @@ export function StudentRoadmap({
   if (!scope)
     return (
       <Page>
-        <Hero title="Toán 12" greeting={firstName} targetScore={targetScore} />
+        <Hero title="Toán 12" subject="Toán" greeting={firstName} targetScore={targetScore} />
         <EmptyProgram />
       </Page>
     );
 
+  const tabs =
+    programs.length > 1 ? (
+      <ProgramTabs
+        programs={programs}
+        current={scope.id}
+        progress={progress}
+        summaries={summaries ?? {}}
+      />
+    ) : null;
+
   if (!progress)
     return (
       <Page>
-        <Hero title={scope.title} greeting={firstName} targetScore={targetScore} />
+        <Hero
+          title={scope.title}
+          subject={scope.subjectTitle}
+          greeting={firstName}
+          targetScore={targetScore}
+          tabs={tabs}
+        />
         <div
           aria-hidden="true"
           className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]"
@@ -88,8 +109,10 @@ export function StudentRoadmap({
     <Page>
       <Hero
         title={scope.title}
+        subject={scope.subjectTitle}
         greeting={firstName}
         targetScore={targetScore}
+        tabs={tabs}
         journey={{ scope, standings, completed, total, currentLessonId: step?.lesson.id ?? null }}
       />
       {summaries === null && (
@@ -113,7 +136,6 @@ export function StudentRoadmap({
           nextLessonId={step?.lesson.id ?? null}
           initials={model.identity.initials}
           targetScore={targetScore}
-          otherSubjects={otherSubjects}
         />
       </div>
     </Page>
@@ -140,23 +162,32 @@ interface Journey {
 
 function Hero({
   title,
+  subject,
   greeting,
   targetScore,
+  tabs,
   journey,
 }: {
   title: string;
+  subject: string;
   greeting: string;
   targetScore: number | null;
+  tabs?: React.ReactNode;
   journey?: Journey;
 }) {
   const remaining = journey ? journey.total - journey.completed : 0;
   return (
     <header className="relative isolate overflow-hidden rounded-[24px] bg-[#0A1F5C] px-5 pb-5 pt-6 text-white sm:px-8 sm:pb-7 sm:pt-8">
-      <HeroArt />
+      <HeroArt subject={subject} />
+      {tabs}
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 max-w-[560px]">
-          <p className="text-[13px] font-semibold tracking-wide text-blue-200">Lộ trình của em</p>
-          <h1 className="mt-1.5 text-[30px] text-white font-extrabold leading-[1.1] tracking-tight sm:text-[40px]">
+          {!tabs && (
+            <p className="mb-1.5 text-[13px] font-semibold tracking-wide text-blue-200">
+              Lộ trình của em
+            </p>
+          )}
+          <h1 className="text-[30px] text-white font-extrabold leading-[1.1] tracking-tight sm:text-[40px]">
             Hành trình <span className="text-[#7FB2FF]">{title}</span>
           </h1>
           <p className="mt-2.5 text-[15px] leading-6 text-blue-100/90">
@@ -181,7 +212,15 @@ function Hero({
           </div>
         )}
       </div>
-      {journey && <StageTrack journey={journey} />}
+      {journey && (
+        <div className="mt-6 sm:mt-7">
+          <JourneyTrack
+            program={journey.scope}
+            standings={journey.standings}
+            currentLessonId={journey.currentLessonId}
+          />
+        </div>
+      )}
     </header>
   );
 }
@@ -244,51 +283,18 @@ function CompletionRule() {
   );
 }
 
-/** The program as stages: one segment per chapter, sized by its lessons, filled by what is done. */
-function StageTrack({ journey }: { journey: Journey }) {
-  const { scope, standings, currentLessonId } = journey;
-  return (
-    <div className="mt-6 sm:mt-7">
-      <ol className="flex gap-1.5" aria-label="Các chương trong hành trình">
-        {scope.chapters.map((chapter, index) => {
-          const done = chapter.lessons.filter((l) => standings.get(l.id)?.completed).length;
-          const here = chapter.lessons.some((l) => l.id === currentLessonId);
-          return (
-            <li
-              key={chapter.id}
-              className="min-w-[30px]"
-              style={{ flexGrow: chapter.lessons.length, flexBasis: 0 }}
-              aria-label={`Chương ${index + 1}: ${chapter.title}, ${done}/${chapter.lessons.length} bài xong${here ? ', em đang ở chương này' : ''}`}
-            >
-              <span className="flex h-2 overflow-hidden rounded-full bg-white/15">
-                <span
-                  className="h-full rounded-full bg-[#34D399]"
-                  style={{ width: `${(done / chapter.lessons.length) * 100}%` }}
-                />
-              </span>
-              <span
-                className={`mt-2 flex items-center gap-1 truncate text-[12px] font-semibold ${
-                  here ? 'text-white' : 'text-blue-200/80'
-                }`}
-                aria-hidden="true"
-              >
-                {here && <MapPin className="size-3.5 shrink-0 text-[#FFC857]" />}
-                <span className="truncate">
-                  {scope.chapters.length > 4 ? `C${index + 1}` : `Chương ${index + 1}`}
-                  {scope.chapters.length <= 2 && (
-                    <span className="font-normal text-blue-200/80"> · {chapter.title}</span>
-                  )}
-                </span>
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
-}
+/** Two formulas of the subject drawn into the hero's graph paper. */
+const HERO_FORMULAS: [RegExp, [string, string]][] = [
+  [/^vật/i, ['x = A cos(ωt + φ)', 'F = ma']],
+  [/^ho[áa]/i, ['2H₂ + O₂ → 2H₂O', 'n = m / M']],
+  [/^sinh/i, ['A = T, G ≡ X', '5′ → 3′']],
+];
 
-function HeroArt() {
+function HeroArt({ subject }: { subject: string }) {
+  const [top, side] = HERO_FORMULAS.find(([pattern]) => pattern.test(subject))?.[1] ?? [
+    'y = f(x)',
+    '∫ f(x) dx',
+  ];
   return (
     <svg
       className="pointer-events-none absolute -right-24 -top-6 md:right-[150px] -z-10 h-[260px] w-[620px] text-[#7FB2FF] opacity-[.22] max-lg:opacity-[.1]"
@@ -308,10 +314,10 @@ function HeroArt() {
       </g>
       <g fill="currentColor" fontFamily="serif" fontStyle="italic" fontSize="16">
         <text x="300" y="62">
-          y = f(x)
+          {top}
         </text>
-        <text x="470" y="150" opacity=".8">
-          ∫ f(x) dx
+        <text x="450" y="150" opacity=".8">
+          {side}
         </text>
       </g>
       <circle cx="262" cy="80" r="4" fill="currentColor" />
@@ -365,12 +371,12 @@ function NextStepCard({
     const later = nextFreshLesson(scope.lessons, progress, summaries, step.lesson.id);
     if (later)
       alternative = {
-        href: withFrom(lessonHref(later.id), 'roadmap'),
+        href: lessonHref(later.id),
         label: `Để sau, học bài tiếp: ${later.title}`,
       };
   } else if (step.kind === 'retry') {
     alternative = {
-      href: withFrom(lessonHref(step.lesson.id), 'roadmap'),
+      href: lessonHref(step.lesson.id),
       label: 'Ôn lại bài trước khi luyện',
     };
   }
@@ -400,6 +406,14 @@ function NextStepCard({
         {step.lesson.title}
       </h2>
       <p className="mt-1 text-[14px] text-slate-500">{step.lesson.chapterTitle}</p>
+      {step.kind === 'start' && step.lesson.description && (
+        <p
+          className="mt-3 line-clamp-2 text-[14px] leading-6 text-slate-500"
+          data-testid="roadmap-next-description"
+        >
+          {step.lesson.description}
+        </p>
+      )}
       <p className="mt-4 text-[15px] leading-6 text-slate-700" data-testid="roadmap-reason">
         {step.reason}
       </p>
@@ -407,11 +421,7 @@ function NextStepCard({
       <LessonTrack standing={standing} kind={step.kind} />
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5">
-        <Link
-          href={withFrom(step.href, 'roadmap')}
-          className={primaryClass}
-          data-testid="roadmap-next-cta"
-        >
+        <Link href={step.href} className={primaryClass} data-testid="roadmap-next-cta">
           {step.cta} <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
         {alternative && (
@@ -510,14 +520,12 @@ function JourneyMap({
   nextLessonId,
   initials,
   targetScore,
-  otherSubjects,
 }: {
   scope: StudyScope;
   standings: Map<string, LessonStanding>;
   nextLessonId: string | null;
   initials: string;
   targetScore: number | null;
-  otherSubjects: string[];
 }) {
   const many = scope.chapters.length > 2;
   return (
@@ -529,7 +537,9 @@ function JourneyMap({
         <h2 id="roadmap-map" className="text-[17px] font-extrabold text-[#091224]">
           Bản đồ hành trình
         </h2>
-        <p className="text-[12px] text-slate-500">Mọi bài đều mở, học trước thứ tự vẫn được tính</p>
+        <p className="text-[12px] text-slate-500">
+          {scope.lessons.length} bài · mọi bài đều mở, học trước thứ tự vẫn được tính
+        </p>
       </div>
 
       <ol className="relative mt-4">
@@ -580,19 +590,6 @@ function JourneyMap({
           </span>
         </li>
       </ol>
-
-      {otherSubjects.length > 0 && (
-        <p className="mt-5 border-t border-slate-100 pt-4 text-[13px] text-slate-500">
-          Bài của {otherSubjects.join(', ')} nằm trong{' '}
-          <Link
-            href="/student/lessons"
-            className="font-semibold text-blue-700 underline-offset-4 hover:underline"
-          >
-            Bài học
-          </Link>
-          .
-        </p>
-      )}
     </section>
   );
 }
@@ -703,7 +700,7 @@ function Stop({
   return (
     <li className="relative">
       <Link
-        href={withFrom(lessonHref(lessonId), 'roadmap')}
+        href={lessonHref(lessonId)}
         className={`group relative flex items-center gap-3 rounded-xl py-2 pl-[11px] pr-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
           isNext ? 'bg-[#F0F5FF]' : 'hover:bg-slate-50'
         }`}
@@ -777,6 +774,69 @@ function StopMark({ tone, isNext, initials }: { tone: string; isNext: boolean; i
             : 'border-2 border-slate-300'
       }`}
     />
+  );
+}
+
+/**
+ * The programs, as a switch at the top of the hero: one per subject and
+ * grade with published lessons, each with how many of its lessons are done.
+ * Only shown when there is more than one.
+ */
+function ProgramTabs({
+  programs,
+  current,
+  progress,
+  summaries,
+}: {
+  programs: StudyScope[];
+  current: string;
+  progress: LessonProgressState | null;
+  summaries: Summaries;
+}) {
+  const list = React.useRef<HTMLUListElement>(null);
+  // On a phone the switch scrolls sideways: keep the open program in view.
+  React.useEffect(() => {
+    const box = list.current;
+    const active = box?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (box && active && active.offsetLeft + active.offsetWidth > box.clientWidth)
+      box.scrollLeft = active.offsetLeft - 20;
+  }, [current]);
+  return (
+    <nav aria-label="Chọn môn học" className="-mx-5 mb-5 sm:-mx-8 sm:mb-6">
+      <ul
+        ref={list}
+        className="flex gap-2 overflow-x-auto px-5 pb-1 sm:px-8 [scrollbar-width:none]"
+      >
+        {programs.map((program) => {
+          const active = program.id === current;
+          const done = progress ? planProgress(program.lessons, progress, summaries) : null;
+          return (
+            <li key={program.id} className="shrink-0">
+              <Link
+                href={programHref(program)}
+                aria-current={active ? 'page' : undefined}
+                className={`inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[13px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
+                  active
+                    ? 'bg-white text-[#0A1F5C]'
+                    : 'bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white'
+                }`}
+                data-testid="program-tab"
+                data-program={program.id}
+              >
+                {program.title}
+                {done && (
+                  <span
+                    className={`text-[12px] font-semibold ${active ? 'text-slate-500' : 'text-blue-200/80'}`}
+                  >
+                    {done.completed}/{done.total}
+                  </span>
+                )}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 

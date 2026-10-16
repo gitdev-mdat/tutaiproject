@@ -9,7 +9,10 @@ import {
   roadmapScope,
   scopeLessonsFor,
   standingLabel,
-  withFrom,
+  learningPrograms,
+  programFor,
+  programHref,
+  selectProgram,
   type Summaries,
 } from './study-plan';
 
@@ -184,9 +187,6 @@ describe('labels and helpers', () => {
 
   it('finds the next lesson after one, and keeps the Roadmap context in links', () => {
     expect(nextFreshLesson(lessons, fresh, withQuestions, 'a')?.id).toBe('b');
-    expect(withFrom('/student/lessons/a', 'roadmap')).toBe('/student/lessons/a?from=roadmap');
-    expect(withFrom('/x/practice?attempt=1', 'roadmap')).toBe('/x/practice?attempt=1&from=roadmap');
-    expect(withFrom('/x', null)).toBe('/x');
   });
 });
 
@@ -226,19 +226,49 @@ describe('roadmapScope', () => {
     ]),
   ];
 
-  it('follows the published Mathematics grade 12 curriculum only', () => {
+  it('opens on the published Mathematics grade 12 curriculum by default', () => {
     const scope = roadmapScope(catalog);
     expect(scope?.lessons.map((l) => l.id)).toEqual(['a']);
     expect(scope?.subjectId).toBe('subj_math');
   });
 
-  it('chooses the next step for other lessons within their own subject', () => {
+  it('chooses the next step for every lesson within its own program', () => {
     expect(scopeLessonsFor(catalog, 'a').map((l) => l.id)).toEqual(['a']);
     expect(scopeLessonsFor(catalog, 'p').map((l) => l.id)).toEqual(['p']);
-    expect(scopeLessonsFor(catalog, 'd').map((l) => l.id)).toEqual(['d', 'a']);
+    expect(scopeLessonsFor(catalog, 'd').map((l) => l.id)).toEqual(['d']);
   });
 
-  it('is empty when nothing is published for the program', () => {
-    expect(roadmapScope([catalog[0]])).toBeNull();
+  it('lists one program per subject and grade, so every published lesson is on the Roadmap', () => {
+    const programs = learningPrograms(catalog);
+    expect(programs.map((p) => [p.id, p.title])).toEqual([
+      ['subj_phys:g', 'Vật lí 12'],
+      ['subj_math:grade_11', 'Toán 11'],
+      ['subj_math:grade_12', 'Toán 12'],
+    ]);
+    expect(programs.flatMap((p) => p.lessons.map((l) => l.id)).sort()).toEqual(['a', 'd', 'p']);
+    expect(programFor(catalog, 'p')?.subjectTitle).toBe('Vật lí');
+  });
+
+  it('opens the program a link asks for, Mathematics 12 otherwise', () => {
+    const programs = learningPrograms(catalog);
+    expect(selectProgram(programs)?.id).toBe('subj_math:grade_12');
+    expect(selectProgram(programs, 'subj_phys')?.id).toBe('subj_phys:g');
+    expect(selectProgram(programs, 'subj_math', 'grade_11')?.id).toBe('subj_math:grade_11');
+    // Old /student/lessons?subject= links: the subject's highest grade.
+    expect(selectProgram(programs, 'subj_math')?.id).toBe('subj_math:grade_12');
+    expect(selectProgram(programs, 'unknown')?.id).toBe('subj_math:grade_12');
+    expect(selectProgram([], 'subj_math')).toBeNull();
+  });
+
+  it('links to a program on the Roadmap, with the plain URL for the default one', () => {
+    const programs = learningPrograms(catalog);
+    expect(programHref(programs[2])).toBe('/student/roadmap');
+    expect(programHref(programs[0])).toBe('/student/roadmap?subject=subj_phys&grade=g');
+    expect(programHref(null)).toBe('/student/roadmap');
+  });
+
+  it('opens on another subject when Mathematics has nothing published, and is empty without lessons', () => {
+    expect(roadmapScope([catalog[0]])?.title).toBe('Vật lí 12');
+    expect(roadmapScope([])).toBeNull();
   });
 });

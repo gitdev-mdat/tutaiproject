@@ -12,7 +12,7 @@ import {
   getLessonPracticeOverview,
   getStudentLessonSummaries,
 } from '@/lib/practice/practice-service';
-import { scopeLessonsFor, withFrom } from '@/features/lessons/lib/study-plan';
+import { programFor, programHref, ROADMAP_HREF } from '@/features/lessons/lib/study-plan';
 import {
   getKnowledgeArticle,
   getLearningCatalog,
@@ -20,10 +20,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-type Props = {
-  params: Promise<{ lessonId: string }>;
-  searchParams: Promise<{ from?: string }>;
-};
+// `?from=roadmap` in older links is accepted and no longer needed: every
+// lesson leads back to its program on the Roadmap.
+type Props = { params: Promise<{ lessonId: string }> };
 
 async function loadLesson(lessonId: string) {
   const catalog = await getLearningCatalog();
@@ -39,10 +38,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: data ? `${data.article.title} | Tú Tài` : 'Bài học | Tú Tài' };
 }
 
-export default async function StudentLessonPage({ params, searchParams }: Props) {
+export default async function StudentLessonPage({ params }: Props) {
   const { lessonId: rawId } = await params;
-  // Opened from the Roadmap: lead back there, not to the lesson list.
-  const from = (await searchParams).from === 'roadmap' ? 'roadmap' : null;
   const lessonId = decodeURIComponent(rawId);
   const data = await loadLesson(lessonId);
 
@@ -57,13 +54,13 @@ export default async function StudentLessonPage({ params, searchParams }: Props)
           Bài học này chưa mở
         </h1>
         <p className="mt-2 text-[15px] leading-7 text-slate-500">
-          Bài có thể đang được thầy cô cập nhật. Em xem các bài khác trong chương trình nhé.
+          Bài có thể đang được thầy cô cập nhật. Em xem các bài khác trên lộ trình nhé.
         </p>
         <Link
-          href="/student/lessons"
+          href={ROADMAP_HREF}
           className="mt-6 inline-flex h-11 items-center rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white hover:bg-[#0044CC]"
         >
-          Về danh sách bài học
+          Về lộ trình
         </Link>
       </div>
     );
@@ -71,7 +68,10 @@ export default async function StudentLessonPage({ params, searchParams }: Props)
 
   const { subject, lesson, article, catalog } = data;
   const student = await getDemoStudentSession();
-  const scope = scopeLessonsFor(catalog, lesson.id);
+  // The program on the Roadmap this lesson belongs to: where it leads back to,
+  // and where the next step after it is chosen from.
+  const program = programFor(catalog, lesson.id);
+  const scope = program?.lessons ?? [];
   const [practice, checks, summaries] = await Promise.all([
     student
       ? getLessonPracticeOverview(student.id, lesson.id).catch((error) => {
@@ -92,9 +92,8 @@ export default async function StudentLessonPage({ params, searchParams }: Props)
   ]);
   const journey = buildLessonJourney(article.blocks, { checks: checks.length });
   const next = scope[scope.findIndex((item) => item.id === lesson.id) + 1];
-  const backHref = from
-    ? '/student/roadmap'
-    : `/student/lessons?subject=${encodeURIComponent(subject.id)}`;
+  const chapterIndex = program ? program.chapters.findIndex((c) => c.id === lesson.chapterId) : -1;
+  const position = scope.findIndex((item) => item.id === lesson.id) + 1;
 
   return (
     <StudentLessonJourney
@@ -102,20 +101,24 @@ export default async function StudentLessonPage({ params, searchParams }: Props)
       title={article.title}
       subjectTitle={subject.title}
       chapterTitle={lesson.chapterTitle}
-      backHref={backHref}
-      backLabel={from ? 'Lộ trình' : 'Bài học'}
+      backHref={programHref(program)}
+      backLabel={program ? `Hành trình ${program.title}` : 'Lộ trình'}
+      trail={
+        program && chapterIndex >= 0
+          ? `Chương ${chapterIndex + 1} · Bài ${position}/${scope.length}`
+          : undefined
+      }
       journey={journey}
       checks={checks}
       practice={practice}
-      practiceHref={withFrom(`/student/lessons/${encodeURIComponent(lesson.id)}/practice`, from)}
+      practiceHref={`/student/lessons/${encodeURIComponent(lesson.id)}/practice`}
       next={next ? { id: next.id, title: next.title } : null}
       practiceCard={
         <LessonNextStep
           lessonId={lesson.id}
           overview={practice}
-          lessons={scope}
+          program={program}
           summaries={summaries}
-          from={from}
         />
       }
       assist={{

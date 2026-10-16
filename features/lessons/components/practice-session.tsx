@@ -20,10 +20,10 @@ import { LessonAssist } from '@/components/learning/lesson-assist';
 import { QuestionMath } from '@/components/shared/question-content-renderer';
 import type { PracticeFeedback, PracticeQuestion } from '@/lib/practice/grading';
 import type { AttemptView } from '@/lib/practice/practice-service';
-import type { LearningLesson } from '@/lib/knowledge-tree/learning-visibility';
 import { useStudentShell } from '@/components/student/student-shell';
+import { JourneyCheckpoint } from '@/features/roadmap/components/journey-checkpoint';
 import { useLessonProgress } from '../lib/lesson-progress';
-import { pickNextStep, withFrom, type Summaries } from '../lib/study-plan';
+import { pickNextStep, programHref, type StudyScope, type Summaries } from '../lib/study-plan';
 import { nextStepLabel } from './lesson-practice-card';
 
 type Lesson = { id: string; title: string; chapterTitle: string };
@@ -62,19 +62,17 @@ export function isComplete(question: PracticeQuestion, answer: Answer): boolean 
   }
 }
 
-type From = 'roadmap' | null;
-
 /** Where the plan goes after this lesson, by the Roadmap's rule; null until reading progress is read. */
 type Plan = { href: string; label: string } | null;
 
-const FromContext = React.createContext<From>(null);
+/** The lesson's program on the Roadmap. */
+const ProgramContext = React.createContext<StudyScope | null>(null);
 
 function Shell({ lesson, children }: { lesson: Lesson; children: React.ReactNode }) {
-  const from = React.useContext(FromContext);
   return (
     <div className="mx-auto w-full max-w-[720px] pb-28 sm:pb-12">
       <Link
-        href={withFrom(`/student/lessons/${encodeURIComponent(lesson.id)}`, from)}
+        href={`/student/lessons/${encodeURIComponent(lesson.id)}`}
         className="inline-flex items-center gap-1.5 rounded-lg py-1 text-[13px] font-semibold text-slate-500 hover:text-blue-600"
       >
         <ArrowLeft className="size-4" aria-hidden="true" /> {lesson.title}
@@ -368,6 +366,7 @@ function Results({
   view,
   lesson,
   plan,
+  summaries,
   onRestart,
   onMistakes,
   busy,
@@ -375,85 +374,108 @@ function Results({
   view: AttemptView;
   lesson: Lesson;
   plan: Plan;
+  summaries: Summaries;
   onRestart: () => void;
   onMistakes: () => void;
   busy: boolean;
 }) {
-  const from = React.useContext(FromContext);
+  const program = React.useContext(ProgramContext);
+  const { model } = useStudentShell();
+  const reading = useLessonProgress(model.identity.id);
   const { attempt, questions, feedback } = view;
   const correct = attempt.correctCount ?? 0;
   const wrong = attempt.totalCount - correct;
   const fixedMistakes = attempt.mode === 'MISTAKES' && wrong === 0;
   const [open, setOpen] = React.useState<string | null>(null);
-  const lessonLink = withFrom(`/student/lessons/${encodeURIComponent(lesson.id)}`, from);
+  const lessonLink = `/student/lessons/${encodeURIComponent(lesson.id)}`;
   const primaryClass =
     'inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:opacity-60';
   const secondaryClass =
     'inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D5DEEA] bg-white px-5 text-[15px] font-semibold text-slate-700 hover:bg-slate-50';
   const lessonPassed = attempt.passed && attempt.mode === 'LESSON';
+  // The summaries were read when the page opened: count the pass just made.
+  const current = summaries[lesson.id];
+  const withThisPass: Summaries = lessonPassed
+    ? {
+        ...summaries,
+        [lesson.id]: {
+          questionCount: current?.questionCount ?? attempt.totalCount,
+          inProgress: null,
+          best: { correctCount: correct, totalCount: attempt.totalCount, passed: true },
+        },
+      }
+    : summaries;
   return (
     <div
       data-testid="results"
       data-outcome={lessonPassed ? 'passed' : fixedMistakes ? 'fixed' : 'retry'}
     >
-      <section className="mt-4 rounded-[24px] border border-[#E5EBF3] bg-white p-6 text-center sm:p-8">
-        <span
-          className={`mx-auto grid size-16 place-items-center rounded-full ${lessonPassed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}
-        >
-          {lessonPassed ? <Trophy className="size-8" /> : <RotateCcw className="size-7" />}
-        </span>
-        <p className="mt-4 text-[13px] font-semibold text-blue-600">
-          {attempt.mode === 'MISTAKES' ? 'Luyện lại câu sai' : 'Luyện tập sau bài học'}
-        </p>
-        <h1
-          className="mt-1 text-[40px] font-extrabold leading-none tracking-tight text-[#091224]"
-          data-testid="score"
-        >
-          {correct}/{attempt.totalCount}
-        </h1>
-        <p className="mt-2 text-[15px] text-slate-600">
-          {lessonPassed
-            ? 'Tốt lắm! Em đã hoàn thành bài này.'
-            : fixedMistakes
-              ? 'Em đã làm đúng hết các câu từng sai. Làm lại cả bài và đạt 80% để hoàn thành bài này.'
-              : wrong === 1
-                ? 'Chỉ còn 1 câu chưa đúng. Xem lời giải bên dưới rồi luyện lại nhé.'
-                : `Còn ${wrong} câu chưa đúng. Xem lời giải bên dưới rồi luyện lại các câu này.`}
-        </p>
-        <p className="mt-1 text-xs text-slate-400">Kết quả đã được lưu.</p>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-          {lessonPassed ? (
-            <>
-              <Link
-                href={plan?.href ?? '/student/roadmap'}
-                className={primaryClass}
-                data-testid="next-lesson"
-              >
-                {plan?.label ?? 'Xem lộ trình của em'} <ArrowRight className="size-4" />
-              </Link>
-              {plan && (
-                <Link href="/student/roadmap" className={secondaryClass} data-testid="to-roadmap">
-                  Xem tiến độ lộ trình
+      <section className="mt-4 overflow-hidden rounded-[24px] border border-[#E5EBF3] bg-white text-center">
+        {lessonPassed && program && reading && (
+          <div className="text-left">
+            <JourneyCheckpoint
+              program={program}
+              progress={reading}
+              summaries={withThisPass}
+              lessonId={lesson.id}
+              linked={!!plan}
+            />
+          </div>
+        )}
+        <div className="p-6 sm:p-8">
+          <span
+            className={`mx-auto grid size-16 place-items-center rounded-full ${lessonPassed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}
+          >
+            {lessonPassed ? <Trophy className="size-8" /> : <RotateCcw className="size-7" />}
+          </span>
+          <p className="mt-4 text-[13px] font-semibold text-blue-600">
+            {attempt.mode === 'MISTAKES' ? 'Luyện lại câu sai' : 'Luyện tập sau bài học'}
+          </p>
+          <h1
+            className="mt-1 text-[40px] font-extrabold leading-none tracking-tight text-[#091224]"
+            data-testid="score"
+          >
+            {correct}/{attempt.totalCount}
+          </h1>
+          <p className="mt-2 text-[15px] text-slate-600">
+            {lessonPassed
+              ? 'Tốt lắm! Em đã hoàn thành bài này.'
+              : fixedMistakes
+                ? 'Em đã làm đúng hết các câu từng sai. Làm lại cả bài và đạt 80% để hoàn thành bài này.'
+                : wrong === 1
+                  ? 'Chỉ còn 1 câu chưa đúng. Xem lời giải bên dưới rồi luyện lại nhé.'
+                  : `Còn ${wrong} câu chưa đúng. Xem lời giải bên dưới rồi luyện lại các câu này.`}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">Kết quả đã được lưu.</p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            {lessonPassed ? (
+              <>
+                <Link
+                  href={plan?.href ?? programHref(program)}
+                  className={primaryClass}
+                  data-testid="next-lesson"
+                >
+                  {plan?.label ?? 'Xem lộ trình của em'} <ArrowRight className="size-4" />
                 </Link>
-              )}
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={fixedMistakes ? onRestart : onMistakes}
-                disabled={busy}
-                className={primaryClass}
-                data-testid={fixedMistakes ? 'retry-lesson' : 'retry-mistakes'}
-              >
-                <RotateCcw className="size-4" />{' '}
-                {fixedMistakes ? 'Luyện tập lại cả bài' : `Luyện lại ${wrong} câu sai`}
-              </button>
-              <Link href={lessonLink} className={secondaryClass} data-testid="review-lesson">
-                <BookOpen className="size-4" /> Xem lại bài học
-              </Link>
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={fixedMistakes ? onRestart : onMistakes}
+                  disabled={busy}
+                  className={primaryClass}
+                  data-testid={fixedMistakes ? 'retry-lesson' : 'retry-mistakes'}
+                >
+                  <RotateCcw className="size-4" />{' '}
+                  {fixedMistakes ? 'Luyện tập lại cả bài' : `Luyện lại ${wrong} câu sai`}
+                </button>
+                <Link href={lessonLink} className={secondaryClass} data-testid="review-lesson">
+                  <BookOpen className="size-4" /> Xem lại bài học
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </section>
 
@@ -512,44 +534,39 @@ function Results({
 }
 
 export function PracticeSession({
-  from = null,
+  program,
   ...props
 }: {
   lesson: Lesson;
-  /** The lessons the next step is chosen from, in curriculum order, and their results. */
-  lessons: LearningLesson[];
+  /** The lesson's program on the Roadmap: the next step is chosen from its lessons. */
+  program: StudyScope | null;
   summaries: Summaries;
   initialAttemptId: string | null;
-  from?: From;
 }) {
   return (
-    <FromContext.Provider value={from}>
+    <ProgramContext.Provider value={program}>
       <PracticeFlow {...props} />
-    </FromContext.Provider>
+    </ProgramContext.Provider>
   );
 }
 
 function PracticeFlow({
   lesson,
-  lessons,
   summaries,
   initialAttemptId,
 }: {
   lesson: Lesson;
-  lessons: LearningLesson[];
   summaries: Summaries;
   initialAttemptId: string | null;
 }) {
   const router = useRouter();
-  const from = React.useContext(FromContext);
+  const program = React.useContext(ProgramContext);
   const { model } = useStudentShell();
   const reading = useLessonProgress(model.identity.id);
   const nextStep = reading
-    ? pickNextStep(lessons, reading, summaries, { exclude: lesson.id })
+    ? pickNextStep(program?.lessons ?? [], reading, summaries, { exclude: lesson.id })
     : null;
-  const plan: Plan = nextStep
-    ? { href: withFrom(nextStep.href, from), label: nextStepLabel(nextStep) }
-    : null;
+  const plan: Plan = nextStep ? { href: nextStep.href, label: nextStepLabel(nextStep) } : null;
   const [view, setView] = React.useState<AttemptView | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -622,10 +639,7 @@ function PracticeFlow({
       setShowResults(false);
       // The attempt id in the address keeps refresh and back navigation on this attempt.
       router.replace(
-        withFrom(
-          `/student/lessons/${encodeURIComponent(lesson.id)}/practice?attempt=${started.attempt.id}`,
-          from
-        ),
+        `/student/lessons/${encodeURIComponent(lesson.id)}/practice?attempt=${started.attempt.id}`,
         {
           scroll: true,
         }
@@ -780,6 +794,7 @@ function PracticeFlow({
           view={view}
           lesson={lesson}
           plan={plan}
+          summaries={summaries}
           busy={submitting}
           onRestart={() => void start('LESSON')}
           onMistakes={() => void start('MISTAKES')}

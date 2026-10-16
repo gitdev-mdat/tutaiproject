@@ -40,6 +40,8 @@ export interface StudentDestination {
   hint?: string;
   description?: string;
   keywords?: string[];
+  /** Other path prefixes that belong to this destination (a lesson opened from the Roadmap). */
+  includes?: string[];
 }
 
 export interface StudentShellModel {
