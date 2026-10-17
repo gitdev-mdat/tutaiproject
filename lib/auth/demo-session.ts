@@ -15,6 +15,7 @@ export async function getDemoStudentSession(): Promise<StudentProfile | null> {
     email: session.user.email ?? '',
     grade: Number.isFinite(numericGrade) ? numericGrade : 12,
     targetScore: session.learning?.targetScore ?? 0,
+    currentScore: session.learning?.currentScore ?? null,
     examBlock: '',
   };
 }

@@ -25,6 +25,7 @@ import {
   programHref,
   ROADMAP_HREF,
   standingLabel,
+  startingPointFor,
   type LessonStanding,
   type NextStep,
   type StudyScope,
@@ -76,7 +77,12 @@ export function StudentRoadmap({
   if (!scope)
     return (
       <Page>
-        <Hero title="Toán 12" subject="Toán" greeting={firstName} targetScore={targetScore} />
+        <Hero
+          title={choice?.requested ?? 'của em'}
+          subject={choice?.requested ?? ''}
+          greeting={firstName}
+          targetScore={targetScore}
+        />
         <EmptyProgram />
       </Page>
     );
@@ -113,7 +119,9 @@ export function StudentRoadmap({
     );
 
   const safeSummaries = summaries ?? {};
-  const step = pickNextStep(scope.lessons, progress, safeSummaries);
+  const step = pickNextStep(scope.lessons, progress, safeSummaries, {
+    currentScore: model.learning?.currentScore,
+  });
   const standings = new Map(
     scope.lessons.map((lesson) => [lesson.id, lessonStanding(lesson.id, progress, safeSummaries)])
   );
@@ -154,10 +162,12 @@ export function StudentRoadmap({
 /**
  * Why the student sees this program, in their words: what in their profile
  * chose it, or why another program stands in. Says plainly that the
- * self-reported scores set a goal and do not skip any lesson.
+ * self-reported score only chooses how a lesson starts and skips nothing.
  */
 function ProgramBasisNote({ choice, title }: { choice: RoadmapChoice; title: string }) {
   const { basis, requested, profileProgram } = choice;
+  const { model } = useStudentShell();
+  const checkFirst = startingPointFor(model.learning?.currentScore) === 'CHECK_FIRST';
   let text: string;
   if (basis === 'PROFILE')
     text = `Chọn theo hồ sơ của em: ${requested ?? title}. Các bài theo thứ tự chương trình; bước tiếp theo đổi theo bài em đã học và kết quả luyện tập.`;
@@ -182,8 +192,16 @@ function ProgramBasisNote({ choice, title }: { choice: RoadmapChoice; title: str
           {basis !== 'CHOSEN' && (
             <span className="text-slate-500">
               {' '}
-              Tú Tài chưa kiểm tra trình độ đầu vào, nên điểm em nhập chỉ là mục tiêu, không dùng để
-              bỏ qua bài nào.
+              Tú Tài chưa kiểm tra trình độ đầu vào.{' '}
+              <span
+                data-testid="roadmap-starting-point"
+                data-start={checkFirst ? 'CHECK_FIRST' : 'LEARN_FIRST'}
+              >
+                {checkFirst
+                  ? 'Em tự khai điểm trung bình từ 6,5, nên mỗi bài mới bắt đầu bằng làm thử luyện tập; bài chỉ tính là xong khi em đúng từ 80% số câu.'
+                  : 'Mỗi bài bắt đầu bằng học bài rồi luyện tập.'}
+              </span>{' '}
+              Điểm em nhập không dùng để bỏ qua bài nào.
             </span>
           )}
         </span>
@@ -437,6 +455,8 @@ function NextStepCard({
     alternative = { href: lessonHref(step.lesson.id), label: 'Xem lại bài học' };
   } else if (step.kind === 'retry') {
     alternative = { href: lessonHref(step.lesson.id), label: 'Ôn lại bài trước khi luyện' };
+  } else if (step.kind === 'check') {
+    alternative = { href: lessonHref(step.lesson.id), label: 'Học bài trước' };
   }
   const standing = standings.get(step.lesson.id)!;
 
@@ -511,7 +531,8 @@ function LessonTrack({ standing, kind }: { standing: LessonStanding; kind: NextS
   if (hasPractice) {
     const open = practice?.inProgress;
     const best = practice?.best;
-    const practising = kind === 'resume-practice' || kind === 'practice' || kind === 'retry';
+    const practising =
+      kind === 'resume-practice' || kind === 'practice' || kind === 'retry' || kind === 'check';
     steps.push({
       label: 'Luyện tập',
       note: open

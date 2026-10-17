@@ -59,6 +59,7 @@ const examsDocument: ContentDocumentSource<ExamRecord[]> = {
   key: 'exams/exams',
   readFile: readExamsFile,
   writeFile: writeExamsFile,
+  empty: () => [],
 };
 
 async function readExams(): Promise<ExamRecord[]> {

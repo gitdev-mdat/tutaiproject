@@ -18,11 +18,11 @@ const RULES = [
   },
   {
     title: 'Thứ tự bài',
-    text: 'Theo thứ tự chương và bài trên cây. Mọi bài đều mở; không bài nào bị bỏ qua dựa trên điểm học sinh tự khai.',
+    text: 'Theo thứ tự chương và bài trên cây. Mọi bài đều mở; không bài nào bị bỏ qua hay tính là xong dựa trên điểm học sinh tự khai.',
   },
   {
     title: 'Bước tiếp theo',
-    text: 'Làm tiếp bài luyện tập đang dở, rồi học tiếp bài đang dở, rồi luyện lại bài đã học mà chưa đạt 80%, rồi bài đầu tiên chưa hoàn thành.',
+    text: 'Làm tiếp bài luyện tập đang dở, rồi học tiếp bài đang dở, rồi luyện lại bài đã học mà chưa đạt 80%, rồi bài đầu tiên chưa hoàn thành. Em tự khai điểm trung bình từ 6,5 thì bắt đầu bài mới bằng làm thử luyện tập: đạt 80% là xong bài, chưa đạt thì học bài trước. Dưới 6,5 hoặc chưa khai thì học bài trước.',
   },
 ];
 
@@ -67,8 +67,10 @@ export function StudentRoadmapsAdmin({ overview }: { overview: LearningOverview 
         </ol>
         <p className="mt-2 text-xs leading-5 text-slate-500">
           Chưa có bài kiểm tra đầu vào, nên Tú Tài không biết học sinh đã vững phần nào. Điểm hiện
-          tại và điểm mục tiêu chỉ hiển thị làm mục tiêu, không đổi lộ trình. Học sinh sửa môn, lớp
-          và mục tiêu trong Hồ sơ; lộ trình đổi theo ở lần mở sau.
+          tại chỉ chọn cách bắt đầu một bài (làm thử hay học trước), không đánh dấu bài nào là đã
+          vững. Điểm mục tiêu chỉ hiển thị làm mục tiêu. Sau mỗi lần luyện tập, lý do ở bước tiếp
+          theo nêu số câu đúng theo từng mức độ khó. Học sinh sửa môn, lớp và điểm trong Hồ sơ; lộ
+          trình đổi theo ở lần mở sau.
         </p>
       </section>
 

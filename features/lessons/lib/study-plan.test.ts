@@ -15,6 +15,9 @@ import {
   programFor,
   programHref,
   selectProgram,
+  startingPointFor,
+  latestResultSentence,
+  CHECK_FIRST_FROM_SCORE,
   type Summaries,
 } from './study-plan';
 
@@ -285,5 +288,106 @@ describe('roadmapScope', () => {
   it('opens on another subject when Mathematics has nothing published, and is empty without lessons', () => {
     expect(roadmapScope([catalog[0]])?.title).toBe('Vật lí 12');
     expect(roadmapScope([])).toBeNull();
+  });
+});
+
+describe('starting point from the self-reported average', () => {
+  const passed = { correctCount: 5, totalCount: 6, passed: true };
+  const failed = { correctCount: 2, totalCount: 6, passed: false };
+
+  it('uses the score only to choose between reading first and trying the practice first', () => {
+    expect(startingPointFor(6)).toBe('LEARN_FIRST');
+    expect(startingPointFor(6.4)).toBe('LEARN_FIRST');
+    expect(startingPointFor(CHECK_FIRST_FROM_SCORE)).toBe('CHECK_FIRST');
+    expect(startingPointFor(7.5)).toBe('CHECK_FIRST');
+    expect(startingPointFor(null)).toBe('LEARN_FIRST');
+    expect(startingPointFor(undefined)).toBe('LEARN_FIRST');
+    expect(startingPointFor(Number.NaN)).toBe('LEARN_FIRST');
+  });
+
+  it('6.0 → 9.0 reads the first lesson; 7.5 → 9.0 tries its practice first', () => {
+    const a = pickNextStep(lessons, fresh, withQuestions, { currentScore: 6 });
+    const b = pickNextStep(lessons, fresh, withQuestions, { currentScore: 7.5 });
+    expect(a).toMatchObject({ kind: 'start', lesson: { id: 'a' }, href: '/student/lessons/a' });
+    expect(b).toMatchObject({
+      kind: 'check',
+      lesson: { id: 'a' },
+      cta: 'Làm thử để kiểm tra',
+      href: '/student/lessons/a/practice',
+    });
+    expect(b?.reason).toContain('7,5/10');
+    // Same lesson, same order: the score never skips or completes anything.
+    expect(planProgress(lessons, fresh, withQuestions)).toEqual({ completed: 0, total: 3 });
+  });
+
+  it('a passed check completes the lesson and the next lesson starts with a check too', () => {
+    const summaries: Summaries = { ...withQuestions, a: practice(6, passed) };
+    expect(lessonStanding('a', fresh, summaries).completed).toBe(true);
+    expect(pickNextStep(lessons, fresh, summaries, { currentScore: 7.5 })).toMatchObject({
+      kind: 'check',
+      lesson: { id: 'b' },
+    });
+    expect(pickNextStep(lessons, fresh, summaries, { currentScore: 6 })).toMatchObject({
+      kind: 'start',
+      lesson: { id: 'b' },
+    });
+  });
+
+  it('a failed check sends the student to read the lesson, quoting their results by difficulty', () => {
+    const summaries: Summaries = {
+      ...withQuestions,
+      a: {
+        ...practice(6, failed),
+        latest: {
+          correctCount: 2,
+          totalCount: 6,
+          byDifficulty: [
+            { difficulty: 'FOUNDATIONAL', correct: 2, total: 2 },
+            { difficulty: 'INTERMEDIATE', correct: 0, total: 3 },
+            { difficulty: 'ADVANCED', correct: 0, total: 1 },
+          ],
+        },
+      },
+    };
+    const step = pickNextStep(lessons, fresh, summaries, { currentScore: 7.5 });
+    expect(step).toMatchObject({ kind: 'start', lesson: { id: 'a' }, href: '/student/lessons/a' });
+    expect(step?.reason).toContain('chưa đạt');
+    expect(step?.reason).toContain('2/2 câu Cơ bản, 0/3 câu Vận dụng, 0/1 câu Nâng cao');
+    expect(step?.reason).toContain('nên xem kỹ phần Vận dụng trước');
+  });
+
+  it('a lesson without practice questions is read first whatever the score', () => {
+    const noQuestions: Summaries = { a: practice(0), b: practice(6), c: practice(6) };
+    expect(pickNextStep(lessons, fresh, noQuestions, { currentScore: 9 })).toMatchObject({
+      kind: 'start',
+      lesson: { id: 'a' },
+    });
+  });
+
+  it('work already started outranks the check', () => {
+    const started = progress({ a: { reached: 1, total: 6 } }, 'a');
+    expect(pickNextStep(lessons, started, withQuestions, { currentScore: 8 })).toMatchObject({
+      kind: 'resume-lesson',
+      lesson: { id: 'a' },
+    });
+  });
+});
+
+describe('latestResultSentence', () => {
+  it('is empty without a completed session', () => {
+    expect(latestResultSentence(undefined)).toBe('');
+    expect(latestResultSentence(practice(6))).toBe('');
+  });
+
+  it('names no weak level when every answer was right', () => {
+    const sentence = latestResultSentence({
+      ...practice(6),
+      latest: {
+        correctCount: 3,
+        totalCount: 3,
+        byDifficulty: [{ difficulty: 'FOUNDATIONAL', correct: 3, total: 3 }],
+      },
+    });
+    expect(sentence).toBe(' Lần gần nhất em đúng 3/3 câu Cơ bản.');
   });
 });

@@ -40,6 +40,7 @@ const articleSource: ContentDocumentSource<KnowledgeArticleDocument> = {
   key: 'knowledge-tree/articles',
   readFile: readArticleFile,
   writeFile: writeArticleFile,
+  empty: emptyDocument,
 };
 
 async function readArticleFile(): Promise<KnowledgeArticleDocument> {

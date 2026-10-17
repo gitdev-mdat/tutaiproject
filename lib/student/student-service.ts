@@ -383,6 +383,10 @@ export function resolveStudentShellModel(profile: StudentProfile): StudentShellM
     ...baseModel,
     metrics: deriveShellMetricsFromState(state),
     notifications: state.notifications,
+    learning: {
+      currentScore: profile.currentScore ?? null,
+      targetScore: profile.targetScore || null,
+    },
   };
 }
 

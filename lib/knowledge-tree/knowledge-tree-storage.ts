@@ -37,11 +37,12 @@ const treeSource: ContentDocumentSource<KnowledgeTreeDocument> = {
   key: 'knowledge-tree/tree',
   readFile: readTreeFile,
   writeFile: writeTreeFile,
+  empty: () => ({ schemaVersion: 1, updatedAt: new Date(0).toISOString(), nodes: [] }),
 };
 
 /**
- * With DATABASE_URL the tree lives in PostgreSQL (seeded from tree.json) and
- * is read on every call, since other function instances may have changed it.
+ * With DATABASE_URL the tree lives in PostgreSQL (empty until the admin
+ * creates or imports nodes; tree.json is only the local seed) and is read on every call, since other function instances may have changed it.
  */
 export async function readKnowledgeTree(): Promise<KnowledgeTreeDocument> {
   if (!usesDatabaseContentStore()) return readTreeFile();
