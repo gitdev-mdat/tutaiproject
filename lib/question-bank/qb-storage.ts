@@ -4,7 +4,7 @@ import 'server-only';
  * Question Bank — Storage layer.
  *
  * Persistence: with DATABASE_URL, three documents in tutai.content_documents
- * (seeded from the files on first write), read fresh on every call because
+ * (empty when a document has no row; never seeded from files), read fresh on every call because
  * other function instances may have written them. Without it, JSON files in
  * data/question-bank/ with atomic writes and an in-memory cache.
  */
@@ -106,6 +106,7 @@ function documentSource<T>(key: string, filePath: string): ContentDocumentSource
       await ensureDir();
       await atomicWrite(filePath, value);
     },
+    empty: () => [],
   };
 }
 

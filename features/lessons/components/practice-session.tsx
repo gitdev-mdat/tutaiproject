@@ -616,7 +616,10 @@ function PracticeFlow({
   const { model } = useStudentShell();
   const reading = useLessonProgress(model.identity.id);
   const nextStep = reading
-    ? pickNextStep(program?.lessons ?? [], reading, summaries, { exclude: lesson.id })
+    ? pickNextStep(program?.lessons ?? [], reading, summaries, {
+        exclude: lesson.id,
+        currentScore: model.learning?.currentScore,
+      })
     : null;
   const plan: Plan = nextStep ? { href: nextStep.href, label: nextStepLabel(nextStep) } : null;
   const [view, setView] = React.useState<AttemptView | null>(null);

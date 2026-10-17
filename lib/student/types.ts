@@ -4,6 +4,8 @@ export interface StudentProfile {
   email: string;
   grade: number;
   targetScore: number;
+  /** Self-reported average from onboarding or the profile; null when not given. */
+  currentScore?: number | null;
   examBlock: string;
 }
 
@@ -46,6 +48,8 @@ export interface StudentDestination {
 
 export interface StudentShellModel {
   identity: StudentIdentity;
+  /** What the student declared, for the study plan's starting point (features/lessons/lib/study-plan). */
+  learning?: { currentScore: number | null; targetScore: number | null };
   metrics: StudentMetric[];
   notifications: StudentNotification[];
   destinations: StudentDestination[];

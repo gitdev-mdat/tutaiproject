@@ -9,13 +9,16 @@ import { getSql } from '@/lib/db/postgres';
  * Without it the existing JSON files under data/ are used, which is only
  * durable on a machine with a persistent disk (local development).
  *
- * A document that has no row yet is read from its file, so the git-tracked
- * files seed the database on first write.
+ * With DATABASE_URL a document that has no row reads as `empty()`, never
+ * from the git-tracked seed files: an emptied or freshly migrated database
+ * must not bring old sample curriculum back.
  */
 export type ContentDocumentSource<T> = {
   key: string;
   readFile: () => Promise<T>;
   writeFile: (value: T) => Promise<void>;
+  /** The document's value when the database has no row for it yet. */
+  empty: () => T;
 };
 
 export function usesDatabaseContentStore(
@@ -28,7 +31,7 @@ export async function readContentDocument<T>(source: ContentDocumentSource<T>): 
   if (!usesDatabaseContentStore()) return source.readFile();
   const sql = getSql();
   const [row] = await sql`select body from tutai.content_documents where key = ${source.key}`;
-  return row ? (row.body as T) : source.readFile();
+  return row ? (row.body as T) : source.empty();
 }
 
 export async function writeContentDocument<T>(
@@ -58,10 +61,9 @@ export async function updateContentDocument<T>(
   }
   const sql = getSql();
   return sql.begin(async (tx) => {
-    const seed = await source.readFile();
     await tx`
       insert into tutai.content_documents (key, body)
-      values (${source.key}, ${tx.json(seed as never)})
+      values (${source.key}, ${tx.json(source.empty() as never)})
       on conflict (key) do nothing`;
     const [row] = await tx`
       select body from tutai.content_documents where key = ${source.key} for update`;

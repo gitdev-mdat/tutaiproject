@@ -6,6 +6,7 @@ import { getQuestion, listQuestions } from '@/lib/question-bank/qb-storage';
 import type { Question } from '@/lib/question-bank/qb-types';
 import { getVisibleLessonArticle } from '@/lib/knowledge-tree/knowledge-tree-service';
 import { getPremiumAccess } from '@/lib/access/premium-access';
+import { findRetiredQuestions } from '@/lib/content/retired-content';
 import {
   gradePracticeResponse,
   parsePracticeResponse,
@@ -21,6 +22,8 @@ import {
   orderPracticeQuestions,
   pickLessonChecks,
   pickLessonSession,
+  resultsByDifficulty,
+  type DifficultyResult,
 } from './practice-rules';
 
 /**
@@ -169,6 +172,12 @@ export type LessonPracticeSummary = {
   questionCount: number;
   inProgress: { id: string; answeredCount: number; totalCount: number } | null;
   best: { correctCount: number; totalCount: number; passed: boolean } | null;
+  /**
+   * The newest completed lesson session, by difficulty (easiest first). The
+   * Roadmap quotes it to say what to work on; it is the student's own answers,
+   * not an estimate.
+   */
+  latest?: { correctCount: number; totalCount: number; byDifficulty: DifficultyResult[] } | null;
 };
 
 /**
@@ -199,7 +208,14 @@ export async function getStudentLessonSummaries(
       and a.mode in ('LESSON', 'MISTAKES')
     order by a.started_at desc`;
   const newest = new Set<string>();
+  const latestCompleted = new Map<string, AttemptSummary>();
   for (const attempt of rows.map(summarize)) {
+    if (
+      attempt.mode === 'LESSON' &&
+      attempt.status === 'COMPLETED' &&
+      !latestCompleted.has(attempt.lessonId)
+    )
+      latestCompleted.set(attempt.lessonId, attempt);
     const summary = summaries[attempt.lessonId];
     if (!summary) continue;
     const isNewest = !newest.has(attempt.lessonId);
@@ -221,6 +237,27 @@ export async function getStudentLessonSummaries(
           passed: attempt.passed,
         };
       }
+    }
+  }
+  if (latestCompleted.size) {
+    const attemptIds = [...latestCompleted.values()].map((attempt) => attempt.id);
+    const answers = await sql<{ attempt_id: string; question_id: string; is_correct: boolean }[]>`
+      select attempt_id, question_id, is_correct from tutai.practice_answers
+      where attempt_id in ${sql(attemptIds)}`;
+    const difficultyOf = new Map(questions.map((q) => [q.id, q.difficulty]));
+    for (const attempt of latestCompleted.values()) {
+      summaries[attempt.lessonId].latest = {
+        correctCount: attempt.correctCount ?? 0,
+        totalCount: attempt.totalCount,
+        byDifficulty: resultsByDifficulty(
+          answers
+            .filter((answer) => answer.attempt_id === attempt.id)
+            .map((answer) => ({
+              difficulty: difficultyOf.get(answer.question_id),
+              correct: answer.is_correct,
+            }))
+        ),
+      };
     }
   }
   return summaries;
@@ -324,6 +361,12 @@ export async function getPracticeAttempt(
   const answers = await sql<{ question_id: string; response: unknown; is_correct: boolean }[]>`
     select question_id, response, is_correct from tutai.practice_answers where attempt_id = ${attemptId}`;
   const questions = await attemptQuestions(row.question_ids);
+  // A finished attempt on content retired by a curriculum reset still shows
+  // the questions the student answered (read-only; nothing new is graded).
+  const missing = row.question_ids.filter((id) => !questions.has(id));
+  if (missing.length && row.status === 'COMPLETED') {
+    for (const [id, question] of await findRetiredQuestions(missing)) questions.set(id, question);
+  }
   const feedback: Record<string, PracticeFeedback> = {};
   for (const answer of answers) {
     const question = questions.get(answer.question_id);

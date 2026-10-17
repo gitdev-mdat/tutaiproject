@@ -51,7 +51,12 @@ export function LessonNextStep({
   // Practice opened from here comes back here (the lesson's summary).
   const practice = (attemptId?: string) => practiceHref(lessonId, attemptId, 'lesson');
   const lessons = program?.lessons ?? [];
-  const plan = progress ? pickNextStep(lessons, progress, summaries, { exclude: lessonId }) : null;
+  const plan = progress
+    ? pickNextStep(lessons, progress, summaries, {
+        exclude: lessonId,
+        currentScore: model.learning?.currentScore,
+      })
+    : null;
   const nextStep: Action = plan
     ? { href: plan.href, label: nextStepLabel(plan), testId: 'next-lesson-link' }
     : { href: programHref(program), label: 'Xem lộ trình của em', testId: 'next-roadmap-link' };

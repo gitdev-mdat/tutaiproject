@@ -532,6 +532,18 @@ export function rowToPartialQuestion(
 
 // ─── Preview row ──────────────────────────────────────────────────────────────
 
+/**
+ * Concept codes a question may cite: a node of the current Knowledge Tree, or
+ * of the legacy knowledge graph (questions written before the tree). Checking
+ * the graph alone rejected every code of a freshly imported curriculum.
+ */
+async function knownConceptCodes(tree?: KnowledgeTreeDocument): Promise<Set<string>> {
+  const graph = await readKnowledgeGraph();
+  const codes = new Set(Array.from(walkKgNodes(graph), ({ node }) => node.id));
+  for (const node of (tree ?? (await readKnowledgeTree())).nodes) codes.add(node.id);
+  return codes;
+}
+
 export async function previewRow(
   mapped: Record<ImportTargetField, string>,
   defaults: ImportDefaults,
@@ -591,8 +603,7 @@ export async function previewRow(
 
   // Knowledge Graph Validation
   if (partial.conceptCodes && partial.conceptCodes.length > 0) {
-    const graph = await readKnowledgeGraph();
-    const validCodes = new Set(Array.from(walkKgNodes(graph), ({ node }) => node.id));
+    const validCodes = await knownConceptCodes(tree);
     for (const code of partial.conceptCodes) {
       if (!validCodes.has(code)) {
         errors.push({
@@ -772,8 +783,7 @@ export async function commitImport(input: CommitImportInput): Promise<CommitResu
     }
 
     if (partial.conceptCodes && partial.conceptCodes.length > 0) {
-      const graph = await readKnowledgeGraph();
-      const validCodes = new Set(Array.from(walkKgNodes(graph), ({ node }) => node.id));
+      const validCodes = await knownConceptCodes(tree);
       for (const code of partial.conceptCodes) {
         if (!validCodes.has(code)) {
           rowErrors.push('Mã kiến thức không tồn tại trong Knowledge Tree.');
@@ -820,6 +830,11 @@ export async function commitImport(input: CommitImportInput): Promise<CommitResu
       chapterId: hierarchy.chapterId,
       lessonId: hierarchy.lessonId,
       topicId: hierarchy.topicId,
+      // The lesson link: practice, chapter sets and exam coverage all read it.
+      primaryKnowledgeNodeId: partial.primaryKnowledgeNodeId,
+      knowledgeCoverage: partial.knowledgeCoverage,
+      relatedKnowledgeNodeIds: partial.relatedKnowledgeNodeIds ?? [],
+      cognitiveLevel: partial.cognitiveLevel,
       conceptCodes: partial.conceptCodes ?? [],
       skillCodes: partial.skillCodes ?? [],
       difficulty: partial.difficulty ?? 'INTERMEDIATE',

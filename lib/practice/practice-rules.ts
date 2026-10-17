@@ -1,4 +1,4 @@
-import type { Question } from '@/lib/question-bank/qb-types';
+import { DIFFICULTY_VALUES, type Question } from '@/lib/question-bank/qb-types';
 import { practiceExclusionReason } from './grading';
 
 /** At most this many questions in one practice session. */
@@ -63,6 +63,28 @@ export function pickLessonSession(questions: Question[], lessonId: string): Ques
     0,
     PRACTICE_SESSION_SIZE
   );
+}
+
+/** Correct answers out of answered questions at one difficulty level. */
+export type DifficultyResult = {
+  difficulty: Question['difficulty'];
+  correct: number;
+  total: number;
+};
+
+/** Tallies answers per difficulty, easiest first; answers whose question is gone are left out. */
+export function resultsByDifficulty(
+  answers: { difficulty: Question['difficulty'] | undefined; correct: boolean }[]
+): DifficultyResult[] {
+  const tally = new Map<Question['difficulty'], DifficultyResult>();
+  for (const { difficulty, correct } of answers) {
+    if (!difficulty) continue;
+    const row = tally.get(difficulty) ?? { difficulty, correct: 0, total: 0 };
+    row.total += 1;
+    if (correct) row.correct += 1;
+    tally.set(difficulty, row);
+  }
+  return DIFFICULTY_VALUES.flatMap((difficulty) => tally.get(difficulty) ?? []);
 }
 
 export function isPassingScore(correct: number, total: number): boolean {

@@ -5,6 +5,7 @@ import {
   pickLessonChecks,
   pickLessonSession,
   practiceQuestionState,
+  resultsByDifficulty,
 } from './practice-rules';
 
 function question(overrides: Partial<Question>): Question {
@@ -106,5 +107,21 @@ describe('quick questions inside the lesson', () => {
   it('falls back to the easiest available, and to nothing for other lessons', () => {
     expect(pickLessonChecks([hard], 'lesson').map((q) => q.id)).toEqual(['h']);
     expect(pickLessonChecks([easy1], 'other')).toEqual([]);
+  });
+});
+
+describe('resultsByDifficulty', () => {
+  it('tallies answers per level, easiest first, and leaves out questions that are gone', () => {
+    expect(
+      resultsByDifficulty([
+        { difficulty: 'ADVANCED', correct: false },
+        { difficulty: 'FOUNDATIONAL', correct: true },
+        { difficulty: 'FOUNDATIONAL', correct: false },
+        { difficulty: undefined, correct: true },
+      ])
+    ).toEqual([
+      { difficulty: 'FOUNDATIONAL', correct: 1, total: 2 },
+      { difficulty: 'ADVANCED', correct: 0, total: 1 },
+    ]);
   });
 });

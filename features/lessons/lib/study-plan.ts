@@ -1,5 +1,6 @@
 import type { LearningLesson, LearningSubject } from '@/lib/knowledge-tree/learning-visibility';
 import type { LessonPracticeSummary } from '@/lib/practice/practice-service';
+import { DIFFICULTY_LABELS } from '@/lib/question-bank/qb-types';
 import {
   lessonLearningState,
   type LessonLearningState,
@@ -187,7 +188,55 @@ export function standingLabel(standing: LessonStanding): { text: string; tone: S
   return { text: 'Chưa học', tone: 'idle' };
 }
 
-export type NextStepKind = 'resume-practice' | 'resume-lesson' | 'practice' | 'retry' | 'start';
+export type NextStepKind =
+  'resume-practice' | 'resume-lesson' | 'practice' | 'retry' | 'check' | 'start';
+
+/**
+ * How a student begins a lesson they have no evidence on yet:
+ * - LEARN_FIRST: read the lesson, then practise (everyone without a usable score);
+ * - CHECK_FIRST: try the lesson's practice first; 80% completes the lesson
+ *   without re-reading it, anything less sends the student to the lesson.
+ *
+ * The self-reported average only chooses which of the two comes first. It never
+ * marks a lesson completed, skips one, or changes which questions are asked:
+ * completion always needs the student's own practice result.
+ */
+export type StartingPoint = 'LEARN_FIRST' | 'CHECK_FIRST';
+
+/**
+ * From this self-reported average (out of 10) a lesson starts with a check.
+ * 6.5 is where the national grading of secondary students (Thông tư 22/2021)
+ * begins "Khá": a student at or above it has usually met the grade's material
+ * once, so trying the practice first spares re-reading what they know, while
+ * the 80% bar still catches what they do not.
+ */
+export const CHECK_FIRST_FROM_SCORE = 6.5;
+
+export function startingPointFor(currentScore: number | null | undefined): StartingPoint {
+  return typeof currentScore === 'number' &&
+    Number.isFinite(currentScore) &&
+    currentScore >= CHECK_FIRST_FROM_SCORE
+    ? 'CHECK_FIRST'
+    : 'LEARN_FIRST';
+}
+
+const formatScore = (score: number) => score.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+
+/**
+ * "Lần gần nhất em đúng 2/2 câu Cơ bản, 0/3 câu Vận dụng." from the newest
+ * completed session; empty when there is none.
+ */
+export function latestResultSentence(practice: LessonPracticeSummary | undefined): string {
+  const rows = practice?.latest?.byDifficulty ?? [];
+  if (!rows.length) return '';
+  const parts = rows.map(
+    (row) => `${row.correct}/${row.total} câu ${DIFFICULTY_LABELS[row.difficulty]}`
+  );
+  const weak = rows.find((row) => row.correct < row.total);
+  return ` Lần gần nhất em đúng ${parts.join(', ')}${
+    weak ? `; nên xem kỹ phần ${DIFFICULTY_LABELS[weak.difficulty]} trước` : ''
+  }.`;
+}
 
 export interface NextStep {
   kind: NextStepKind;
@@ -232,7 +281,9 @@ export function practiceHref(id: string, attemptId?: string, from: PracticeOrigi
  * 1. finish the practice you left open;
  * 2. finish the lesson you left open;
  * 3. practise a lesson you have read but not yet passed;
- * 4. start the first lesson, in curriculum order, that is not completed.
+ * 4. start the first lesson, in curriculum order, that is not completed: by
+ *    trying its practice first when the student's starting point is
+ *    CHECK_FIRST and they have no result on it yet, otherwise by reading it.
  * Within 1–3 the lesson opened most recently comes first, then curriculum order.
  * `exclude` leaves out the lesson the student is on (end of a lesson or practice).
  */
@@ -240,8 +291,9 @@ export function pickNextStep(
   lessons: LearningLesson[],
   progress: LessonProgressState | null,
   summaries: Summaries,
-  options: { exclude?: string } = {}
+  options: { exclude?: string; currentScore?: number | null } = {}
 ): NextStep | null {
+  const start = startingPointFor(options.currentScore);
   const pool = lessons.filter((lesson) => lesson.id !== options.exclude);
   const standing = (id: string) => lessonStanding(id, progress, summaries);
   const last = progress?.lastLessonId;
@@ -279,7 +331,7 @@ export function pickNextStep(
           kind: 'retry',
           lesson,
           cta: 'Luyện tập lại',
-          reason: `Lần tốt nhất của em là ${best.correctCount}/${best.totalCount} câu đúng. Đạt 80% thì bài này mới tính là hoàn thành.`,
+          reason: `Lần tốt nhất của em là ${best.correctCount}/${best.totalCount} câu đúng. Đạt 80% thì bài này mới tính là hoàn thành.${latestResultSentence(current.practice)}`,
           href: practiceHref(lesson.id),
         }
       : {
@@ -292,14 +344,28 @@ export function pickNextStep(
   }
   const next = pool.find((lesson) => !standing(lesson.id).completed);
   if (!next) return null;
-  const attempted = standing(next.id).practice?.best;
+  const nextStanding = standing(next.id);
+  const attempted = nextStanding.practice?.best;
+  if (
+    start === 'CHECK_FIRST' &&
+    nextStanding.hasPractice &&
+    !attempted &&
+    nextStanding.reading.kind === 'new'
+  )
+    return {
+      kind: 'check',
+      lesson: next,
+      cta: 'Làm thử để kiểm tra',
+      reason: `Em tự đánh giá điểm trung bình ${formatScore(options.currentScore!)}/10, nên em làm thử ${nextStanding.practice!.questionCount} câu của bài này trước. Đạt 80% là bài được tính hoàn thành, không cần học lại. Chưa đạt thì em học bài rồi luyện lại.`,
+      href: practiceHref(next.id),
+    };
   const first = pool.every((lesson) => standing(lesson.id).reading.kind === 'new');
   return {
     kind: 'start',
     lesson: next,
     cta: standing(next.id).reading.kind === 'new' ? 'Bắt đầu học' : 'Học bài này',
     reason: attempted
-      ? 'Em đã luyện tập bài này nhưng chưa đạt. Học hết bài trước rồi luyện lại sẽ chắc hơn.'
+      ? `Em đã luyện tập bài này nhưng chưa đạt. Học hết bài trước rồi luyện lại sẽ chắc hơn.${latestResultSentence(nextStanding.practice)}`
       : first
         ? 'Bài đầu tiên trong chương trình. Các bài được xếp theo thứ tự thầy cô đã soạn.'
         : 'Bài tiếp theo em chưa hoàn thành, theo thứ tự của chương trình.',
