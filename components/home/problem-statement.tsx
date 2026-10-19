@@ -460,7 +460,9 @@ export function ProblemStatement() {
         setPhase(0);
         observer.disconnect();
       },
-      { threshold: 0.28 }
+      // Reveal once the section's top is in the lower part of the viewport. A share of
+      // the section's height is too late on phones, where the section is tall.
+      { rootMargin: '0px 0px -22% 0px' }
     );
 
     observer.observe(section);
