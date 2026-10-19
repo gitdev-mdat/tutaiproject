@@ -1,3 +1,4 @@
+import { loadEnvFile } from 'node:process';
 import { mapPrintedPage, normalizedHeading } from '@/lib/textbook-reference/page-mapping';
 import {
   readTextbookStore,
@@ -13,6 +14,11 @@ if (!source)
   );
 
 async function main() {
+  try {
+    loadEnvFile('.env.local');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
   const result = await registerTextbook(source, 'Công Phá Toán – Tập 3 – Ngọc Huyền LB');
   const store = await readTextbookStore();
   const document = store.documents.find((item) => item.id === result.document.id)!;
@@ -140,6 +146,7 @@ async function main() {
 
   document.anchors = anchors;
   document.tocEntries = entries;
+  document.tocIndexCompleteness = 'PARTIAL';
   if (document.status === 'REGISTERED') document.status = 'INDEXED';
   await writeTextbookStore(store);
   console.log(

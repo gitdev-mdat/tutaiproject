@@ -3,6 +3,7 @@ export type TextbookProcessingStatus =
 
 export type PagePosition = 'LEFT' | 'RIGHT' | 'FULL' | 'UNCERTAIN';
 export type VerificationStatus = 'OBSERVED' | 'NEEDS_REVIEW' | 'VERIFIED';
+export type TocIndexCompleteness = 'PARTIAL' | 'COMPLETE';
 
 export interface TextbookAnchor {
   printedPage: number;
@@ -42,6 +43,7 @@ export interface TextbookDocumentRecord {
   status: TextbookProcessingStatus;
   importedAt: string;
   sourceVersion: string;
+  tocIndexCompleteness: TocIndexCompleteness;
   processingErrors: string[];
   scanDetection?: { sampledPdfPages: number[]; textCharacterCounts: number[]; scanned: boolean };
   anchors: TextbookAnchor[];
@@ -88,6 +90,12 @@ export interface TextbookExtractionJob {
   cacheHit: boolean;
   durationMs?: number;
   error?: string;
+  history?: Array<{
+    status: TextbookExtractionJob['status'];
+    attempts: number;
+    error?: string;
+    at: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }

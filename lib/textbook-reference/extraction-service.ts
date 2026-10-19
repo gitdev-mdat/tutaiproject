@@ -6,7 +6,7 @@ import { executeWithAbortableProviderTimeout } from '@/lib/ai/provider-timeout';
 import { mapPrintedPage } from './page-mapping';
 import { splitAndLinkExercises } from './artifact-linking';
 import { renderPrintedPageCrops } from './pdf-pages';
-import { readTextbookStore, writeTextbookStore } from './repository';
+import { readTextbookStore, usesDatabaseTextbookStore, writeTextbookStore } from './repository';
 import type { TextbookArtifact, TextbookExtractionJob } from './types';
 
 const PROMPT_VERSION = 'textbook-knowledge-v4';
@@ -161,7 +161,18 @@ export async function queueTextbookExtraction(input: {
   job.attempts = 0;
   job.updatedAt = now;
   store.jobs.push(job);
-  await writeTextbookStore(store);
+  try {
+    await writeTextbookStore(store);
+  } catch (error) {
+    if ((error as { code?: string }).code !== '23505') throw error;
+    const concurrent = (await readTextbookStore()).jobs.find(
+      (candidate) =>
+        candidate.extractionKey === extractionKey &&
+        ['QUEUED', 'RUNNING', 'PARTIAL'].includes(candidate.status)
+    );
+    if (!concurrent) throw error;
+    return { job: concurrent, artifacts: [], cacheHit: false };
+  }
   return { job, artifacts: [], cacheHit: false };
 }
 
@@ -225,12 +236,19 @@ export async function extractTextbookPages(input: {
       'Every requested outline entry needs a confirmed Knowledge Tree mapping or a confirmed mapped parent.'
     );
   if (cached.length) {
-    const job = makeJob(input, pages, key, start, 'COMPLETED', true, model);
-    job.pagesProcessed = pages;
-    job.durationMs = Date.now() - start;
-    store.jobs.push(job);
+    const job = input.jobId
+      ? store.jobs.find((candidate) => candidate.id === input.jobId)
+      : undefined;
+    const completed = job ?? makeJob(input, pages, key, start, 'COMPLETED', true, model);
+    completed.status = 'COMPLETED';
+    completed.cacheHit = true;
+    completed.pagesProcessed = pages;
+    completed.durationMs = Date.now() - start;
+    completed.updatedAt = new Date().toISOString();
+    if (!job) store.jobs.push(completed);
+    document.status = 'EXTRACTED';
     await writeTextbookStore(store);
-    return { job, artifacts: cached, cacheHit: true };
+    return { job: completed, artifacts: cached, cacheHit: true };
   }
 
   const job = input.jobId
@@ -239,7 +257,8 @@ export async function extractTextbookPages(input: {
   if (input.jobId && !job) throw new Error('Queued extraction job not found.');
   const activeJob = job ?? makeJob(input, pages, key, start, 'RUNNING', false, model);
   activeJob.status = 'RUNNING';
-  activeJob.attempts += 1;
+  if (!usesDatabaseTextbookStore()) activeJob.attempts += 1;
+  delete activeJob.error;
   activeJob.updatedAt = new Date().toISOString();
   document.status = 'EXTRACTING';
   if (!job) store.jobs.push(activeJob);

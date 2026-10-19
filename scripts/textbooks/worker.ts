@@ -2,8 +2,10 @@ import { loadEnvFile } from 'node:process';
 import { open, readFile, unlink, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  claimNextTextbookJob,
   readTextbookStore,
   textbookStoreRoot,
+  usesDatabaseTextbookStore,
   writeTextbookStore,
 } from '@/lib/textbook-reference/repository';
 import { extractTextbookPages } from '@/lib/textbook-reference/extraction-service';
@@ -52,13 +54,13 @@ async function runOneJob() {
   const once = process.argv.includes('--once');
   const store = await readTextbookStore();
   const jobs = store.jobs.filter((job) => job.status === 'QUEUED' || job.status === 'RUNNING');
-  if (!jobs.length) {
+  const job = usesDatabaseTextbookStore() ? await claimNextTextbookJob() : (jobs[0] ?? null);
+  if (!job) {
     console.log(JSON.stringify({ processed: 0, message: 'No queued textbook extraction jobs.' }));
     return;
   }
-  const job = jobs[0];
   // Recover a process interrupted after queue persistence but before a terminal state.
-  if (job.status === 'RUNNING') {
+  if (!usesDatabaseTextbookStore() && job.status === 'RUNNING') {
     job.status = 'QUEUED';
     await writeTextbookStore(store);
   }

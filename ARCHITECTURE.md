@@ -98,22 +98,40 @@ Form/button      ──Server Action (app/**/actions.ts)─▶ lib/<domain> serv
 - `pnpm db:import-auth` copies an `auth-store.json` snapshot into PostgreSQL (dry run unless
   `--apply`; see the script header).
 
-### Everything else: JSON files
+### Curriculum and content documents
 
-| Data                       | File                                                    |
-| -------------------------- | ------------------------------------------------------- |
-| Accounts (local dev only)  | `data/runtime/auth-store.json` (`AUTH_STORE_PATH`)      |
-| Knowledge tree and lessons | `data/knowledge-tree/tree.json`, `articles.json`        |
-| Question bank and assets   | `data/question-bank/**`                                 |
-| Exams                      | `data/exams/exams.json` (`TUTAI_EXAMS_FILE`)            |
-| Knowledge graph            | `data/knowledge-graph/graph.json`                       |
-| Orders and subscriptions   | `data/mock-orders.json`, `data/mock-subscriptions.json` |
-| Student roadmaps           | `data/roadmaps/student-roadmaps.json`                   |
-| Import sessions            | `tmp/content-imports/**`                                |
+The active store depends on whether `DATABASE_URL` is configured. In the current local
+checkout without it, these domains use the listed JSON files. With `DATABASE_URL`, the
+following authored documents use rows in `tutai.content_documents` and are read fresh by
+the server: `knowledge-tree/tree`, `knowledge-tree/articles`, Question Bank questions,
+audits and import jobs, and `exams/exams`. Student roadmaps and practice/exam attempts use
+their dedicated PostgreSQL tables. A missing DB row is treated as empty; JSON seed
+files are not copied into a fresh database implicitly. The `tutai` schema is inaccessible
+to browser roles and is accessed only by server code.
 
-This works on a single long-running server. On Vercel the filesystem is not durable, so
-writes are lost between instances and deployments. These modules move to PostgreSQL next,
-one group at a time, the same way accounts did.
+The Knowledge Tree and these authored content documents are separate from source-document
+indexing. Textbook references live in dedicated `tutai.textbook_*` tables and private
+object storage, and map back to the existing Knowledge Tree node IDs. See
+`lib/textbook-reference/README.md` for setup and the current durable-backend status.
+
+### Remaining JSON/filesystem-backed domains and local fallbacks
+
+| Data                        | File                                                              |
+| --------------------------- | ----------------------------------------------------------------- |
+| Accounts (local dev only)   | `data/runtime/auth-store.json` (`AUTH_STORE_PATH`)                |
+| Knowledge tree and lessons  | `data/knowledge-tree/tree.json`, `articles.json` (local fallback) |
+| Question bank               | `data/question-bank/*.json` (local fallback)                      |
+| Question bank binary assets | `data/question-bank/**` (filesystem; not moved to PostgreSQL)     |
+| Exams                       | `data/exams/exams.json` (`TUTAI_EXAMS_FILE`, local fallback)      |
+| Knowledge graph             | `data/knowledge-graph/graph.json`                                 |
+| Orders and subscriptions    | `data/mock-orders.json`, `data/mock-subscriptions.json`           |
+| Student roadmaps            | `data/roadmaps/student-roadmaps.json` (local fallback)            |
+| Import sessions             | `tmp/content-imports/**`                                          |
+
+JSON fallbacks and remaining file-backed domains work on a single long-running server. On
+Vercel their filesystem is not durable, so writes are lost between instances and
+deployments. `DATABASE_URL` makes the listed authored content documents durable; it does
+not make every JSON or binary-asset domain durable.
 
 ## Environment variables
 

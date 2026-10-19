@@ -1,6 +1,12 @@
+import { loadEnvFile } from 'node:process';
 import { registerTextbook } from '@/lib/textbook-reference/repository';
 
 async function main() {
+  try {
+    loadEnvFile('.env.local');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
   const source = process.argv[2];
   const title = process.argv[3];
   if (!source) throw new Error('Usage: pnpm textbooks:register -- <pdf-path> [title]');
