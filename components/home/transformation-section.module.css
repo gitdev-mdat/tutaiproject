@@ -189,16 +189,6 @@
   letter-spacing: 0.1em;
 }
 
-.mobileEyebrowText,
-.mobileDescription,
-.mobileCtaLabel,
-.reasonDetails,
-.reasonExplanation,
-.reasonActions,
-.reasonPulse {
-  display: none;
-}
-
 .heading {
   margin: 0;
   color: #08152c;
@@ -227,68 +217,6 @@
   color: #485c7a;
   font-size: clamp(14.5px, 1.1vw, 16px);
   line-height: 1.6;
-}
-
-.benefitList {
-  margin: 28px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 14px;
-  list-style: none;
-}
-
-.benefit {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
-}
-
-.benefitIcon {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border: 1px solid;
-  border-radius: 14px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
-}
-
-.benefitIcon.blue {
-  color: #1768ff;
-  background: linear-gradient(145deg, #f8fbff, #eaf2ff);
-  border-color: rgba(23, 104, 255, 0.14);
-}
-
-.benefitIcon.violet {
-  color: #7357e8;
-  background: linear-gradient(145deg, #fbfaff, #f0edff);
-  border-color: rgba(115, 87, 232, 0.14);
-}
-
-.benefitIcon.cyan {
-  color: #148eab;
-  background: linear-gradient(145deg, #f7feff, #e5f8fb);
-  border-color: rgba(20, 142, 171, 0.14);
-}
-
-.benefit strong,
-.benefit small {
-  display: block;
-}
-
-.benefit strong {
-  margin-bottom: 2px;
-  color: #0b1830;
-  font-size: 15px;
-  font-weight: 720;
-  line-height: 1.3;
-}
-
-.benefit small {
-  color: #61728e;
-  font-size: 13px;
-  line-height: 1.55;
 }
 
 .actions {
@@ -344,30 +272,10 @@
   transform: translateX(2px);
 }
 
-.secondaryCta {
-  padding: 3px 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #155eef;
-  font-size: 13.5px;
-  font-weight: 650;
-  transition: gap 180ms ease;
-}
-
-.secondaryCta:hover {
-  gap: 12px;
-  opacity: 1;
-}
-
 .productStage {
   position: relative;
   z-index: 2;
   min-width: 0;
-}
-
-.mobileProductStage {
-  display: none;
 }
 
 .stageGlow {
@@ -379,12 +287,12 @@
 }
 
 .productShell {
-  height: 600px;
-  min-height: 600px;
+  /* Fixed so the demo does not resize between scenes; fits the tallest (practice). */
+  height: 476px;
+  min-height: 476px;
   padding: 16px;
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   color: #0a1730;
   background:
@@ -397,58 +305,6 @@
     0 10px 30px rgba(45, 102, 191, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(18px);
-}
-
-.productNav {
-  min-width: 0;
-  padding: 12px 8px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  border: 1px solid rgba(34, 86, 171, 0.07);
-  border-radius: 20px;
-  background: rgba(250, 252, 255, 0.73);
-}
-
-.productLogo {
-  height: 48px;
-  display: grid;
-  place-items: center;
-}
-
-.navItems {
-  margin-top: 12px;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.navItem {
-  min-height: 50px;
-  padding: 6px 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  color: #6b7b96;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.navItem:last-child {
-  margin-top: auto;
-}
-
-.navItemActive {
-  color: #155eef;
-  background: #ffffff;
-  border-color: rgba(21, 94, 239, 0.1);
-  box-shadow: 0 10px 22px rgba(37, 95, 180, 0.09);
 }
 
 .productMain {
@@ -567,13 +423,6 @@
   animation: formula-sweep 820ms ease-out both;
 }
 
-.conceptHint {
-  margin: 14px 0 0;
-  color: #61728e;
-  font-size: 10.5px;
-  line-height: 1.55;
-}
-
 .lessonSteps {
   min-height: 120px;
   margin-top: 15px;
@@ -644,117 +493,6 @@
   margin-top: 1px;
   color: #70809a;
   font-size: 9px;
-}
-
-.lessonOutcome {
-  position: relative;
-  margin-top: 15px;
-  padding: 14px 16px;
-  background: #ffffff;
-  border: 1px solid rgba(38, 79, 145, 0.09);
-  border-radius: 16px;
-}
-
-.lessonProgressHeading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #687a95;
-  font-size: 10px;
-}
-
-.lessonProgressHeading strong {
-  color: #155eef;
-  font-size: 11px;
-}
-
-.lessonProgressTrack {
-  height: 7px;
-  margin-top: 7px;
-  overflow: hidden;
-  background: #e8edf5;
-  border-radius: 999px;
-}
-
-.lessonProgressTrack span {
-  width: 35%;
-  height: 100%;
-  display: block;
-  background: linear-gradient(90deg, #155eef, #478aff);
-  border-radius: inherit;
-  transition: width 900ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.lessonExperience[data-completed='true'] .lessonProgressTrack span {
-  width: 100%;
-  background: linear-gradient(90deg, #15947e, #35b99d);
-}
-
-.progressGain {
-  position: absolute;
-  top: 12px;
-  right: 48px;
-  color: #12866f;
-  font-size: 9px;
-  font-weight: 750;
-  opacity: 0;
-  transform: translateY(4px);
-  transition:
-    opacity 300ms ease 450ms,
-    transform 300ms ease 450ms;
-}
-
-.lessonExperience[data-completed='true'] .progressGain {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.tutaiResponse {
-  margin-top: 13px;
-  padding-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-top: 1px solid rgba(38, 79, 145, 0.08);
-  opacity: 0;
-  transform: translateY(6px);
-  transition:
-    opacity 420ms ease 220ms,
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1) 220ms;
-}
-
-.lessonExperience[data-completed='true'] .tutaiResponse {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.tutaiResponse > span {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  background: #edf4ff;
-  border-radius: 11px;
-}
-
-.tutaiResponse strong,
-.tutaiResponse p {
-  display: block;
-  margin: 0;
-  line-height: 1.35;
-}
-
-.tutaiResponse strong {
-  color: #13233d;
-  font-size: 10.5px;
-}
-
-.tutaiResponse p {
-  margin-top: 2px;
-  color: #155eef;
-  font-size: 10px;
-  font-weight: 650;
 }
 
 .practiceExperience {
@@ -878,7 +616,6 @@
 }
 
 .practiceFooter {
-  min-height: 105px;
   margin-top: 15px;
   padding: 14px 16px;
   background: #ffffff;
@@ -886,40 +623,7 @@
   border-radius: 16px;
 }
 
-.practiceProgress > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: #687a95;
-  font-size: 10px;
-}
-
-.practiceProgress strong {
-  color: #7654dc;
-  font-size: 10px;
-}
-
-.practiceProgressTrack {
-  height: 7px;
-  margin-top: 8px;
-  display: block;
-  overflow: hidden;
-  background: #e8edf5;
-  border-radius: 999px;
-}
-
-.practiceProgressTrack > span {
-  width: var(--practice-progress, 0%);
-  height: 100%;
-  display: block;
-  background: linear-gradient(90deg, #7654dc, #9a79ef);
-  border-radius: inherit;
-  transition: width 620ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 .answerFeedback {
-  margin-top: 11px;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1033,29 +737,6 @@
   line-height: 1.45;
 }
 
-.completionStats {
-  margin-top: 19px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.completionStats span {
-  padding: 11px;
-  display: grid;
-  gap: 2px;
-  color: #6d7e94;
-  background: #f5faf8;
-  border: 1px solid rgba(31, 150, 124, 0.12);
-  border-radius: 13px;
-  font-size: 9px;
-}
-
-.completionStats strong {
-  color: #12866f;
-  font-size: 17px;
-}
-
 .celebrationLayer {
   position: absolute;
   z-index: 1;
@@ -1155,33 +836,6 @@
   box-shadow: 0 12px 30px rgba(21, 94, 239, 0.22);
 }
 
-.summaryItems {
-  width: min(100%, 410px);
-  margin-top: 20px;
-  display: grid;
-  gap: 9px;
-}
-
-.summaryItems span {
-  min-height: 43px;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #31465f;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(35, 100, 202, 0.11);
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 680;
-  text-align: left;
-}
-
-.summaryItems svg {
-  flex: 0 0 auto;
-  color: #15947e;
-}
-
 .summaryProgress {
   width: min(100%, 410px);
   min-height: 45px;
@@ -1201,19 +855,14 @@
   font-size: 16px;
 }
 
-.taskUnlocked {
+.taskReady {
   background: linear-gradient(100deg, rgba(244, 240, 255, 0.96), #ffffff 58%);
   border-color: rgba(118, 84, 220, 0.34);
   box-shadow: 0 14px 34px rgba(107, 73, 217, 0.1);
   animation: unlock-card 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.taskUnlocked .unlockNote {
-  color: #12866f;
-  font-weight: 650;
-}
-
-.taskUnlocked .taskActionSecondary {
+.taskReady .taskActionSecondary {
   color: #ffffff;
   background: #7654dc;
   border-color: #7654dc;
@@ -1240,27 +889,14 @@
   background: linear-gradient(90deg, #15947e, #35b99d);
 }
 
-.taskUnlocking {
+.taskBecomingReady {
   filter: saturate(0.8);
   animation: unlock-wait 1200ms ease-in-out both;
 }
 
-.taskUnlocking .taskIllustration {
+.taskBecomingReady .taskIllustration {
   color: #7654dc;
   background: #f1edff;
-}
-
-.taskActionLocked {
-  color: #8491a4;
-  background: #f0f3f7;
-  border-color: rgba(92, 108, 132, 0.12);
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-.taskActionLocked:hover {
-  box-shadow: none;
-  transform: none;
 }
 
 @keyframes demo-scene-in {
@@ -1401,8 +1037,46 @@
   }
 }
 
+.chapterTrack {
+  margin-bottom: 16px;
+}
+
+.chapterTrack ol {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  list-style: none;
+}
+
+.chapterTrack li {
+  height: 6px;
+  background: #e3e9f2;
+  border-radius: 999px;
+}
+
+.chapterTrack li[data-state='done'] {
+  background: #19b38a;
+}
+
+.chapterTrack li[data-state='current'] {
+  background: linear-gradient(90deg, #155eef 50%, #cfdcf5 50%);
+}
+
+.chapterTrack p {
+  margin: 9px 0 0;
+  color: #71819b;
+  font-size: 11px;
+}
+
+.chapterTrack strong {
+  color: #0b1730;
+  font-weight: 700;
+}
+
 .productHeader {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1427,70 +1101,10 @@
   letter-spacing: -0.035em;
 }
 
-.goalChip {
-  flex: 0 0 auto;
-  min-height: 32px;
-  padding: 6px 11px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #60728f;
-  background: #f8faff;
-  border: 1px solid rgba(21, 94, 239, 0.11);
-  border-radius: 999px;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.goalChip strong {
-  color: #155eef;
-  font-weight: 750;
-}
-
 .taskList {
   position: relative;
   display: grid;
   gap: 12px;
-}
-
-.unlockBridge {
-  position: absolute;
-  z-index: 3;
-  top: 99px;
-  left: 50%;
-  min-height: 28px;
-  padding: 5px 11px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: #6745d0;
-  background: #ffffff;
-  border: 1px solid rgba(118, 84, 220, 0.24);
-  border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(77, 54, 158, 0.13);
-  font-size: 9px;
-  font-weight: 720;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, 7px) scale(0.97);
-  transition:
-    opacity 300ms ease,
-    transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.unlockBridge[data-visible='true'] {
-  opacity: 1;
-  transform: translate(-50%, 0) scale(1);
-}
-
-.unlockBridge span {
-  width: 7px;
-  height: 7px;
-  background: #7553dc;
-  border-radius: 50%;
-  box-shadow: 0 0 0 0 rgba(117, 83, 220, 0.3);
-  animation: unlock-pulse 900ms ease-out infinite;
 }
 
 .taskCard {
@@ -1560,16 +1174,16 @@
   background: #e9edf2;
 }
 
-.taskUnlocked {
+.taskReady {
   filter: none;
 }
 
-.taskUnlocked .taskNumber {
+.taskReady .taskNumber {
   background: linear-gradient(145deg, #986ced, #6b49d9);
   box-shadow: 0 6px 13px rgba(107, 73, 217, 0.2);
 }
 
-.taskUnlocked .taskIllustration {
+.taskReady .taskIllustration {
   color: #7754e5;
   background: linear-gradient(145deg, #f4f0ff, #efeaff);
 }
@@ -1626,23 +1240,21 @@
 }
 
 .taskMeta {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 12px;
+  margin: 10px 0 0;
   color: #71819b;
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
-.taskMeta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.taskSecondary .taskBody h4 {
+  margin-bottom: 0;
 }
 
-.unlockNote {
-  color: #7989a2;
+.stageCaption {
+  margin: 14px 0 0;
+  color: #7a8aa3;
+  font-size: 12px;
+  text-align: center;
 }
 
 .taskAction {
@@ -1677,104 +1289,6 @@
   box-shadow: none;
 }
 
-.statsGrid {
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.statCard {
-  min-width: 0;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #ffffff;
-  border: 1px solid rgba(38, 79, 145, 0.09);
-  border-radius: 14px;
-  box-shadow: 0 10px 23px rgba(38, 75, 130, 0.045);
-}
-
-.statIcon {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-}
-
-.statCard strong,
-.statCard small {
-  display: block;
-}
-
-.statCard strong {
-  color: #0b1730;
-  font-size: 16px;
-  font-weight: 780;
-  line-height: 1.1;
-}
-
-.statCard small {
-  margin-top: 2px;
-  color: #6f7f98;
-  font-size: 9px;
-  line-height: 1.3;
-}
-
-.statblue .statIcon {
-  color: #1768ff;
-  background: #edf4ff;
-}
-
-.statamber .statIcon {
-  color: #ec8a14;
-  background: #fff4e7;
-}
-
-.statgreen .statIcon {
-  color: #0d9e82;
-  background: #e9f8f4;
-}
-
-.reasonCard {
-  margin-top: 16px;
-  padding: 14px 16px;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
-  background: linear-gradient(102deg, rgba(233, 243, 255, 0.9), rgba(246, 250, 255, 0.95));
-  border: 1px solid rgba(21, 94, 239, 0.11);
-  border-radius: 16px;
-}
-
-.reasonIcon {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  color: #1768ff;
-  background: rgba(210, 229, 255, 0.86);
-  border-radius: 12px;
-}
-
-.reasonCard h4 {
-  margin: 0 0 4px;
-  color: #10203a;
-  font-size: 12px;
-  font-weight: 730;
-}
-
-.reasonCard p {
-  margin: 0;
-  color: #61728e;
-  font-size: 10px;
-  line-height: 1.5;
-}
-
 .reveal {
   opacity: 0;
   transform: translateY(18px);
@@ -1803,9 +1317,6 @@
   }
 
   .productShell {
-    min-height: 670px;
-    grid-template-columns: 98px minmax(0, 1fr);
-    gap: 14px;
     padding: 14px;
   }
 
@@ -1822,11 +1333,6 @@
   .taskIllustration {
     width: 62px;
     height: 62px;
-  }
-
-  .statCard {
-    padding: 13px;
-    gap: 9px;
   }
 }
 
@@ -1942,22 +1448,6 @@
     letter-spacing: 0.14em;
   }
 
-  .eyebrow svg,
-  .desktopEyebrowText,
-  .desktopDescription,
-  .desktopCtaLabel,
-  .secondaryCta,
-  .productNav,
-  .reasonDesktopCopy {
-    display: none;
-  }
-
-  .mobileEyebrowText,
-  .mobileDescription,
-  .mobileCtaLabel {
-    display: inline;
-  }
-
   .heading {
     font-size: clamp(38px, 10.6vw, 46px);
     line-height: 0.98;
@@ -1978,34 +1468,6 @@
     color: #526783;
     font-size: 15px;
     line-height: 1.6;
-  }
-
-  .benefitList {
-    width: min(100%, 370px);
-    margin: 27px auto 0;
-    gap: 18px;
-    text-align: left;
-  }
-
-  .benefit {
-    grid-template-columns: 54px minmax(0, 1fr);
-    gap: 14px;
-  }
-
-  .benefitIcon {
-    width: 54px;
-    height: 54px;
-    border-radius: 16px;
-  }
-
-  .benefit strong {
-    margin-bottom: 3px;
-    font-size: 16px;
-  }
-
-  .benefit small {
-    font-size: 13px;
-    line-height: 1.42;
   }
 
   .actions {
@@ -2033,409 +1495,6 @@
     display: block;
   }
 
-  .mobileProductStage {
-    position: relative;
-    z-index: 2;
-    display: block;
-    width: 100%;
-  }
-
-  .mobileDashboard {
-    padding: 18px;
-    color: #0a1730;
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(69, 122, 204, 0.22);
-    border-radius: 28px;
-    box-shadow: 0 22px 54px rgba(29, 70, 132, 0.13);
-  }
-
-  .mobileDashboardHeader {
-    margin-bottom: 16px;
-  }
-
-  .mobileDashboardHeader > span {
-    display: block;
-    margin-bottom: 7px;
-    color: #788aa6;
-    font-size: 11px;
-    font-weight: 750;
-    letter-spacing: 0.11em;
-  }
-
-  .mobileDashboardHeader > div {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .mobileDashboardHeader h3 {
-    min-width: 0;
-    margin: 0;
-    color: #09172f;
-    font-size: clamp(22px, 6.2vw, 25px);
-    font-weight: 760;
-    line-height: 1.15;
-    letter-spacing: -0.035em;
-  }
-
-  .mobileGoalChip {
-    min-height: 36px;
-    padding: 8px 11px;
-    flex: 0 0 auto;
-    color: #667892;
-    background: #f8faff;
-    border: 1px solid rgba(72, 104, 154, 0.13);
-    border-radius: 999px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .mobileGoalChip strong {
-    color: #155eef;
-  }
-
-  .mobileTaskList {
-    display: grid;
-    gap: 16px;
-  }
-
-  .mobileLessonCard,
-  .mobilePracticeCard {
-    position: relative;
-    min-width: 0;
-    padding: 16px;
-    background: #ffffff;
-    border-radius: 19px;
-  }
-
-  .mobileLessonCard {
-    border: 1px solid rgba(21, 94, 239, 0.4);
-    box-shadow: 0 12px 28px rgba(28, 83, 166, 0.08);
-  }
-
-  .mobilePracticeCard {
-    border: 1px solid rgba(70, 94, 132, 0.12);
-    color: #4d5d76;
-  }
-
-  .mobileLessonHeading,
-  .mobilePracticeHeading {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .mobileStepBadge {
-    width: 26px;
-    height: 26px;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    color: #ffffff;
-    background: #155eef;
-    border: 2px solid #ffffff;
-    border-radius: 50%;
-    box-shadow: 0 4px 10px rgba(21, 94, 239, 0.2);
-    font-size: 11px;
-    font-weight: 760;
-  }
-
-  .mobileTaskIcon,
-  .mobilePracticeIcon {
-    width: 46px;
-    height: 46px;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    color: #155eef;
-    background: #edf4ff;
-    border-radius: 14px;
-  }
-
-  .mobilePracticeIcon {
-    color: #65758e;
-    background: #f2f5f9;
-  }
-
-  .mobileLessonHeading h4,
-  .mobilePracticeHeading h4 {
-    min-width: 0;
-    margin: 0;
-    color: #0b1830;
-    font-size: clamp(16px, 4.5vw, 18px);
-    font-weight: 700;
-    line-height: 1.3;
-  }
-
-  .mobileProgressRow {
-    margin: 14px 0 0 84px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 34px;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .mobileProgressTrack {
-    height: 6px;
-    overflow: hidden;
-    background: #e8edf5;
-    border-radius: 999px;
-  }
-
-  .mobileProgressTrack span {
-    height: 100%;
-    display: block;
-    background: #155eef;
-    border-radius: inherit;
-    transition: width 420ms ease;
-  }
-
-  .mobileProgressRow strong {
-    color: #667894;
-    font-size: 11px;
-  }
-
-  .mobileLessonFooter {
-    margin: 12px 0 0 84px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .mobileLessonFooter > span {
-    min-width: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: #70819a;
-    font-size: 11px;
-  }
-
-  .mobileTaskCta,
-  .mobilePracticeCta {
-    width: auto;
-    min-width: 76px;
-    min-height: 40px;
-    padding: 8px 14px;
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: #155eef;
-    background: #ffffff;
-    border: 1px solid rgba(21, 94, 239, 0.25);
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 720;
-    white-space: nowrap;
-  }
-
-  .mobilePracticeHeading > div {
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-
-  .mobilePracticeLock,
-  .mobilePracticeMeta {
-    margin-top: 5px;
-    display: flex;
-    align-items: flex-start;
-    gap: 5px;
-    color: #718098;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-
-  .mobilePracticeLock svg {
-    margin-top: 1px;
-    flex: 0 0 auto;
-  }
-
-  .mobilePracticeActive {
-    color: #0b1830;
-    border-color: rgba(21, 94, 239, 0.18);
-  }
-
-  .mobilePracticeActive .mobilePracticeIcon {
-    color: #155eef;
-    background: #edf4ff;
-  }
-
-  .mobilePracticeCta {
-    min-width: auto;
-    padding-inline: 11px;
-  }
-
-  .mobileStatsGrid {
-    margin-top: 16px;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 9px;
-  }
-
-  .mobileStatCard {
-    min-width: 0;
-    min-height: 78px;
-    padding: 12px 8px;
-    background: #ffffff;
-    border: 1px solid rgba(70, 94, 132, 0.11);
-    border-radius: 16px;
-  }
-
-  .mobileStatCard > div {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .mobileStatCard span {
-    width: 28px;
-    height: 28px;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    background: #f2f6fc;
-    border-radius: 9px;
-  }
-
-  .mobileStat_blue {
-    color: #155eef;
-  }
-
-  .mobileStat_amber {
-    color: #e28719;
-  }
-
-  .mobileStat_green {
-    color: #15947e;
-  }
-
-  .mobileStatCard strong {
-    color: #0b1830;
-    font-size: clamp(16px, 4.4vw, 18px);
-    line-height: 1;
-  }
-
-  .mobileStatCard small {
-    margin-top: 7px;
-    display: block;
-    color: #6d7d95;
-    font-size: 10px;
-    line-height: 1.3;
-  }
-
-  .mobileInsight {
-    margin-top: 16px;
-    padding: 17px;
-    background: #eef6ff;
-    border: 1px solid rgba(21, 94, 239, 0.2);
-    border-radius: 19px;
-  }
-
-  .mobileInsight header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .mobileInsight header > span {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    color: #155eef;
-    background: #dfeeff;
-    border-radius: 10px;
-  }
-
-  .mobileInsight h4 {
-    margin: 0;
-    color: #0c1a32;
-    font-size: clamp(16px, 4.4vw, 17px);
-    font-weight: 730;
-    line-height: 1.3;
-  }
-
-  .mobileInsightRows {
-    margin: 15px 0 0;
-  }
-
-  .mobileInsightRows > div {
-    padding: 10px 0;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    border-bottom: 1px solid rgba(80, 111, 157, 0.12);
-    font-size: 12px;
-    line-height: 1.35;
-  }
-
-  .mobileInsightRows dt {
-    color: #60728d;
-  }
-
-  .mobileInsightRows dd {
-    margin: 0;
-    color: #155eef;
-    font-weight: 730;
-    text-align: right;
-  }
-
-  .mobileInsightRows .mobileWarning {
-    color: #db7712;
-  }
-
-  .mobileInsight > p {
-    margin: 13px 0 0;
-    color: #526681;
-    font-size: 12.5px;
-    line-height: 1.5;
-  }
-
-  .mobileInsightCta {
-    width: auto;
-    min-width: 132px;
-    min-height: 44px;
-    margin: 15px auto 0;
-    padding: 9px 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: #ffffff;
-    background: #155eef;
-    border: 0;
-    border-radius: 999px;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 730;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .mobileInsightCta:disabled {
-    background: #3372ed;
-    cursor: default;
-  }
-
-  .mobileInsightLock {
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: #64758e;
-    font-size: 11px;
-    line-height: 1.4;
-    text-align: center;
-  }
-
   .productStage {
     width: 100%;
     margin: 0;
@@ -2447,7 +1506,7 @@
   }
 
   .productShell {
-    height: 920px;
+    height: auto;
     min-height: auto;
     padding: 10px;
     display: block;
@@ -2460,7 +1519,7 @@
   }
 
   .productMain {
-    height: 900px;
+    height: auto;
     min-height: 0;
     padding: 18px 14px 16px;
     border-radius: 22px;
@@ -2483,25 +1542,15 @@
     line-height: 1.15;
   }
 
-  .goalChip {
-    min-height: 36px;
-    padding: 7px 10px;
-    gap: 4px;
-    font-size: 11px;
-  }
-
-  .goalChip svg {
-    display: none;
-  }
-
   .taskList {
     gap: 16px;
   }
 
   .taskCard {
-    min-height: 128px;
-    padding: 18px 10px 16px 28px;
-    grid-template-columns: 46px minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 18px 12px 16px 48px;
+    /* The step number already marks each card; the icon tile would only squeeze the title. */
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
     border-radius: 18px;
   }
@@ -2521,14 +1570,7 @@
   }
 
   .taskIllustration {
-    width: 46px;
-    height: 58px;
-    border-radius: 14px;
-  }
-
-  .taskIllustration svg {
-    width: 24px;
-    height: 24px;
+    display: none;
   }
 
   .taskBody h4 {
@@ -2548,13 +1590,8 @@
 
   .taskMeta {
     margin-top: 9px;
-    gap: 5px;
-    font-size: 10.5px;
+    font-size: 11.5px;
     line-height: 1.3;
-  }
-
-  .unlockNote {
-    width: 100%;
   }
 
   .taskAction {
@@ -2593,202 +1630,6 @@
 
   .taskPrimary > * {
     z-index: 1;
-  }
-
-  .statsGrid {
-    margin-top: 16px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .statCard {
-    min-height: 74px;
-    padding: 10px 7px;
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 6px;
-    border-radius: 16px;
-  }
-
-  .statIcon {
-    width: 30px;
-    height: 36px;
-    border-radius: 10px;
-  }
-
-  .statIcon svg {
-    width: 17px;
-    height: 17px;
-  }
-
-  .statCard strong {
-    font-size: clamp(14px, 4vw, 17px);
-  }
-
-  .statCard small {
-    margin-top: 4px;
-    font-size: 9.5px;
-    line-height: 1.2;
-  }
-
-  .reasonCard {
-    position: relative;
-    margin-top: 16px;
-    padding: 16px;
-    display: block;
-    overflow: hidden;
-    background: linear-gradient(145deg, rgba(232, 243, 255, 0.94), rgba(247, 251, 255, 0.98));
-    border-color: rgba(21, 94, 239, 0.26);
-    border-radius: 18px;
-  }
-
-  .reasonIcon {
-    position: absolute;
-    top: 13px;
-    left: 14px;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-  }
-
-  .reasonIcon svg {
-    width: 19px;
-    height: 19px;
-  }
-
-  .reasonSummary {
-    min-height: 34px;
-    padding: 4px 58px 0 42px;
-  }
-
-  .reasonCard h4 {
-    margin: 0;
-    font-size: clamp(15px, 4.2vw, 18px);
-    line-height: 1.3;
-  }
-
-  .reasonPulse {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    width: 50px;
-    height: 50px;
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(55, 138, 244, 0.16);
-    border-radius: 50%;
-    box-shadow:
-      0 0 0 8px rgba(55, 138, 244, 0.06),
-      0 0 0 15px rgba(55, 138, 244, 0.035);
-  }
-
-  .reasonPulse span {
-    width: 18px;
-    height: 18px;
-    background: rgba(77, 151, 245, 0.34);
-    border-radius: 50%;
-    clip-path: polygon(36% 24%, 80% 50%, 36% 76%);
-  }
-
-  .reasonDetails {
-    margin-top: 14px;
-    display: grid;
-    gap: 7px;
-  }
-
-  .reasonDetailRow {
-    min-width: 0;
-    min-height: 37px;
-    padding: 8px 10px;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: rgba(255, 255, 255, 0.88);
-    border-radius: 10px;
-    color: #354863;
-    font-size: 11px;
-    line-height: 1.25;
-  }
-
-  .reasonDetailRow svg {
-    flex: 0 0 auto;
-    color: #246cf2;
-  }
-
-  .reasonDetailRow:nth-child(2) svg {
-    color: #7754e5;
-  }
-
-  .reasonDetailRow:nth-child(3) svg {
-    color: #ef8c16;
-  }
-
-  .reasonDetailRow strong {
-    font-weight: 750;
-  }
-
-  .reasonBlue {
-    color: #155eef;
-  }
-
-  .reasonViolet {
-    color: #7654dc;
-  }
-
-  .reasonOrange {
-    color: #e97d0a;
-  }
-
-  .reasonExplanation {
-    margin: 10px 0 0;
-    display: block;
-    color: #586c88;
-    font-size: 11px;
-    line-height: 1.45;
-  }
-
-  .reasonActions {
-    margin-top: 12px;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: stretch;
-    gap: 9px;
-  }
-
-  .reasonCta {
-    min-height: 46px;
-    padding: 9px 15px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: #155eef;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(21, 94, 239, 0.46);
-    border-radius: 999px;
-    box-shadow: 0 8px 18px rgba(21, 94, 239, 0.07);
-    font-size: 14px;
-    font-weight: 750;
-    white-space: nowrap;
-  }
-
-  .reasonLockNote {
-    min-width: 0;
-    padding: 8px 9px;
-    display: grid;
-    grid-template-columns: 17px minmax(0, 1fr);
-    align-items: center;
-    gap: 6px;
-    color: #61728e;
-    background: rgba(255, 255, 255, 0.56);
-    border: 1px solid rgba(64, 107, 177, 0.1);
-    border-radius: 12px;
-    font-size: 10px;
-    line-height: 1.35;
-  }
-
-  .reasonLockNote svg {
-    color: #70819c;
   }
 
   .practiceHeader {
@@ -2847,35 +1688,10 @@
     padding: 16px;
   }
 
-  .conceptHeading {
-    grid-template-columns: 34px minmax(0, 1fr) 22px;
-    gap: 9px;
-  }
-
-  .conceptHeading h4 {
-    font-size: 12px;
-  }
-
   .formulaPanel {
     padding: 18px 8px;
     gap: 8px;
     font-size: clamp(16px, 5vw, 20px);
-  }
-
-  .conceptHint {
-    font-size: 10px;
-  }
-
-  .understoodRow {
-    align-items: flex-end;
-  }
-
-  .learningStatus {
-    max-width: 175px;
-  }
-
-  .lessonOutcome {
-    margin-top: 13px;
   }
 }
 
@@ -2888,72 +1704,17 @@
     font-size: 37px;
   }
 
-  .mobileDashboard {
-    padding: 15px;
-  }
-
-  .mobileLessonCard,
-  .mobilePracticeCard {
-    padding: 15px;
-  }
-
-  .mobileLessonHeading,
-  .mobilePracticeHeading {
-    gap: 9px;
-  }
-
-  .mobileProgressRow,
-  .mobileLessonFooter {
-    margin-left: 72px;
-  }
-
-  .mobileStatsGrid {
-    gap: 7px;
-  }
-
-  .mobileStatCard {
-    padding-inline: 7px;
-  }
-
-  .mobileStatCard > div {
-    gap: 4px;
-  }
-
-  .mobileStatCard span {
-    width: 25px;
-    height: 25px;
-  }
-
-  .mobileInsight {
-    padding: 15px;
-  }
-
   .productMain {
     padding-inline: 11px;
   }
 
   .taskCard {
     padding-right: 8px;
-    grid-template-columns: 42px minmax(0, 1fr) auto;
     gap: 8px;
-  }
-
-  .taskIllustration {
-    width: 42px;
   }
 
   .taskAction {
     padding-inline: 8px;
-  }
-
-  .statCard {
-    grid-template-columns: 1fr;
-    place-items: center;
-    text-align: center;
-  }
-
-  .reasonActions {
-    grid-template-columns: 0.8fr 1.2fr;
   }
 }
 
@@ -2966,30 +1727,23 @@
   .progressFill,
   .primaryCta,
   .primaryCta span,
-  .secondaryCta,
   .taskAction,
   .demoSceneRoadmap,
   .demoSceneLesson,
   .demoScenePractice,
-  .understoodButton,
-  .lessonProgressTrack span,
-  .practiceProgressTrack span,
   .questionCard,
   .practiceCompletionCard,
   .completionCheck,
   .summaryCheck,
   .finalSummary,
-  .taskUnlocked {
+  .taskReady {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
     animation: none !important;
   }
 
-  .conceptCheck,
-  .formulaSweep,
-  .progressGain,
-  .tutaiResponse {
+  .formulaSweep {
     animation: none !important;
     transition: none !important;
   }
