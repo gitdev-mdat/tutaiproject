@@ -1,14 +1,16 @@
+// Textbook worker. Usage:
+//   pnpm textbooks:worker            keep running: poll the queue, report liveness
+//   pnpm textbooks:worker -- --once  run at most one job, then exit
+// Needs DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+// TEXTBOOK_STORAGE_BUCKET and GEMINI_API_KEY in the environment or .env.local.
 import { loadEnvFile } from 'node:process';
-import { open, readFile, unlink, mkdir } from 'node:fs/promises';
-import path from 'node:path';
-import {
-  claimNextTextbookJob,
-  readTextbookStore,
-  textbookStoreRoot,
-  usesDatabaseTextbookStore,
-  writeTextbookStore,
-} from '@/lib/textbook-reference/repository';
-import { extractTextbookPages } from '@/lib/textbook-reference/extraction-service';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { closeSql } from '@/lib/db/postgres';
+import { assertTextbookBackend, recordWorkerHeartbeat, removeWorker } from '@/lib/textbook-reference/repository';
+import { newWorkerIdentity, processNextTextbookJob } from '@/lib/textbook-reference/worker';
+
+const POLL_MS = 5_000;
+const HEARTBEAT_MS = 30_000;
 
 async function main() {
   try {
@@ -16,82 +18,63 @@ async function main() {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
-  const lockPath = path.join(textbookStoreRoot(), 'worker.lock');
-  await mkdir(path.dirname(lockPath), { recursive: true });
-  let lock: Awaited<ReturnType<typeof open>>;
-  try {
-    lock = await open(lockPath, 'wx');
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-    let stale = true;
-    try {
-      const { pid } = JSON.parse(await readFile(lockPath, 'utf8')) as { pid: number };
-      if (Number.isInteger(pid)) {
-        try {
-          process.kill(pid, 0);
-          stale = false;
-        } catch (probeError) {
-          stale = (probeError as NodeJS.ErrnoException).code === 'ESRCH';
-        }
-      }
-    } catch {
-      stale = true;
-    }
-    if (!stale) throw new Error('Another textbook worker is already running.');
-    await unlink(lockPath);
-    lock = await open(lockPath, 'wx');
-  }
-  await lock.writeFile(JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
-  try {
-    await runOneJob();
-  } finally {
-    await lock.close();
-    await unlink(lockPath).catch(() => {});
-  }
-}
-
-async function runOneJob() {
+  assertTextbookBackend();
   const once = process.argv.includes('--once');
-  const store = await readTextbookStore();
-  const jobs = store.jobs.filter((job) => job.status === 'QUEUED' || job.status === 'RUNNING');
-  const job = usesDatabaseTextbookStore() ? await claimNextTextbookJob() : (jobs[0] ?? null);
-  if (!job) {
-    console.log(JSON.stringify({ processed: 0, message: 'No queued textbook extraction jobs.' }));
-    return;
-  }
-  // Recover a process interrupted after queue persistence but before a terminal state.
-  if (!usesDatabaseTextbookStore() && job.status === 'RUNNING') {
-    job.status = 'QUEUED';
-    await writeTextbookStore(store);
-  }
+  const worker = newWorkerIdentity();
+  let stopping = false;
+  let currentJobId: string | null = null;
+  const stop = () => {
+    stopping = true;
+  };
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
+  await recordWorkerHeartbeat({ ...worker, currentJobId: null });
+  const heartbeat = setInterval(() => {
+    void recordWorkerHeartbeat({ ...worker, currentJobId }).catch((error) =>
+      console.error('[textbook-worker] heartbeat failed:', (error as Error).message)
+    );
+  }, HEARTBEAT_MS);
+  console.log(JSON.stringify({ worker: worker.id, mode: once ? 'once' : 'watch' }));
   try {
-    const result = await extractTextbookPages({
-      documentId: job.documentId,
-      knowledgeNodeId: job.knowledgeNodeId,
-      entryIds: job.entryIds,
-      printedPages: job.printedPages,
-      jobId: job.id,
-    });
-    console.log(
-      JSON.stringify({
-        jobId: job.id,
-        status: result.job.status,
-        artifacts: result.artifacts.length,
-        cacheHit: result.cacheHit,
-      })
-    );
-  } catch (error) {
-    console.error(
-      JSON.stringify({
-        jobId: job.id,
-        status: 'FAILED',
-        error: error instanceof Error ? error.message : String(error),
-      })
-    );
-    process.exitCode = 1;
+    do {
+      const outcome = await processNextTextbookJob(worker, {
+        onClaim: (job) => {
+          currentJobId = job.id;
+        },
+      });
+      if (!outcome) {
+        if (once) {
+          console.log(JSON.stringify({ processed: 0, message: 'No queued textbook jobs.' }));
+          break;
+        }
+        await sleep(POLL_MS);
+        continue;
+      }
+      currentJobId = null;
+      const { job, recorded } = outcome;
+      console.log(
+        JSON.stringify({
+          jobId: job.id,
+          kind: job.kind,
+          status: job.status,
+          attempts: job.attempts,
+          providerCalls: job.providerCalls ?? 0,
+          cacheHit: job.cacheHit,
+          durationMs: job.durationMs,
+          ...(job.error ? { error: job.error } : {}),
+          ...(recorded ? {} : { note: 'lease lost; outcome not recorded' }),
+        })
+      );
+      if (job.status === 'FAILED') process.exitCode = 1;
+    } while (!once && !stopping);
+  } finally {
+    clearInterval(heartbeat);
+    await removeWorker(worker.id).catch(() => {});
+    await closeSql();
   }
-  if (!once && jobs.length > 1)
-    console.log(`Remaining queued jobs: ${jobs.length - 1}; run the worker again to continue.`);
 }
 
-void main();
+void main().catch((error) => {
+  console.error((error as Error).message);
+  process.exit(1);
+});

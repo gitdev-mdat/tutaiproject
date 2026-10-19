@@ -1,8 +1,17 @@
 declare module 'pdfjs-dist/legacy/build/pdf.mjs' {
-  export function getDocument(input: { data: Uint8Array; useSystemFonts?: boolean }): {
+  export function getDocument(input: {
+    data: Uint8Array;
+    useSystemFonts?: boolean;
+    isEvalSupported?: boolean;
+    verbosity?: number;
+    /** Directory (with trailing slash) of pdf.js's wasm image decoders. */
+    wasmUrl?: string;
+  }): {
     promise: Promise<{
       numPages: number;
+      destroy(): Promise<void>;
       getPage(pageNumber: number): Promise<{
+        cleanup(): void;
         getViewport(input: { scale: number }): { width: number; height: number };
         render(input: {
           canvas: HTMLCanvasElement;

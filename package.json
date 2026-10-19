@@ -17,9 +17,9 @@
     "db:migrate": "tsx --conditions=react-server scripts/db/migrate.ts",
     "db:import-auth": "tsx --conditions=react-server scripts/db/import-auth.ts",
     "textbooks:register": "tsx --conditions=react-server scripts/textbooks/register.ts",
-    "textbooks:index-pilot": "tsx --conditions=react-server scripts/textbooks/index-pilot.ts",
     "textbooks:import-local-pilot": "tsx --conditions=react-server scripts/textbooks/import-local-pilot.ts",
-    "textbooks:worker": "tsx --conditions=react-server scripts/textbooks/worker.ts"
+    "textbooks:worker": "tsx --conditions=react-server scripts/textbooks/worker.ts",
+    "textbooks:setup-storage": "tsx --conditions=react-server scripts/textbooks/setup-storage.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

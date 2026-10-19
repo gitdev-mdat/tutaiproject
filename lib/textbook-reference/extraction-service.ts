@@ -2,15 +2,24 @@ import 'server-only';
 
 import { createHash, randomUUID } from 'node:crypto';
 import { GEMINI_MODELS } from '@/lib/config/models';
-import { executeWithAbortableProviderTimeout } from '@/lib/ai/provider-timeout';
 import { mapPrintedPage } from './page-mapping';
 import { splitAndLinkExercises } from './artifact-linking';
 import { renderPrintedPageCrops } from './pdf-pages';
-import { readTextbookStore, usesDatabaseTextbookStore, writeTextbookStore } from './repository';
-import type { TextbookArtifact, TextbookExtractionJob } from './types';
+import {
+  enqueueTextbookJob,
+  getTextbookDocument,
+  insertTextbookArtifacts,
+  listTextbookArtifacts,
+  listTextbookMappings,
+  recordFinishedTextbookJob,
+} from './repository';
+import { visionProviderFor, type VisionProvider } from './vision-provider';
+import type { TextbookArtifact, TextbookDocumentRecord, TextbookExtractionJob } from './types';
 
-const PROMPT_VERSION = 'textbook-knowledge-v4';
-const MAX_PAGES_PER_REQUEST = 6;
+// v5: formulas come back as $...$ LaTeX so they render like lesson text.
+export const PROMPT_VERSION = 'textbook-knowledge-v5';
+export const MAX_PAGES_PER_REQUEST = 6;
+
 const TEXTBOOK_RESPONSE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -47,6 +56,17 @@ const TEXTBOOK_RESPONSE_SCHEMA = {
     },
   },
 } as const;
+
+/** Errors the Admin can act on; the API returns their message with a 4xx status. */
+export class TextbookRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: 404 | 409 | 422 = 422
+  ) {
+    super(message);
+    this.name = 'TextbookRequestError';
+  }
+}
 
 export function mappingCoversEntries(
   document: { tocEntries: Array<{ id: string; parentId: string | null }> },
@@ -86,24 +106,28 @@ function parseJson(text: string): unknown {
   return JSON.parse(cleaned);
 }
 
-export async function queueTextbookExtraction(input: {
+export interface ExtractionRequest {
   documentId: string;
   knowledgeNodeId: string;
   entryIds: string[];
   printedPages: number[];
-}) {
+}
+
+/** Validates a request against the stored book and returns what the job will process. */
+async function planExtraction(input: ExtractionRequest) {
   const pages = [...new Set(input.printedPages)].sort((a, b) => a - b);
   if (!pages.length || pages.length > MAX_PAGES_PER_REQUEST)
-    throw new Error(
-      `Choose between 1 and ${MAX_PAGES_PER_REQUEST} printed pages per extraction batch.`
+    throw new TextbookRequestError(
+      `Chọn từ 1 đến ${MAX_PAGES_PER_REQUEST} trang sách cho mỗi lần trích xuất.`
     );
-  const store = await readTextbookStore();
-  const document = store.documents.find((item) => item.id === input.documentId);
-  if (!document) throw new Error('Textbook not found.');
+  const document = await getTextbookDocument(input.documentId);
+  if (!document) throw new TextbookRequestError('Không tìm thấy sách.', 404);
+  if (document.status !== 'INDEXED')
+    throw new TextbookRequestError('Sách chưa có mục lục, chưa thể trích xuất.', 409);
   const entryIds = new Set(input.entryIds);
   const entries = document.tocEntries.filter((entry) => entryIds.has(entry.id));
   if (!entries.length || entries.length !== entryIds.size)
-    throw new Error('Unknown table-of-contents entry.');
+    throw new TextbookRequestError('Không tìm thấy mục trong mục lục.', 404);
   if (
     pages.some(
       (page) =>
@@ -115,13 +139,15 @@ export async function queueTextbookExtraction(input: {
         )
     )
   )
-    throw new Error('Requested page range is outside the selected table-of-contents sections.');
-  if (pages.some((page) => mapPrintedPage(page, document.anchors).position === 'UNCERTAIN'))
-    throw new Error('One or more printed pages have an uncertain PDF location and require review.');
-  if (!mappingCoversEntries(document, store.mappings, document.id, input.knowledgeNodeId, entries))
-    throw new Error(
-      'Every requested outline entry needs a confirmed Knowledge Tree mapping or a confirmed mapped parent.'
+    throw new TextbookRequestError('Có trang nằm ngoài phạm vi của mục đã chọn.');
+  const locations = pages.map((printedPage) => mapPrintedPage(printedPage, document.anchors, document.pageLayout));
+  if (locations.some((location) => location.position === 'UNCERTAIN'))
+    throw new TextbookRequestError(
+      'Có trang chưa xác định được vị trí trong PDF. Thêm mốc trang bao quanh các trang này.'
     );
+  const mappings = await listTextbookMappings({ documentId: document.id });
+  if (!mappingCoversEntries(document, mappings, document.id, input.knowledgeNodeId, entries))
+    throw new TextbookRequestError('Mục này chưa được liên kết với bài học trong Cây kiến thức.');
   const model = GEMINI_MODELS.batchExtraction;
   const extractionKey = createHash('sha256')
     .update(
@@ -134,259 +160,155 @@ export async function queueTextbookExtraction(input: {
       })
     )
     .digest('hex');
-  const cached = store.artifacts.filter((artifact) => artifact.extractionKey === extractionKey);
-  const now = new Date().toISOString();
-  if (cached.length) {
-    const normalized = splitAndLinkExercises(cached);
-    const isUnreviewed = cached.every((artifact) => artifact.reviewStatus === 'NEEDS_REVIEW');
-    if (isUnreviewed && JSON.stringify(normalized) !== JSON.stringify(cached)) {
-      store.artifacts = store.artifacts
-        .filter((artifact) => artifact.extractionKey !== extractionKey)
-        .concat(normalized);
-      await writeTextbookStore(store);
-    }
-    const job = makeJob(input, pages, extractionKey, Date.now(), 'COMPLETED', true, model);
-    job.attempts = 0;
-    job.pagesProcessed = pages;
-    store.jobs.push(job);
-    await writeTextbookStore(store);
-    return { job, artifacts: isUnreviewed ? normalized : cached, cacheHit: true };
-  }
-  const existing = store.jobs.find(
-    (job) =>
-      job.extractionKey === extractionKey && ['QUEUED', 'RUNNING', 'PARTIAL'].includes(job.status)
-  );
-  if (existing) return { job: existing, artifacts: [], cacheHit: false };
-  const job = makeJob(input, pages, extractionKey, Date.now(), 'QUEUED', false, model);
-  job.attempts = 0;
-  job.updatedAt = now;
-  store.jobs.push(job);
-  try {
-    await writeTextbookStore(store);
-  } catch (error) {
-    if ((error as { code?: string }).code !== '23505') throw error;
-    const concurrent = (await readTextbookStore()).jobs.find(
-      (candidate) =>
-        candidate.extractionKey === extractionKey &&
-        ['QUEUED', 'RUNNING', 'PARTIAL'].includes(candidate.status)
-    );
-    if (!concurrent) throw error;
-    return { job: concurrent, artifacts: [], cacheHit: false };
-  }
-  return { job, artifacts: [], cacheHit: false };
+  return { document, entries, pages, locations, model, extractionKey };
 }
 
-export async function extractTextbookPages(input: {
-  documentId: string;
-  knowledgeNodeId: string;
-  entryIds: string[];
-  printedPages: number[];
-  jobId?: string;
-  signal?: AbortSignal;
-}) {
-  const start = Date.now();
-  const pages = [...new Set(input.printedPages)].sort((a, b) => a - b);
-  if (!pages.length || pages.length > MAX_PAGES_PER_REQUEST) {
-    throw new Error(
-      `Choose between 1 and ${MAX_PAGES_PER_REQUEST} printed pages per extraction batch.`
-    );
-  }
-  const store = await readTextbookStore();
-  const document = store.documents.find((item) => item.id === input.documentId);
-  if (!document) throw new Error('Textbook not found.');
-  const entryIds = new Set(input.entryIds);
-  const entries = document.tocEntries.filter((entry) => entryIds.has(entry.id));
-  if (!entries.length || entries.length !== entryIds.size)
-    throw new Error('Unknown table-of-contents entry.');
-  if (
-    pages.some(
-      (printedPage) =>
-        !entries.some(
-          (entry) =>
-            entry.printedStartPage !== null &&
-            printedPage >= entry.printedStartPage &&
-            (entry.printedEndPage === null || printedPage <= entry.printedEndPage)
-        )
-    )
-  ) {
-    throw new Error('Requested page range is outside the selected table-of-contents sections.');
-  }
-  const locations = pages.map((printedPage) => ({
-    ...mapPrintedPage(printedPage, document.anchors),
-    printedPage,
-  }));
-  if (locations.some((location) => location.position === 'UNCERTAIN')) {
-    throw new Error('One or more printed pages have an uncertain PDF location and require review.');
-  }
-  const model = GEMINI_MODELS.batchExtraction;
-  const key = createHash('sha256')
-    .update(
-      JSON.stringify({
-        source: document.sha256,
-        pages,
-        entries: [...entryIds].sort(),
-        prompt: PROMPT_VERSION,
-        model,
-      })
-    )
-    .digest('hex');
-  const cached = store.artifacts.filter((artifact) => artifact.extractionKey === key);
-  if (!mappingCoversEntries(document, store.mappings, document.id, input.knowledgeNodeId, entries))
-    throw new Error(
-      'Every requested outline entry needs a confirmed Knowledge Tree mapping or a confirmed mapped parent.'
-    );
-  if (cached.length) {
-    const job = input.jobId
-      ? store.jobs.find((candidate) => candidate.id === input.jobId)
-      : undefined;
-    const completed = job ?? makeJob(input, pages, key, start, 'COMPLETED', true, model);
-    completed.status = 'COMPLETED';
-    completed.cacheHit = true;
-    completed.pagesProcessed = pages;
-    completed.durationMs = Date.now() - start;
-    completed.updatedAt = new Date().toISOString();
-    if (!job) store.jobs.push(completed);
-    document.status = 'EXTRACTED';
-    await writeTextbookStore(store);
-    return { job: completed, artifacts: cached, cacheHit: true };
-  }
-
-  const job = input.jobId
-    ? store.jobs.find((candidate) => candidate.id === input.jobId)
-    : undefined;
-  if (input.jobId && !job) throw new Error('Queued extraction job not found.');
-  const activeJob = job ?? makeJob(input, pages, key, start, 'RUNNING', false, model);
-  activeJob.status = 'RUNNING';
-  if (!usesDatabaseTextbookStore()) activeJob.attempts += 1;
-  delete activeJob.error;
-  activeJob.updatedAt = new Date().toISOString();
-  document.status = 'EXTRACTING';
-  if (!job) store.jobs.push(activeJob);
-  await writeTextbookStore(store);
-  try {
-    const images = await renderPrintedPageCrops(document.storageKey, locations);
-    const { gemini } = await import('@/lib/ai/gemini-client');
-    const parts = [
-      {
-        text: `Trích xuất kiến thức giáo dục bằng tiếng Việt từ đúng ${pages.length} ảnh trang sách đính kèm. Không bổ sung điều không đọc được. Giữ nguyên công thức; đánh dấu công thức không chắc chắn. Chỉ trả tối đa 5 item: một THEORY, một METHOD, một WORKED_EXAMPLE, một EXERCISE và một SOLUTION. Với EXERCISE/SOLUTION, chỉ chọn một cặp có cùng số Câu và công thức khớp trên các trang được gửi; nếu không đối chiếu được thì bỏ cả hai. Mỗi câu hỏi và lời giải là một item riêng. Trả JSON {"items":[{"kind":"THEORY|METHOD|WORKED_EXAMPLE|EXERCISE|SOLUTION","title":"...","content":"...","mathematicalNotation":["..."],"printedPages":[number],"exerciseReference":"...","solutionReference":"...","verificationNotes":["..."]}]}. Mục lục liên quan: ${entries.map((entry) => entry.originalHeading).join(' / ')}. Mỗi item phải ghi số trang in nhìn thấy trong ảnh.`,
-      },
-      ...images.map((image) => ({
-        inlineData: { mimeType: 'image/png', data: image.bytes.toString('base64') },
-      })),
-    ];
-    const response = await executeWithAbortableProviderTimeout(
-      (signal) =>
-        gemini.models.generateContent({
-          model,
-          contents: [{ role: 'user', parts }],
-          config: {
-            responseMimeType: 'application/json',
-            responseJsonSchema: TEXTBOOK_RESPONSE_SCHEMA,
-            temperature: 0.1,
-            maxOutputTokens: 8192,
-            abortSignal: signal,
-          },
-        }),
-      120_000
-    );
-    const usage = (
-      response as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } }
-    ).usageMetadata;
-    if (usage)
-      activeJob.tokenUsage = { input: usage.promptTokenCount, output: usage.candidatesTokenCount };
-    const parsed = parseJson((response as { text?: string }).text ?? '') as { items?: unknown };
-    if (!Array.isArray(parsed.items))
-      throw new Error(
-        `Gemini response is missing the items array (keys: ${Object.keys(parsed as object).join(',') || 'none'}).`
-      );
-    if (parsed.items.length === 0)
-      throw new Error('Gemini returned no extractable educational items for this page batch.');
-    const extracted = parsed.items.map((raw): TextbookArtifact => {
-      if (!raw || typeof raw !== 'object') throw new Error('Invalid extracted item.');
-      const item = raw as Record<string, unknown>;
-      const kind = item.kind;
-      if (!['THEORY', 'METHOD', 'WORKED_EXAMPLE', 'EXERCISE', 'SOLUTION'].includes(String(kind))) {
-        throw new Error('Invalid extracted item kind.');
-      }
-      const itemPages = Array.isArray(item.printedPages) ? item.printedPages.map(Number) : [];
-      if (!itemPages.length || itemPages.some((page) => !pages.includes(page))) {
-        throw new Error('Extracted item cites a page outside this batch.');
-      }
-      return {
-        id: randomUUID(),
-        documentId: document.id,
-        entryId: entries[0].id,
-        kind: kind as TextbookArtifact['kind'],
-        title: String(item.title ?? ''),
-        content: String(item.content ?? ''),
-        mathematicalNotation: Array.isArray(item.mathematicalNotation)
-          ? item.mathematicalNotation.map(String)
-          : [],
-        printedPages: itemPages,
-        pdfPages: [
-          ...new Set(
-            itemPages.map((printedPage) => mapPrintedPage(printedPage, document.anchors).pdfPage)
-          ),
-        ],
-        exerciseReference:
-          typeof item.exerciseReference === 'string' ? item.exerciseReference : undefined,
-        solutionReference:
-          typeof item.solutionReference === 'string' ? item.solutionReference : undefined,
-        reviewStatus: 'NEEDS_REVIEW',
-        verificationNotes: Array.isArray(item.verificationNotes)
-          ? item.verificationNotes.map(String)
-          : ['AI extraction; human review required.'],
-        extractionKey: key,
-        createdAt: new Date().toISOString(),
-      };
-    });
-    const artifacts = splitAndLinkExercises(extracted);
-    activeJob.status = 'COMPLETED';
-    activeJob.pagesProcessed = pages;
-    activeJob.durationMs = Date.now() - start;
-    activeJob.updatedAt = new Date().toISOString();
-    document.processingErrors = [];
-    store.artifacts.push(...artifacts);
-    document.status = 'EXTRACTED';
-    await writeTextbookStore(store);
-    return { job: activeJob, artifacts, cacheHit: false };
-  } catch (error) {
-    activeJob.status = 'FAILED';
-    activeJob.error = error instanceof Error ? error.message : String(error);
-    activeJob.durationMs = Date.now() - start;
-    activeJob.updatedAt = new Date().toISOString();
-    document.status = 'FAILED';
-    document.processingErrors.push(activeJob.error);
-    await writeTextbookStore(store);
-    throw error;
-  }
-}
-
-function makeJob(
-  input: { documentId: string; knowledgeNodeId: string; entryIds: string[] },
-  printedPages: number[],
-  extractionKey: string,
-  start: number,
-  status: TextbookExtractionJob['status'],
-  cacheHit: boolean,
-  model: string
+function newJob(
+  kind: TextbookExtractionJob['kind'],
+  fields: Partial<TextbookExtractionJob> & { documentId: string; extractionKey: string }
 ): TextbookExtractionJob {
   const now = new Date().toISOString();
   return {
     id: randomUUID(),
-    documentId: input.documentId,
-    knowledgeNodeId: input.knowledgeNodeId,
-    entryIds: input.entryIds,
-    printedPages,
-    extractionKey,
-    status,
-    attempts: 1,
+    kind,
+    knowledgeNodeId: '',
+    entryIds: [],
+    printedPages: [],
+    status: 'QUEUED',
+    attempts: 0,
     provider: 'gemini',
-    model,
     pagesProcessed: [],
-    cacheHit,
+    cacheHit: false,
     createdAt: now,
     updatedAt: now,
-    ...(status === 'COMPLETED' ? { durationMs: Date.now() - start } : {}),
+    ...fields,
+  };
+}
+
+/**
+ * Queues a bounded extraction, or answers from the cache. An identical request
+ * (same file, pages, sections, prompt and model) reuses the stored artifacts and
+ * never calls the provider again, whatever their review state.
+ */
+export async function queueTextbookExtraction(input: ExtractionRequest): Promise<{
+  job: TextbookExtractionJob;
+  artifacts: TextbookArtifact[];
+  cacheHit: boolean;
+  existing: boolean;
+}> {
+  const plan = await planExtraction(input);
+  const cached = await listTextbookArtifacts({ extractionKey: plan.extractionKey });
+  const fields = {
+    documentId: plan.document.id,
+    knowledgeNodeId: input.knowledgeNodeId,
+    entryIds: [...input.entryIds].sort(),
+    printedPages: plan.pages,
+    extractionKey: plan.extractionKey,
+    model: plan.model,
+  };
+  if (cached.length) {
+    const job = newJob('EXTRACT', {
+      ...fields,
+      status: 'COMPLETED',
+      cacheHit: true,
+      providerCalls: 0,
+      pagesProcessed: plan.pages,
+      provider: 'none',
+    });
+    await recordFinishedTextbookJob(job);
+    return { job, artifacts: cached, cacheHit: true, existing: false };
+  }
+  const { job, existing } = await enqueueTextbookJob(newJob('EXTRACT', fields));
+  return { job, artifacts: [], cacheHit: false, existing };
+}
+
+export function verifyJob(documentId: string, sha256: string) {
+  return newJob('VERIFY', {
+    documentId,
+    extractionKey: createHash('sha256').update(`verify:${sha256}`).digest('hex'),
+    provider: 'none',
+  });
+}
+
+/** Runs an EXTRACT job: renders the requested pages, calls the provider once, stores artifacts. */
+export async function runExtractionJob(
+  job: TextbookExtractionJob,
+  options: { provider?: VisionProvider; readPdf: (document: TextbookDocumentRecord) => Promise<Buffer> }
+): Promise<{ job: TextbookExtractionJob; artifacts: TextbookArtifact[] }> {
+  const start = Date.now();
+  const plan = await planExtraction(job);
+  if (plan.extractionKey !== job.extractionKey)
+    throw new Error('The book, prompt or model changed since this job was queued; queue it again.');
+  const cached = await listTextbookArtifacts({ extractionKey: job.extractionKey });
+  if (cached.length) {
+    // Another job stored these first (or this job was interrupted after storing).
+    return {
+      job: { ...job, status: 'COMPLETED', cacheHit: true, pagesProcessed: plan.pages, durationMs: Date.now() - start },
+      artifacts: cached,
+    };
+  }
+  const provider = options.provider ?? visionProviderFor();
+  const images = await renderPrintedPageCrops(await options.readPdf(plan.document), plan.locations);
+  const prompt = `Trích xuất kiến thức giáo dục bằng tiếng Việt từ đúng ${plan.pages.length} ảnh trang sách đính kèm. Không bổ sung điều không đọc được. Giữ nguyên nội dung công thức; viết MỌI công thức, ký hiệu toán trong content và title bằng LaTeX đặt trong $...$ (ví dụ $f'(x) \\ge 0$, $x \\in I$, $y = \\frac{ax+b}{cx+d}$, $D = \\mathbb{R} \\setminus \\{-3\\}$); ký hiệu không đọc chắc thì viết [?] và nêu trong verificationNotes. Chỉ trả tối đa 5 item: một THEORY, một METHOD, một WORKED_EXAMPLE, một EXERCISE và một SOLUTION. Với EXERCISE/SOLUTION, chỉ chọn một cặp có cùng số Câu và công thức khớp trên các trang được gửi; nếu không đối chiếu được thì bỏ cả hai. Mỗi câu hỏi và lời giải là một item riêng. Trả JSON {"items":[{"kind":"THEORY|METHOD|WORKED_EXAMPLE|EXERCISE|SOLUTION","title":"...","content":"...","mathematicalNotation":["..."],"printedPages":[number],"exerciseReference":"...","solutionReference":"...","verificationNotes":["..."]}]}. Mục lục liên quan: ${plan.entries.map((entry) => entry.originalHeading).join(' / ')}. Mỗi item phải ghi số trang in nhìn thấy trong ảnh.`;
+  const response = await provider({
+    model: plan.model,
+    prompt,
+    images: images.map((image) => image.bytes),
+    schema: TEXTBOOK_RESPONSE_SCHEMA,
+  });
+  const parsed = parseJson(response.text) as { items?: unknown };
+  if (!Array.isArray(parsed.items))
+    throw new Error('Gemini response is missing the items array.');
+  if (parsed.items.length === 0)
+    throw new Error('Gemini returned no extractable educational items for this page batch.');
+  const extracted = parsed.items.map((raw): TextbookArtifact => {
+    if (!raw || typeof raw !== 'object') throw new Error('Invalid extracted item.');
+    const item = raw as Record<string, unknown>;
+    if (!['THEORY', 'METHOD', 'WORKED_EXAMPLE', 'EXERCISE', 'SOLUTION'].includes(String(item.kind)))
+      throw new Error('Invalid extracted item kind.');
+    const itemPages = Array.isArray(item.printedPages) ? item.printedPages.map(Number) : [];
+    if (!itemPages.length || itemPages.some((page) => !plan.pages.includes(page)))
+      throw new Error('Extracted item cites a page outside this batch.');
+    return {
+      id: randomUUID(),
+      documentId: plan.document.id,
+      entryId: plan.entries[0].id,
+      kind: item.kind as TextbookArtifact['kind'],
+      title: String(item.title ?? ''),
+      content: String(item.content ?? ''),
+      mathematicalNotation: Array.isArray(item.mathematicalNotation)
+        ? item.mathematicalNotation.map(String)
+        : [],
+      printedPages: itemPages,
+      pdfPages: [
+        ...new Set(
+          itemPages.map(
+            (page) => mapPrintedPage(page, plan.document.anchors, plan.document.pageLayout).pdfPage
+          )
+        ),
+      ],
+      exerciseReference: typeof item.exerciseReference === 'string' ? item.exerciseReference : undefined,
+      solutionReference: typeof item.solutionReference === 'string' ? item.solutionReference : undefined,
+      reviewStatus: 'NEEDS_REVIEW',
+      verificationNotes: Array.isArray(item.verificationNotes)
+        ? item.verificationNotes.map(String)
+        : ['AI extraction; human review required.'],
+      extractionKey: job.extractionKey,
+      createdAt: new Date().toISOString(),
+    };
+  });
+  const artifacts = splitAndLinkExercises(extracted);
+  await insertTextbookArtifacts(artifacts);
+  return {
+    job: {
+      ...job,
+      status: 'COMPLETED',
+      provider: 'gemini',
+      providerCalls: (job.providerCalls ?? 0) + 1,
+      tokenUsage: response.usage,
+      pagesProcessed: plan.pages,
+      durationMs: Date.now() - start,
+    },
+    artifacts,
   };
 }

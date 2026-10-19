@@ -1,9 +1,21 @@
+/**
+ * Document lifecycle. Each step is a separate, visible state: an indexed book is
+ * not extracted, an extracted artifact is not approved, and an approved artifact
+ * is only an authoring reference, never student content.
+ */
 export type TextbookProcessingStatus =
-  'REGISTERED' | 'INDEXED' | 'EXTRACTING' | 'EXTRACTED' | 'FAILED';
+  | 'VERIFYING' // uploaded; the worker still has to check checksum and page count
+  | 'REGISTERED' // verified source PDF; no table of contents yet
+  | 'INDEXING' // a table-of-contents job is queued or running
+  | 'INDEXED' // table of contents available for mapping
+  | 'FAILED';
 
 export type PagePosition = 'LEFT' | 'RIGHT' | 'FULL' | 'UNCERTAIN';
 export type VerificationStatus = 'OBSERVED' | 'NEEDS_REVIEW' | 'VERIFIED';
 export type TocIndexCompleteness = 'PARTIAL' | 'COMPLETE';
+
+/** How printed pages sit on PDF pages: one per PDF page, or two side by side. */
+export type PageLayout = 'SINGLE' | 'TWO_UP';
 
 export interface TextbookAnchor {
   printedPage: number;
@@ -38,11 +50,16 @@ export interface TextbookDocumentRecord {
   originalFilename: string;
   title: string;
   sha256: string;
-  pdfPageCount: number;
+  byteSize?: number;
+  /** Known once the worker has opened the stored file. */
+  pdfPageCount: number | null;
   storageKey: string;
   status: TextbookProcessingStatus;
   importedAt: string;
   sourceVersion: string;
+  pageLayout?: PageLayout;
+  /** PDF pages that hold the printed table of contents, chosen by the Admin. */
+  tocPdfPages?: number[];
   tocIndexCompleteness: TocIndexCompleteness;
   processingErrors: string[];
   scanDetection?: { sampledPdfPages: number[]; textCharacterCounts: number[]; scanned: boolean };
@@ -71,31 +88,35 @@ export interface TextbookArtifact {
   verificationNotes: string[];
   extractionKey: string;
   createdAt: string;
+  reviewedAt?: string;
 }
+
+export type TextbookJobKind = 'VERIFY' | 'INDEX_TOC' | 'EXTRACT';
+export type TextbookJobStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export interface TextbookExtractionJob {
   id: string;
+  kind: TextbookJobKind;
   documentId: string;
+  /** EXTRACT only. */
   knowledgeNodeId: string;
   entryIds: string[];
   printedPages: number[];
+  /** INDEX_TOC only. */
+  tocPdfPages?: number[];
   extractionKey: string;
-  status: 'QUEUED' | 'RUNNING' | 'PARTIAL' | 'COMPLETED' | 'FAILED';
+  status: TextbookJobStatus;
   attempts: number;
-  provider: 'gemini' | 'manual';
+  provider: 'gemini' | 'manual' | 'none';
   model?: string;
+  /** Number of provider calls this job made; a cache hit makes none. */
+  providerCalls?: number;
   pagesProcessed: number[];
   tokenUsage?: { input?: number; output?: number };
-  estimatedCostUsd?: number;
   cacheHit: boolean;
   durationMs?: number;
   error?: string;
-  history?: Array<{
-    status: TextbookExtractionJob['status'];
-    attempts: number;
-    error?: string;
-    at: string;
-  }>;
+  history?: Array<{ status: TextbookJobStatus; attempts: number; error?: string; at: string }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -106,7 +127,25 @@ export interface TextbookKnowledgeMapping {
   knowledgeNodeId: string;
   entryId: string;
   confidence: number;
-  status: 'CANDIDATE' | 'CONFIRMED' | 'REJECTED';
+  status: 'CONFIRMED' | 'REJECTED';
   confirmationRequired: boolean;
   updatedAt: string;
+}
+
+export interface TextbookUploadSession {
+  id: string;
+  sha256: string;
+  byteSize: number;
+  originalFilename: string;
+  title: string;
+  storageKey: string;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  documentId: string | null;
+  expiresAt: string;
+}
+
+export interface TextbookWorkerStatus {
+  online: boolean;
+  lastSeenAt: string | null;
+  currentJobId: string | null;
 }

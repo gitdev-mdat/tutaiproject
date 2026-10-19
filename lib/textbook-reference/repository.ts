@@ -1,350 +1,531 @@
 import 'server-only';
 
-import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getSql } from '@/lib/db/postgres';
 import type {
+  ArtifactReviewStatus,
+  TextbookAnchor,
   TextbookArtifact,
   TextbookDocumentRecord,
   TextbookExtractionJob,
   TextbookKnowledgeMapping,
+  TextbookProcessingStatus,
+  TextbookTocEntry,
+  TextbookUploadSession,
+  TextbookWorkerStatus,
 } from './types';
 
-const ROOT = path.join(process.cwd(), 'tmp', 'textbook-reference');
-const PRIVATE = path.join(ROOT, 'private');
-const DATA = path.join(ROOT, 'index');
+/**
+ * PostgreSQL persistence for textbook references. Every write is a targeted
+ * statement on the rows it changes, so concurrent Admin actions and the worker
+ * never overwrite each other's state. PDF bytes live in private Storage
+ * (`object-storage.ts`), never here.
+ */
 
-export function usesDatabaseTextbookStore(env = process.env): boolean {
-  return Boolean(env.DATABASE_URL);
+const REQUIRED_SETTINGS = [
+  'DATABASE_URL',
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'TEXTBOOK_STORAGE_BUCKET',
+] as const;
+
+export class TextbookBackendUnavailableError extends Error {
+  constructor(readonly missing: string[]) {
+    super('Durable textbook storage is not configured (PostgreSQL and private Supabase Storage).');
+    this.name = 'TextbookBackendUnavailableError';
+  }
+}
+
+/** Names (never values) of the server settings the textbook backend still needs. */
+export function missingTextbookSettings(env: Record<string, string | undefined> = process.env) {
+  return REQUIRED_SETTINGS.filter((name) => !env[name]);
 }
 
 export function durableTextbookBackendConfigured(env = process.env): boolean {
-  return Boolean(
-    env.DATABASE_URL &&
-    env.SUPABASE_URL &&
-    env.SUPABASE_SERVICE_ROLE_KEY &&
-    env.TEXTBOOK_STORAGE_BUCKET
+  return missingTextbookSettings(env).length === 0;
+}
+
+export function assertTextbookBackend(): void {
+  const missing = missingTextbookSettings();
+  if (missing.length) throw new TextbookBackendUnavailableError(missing);
+}
+
+function sql() {
+  assertTextbookBackend();
+  return getSql();
+}
+
+type Row = Record<string, unknown>;
+const json = (value: unknown) => value as never;
+
+// ─── Documents ───────────────────────────────────────────────────────────────
+
+type DocumentMetadata = Omit<TextbookDocumentRecord, 'anchors' | 'tocEntries' | 'status'>;
+
+function toDocument(row: Row, anchors: TextbookAnchor[], tocEntries: TextbookTocEntry[]) {
+  return {
+    ...(row.metadata as DocumentMetadata),
+    status: row.status as TextbookProcessingStatus,
+    anchors,
+    tocEntries,
+  } satisfies TextbookDocumentRecord;
+}
+
+/** Documents with their page anchors; table-of-contents entries only when asked for. */
+export async function listTextbookDocuments(
+  { withToc = false }: { withToc?: boolean } = {}
+): Promise<TextbookDocumentRecord[]> {
+  const db = sql();
+  const documents = await db`select id, status, metadata from tutai.textbook_documents order by created_at`;
+  if (!documents.length) return [];
+  const ids = documents.map((row) => row.id as string);
+  const anchors = await db`
+    select document_id, payload from tutai.textbook_page_anchors
+    where document_id = any(${ids}) order by printed_page`;
+  const entries = withToc
+    ? await db`
+        select document_id, payload from tutai.textbook_toc_entries
+        where document_id = any(${ids}) order by document_id, position, id`
+    : [];
+  const group = <T>(rows: Row[]) => {
+    const map = new Map<string, T[]>();
+    for (const row of rows)
+      map.set(row.document_id as string, [...(map.get(row.document_id as string) ?? []), row.payload as T]);
+    return map;
+  };
+  const anchorsBy = group<TextbookAnchor>(anchors);
+  const entriesBy = group<TextbookTocEntry>(entries);
+  return documents.map((row) =>
+    toDocument(row, anchorsBy.get(row.id as string) ?? [], entriesBy.get(row.id as string) ?? [])
   );
 }
 
-export function assertTextbookPersistenceAvailable(): void {
-  const production =
-    process.env.NODE_ENV === 'production' ||
-    process.env.VERCEL === '1' ||
-    process.env.VERCEL_ENV === 'production';
-  if (production && !usesDatabaseTextbookStore()) {
-    throw new Error(
-      'Textbook processing is disabled: DATABASE_URL is required for durable storage.'
-    );
-  }
-  if (production && !durableTextbookBackendConfigured()) {
-    throw new Error(
-      'Textbook processing is disabled: PostgreSQL and private Supabase Storage are required.'
-    );
-  }
+export async function getTextbookDocument(id: string): Promise<TextbookDocumentRecord | null> {
+  const db = sql();
+  const [row] = await db`select id, status, metadata from tutai.textbook_documents where id = ${id}`;
+  if (!row) return null;
+  const anchors = await db`
+    select payload from tutai.textbook_page_anchors where document_id = ${id} order by printed_page`;
+  const entries = await db`
+    select payload from tutai.textbook_toc_entries where document_id = ${id} order by position, id`;
+  return toDocument(
+    row,
+    anchors.map((item) => item.payload as TextbookAnchor),
+    entries.map((item) => item.payload as TextbookTocEntry)
+  );
 }
 
-export interface TextbookIndexStore {
-  schemaVersion: 1;
-  documents: TextbookDocumentRecord[];
-  jobs: TextbookExtractionJob[];
-  artifacts: TextbookArtifact[];
-  mappings: TextbookKnowledgeMapping[];
+export async function findTextbookBySha(sha256: string): Promise<TextbookDocumentRecord | null> {
+  const [row] = await sql()`select id from tutai.textbook_documents where sha256 = ${sha256}`;
+  return row ? getTextbookDocument(row.id as string) : null;
 }
 
-async function atomicWrite(filePath: string, data: string | Buffer): Promise<void> {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  const temporary = `${filePath}.${randomUUID()}.tmp`;
-  await fs.writeFile(temporary, data);
-  await fs.rename(temporary, filePath);
+/** Inserts a document unless one with the same SHA-256 exists; returns the stored one. */
+export async function insertTextbookDocument(
+  document: TextbookDocumentRecord
+): Promise<{ document: TextbookDocumentRecord; duplicate: boolean }> {
+  const { anchors: _anchors, tocEntries: _toc, status, ...metadata } = document;
+  const inserted = await sql()`
+    insert into tutai.textbook_documents (id, sha256, status, metadata)
+    values (${document.id}, ${document.sha256}, ${status}, ${json(metadata)})
+    on conflict (sha256) do nothing
+    returning id`;
+  const stored = await findTextbookBySha(document.sha256);
+  if (!stored) throw new Error('Textbook registration did not persist.');
+  return { document: stored, duplicate: inserted.length === 0 };
 }
 
-export async function readTextbookStore(): Promise<TextbookIndexStore> {
-  assertTextbookPersistenceAvailable();
-  if (usesDatabaseTextbookStore()) return readDatabaseTextbookStore();
-  return readLocalTextbookStore();
+export async function updateTextbookDocument(
+  id: string,
+  patch: Partial<Omit<DocumentMetadata, 'id' | 'sha256'>> & { status?: TextbookProcessingStatus }
+): Promise<void> {
+  const { status, ...metadata } = patch;
+  await sql()`
+    update tutai.textbook_documents set
+      status = coalesce(${status ?? null}, status),
+      metadata = metadata || ${json(metadata)},
+      updated_at = now()
+    where id = ${id}`;
 }
 
-export async function readLocalTextbookStore(): Promise<TextbookIndexStore> {
-  try {
-    return JSON.parse(
-      await fs.readFile(path.join(DATA, 'store.json'), 'utf8')
-    ) as TextbookIndexStore;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    return { schemaVersion: 1, documents: [], jobs: [], artifacts: [], mappings: [] };
-  }
+export async function replaceTextbookAnchors(documentId: string, anchors: TextbookAnchor[]) {
+  await sql().begin(async (tx) => {
+    await tx`delete from tutai.textbook_page_anchors where document_id = ${documentId}`;
+    for (const anchor of anchors) {
+      await tx`
+        insert into tutai.textbook_page_anchors (document_id, printed_page, pdf_page, payload)
+        values (${documentId}, ${anchor.printedPage}, ${anchor.pdfPage}, ${tx.json(anchor as never)})`;
+    }
+    await tx`update tutai.textbook_documents set updated_at = now() where id = ${documentId}`;
+  });
 }
 
-export async function writeTextbookStore(store: TextbookIndexStore): Promise<void> {
-  assertTextbookPersistenceAvailable();
-  if (usesDatabaseTextbookStore()) return writeDatabaseTextbookStore(store);
-  await atomicWrite(path.join(DATA, 'store.json'), JSON.stringify(store, null, 2));
+/**
+ * Replaces the table of contents. Refused once a section is linked to the
+ * Knowledge Tree or has extracted artifacts, so reviewed work never loses its
+ * section; such a book keeps its index.
+ */
+export async function replaceTextbookToc(
+  documentId: string,
+  entries: TextbookTocEntry[],
+  completeness: TextbookDocumentRecord['tocIndexCompleteness']
+): Promise<void> {
+  await sql().begin(async (tx) => {
+    const [used] = await tx`
+      select
+        (select count(*) from tutai.textbook_knowledge_mappings where document_id = ${documentId})::int as mappings,
+        (select count(*) from tutai.textbook_artifacts where document_id = ${documentId})::int as artifacts`;
+    if ((used.mappings as number) > 0 || (used.artifacts as number) > 0)
+      throw new Error('This book already has linked sections; its table of contents is kept.');
+    await tx`delete from tutai.textbook_toc_entries where document_id = ${documentId}`;
+    for (const [position, entry] of entries.entries()) {
+      await tx`
+        insert into tutai.textbook_toc_entries (document_id, id, parent_id, position, payload)
+        values (${documentId}, ${entry.id}, ${entry.parentId}, ${position}, ${tx.json(entry as never)})`;
+    }
+    await tx`
+      update tutai.textbook_documents set
+        status = 'INDEXED',
+        metadata = metadata || ${tx.json({ tocIndexCompleteness: completeness } as never)},
+        updated_at = now()
+      where id = ${documentId}`;
+  });
 }
 
-/** Atomically leases a durable job so independent worker processes cannot run it twice. */
-export async function claimNextTextbookJob(): Promise<TextbookExtractionJob | null> {
-  if (!usesDatabaseTextbookStore()) return null;
-  assertTextbookPersistenceAvailable();
-  const sql = getSql();
-  return sql.begin(async (tx) => {
+// ─── Knowledge Tree mappings ─────────────────────────────────────────────────
+
+export async function listTextbookMappings(
+  filter: { documentId?: string; knowledgeNodeId?: string } = {}
+): Promise<TextbookKnowledgeMapping[]> {
+  const rows = await sql()`
+    select payload from tutai.textbook_knowledge_mappings
+    where (${filter.documentId ?? null}::text is null or document_id = ${filter.documentId ?? null})
+      and (${filter.knowledgeNodeId ?? null}::text is null or knowledge_node_id = ${filter.knowledgeNodeId ?? null})
+    order by updated_at`;
+  return rows.map((row) => row.payload as TextbookKnowledgeMapping);
+}
+
+export async function saveTextbookMapping(mapping: TextbookKnowledgeMapping): Promise<void> {
+  await sql()`
+    insert into tutai.textbook_knowledge_mappings
+      (id, document_id, entry_id, knowledge_node_id, status, payload, updated_at)
+    values (${mapping.id}, ${mapping.documentId}, ${mapping.entryId}, ${mapping.knowledgeNodeId},
+      ${mapping.status}, ${json(mapping)}, now())
+    on conflict (document_id, entry_id, knowledge_node_id) do update set
+      status = excluded.status, payload = excluded.payload, updated_at = now()`;
+}
+
+// ─── Jobs ────────────────────────────────────────────────────────────────────
+
+function toJob(row: Row): TextbookExtractionJob {
+  return {
+    ...(row.payload as TextbookExtractionJob),
+    status: row.status as TextbookExtractionJob['status'],
+    attempts: row.attempts as number,
+  };
+}
+
+/** Queues a job unless an equivalent one is already queued or running; returns the active one. */
+export async function enqueueTextbookJob(
+  job: TextbookExtractionJob
+): Promise<{ job: TextbookExtractionJob; existing: boolean }> {
+  const db = sql();
+  const inserted = await db`
+    insert into tutai.textbook_jobs (id, document_id, kind, job_key, status, attempts, payload, created_at, updated_at)
+    values (${job.id}, ${job.documentId}, ${job.kind}, ${job.extractionKey}, ${job.status},
+      ${job.attempts}, ${json({ ...job, history: [{ status: job.status, attempts: job.attempts, at: job.createdAt }] })},
+      ${job.createdAt}, ${job.updatedAt})
+    on conflict (job_key) where status in ('QUEUED', 'RUNNING') do nothing
+    returning *`;
+  if (inserted.length) return { job: toJob(inserted[0]), existing: false };
+  const [active] = await db`
+    select * from tutai.textbook_jobs
+    where job_key = ${job.extractionKey} and status in ('QUEUED', 'RUNNING')`;
+  if (!active) return enqueueTextbookJob(job);
+  return { job: toJob(active), existing: true };
+}
+
+export async function recordFinishedTextbookJob(job: TextbookExtractionJob): Promise<void> {
+  await sql()`
+    insert into tutai.textbook_jobs (id, document_id, kind, job_key, status, attempts, payload, created_at, updated_at)
+    values (${job.id}, ${job.documentId}, ${job.kind}, ${job.extractionKey}, ${job.status},
+      ${job.attempts}, ${json(job)}, ${job.createdAt}, ${job.updatedAt})`;
+}
+
+export async function getTextbookJob(id: string): Promise<TextbookExtractionJob | null> {
+  const [row] = await sql()`select * from tutai.textbook_jobs where id = ${id}`;
+  return row ? toJob(row) : null;
+}
+
+export async function listTextbookJobs(
+  filter: { documentId?: string; limit?: number } = {}
+): Promise<TextbookExtractionJob[]> {
+  const rows = await sql()`
+    select * from tutai.textbook_jobs
+    where (${filter.documentId ?? null}::text is null or document_id = ${filter.documentId ?? null})
+    order by created_at desc
+    limit ${filter.limit ?? 50}`;
+  return rows.map(toJob);
+}
+
+export const JOB_LEASE_SECONDS = 600;
+
+/**
+ * Leases the oldest runnable job with `FOR UPDATE SKIP LOCKED`, so independent
+ * worker processes never run the same job. A RUNNING job whose lease expired
+ * (its worker died) is picked up again and resumes.
+ */
+export async function claimNextTextbookJob(workerId: string): Promise<TextbookExtractionJob | null> {
+  return sql().begin(async (tx) => {
     const [row] = await tx`
-      select id, payload from tutai.textbook_extraction_jobs
-      where status = 'QUEUED'
-         or (status in ('RUNNING', 'PARTIAL') and
-             (worker_lease_until is null or worker_lease_until < now()))
+      select * from tutai.textbook_jobs
+      where status = 'QUEUED' or (status = 'RUNNING' and (lease_until is null or lease_until < now()))
       order by created_at
       limit 1
       for update skip locked`;
     if (!row) return null;
-    const job = row.payload as TextbookExtractionJob;
-    job.status = 'RUNNING';
-    job.attempts += 1;
-    job.updatedAt = new Date().toISOString();
-    job.history = [
-      ...(job.history ?? []),
-      { status: 'RUNNING', attempts: job.attempts, at: job.updatedAt },
-    ];
-    await tx`
-      update tutai.textbook_extraction_jobs
-      set status = 'RUNNING', payload = ${tx.json(job as never)},
-          updated_at = ${job.updatedAt}, worker_lease_until = now() + interval '10 minutes'
-      where id = ${job.id}`;
-    return job;
+    const at = new Date().toISOString();
+    const attempts = (row.attempts as number) + 1;
+    const [claimed] = await tx`
+      update tutai.textbook_jobs set
+        status = 'RUNNING', attempts = ${attempts}, lease_owner = ${workerId},
+        lease_until = now() + make_interval(secs => ${JOB_LEASE_SECONDS}),
+        updated_at = now(),
+        payload = jsonb_set(payload, '{history}',
+          coalesce(payload->'history', '[]'::jsonb) ||
+          jsonb_build_array(jsonb_build_object('status', 'RUNNING', 'attempts', ${attempts}::int, 'at', ${at}::text)))
+      where id = ${row.id as string}
+      returning *`;
+    return toJob(claimed);
   }) as Promise<TextbookExtractionJob | null>;
 }
 
-async function readDatabaseTextbookStore(): Promise<TextbookIndexStore> {
-  const sql = getSql();
-  const snapshot = await sql.begin(async (tx) => {
-    await tx`set transaction isolation level repeatable read read only`;
-    const [documents, anchors, entries, mappings, jobs, artifacts] = await Promise.all([
-      tx`select id, metadata from tutai.textbook_documents order by created_at`,
-      tx`select document_id, payload from tutai.textbook_page_anchors order by printed_page`,
-      tx`select document_id, payload from tutai.textbook_toc_entries order by document_id, id`,
-      tx`select payload from tutai.textbook_knowledge_mappings order by updated_at`,
-      tx`select payload from tutai.textbook_extraction_jobs order by created_at`,
-      tx`select payload from tutai.textbook_artifacts order by created_at`,
-    ]);
-    return { documents, anchors, entries, mappings, jobs, artifacts };
-  });
-  const { documents, anchors, entries, mappings, jobs, artifacts } = snapshot;
-  const grouped = <T extends { document_id: string; payload: unknown }>(rows: T[]) => {
-    const result = new Map<string, unknown[]>();
-    for (const row of rows)
-      result.set(row.document_id, [...(result.get(row.document_id) ?? []), row.payload]);
-    return result;
-  };
-  const anchorsByDocument = grouped(
-    anchors as unknown as Array<{ document_id: string; payload: unknown }>
-  );
-  const entriesByDocument = grouped(
-    entries as unknown as Array<{ document_id: string; payload: unknown }>
-  );
+/** Writes a job's outcome. Only the worker that holds the lease may finish it. */
+export async function finishTextbookJob(
+  job: TextbookExtractionJob,
+  workerId: string | null
+): Promise<boolean> {
+  const at = new Date().toISOString();
+  const entry = { status: job.status, attempts: job.attempts, error: job.error, at };
+  const rows = await sql()`
+    update tutai.textbook_jobs set
+      status = ${job.status}, updated_at = now(), lease_until = null,
+      payload = ${json({ ...job, history: undefined })}::jsonb ||
+        jsonb_build_object('history', coalesce(payload->'history', '[]'::jsonb) || jsonb_build_array(${json(entry)}::jsonb))
+    where id = ${job.id} and status = 'RUNNING'
+      and (${workerId}::text is null or lease_owner = ${workerId})
+    returning id`;
+  return rows.length > 0;
+}
+
+export async function cancelTextbookJob(id: string): Promise<boolean> {
+  const rows = await sql()`
+    update tutai.textbook_jobs set status = 'CANCELLED', updated_at = now(), lease_until = null
+    where id = ${id} and status = 'QUEUED'
+    returning id`;
+  return rows.length > 0;
+}
+
+export async function extendTextbookJobLease(id: string, workerId: string): Promise<void> {
+  await sql()`
+    update tutai.textbook_jobs
+    set lease_until = now() + make_interval(secs => ${JOB_LEASE_SECONDS})
+    where id = ${id} and lease_owner = ${workerId} and status = 'RUNNING'`;
+}
+
+// ─── Artifacts ───────────────────────────────────────────────────────────────
+
+function toArtifact(row: Row): TextbookArtifact {
   return {
-    schemaVersion: 1,
-    documents: documents.map((row) => ({
-      ...(row.metadata as Omit<TextbookDocumentRecord, 'anchors' | 'tocEntries'>),
-      anchors: (anchorsByDocument.get(row.id as string) ?? []) as TextbookDocumentRecord['anchors'],
-      tocEntries: (entriesByDocument.get(row.id as string) ??
-        []) as TextbookDocumentRecord['tocEntries'],
-    })),
-    mappings: mappings.map((row) => row.payload as TextbookKnowledgeMapping),
-    jobs: jobs.map((row) => row.payload as TextbookExtractionJob),
-    artifacts: artifacts.map((row) => row.payload as TextbookArtifact),
+    ...(row.payload as TextbookArtifact),
+    reviewStatus: row.review_status as ArtifactReviewStatus,
+    ...(row.reviewed_at ? { reviewedAt: new Date(row.reviewed_at as string).toISOString() } : {}),
   };
 }
 
-async function writeDatabaseTextbookStore(store: TextbookIndexStore): Promise<void> {
-  const sql = getSql();
-  await sql.begin(async (tx) => {
-    await tx`select pg_advisory_xact_lock(hashtext('tutai.textbook_reference.write'))`;
-    for (const document of store.documents) {
-      const { anchors, tocEntries, ...metadata } = document;
-      await tx`
-        insert into tutai.textbook_documents (id, sha256, metadata, updated_at)
-        values (${document.id}, ${document.sha256}, ${tx.json(metadata as never)}, now())
-        on conflict (id) do update set
-          metadata = excluded.metadata, updated_at = excluded.updated_at`;
-      for (const anchor of anchors) {
-        await tx`
-          insert into tutai.textbook_page_anchors (document_id, printed_page, pdf_page, payload)
-          values (${document.id}, ${anchor.printedPage}, ${anchor.pdfPage}, ${tx.json(anchor as never)})
-          on conflict (document_id, printed_page) do update set
-            pdf_page = excluded.pdf_page, payload = excluded.payload`;
-      }
-      for (const entry of tocEntries) {
-        await tx`
-          insert into tutai.textbook_toc_entries (document_id, id, parent_id, payload)
-          values (${document.id}, ${entry.id}, ${entry.parentId}, ${tx.json(entry as never)})
-          on conflict (document_id, id) do update set
-            parent_id = excluded.parent_id, payload = excluded.payload`;
-      }
-    }
-    for (const mapping of store.mappings) {
-      await tx`
-        insert into tutai.textbook_knowledge_mappings (id, document_id, entry_id, knowledge_node_id, status, payload, updated_at)
-        values (${mapping.id}, ${mapping.documentId}, ${mapping.entryId}, ${mapping.knowledgeNodeId}, ${mapping.status}, ${tx.json(mapping as never)}, ${mapping.updatedAt})
-        on conflict (document_id, entry_id, knowledge_node_id) do update set
-          id = excluded.id, status = excluded.status, payload = excluded.payload, updated_at = excluded.updated_at
-        where tutai.textbook_knowledge_mappings.updated_at < excluded.updated_at`;
-    }
-    for (const job of store.jobs) {
-      await tx`
-        insert into tutai.textbook_extraction_jobs (id, document_id, extraction_key, status, payload, created_at, updated_at)
-        values (${job.id}, ${job.documentId}, ${job.extractionKey}, ${job.status},
-          jsonb_set(${tx.json(job as never)}, '{history}',
-            jsonb_build_array(jsonb_build_object(
-              'status', ${job.status}, 'attempts', ${job.attempts},
-              'error', ${job.error ?? null}, 'at', ${job.updatedAt}
-            )), true), ${job.createdAt}, ${job.updatedAt})
-        on conflict (id) do update set
-          status = excluded.status,
-          payload = jsonb_set(
-            excluded.payload, '{history}',
-            coalesce(tutai.textbook_extraction_jobs.payload->'history', '[]'::jsonb) ||
-            case when tutai.textbook_extraction_jobs.status is distinct from excluded.status
-                       or tutai.textbook_extraction_jobs.payload->>'attempts' is distinct from excluded.payload->>'attempts'
-              then jsonb_build_array(jsonb_build_object(
-                'status', excluded.payload->>'status',
-                'attempts', (excluded.payload->>'attempts')::int,
-                'error', excluded.payload->'error',
-                'at', excluded.payload->>'updatedAt'
-              ))
-              else '[]'::jsonb
-            end, true),
-          updated_at = excluded.updated_at
-        where tutai.textbook_extraction_jobs.updated_at < excluded.updated_at`;
-    }
-    const artifactGroups = new Map<string, TextbookArtifact[]>();
-    for (const artifact of store.artifacts) {
-      const key = `${artifact.documentId}\0${artifact.extractionKey}`;
-      artifactGroups.set(key, [...(artifactGroups.get(key) ?? []), artifact]);
-    }
-    for (const group of artifactGroups.values()) {
-      const first = group[0];
-      const ids = group.map((artifact) => artifact.id);
-      await tx`
-        delete from tutai.textbook_artifacts
-        where document_id = ${first.documentId} and extraction_key = ${first.extractionKey}
-          and review_status = 'NEEDS_REVIEW' and not (id = any(${ids}))`;
-    }
-    for (const artifact of store.artifacts) {
+export async function listTextbookArtifacts(
+  filter: { documentId?: string; extractionKey?: string; approvedOnly?: boolean } = {}
+): Promise<TextbookArtifact[]> {
+  const rows = await sql()`
+    select * from tutai.textbook_artifacts
+    where (${filter.documentId ?? null}::text is null or document_id = ${filter.documentId ?? null})
+      and (${filter.extractionKey ?? null}::text is null or extraction_key = ${filter.extractionKey ?? null})
+      and (${filter.approvedOnly ?? false} = false or review_status = 'APPROVED')
+    order by created_at, id`;
+  return rows.map(toArtifact);
+}
+
+/**
+ * Approved artifacts reachable from a Knowledge Tree node through a confirmed
+ * mapping: the mapped section itself or any section below it.
+ */
+export async function approvedArtifactsForNode(knowledgeNodeId: string): Promise<TextbookArtifact[]> {
+  const rows = await sql()`
+    with recursive covered as (
+      select m.document_id, m.entry_id as id
+      from tutai.textbook_knowledge_mappings m
+      where m.knowledge_node_id = ${knowledgeNodeId} and m.status = 'CONFIRMED'
+      union
+      select e.document_id, e.id
+      from tutai.textbook_toc_entries e
+      join covered c on c.document_id = e.document_id and e.parent_id = c.id
+    )
+    select a.* from tutai.textbook_artifacts a
+    join covered c on c.document_id = a.document_id and c.id = a.entry_id
+    where a.review_status = 'APPROVED'
+    order by a.created_at, a.id`;
+  return rows.map(toArtifact);
+}
+
+export async function insertTextbookArtifacts(artifacts: TextbookArtifact[]): Promise<void> {
+  if (!artifacts.length) return;
+  await sql().begin(async (tx) => {
+    for (const artifact of artifacts) {
       await tx`
         insert into tutai.textbook_artifacts (id, document_id, entry_id, extraction_key, review_status, payload, created_at)
-        values (${artifact.id}, ${artifact.documentId}, ${artifact.entryId}, ${artifact.extractionKey}, ${artifact.reviewStatus}, ${tx.json(artifact as never)}, ${artifact.createdAt})
-        on conflict (id) do update set
-          payload = case when tutai.textbook_artifacts.review_status = 'NEEDS_REVIEW' then excluded.payload else tutai.textbook_artifacts.payload end,
-          review_status = case when tutai.textbook_artifacts.review_status = 'NEEDS_REVIEW' then excluded.review_status else tutai.textbook_artifacts.review_status end
-        where tutai.textbook_artifacts.review_status = 'NEEDS_REVIEW'`;
+        values (${artifact.id}, ${artifact.documentId}, ${artifact.entryId}, ${artifact.extractionKey},
+          ${artifact.reviewStatus}, ${tx.json(artifact as never)}, ${artifact.createdAt})
+        on conflict (id) do nothing`;
     }
   });
 }
 
-export async function registerTextbook(sourcePath: string, title?: string) {
-  assertTextbookPersistenceAvailable();
-  const resolved = path.resolve(sourcePath);
-  const bytes = await fs.readFile(resolved);
-  const sha256 = createHash('sha256').update(bytes).digest('hex');
-  const store = await readTextbookStore();
-  const existing = store.documents.find((document) => document.sha256 === sha256);
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const loading = pdfjs.getDocument({ data: new Uint8Array(bytes), useSystemFonts: true });
-  const pdf = await loading.promise;
-  const textSamples = await Promise.all(
-    [1, 5, 6, 7]
-      .filter((pageNumber) => pageNumber <= pdf.numPages)
-      .map(async (pageNumber) => {
-        const page = await pdf.getPage(pageNumber);
-        const content = await page.getTextContent();
-        return content.items
-          .map((item) => ('str' in item ? item.str : ''))
-          .join('')
-          .trim().length;
-      })
-  );
-  const scanDetection = {
-    sampledPdfPages: [1, 5, 6, 7].filter((pageNumber) => pageNumber <= pdf.numPages),
-    textCharacterCounts: textSamples,
-    scanned: textSamples.every((length) => length < 40),
-  };
-  if (existing) {
-    existing.scanDetection = scanDetection;
-    await writeTextbookStore(store);
-    await (pdf as unknown as { destroy(): Promise<void> }).destroy();
-    return { document: existing, duplicate: true, scanDetection };
-  }
-  const documentId = `textbook-${sha256.slice(0, 16)}`;
-  const filename = path.basename(resolved);
-  const durable = usesDatabaseTextbookStore();
-  const storageKey = durable ? `documents/${sha256}.pdf` : `${documentId}/${filename}`;
-  if (durable) {
-    const { uploadPrivateTextbook } = await import('./object-storage');
-    await uploadPrivateTextbook(storageKey, bytes);
-  } else {
-    await fs.mkdir(path.join(PRIVATE, documentId), { recursive: true });
-    await atomicWrite(path.join(PRIVATE, storageKey), bytes);
-  }
-  const document: TextbookDocumentRecord = {
-    id: documentId,
-    originalFilename: filename,
-    title: title ?? filename.replace(/\.pdf$/i, ''),
-    sha256,
-    pdfPageCount: pdf.numPages,
-    storageKey,
-    status: 'REGISTERED',
-    importedAt: new Date().toISOString(),
-    sourceVersion: sha256,
-    tocIndexCompleteness: 'PARTIAL',
-    processingErrors: [],
-    scanDetection,
-    anchors: [],
-    tocEntries: [],
-  };
-  store.documents.push(document);
-  await writeTextbookStore(store);
-  await (pdf as unknown as { destroy(): Promise<void> }).destroy();
+export async function reviewTextbookArtifact(
+  id: string,
+  decision: ArtifactReviewStatus,
+  reviewer: string
+): Promise<TextbookArtifact | null> {
+  const [row] = await sql()`
+    update tutai.textbook_artifacts set
+      review_status = ${decision}, reviewed_at = now(), reviewed_by = ${reviewer},
+      payload = payload || jsonb_build_object('reviewStatus', ${decision}::text)
+    where id = ${id}
+    returning *`;
+  return row ? toArtifact(row) : null;
+}
+
+/** Corrects an artifact's text before approval; approved or rejected text is fixed. */
+export async function editTextbookArtifact(
+  id: string,
+  patch: { title: string; content: string }
+): Promise<TextbookArtifact | null> {
+  const [row] = await sql()`
+    update tutai.textbook_artifacts set
+      payload = payload || ${json({ ...patch, editedByAdmin: true })}
+    where id = ${id} and review_status = 'NEEDS_REVIEW'
+    returning *`;
+  return row ? toArtifact(row) : null;
+}
+
+// ─── Uploads ─────────────────────────────────────────────────────────────────
+
+function toUpload(row: Row): TextbookUploadSession {
   return {
-    document,
-    duplicate: false,
-    scanDetection,
+    id: row.id as string,
+    sha256: row.sha256 as string,
+    byteSize: Number(row.byte_size),
+    originalFilename: row.original_filename as string,
+    title: row.title as string,
+    storageKey: row.storage_key as string,
+    status: row.status as TextbookUploadSession['status'],
+    documentId: (row.document_id as string | null) ?? null,
+    expiresAt: new Date(row.expires_at as string).toISOString(),
   };
 }
 
-export async function addTextbookJob(job: TextbookExtractionJob): Promise<void> {
-  const store = await readTextbookStore();
-  if (!store.jobs.some((existing) => existing.id === job.id)) store.jobs.push(job);
-  await writeTextbookStore(store);
+/** One pending upload per file hash: a retry resumes the same session and object. */
+export async function openTextbookUpload(
+  upload: Omit<TextbookUploadSession, 'status' | 'documentId'> & { createdBy: string }
+): Promise<TextbookUploadSession> {
+  const db = sql();
+  return db.begin(async (tx) => {
+    await tx`
+      update tutai.textbook_uploads set status = 'CANCELLED', updated_at = now()
+      where sha256 = ${upload.sha256} and status = 'PENDING' and expires_at < now()`;
+    const [existing] = await tx`
+      select * from tutai.textbook_uploads where sha256 = ${upload.sha256} and status = 'PENDING'`;
+    if (existing) {
+      const [renewed] = await tx`
+        update tutai.textbook_uploads set expires_at = ${upload.expiresAt}, updated_at = now()
+        where id = ${existing.id as string} returning *`;
+      return toUpload(renewed);
+    }
+    const [row] = await tx`
+      insert into tutai.textbook_uploads
+        (id, sha256, byte_size, original_filename, title, storage_key, status, created_by, expires_at)
+      values (${upload.id}, ${upload.sha256}, ${upload.byteSize}, ${upload.originalFilename},
+        ${upload.title}, ${upload.storageKey}, 'PENDING', ${upload.createdBy}, ${upload.expiresAt})
+      returning *`;
+    return toUpload(row);
+  }) as Promise<TextbookUploadSession>;
 }
 
-export function textbookPrivateFile(storageKey: string): string {
-  const normalized = storageKey.replaceAll('\\', '/');
-  const parts = normalized.split('/');
-  if (
-    !normalized ||
-    normalized.startsWith('/') ||
-    /^[a-zA-Z]:\//.test(normalized) ||
-    parts.some((part) => !part || part === '.' || part === '..')
-  )
-    throw new Error('Invalid textbook storage key.');
-  const resolved = path.resolve(PRIVATE, ...parts);
-  if (!resolved.startsWith(`${path.resolve(PRIVATE)}${path.sep}`))
-    throw new Error('Invalid textbook storage key.');
-  return resolved;
+export async function getTextbookUpload(id: string): Promise<TextbookUploadSession | null> {
+  const [row] = await sql()`select * from tutai.textbook_uploads where id = ${id}`;
+  return row ? toUpload(row) : null;
 }
 
-export async function withTextbookPdf<T>(
-  storageKey: string,
-  operation: (filePath: string) => Promise<T>
-): Promise<T> {
-  if (usesDatabaseTextbookStore()) {
-    const { withPrivateTextbookFile } = await import('./object-storage');
-    return withPrivateTextbookFile(storageKey, operation);
+export async function closeTextbookUpload(
+  id: string,
+  status: 'COMPLETED' | 'CANCELLED',
+  documentId: string | null = null
+): Promise<void> {
+  await sql()`
+    update tutai.textbook_uploads set status = ${status}, document_id = ${documentId}, updated_at = now()
+    where id = ${id} and status = 'PENDING'`;
+}
+
+// ─── Worker liveness ─────────────────────────────────────────────────────────
+
+export const WORKER_ONLINE_SECONDS = 90;
+
+export async function recordWorkerHeartbeat(worker: {
+  id: string;
+  hostname: string;
+  startedAt: string;
+  currentJobId: string | null;
+}): Promise<void> {
+  await sql()`
+    insert into tutai.textbook_workers (id, hostname, started_at, last_seen_at, current_job_id)
+    values (${worker.id}, ${worker.hostname}, ${worker.startedAt}, now(), ${worker.currentJobId})
+    on conflict (id) do update set last_seen_at = now(), current_job_id = excluded.current_job_id`;
+}
+
+export async function removeWorker(id: string): Promise<void> {
+  await sql()`delete from tutai.textbook_workers where id = ${id}`;
+}
+
+export async function textbookWorkerStatus(): Promise<TextbookWorkerStatus> {
+  const [row] = await sql()`
+    select last_seen_at, current_job_id,
+      last_seen_at > now() - make_interval(secs => ${WORKER_ONLINE_SECONDS}) as online
+    from tutai.textbook_workers order by last_seen_at desc limit 1`;
+  if (!row) return { online: false, lastSeenAt: null, currentJobId: null };
+  return {
+    online: Boolean(row.online),
+    lastSeenAt: new Date(row.last_seen_at as string).toISOString(),
+    currentJobId: row.online ? ((row.current_job_id as string | null) ?? null) : null,
+  };
+}
+
+// ─── Legacy local pilot (read-only import source) ────────────────────────────
+
+const LOCAL_STORE = path.join(process.cwd(), 'tmp', 'textbook-reference', 'index', 'store.json');
+
+export interface LocalTextbookPilotStore {
+  documents: Array<Omit<TextbookDocumentRecord, 'status'> & { status: string }>;
+  jobs: TextbookExtractionJob[];
+  artifacts: TextbookArtifact[];
+  mappings: Array<Omit<TextbookKnowledgeMapping, 'status'> & { status: string }>;
+}
+
+/** The pre-database pilot index under tmp/, kept only so it can be imported. */
+export async function readLocalTextbookPilot(): Promise<LocalTextbookPilotStore> {
+  try {
+    return JSON.parse(await fs.readFile(LOCAL_STORE, 'utf8')) as LocalTextbookPilotStore;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    return { documents: [], jobs: [], artifacts: [], mappings: [] };
   }
-  return operation(textbookPrivateFile(storageKey));
-}
-
-export function textbookStoreRoot(): string {
-  return ROOT;
 }

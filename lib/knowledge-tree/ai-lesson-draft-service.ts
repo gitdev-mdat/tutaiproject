@@ -20,6 +20,10 @@ import {
 } from './ai-lesson-draft';
 import { reviewLessonDraft, type DraftCheck } from './ai-lesson-quality';
 import { knowledgeBreadcrumb } from './knowledge-tree';
+import {
+  lessonReferencesForNode,
+  type LessonReference,
+} from '@/lib/textbook-reference/reference-service';
 import { readKnowledgeTree } from './knowledge-tree-storage';
 import type { KnowledgeTreeNode } from './knowledge-tree-types';
 
@@ -148,10 +152,51 @@ export interface LessonDraftContextSummary {
   prerequisites: string | null;
   /** Curriculum facts the tree does not have and the admin may want to give. */
   missing: string[];
+  /** Approved textbook references linked to this lesson, and which were sent. */
+  references: ReferenceSummary;
+}
+
+export interface ReferenceSummary {
+  /** Approved artifacts reachable through confirmed mappings. */
+  approved: number;
+  /** The bounded selection that is (or would be) sent, with provenance. */
+  items: Array<Omit<LessonReference, 'content'>>;
+  /** Whether this draft used them (false when the admin turned them off). */
+  used: boolean;
+  /** Set when references could not be read; drafting continues without them. */
+  error?: string;
+}
+
+const NO_REFERENCES: ReferenceSummary = { approved: 0, items: [], used: false };
+
+async function loadReferences(
+  nodeId: string
+): Promise<{ summary: ReferenceSummary; references: LessonReference[] }> {
+  try {
+    const { approvedCount, references } = await lessonReferencesForNode(nodeId);
+    return {
+      references,
+      summary: {
+        approved: approvedCount,
+        items: references.map(({ content: _content, ...rest }) => rest),
+        used: references.length > 0,
+      },
+    };
+  } catch (error) {
+    console.warn('[ai-draft] textbook references unavailable', (error as Error)?.name);
+    return {
+      references: [],
+      summary: {
+        ...NO_REFERENCES,
+        error: 'Không đọc được tư liệu sách tham chiếu; bản nháp sẽ không dùng tư liệu.',
+      },
+    };
+  }
 }
 
 export function summarizeLessonDraftContext(
-  context: LessonDraftContext
+  context: LessonDraftContext,
+  references: ReferenceSummary = NO_REFERENCES
 ): LessonDraftContextSummary {
   const missing: string[] = [];
   if (!context.description) missing.push('mô tả, mục tiêu của bài trong chương trình');
@@ -166,6 +211,7 @@ export function summarizeLessonDraftContext(
     learnerLevelSource: context.learnerLevelSource ?? 'default',
     prerequisites: context.prerequisites ?? null,
     missing,
+    references,
   };
 }
 
@@ -180,7 +226,9 @@ export interface LessonDraftResponse {
 export async function previewLessonDraftContext(
   nodeId: string
 ): Promise<LessonDraftContextSummary> {
-  return summarizeLessonDraftContext(await buildLessonDraftContext(nodeId));
+  const context = await buildLessonDraftContext(nodeId);
+  const { summary } = await loadReferences(nodeId);
+  return summarizeLessonDraftContext(context, summary);
 }
 
 export async function requestLessonDraft(
@@ -194,8 +242,18 @@ export async function requestLessonDraft(
   }
   const request = parseLessonDraftRequest(body);
   const base = await buildLessonDraftContext(nodeId);
+  const loaded = await loadReferences(nodeId);
+  const useReferences = request.useReferences !== false && loaded.references.length > 0;
   const context: LessonDraftContext = {
     ...base,
+    ...(useReferences && {
+      references: loaded.references.map((reference) => ({
+        kind: reference.kind,
+        title: reference.title,
+        content: reference.content,
+        source: `${reference.documentTitle}, tr. ${reference.printedPages.join(', ')}`,
+      })),
+    }),
     existing: request.existing,
     note: request.note,
     prerequisites: request.prerequisites,
@@ -208,7 +266,10 @@ export async function requestLessonDraft(
   const { draft, plan } = await withDraftLock(nodeId, () =>
     generateLessonDraft(context, providerFor(env))
   );
-  const summary = summarizeLessonDraftContext(context);
+  const summary = summarizeLessonDraftContext(context, {
+    ...loaded.summary,
+    used: useReferences,
+  });
   return {
     draft,
     plan,

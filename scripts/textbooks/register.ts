@@ -1,5 +1,10 @@
+// Registers a local PDF without the browser (same private storage, dedup and
+// verification as an Admin upload). Usage: pnpm textbooks:register -- <pdf> [title]
 import { loadEnvFile } from 'node:process';
-import { registerTextbook } from '@/lib/textbook-reference/repository';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { closeSql } from '@/lib/db/postgres';
+import { registerLocalTextbook } from '@/lib/textbook-reference/document-service';
 
 async function main() {
   try {
@@ -8,28 +13,22 @@ async function main() {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
   const source = process.argv[2];
-  const title = process.argv[3];
   if (!source) throw new Error('Usage: pnpm textbooks:register -- <pdf-path> [title]');
-  const result = await registerTextbook(source, title);
-  console.log(
-    JSON.stringify(
-      {
-        duplicate: result.duplicate,
-        document: {
-          id: result.document.id,
-          originalFilename: result.document.originalFilename,
-          title: result.document.title,
-          sha256: result.document.sha256,
-          pdfPageCount: result.document.pdfPageCount,
-          status: result.document.status,
-          importedAt: result.document.importedAt,
-          scanDetection: result.scanDetection,
-        },
-      },
-      null,
-      2
-    )
-  );
+  try {
+    const { document, duplicate } = await registerLocalTextbook(
+      await readFile(source),
+      path.basename(source),
+      process.argv[3]
+    );
+    console.log(
+      JSON.stringify({ duplicate, id: document.id, sha256: document.sha256, status: document.status })
+    );
+  } finally {
+    await closeSql();
+  }
 }
 
-void main();
+void main().catch((error) => {
+  console.error((error as Error).message);
+  process.exit(1);
+});
