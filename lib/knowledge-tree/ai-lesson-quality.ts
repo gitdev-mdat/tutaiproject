@@ -103,6 +103,8 @@ function notationChecks(draft: AiLessonDraft): DraftCheck[] {
       .slice(Math.max(0, first - 1), first + 2)
       .join(' ')
       .toLocaleLowerCase('vi');
+    // Named in the same sentence ("hai vectơ $\vec{u}$") or explained next to it.
+    if (item.names.test(list[first].toLocaleLowerCase('vi'))) continue;
     if (item.names.test(near) && EXPLAINS.test(near)) continue;
     checks.push({
       id: `notation-${item.name}`,

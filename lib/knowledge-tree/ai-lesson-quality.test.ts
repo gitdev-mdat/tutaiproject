@@ -71,6 +71,15 @@ describe('reviewLessonDraft on the published "Tính đơn điệu của hàm s�
     expect(later.some((id) => id.startsWith('notation-'))).toBe(false);
   });
 
+  it('accepts a symbol named in its own sentence, and still flags a bare one (real Gemini wording)', () => {
+    const recall = String.raw`**Nhắc lại nhanh.** Trong không gian $Oxyz$, tích vô hướng của hai vectơ $\vec{u} = (x_1; y_1; z_1)$ và $\vec{v} = (x_2; y_2; z_2)$ được tính theo công thức $\vec{u} \cdot \vec{v} = x_1 x_2 + y_1 y_2 + z_1 z_2$.`;
+    const bare = String.raw`**Mở đầu.** Cho $\vec{n} = (1; 2; 3)$ và điểm $M(0; 1; 2)$.`;
+    const notation = (MAIN_CONTENT: string) =>
+      ids({ ...improved, MAIN_CONTENT }).filter((id) => id === 'notation-vectơ');
+    expect(notation(recall)).toEqual([]);
+    expect(notation(bare)).toEqual(['notation-vectơ']);
+  });
+
   it('finds the example mathematically consistent and the maths renderable', () => {
     expect(found.some((id) => id.startsWith('example-0-'))).toBe(false);
     expect(found.some((id) => id.startsWith('math-format'))).toBe(false);
