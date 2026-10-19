@@ -38,6 +38,7 @@ tu-tai-temp
 # Local content-import runtime data
 /tmp/content-imports/
 /tmp/content-import-qa-artifacts/
+/tmp/textbook-reference/
 /data/runtime/
 
 # IDE
