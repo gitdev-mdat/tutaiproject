@@ -396,6 +396,26 @@ function mathFormatChecks(draft: AiLessonDraft): DraftCheck[] {
 }
 
 /** All checks for one draft, warnings first. */
+/** Coefficients A, B, C (as in $Ax + By + Cz + D = 0$) next to points named A, B, C, D. */
+const COEFFICIENT_LETTERS = /\(\s*A\s*;\s*B\s*;\s*C\s*\)|\bAx\s*[+-]\s*By\b/;
+const POINT_LABEL = /\b([A-D])\s*\(\s*-?\d/g;
+
+function letterReuseChecks(draft: AiLessonDraft): DraftCheck[] {
+  const text = [draft.MAIN_CONTENT, draft.EXAMPLE, draft.RECAP].join('\n');
+  const maths = mathOf(text);
+  if (!COEFFICIENT_LETTERS.test(maths)) return [];
+  const points = [...new Set([...maths.matchAll(POINT_LABEL)].map((match) => match[1]))];
+  if (!points.length) return [];
+  return [
+    {
+      id: 'letter-reuse',
+      block: 'EXAMPLE',
+      severity: 'warning',
+      message: `Chữ ${points.join(', ')} vừa là tên điểm vừa là hệ số của phương trình. Đổi tên điểm (ví dụ $M$, $N$) để học sinh không nhầm.`,
+    },
+  ];
+}
+
 export function reviewLessonDraft(
   draft: AiLessonDraft,
   options: { stage: LessonStage; subject: string }
@@ -407,6 +427,7 @@ export function reviewLessonDraft(
     // Later lessons build on notation the first lesson introduced.
     ...(math && options.stage === 'INTRODUCTORY' ? notationChecks(draft) : []),
     ...(math ? exampleMathChecks(draft) : []),
+    ...(math ? letterReuseChecks(draft) : []),
   ];
   return checks.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warning' ? -1 : 1));
 }

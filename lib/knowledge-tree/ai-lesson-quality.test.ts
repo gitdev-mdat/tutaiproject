@@ -80,6 +80,17 @@ describe('reviewLessonDraft on the published "Tính đơn điệu của hàm s�
     expect(notation(bare)).toEqual(['notation-vectơ']);
   });
 
+  it('flags a letter used for both a point and a coefficient (real Gemini wording)', () => {
+    const plane = (point: string) => ({
+      ...improved,
+      MAIN_CONTENT: String.raw`**Phương trình tổng quát.** Mặt phẳng qua $M_0$ nhận $\vec{n} = (A; B; C)$ làm vectơ pháp tuyến có phương trình $Ax + By + Cz + D = 0$.`,
+      EXAMPLE: `Ví dụ 1. Kiểm tra điểm $${point}(1; 3; 2)$ có thuộc $(P): 2x - y + 3z - 5 = 0$ không.`,
+    });
+    expect(ids(plane('A'))).toContain('letter-reuse');
+    expect(ids(plane('M'))).not.toContain('letter-reuse');
+    expect(ids(improved)).not.toContain('letter-reuse');
+  });
+
   it('finds the example mathematically consistent and the maths renderable', () => {
     expect(found.some((id) => id.startsWith('example-0-'))).toBe(false);
     expect(found.some((id) => id.startsWith('math-format'))).toBe(false);
