@@ -1,16 +1,25 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, Info, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import type { ApiKnowledgeRepository } from '@/lib/knowledge-tree/api-knowledge-repository';
 import {
   AI_DRAFT_BLOCK_TYPES,
   AI_DRAFT_LIMITS,
+  LEARNER_LEVELS,
+  LEARNER_LEVEL_LABELS,
+  LESSON_STAGES,
+  STAGE_LABELS,
   type AiDraftBlockType,
   type AiLessonDraft,
+  type LearnerLevel,
+  type LessonDraftPlan,
+  type LessonStage,
 } from '@/lib/knowledge-tree/ai-lesson-draft';
+import type { DraftCheck } from '@/lib/knowledge-tree/ai-lesson-quality';
+import type { LessonDraftContextSummary } from '@/lib/knowledge-tree/ai-lesson-draft-service';
 import { ARTICLE_BODY_BLOCKS } from '@/lib/knowledge-tree/knowledge-article';
 import type { KnowledgeArticleBlock } from '@/lib/knowledge-tree/knowledge-tree-types';
 
@@ -20,7 +29,20 @@ type Phase =
   | { kind: 'compose' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'review'; draft: AiLessonDraft; selected: Record<AiDraftBlockType, boolean> };
+  | {
+      kind: 'review';
+      draft: AiLessonDraft;
+      selected: Record<AiDraftBlockType, boolean>;
+      plan: LessonDraftPlan;
+      checks: DraftCheck[];
+      context: LessonDraftContextSummary;
+    };
+
+const SOURCE_LABELS: Record<LessonDraftContextSummary['stageSource'], string> = {
+  admin: 'bạn chọn',
+  title: 'đoán từ tên bài',
+  default: 'mặc định',
+};
 
 const LABELS = Object.fromEntries(
   ARTICLE_BODY_BLOCKS.map((meta) => [meta.type, meta.editorLabel])
@@ -42,6 +64,10 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
   const [phase, setPhase] = React.useState<Phase>({ kind: 'checking' });
   const [includeExisting, setIncludeExisting] = React.useState(false);
   const [note, setNote] = React.useState('');
+  const [context, setContext] = React.useState<LessonDraftContextSummary | null>(null);
+  const [stage, setStage] = React.useState<LessonStage | ''>('');
+  const [learnerLevel, setLearnerLevel] = React.useState<LearnerLevel | ''>('');
+  const [prerequisites, setPrerequisites] = React.useState('');
   const controller = React.useRef<AbortController | null>(null);
 
   const current = React.useMemo(() => {
@@ -57,6 +83,7 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
     let cancelled = false;
     void repo.getAiDraftAvailability(nodeId).then((result) => {
       if (cancelled) return;
+      setContext(result.context ?? null);
       setPhase(
         result.available
           ? { kind: 'compose' }
@@ -82,7 +109,13 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
       : undefined;
     const result = await repo.requestAiDraft(
       nodeId,
-      { existing, note: note.trim() || undefined },
+      {
+        existing,
+        note: note.trim() || undefined,
+        stage: stage || undefined,
+        learnerLevel: learnerLevel || undefined,
+        prerequisites: prerequisites.trim() || undefined,
+      },
       abort.signal
     );
     if (abort.signal.aborted) return;
@@ -91,12 +124,13 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
       setPhase({ kind: 'error', message: result.error.message });
       return;
     }
+    const { draft, plan, checks, context: used } = result.data;
     const selected = {} as Record<AiDraftBlockType, boolean>;
     for (const type of AI_DRAFT_BLOCK_TYPES) {
       // Never pre-select a part that would replace what the admin already wrote.
-      selected[type] = !!result.data[type] && !current[type];
+      selected[type] = !!draft[type] && !current[type];
     }
-    setPhase({ kind: 'review', draft: result.data, selected });
+    setPhase({ kind: 'review', draft, selected, plan, checks, context: used });
   };
 
   const cancel = () => {
@@ -156,9 +190,84 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
         {(phase.kind === 'compose' || phase.kind === 'error') && (
           <div className="space-y-3">
             <p className="leading-6 text-slate-600">
-              AI dựa vào môn, lớp, chương và tên kiến thức để đề xuất từng phần. Bạn chọn phần nào
-              dùng; không có gì được lưu hay hiển thị cho học sinh tự động.
+              AI soạn bản nháp theo bối cảnh dưới đây. Bạn chọn phần nào dùng; không có gì được lưu
+              hay hiển thị cho học sinh tự động.
             </p>
+            {context && (
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+                <p className="text-xs leading-5 text-slate-600">
+                  <span className="font-medium text-slate-800">{context.path}</span>
+                  {context.sequence && context.sequence.total > 0 && (
+                    <>
+                      {' '}
+                      · bài {context.sequence.position}/{context.sequence.total} của chương
+                    </>
+                  )}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-xs font-medium text-slate-600">
+                    Giai đoạn học
+                    <select
+                      value={stage}
+                      onChange={(event) => setStage(event.target.value as LessonStage | '')}
+                      className="mt-1 block h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900"
+                    >
+                      <option value="">
+                        {STAGE_LABELS[context.stage]} ({SOURCE_LABELS[context.stageSource]})
+                      </option>
+                      {LESSON_STAGES.map((value) => (
+                        <option key={value} value={value}>
+                          {STAGE_LABELS[value]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-xs font-medium text-slate-600">
+                    Học sinh
+                    <select
+                      value={learnerLevel}
+                      onChange={(event) => setLearnerLevel(event.target.value as LearnerLevel | '')}
+                      className="mt-1 block h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900"
+                    >
+                      <option value="">
+                        {LEARNER_LEVEL_LABELS[context.learnerLevel]} (
+                        {SOURCE_LABELS[context.learnerLevelSource]})
+                      </option>
+                      {LEARNER_LEVELS.map((value) => (
+                        <option key={value} value={value}>
+                          {LEARNER_LEVEL_LABELS[value]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <label
+                    htmlFor="ai-draft-prerequisites"
+                    className="text-xs font-medium text-slate-600"
+                  >
+                    Kiến thức nền học sinh cần (không bắt buộc)
+                  </label>
+                  <Textarea
+                    id="ai-draft-prerequisites"
+                    value={prerequisites}
+                    maxLength={AI_DRAFT_LIMITS.prerequisitesChars}
+                    onChange={(event) => setPrerequisites(event.target.value)}
+                    placeholder="Ví dụ: đạo hàm của hàm đa thức; xét dấu tam thức bậc hai"
+                    className="mt-1 min-h-[52px] bg-white text-sm"
+                  />
+                </div>
+                {context.missing.length > 0 && (
+                  <p className="flex gap-1.5 text-xs leading-5 text-slate-500">
+                    <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                    <span>
+                      Cây kiến thức chưa có {context.missing.join(', ')}. AI sẽ dùng mặc định ở trên
+                      và tự nêu kiến thức nền nó giả định để bạn kiểm tra.
+                    </span>
+                  </p>
+                )}
+              </div>
+            )}
             <label
               className={`flex items-start gap-2 ${hasContent ? 'text-slate-700' : 'text-slate-400'}`}
             >
@@ -218,6 +327,65 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
               AI có thể sai. Đọc và sửa lại trước khi lưu; hiển thị cho học sinh vẫn là bước riêng.
             </p>
+            <p className="text-xs text-slate-500">
+              Soạn cho: {STAGE_LABELS[phase.context.stage]} ·{' '}
+              {LEARNER_LEVEL_LABELS[phase.context.learnerLevel]}
+            </p>
+            <section
+              aria-label="Kiểm tra tự động"
+              className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2.5"
+            >
+              <h4 className="text-xs font-semibold text-slate-700">Kiểm tra tự động</h4>
+              {phase.checks.length ? (
+                <ul className="mt-1.5 space-y-1.5">
+                  {phase.checks.map((check) => (
+                    <li
+                      key={check.id}
+                      className={`flex gap-2 text-xs leading-5 ${check.severity === 'warning' ? 'text-amber-800' : 'text-slate-600'}`}
+                    >
+                      {check.severity === 'warning' ? (
+                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                      ) : (
+                        <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                      )}
+                      <span>{check.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  Không thấy lỗi nào kiểm tra được bằng máy (công thức, cấu trúc, đạo hàm và kết
+                  luận của ví dụ). Máy không đánh giá được bài có dạy tốt không, nên vẫn cần đọc kỹ.
+                </p>
+              )}
+            </section>
+            {(phase.plan.prerequisites.length > 0 ||
+              phase.plan.newNotation.length > 0 ||
+              phase.plan.teacherNotes.length > 0) && (
+              <details className="rounded-lg border border-slate-200 px-3 py-2 text-xs leading-5 text-slate-600">
+                <summary className="cursor-pointer font-semibold text-slate-700">
+                  AI giả định gì về học sinh
+                </summary>
+                {(
+                  [
+                    ['Kiến thức nền bài nhắc lại', phase.plan.prerequisites],
+                    ['Ký hiệu, thuật ngữ mới đã giải thích', phase.plan.newNotation],
+                    ['Gợi ý cho giáo viên', phase.plan.teacherNotes],
+                  ] as const
+                )
+                  .filter(([, items]) => items.length)
+                  .map(([label, items]) => (
+                    <div key={label} className="mt-2">
+                      <p className="font-medium text-slate-700">{label}</p>
+                      <ul className="list-disc pl-4">
+                        {items.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+              </details>
+            )}
             <ul className="space-y-2.5">
               {AI_DRAFT_BLOCK_TYPES.filter((type) => phase.draft[type].trim()).map((type) => {
                 const id = `ai-draft-${type}`;

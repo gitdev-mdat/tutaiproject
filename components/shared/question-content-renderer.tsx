@@ -3,106 +3,203 @@
 import Image from 'next/image';
 import * as React from 'react';
 import type { QuestionContentBlock } from '@/lib/question-bank/qb-types';
+import {
+  MATHBB,
+  MATH_ESCAPES,
+  MATH_GROUP_COMMANDS,
+  MATH_LAYOUT_COMMANDS,
+  MATH_SYMBOLS,
+  MATH_TOKEN,
+  readGroup,
+} from '@/lib/content/math-notation';
 
-const MATH_TOKEN = /(\$[^$]+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])/g;
-
+/**
+ * Renders the inside of one formula. A small reader over the LaTeX subset in
+ * `math-notation.ts`: nested `{…}` groups, fractions, roots, powers and the
+ * symbol table. Unknown commands are kept as written; the authoring checks
+ * report them before a lesson is published.
+ */
 function renderMathExpression(source: string, key: React.Key): React.ReactNode {
   const nodes: React.ReactNode[] = [];
-  let cursor = 0;
-  const token =
-    /(\\d?frac\{([^{}]*)\}\{([^{}]*)\}|\\sqrt(?:\[([^\]]+)\])?\{([^{}]*)\}|\\mathbb\{[NZQRC]\}|\^\{([^{}]+)\}|\^([A-Za-z0-9+-]+)|_\{([^{}]+)\}|_([A-Za-z0-9+-]+)|\\text\{([^{}]*)\}|\\(?:leq?|geq?|neq?|times|div|pm|infty|alpha|beta|gamma|pi|theta|Delta|int|in|notin|cup|cap|subset|cdot|to|Rightarrow|Leftrightarrow|forall|exists|emptyset|varnothing|approx|lt|gt|sin|cos|tan|cot|log|ln|lim|left|right)(?![A-Za-z])|\\[{}]|\\[,;!])/g;
-  const symbols: Record<string, string> = {
-    '\\mathbb{N}': 'ℕ',
-    '\\mathbb{Z}': 'ℤ',
-    '\\mathbb{Q}': 'ℚ',
-    '\\mathbb{R}': 'ℝ',
-    '\\mathbb{C}': 'ℂ',
-    '\\le': '≤',
-    '\\leq': '≤',
-    '\\ge': '≥',
-    '\\geq': '≥',
-    '\\neq': '≠',
-    '\\times': '×',
-    '\\div': '÷',
-    '\\pm': '±',
-    '\\infty': '∞',
-    '\\alpha': 'α',
-    '\\beta': 'β',
-    '\\gamma': 'γ',
-    '\\pi': 'π',
-    '\\theta': 'θ',
-    '\\Delta': 'Δ',
-    '\\int': '∫',
-    '\\ne': '≠',
-    '\\in': '∈',
-    '\\notin': '∉',
-    '\\cup': '∪',
-    '\\cap': '∩',
-    '\\subset': '⊂',
-    '\\cdot': '·',
-    '\\to': '→',
-    '\\Rightarrow': '⇒',
-    '\\Leftrightarrow': '⇔',
-    '\\forall': '∀',
-    '\\exists': '∃',
-    '\\emptyset': '∅',
-    '\\varnothing': '∅',
-    '\\approx': '≈',
-    '\\lt': '<',
-    '\\gt': '>',
-    '\\sin': 'sin',
-    '\\cos': 'cos',
-    '\\tan': 'tan',
-    '\\cot': 'cot',
-    '\\log': 'log',
-    '\\ln': 'ln',
-    '\\lim': 'lim',
-    '\\left': '',
-    '\\right': '',
-    '\\{': '{',
-    '\\}': '}',
-    '\\,': ' ',
-    '\\;': ' ',
-    '\\!': '',
+  let text = '';
+  let i = 0;
+  const flush = () => {
+    if (text) nodes.push(text);
+    text = '';
   };
-  for (const match of source.matchAll(token)) {
-    const index = match.index ?? 0;
-    if (index > cursor) nodes.push(source.slice(cursor, index));
-    if (match[2] !== undefined) {
-      nodes.push(
+  const push = (node: React.ReactNode) => {
+    flush();
+    nodes.push(node);
+  };
+  const group = (): string | null => {
+    while (source[i] === ' ') i += 1;
+    const read = readGroup(source, i);
+    if (!read) return null;
+    i = read.end;
+    return read.body;
+  };
+  /** The argument of ^ or _: a {group}, a command, a run of digits or one character. */
+  const script = (): string => {
+    while (source[i] === ' ') i += 1;
+    if (source[i] === '{') return group() ?? '';
+    if (source[i] === '\\') {
+      const name = /^\\(?:[A-Za-z]+|.)/.exec(source.slice(i))?.[0] ?? '\\';
+      i += name.length;
+      return name;
+    }
+    const run = /^[-+]?(?:\d+(?:[.,]\d+)?|.)/.exec(source.slice(i))?.[0] ?? '';
+    i += run.length;
+    return run;
+  };
+
+  while (i < source.length) {
+    const char = source[i];
+    if (char === '^' || char === '_') {
+      const at = i;
+      i += 1;
+      const body = renderMathExpression(script(), `${at}-v`);
+      push(char === '^' ? <sup key={`${at}-s`}>{body}</sup> : <sub key={`${at}-b`}>{body}</sub>);
+      continue;
+    }
+    if (char === '{' || char === '}') {
+      const at = i;
+      const inner = char === '{' ? group() : null;
+      if (inner === null) {
+        i = at + 1;
+        continue;
+      }
+      push(renderMathExpression(inner, `${at}-g`));
+      continue;
+    }
+    if (char !== '\\') {
+      text += char;
+      i += 1;
+      continue;
+    }
+    const at = i;
+    const name = /^[A-Za-z]+/.exec(source.slice(i + 1))?.[0];
+    if (!name) {
+      const escaped = source[i + 1] ?? '';
+      text += escaped in MATH_ESCAPES ? MATH_ESCAPES[escaped] : `\\${escaped}`;
+      i += 2;
+      continue;
+    }
+    i += 1 + name.length;
+    if (name in MATH_SYMBOLS) {
+      text += MATH_SYMBOLS[name];
+      continue;
+    }
+    if (MATH_LAYOUT_COMMANDS.has(name)) continue;
+    if (!(name in MATH_GROUP_COMMANDS)) {
+      text += `\\${name}`;
+      continue;
+    }
+    if (name === 'sqrt') {
+      let index = '';
+      if (source[i] === '[') {
+        const close = source.indexOf(']', i);
+        if (close > i) {
+          index = source.slice(i + 1, close);
+          i = close + 1;
+        }
+      }
+      const radicand = group();
+      if (radicand === null) {
+        text += '√';
+        continue;
+      }
+      push(
+        <span key={`${at}-r`} className="whitespace-nowrap">
+          {index && <sup>{renderMathExpression(index, `${at}-i`)}</sup>}√
+          <span className="border-t border-current px-0.5">
+            {renderMathExpression(radicand, `${at}-v`)}
+          </span>
+        </span>
+      );
+      continue;
+    }
+    if (MATH_GROUP_COMMANDS[name] === 2) {
+      const top = group();
+      const bottom = top === null ? null : group();
+      if (top === null || bottom === null) {
+        text += `\\${name}`;
+        continue;
+      }
+      const stacked = (
         <span
-          key={`${index}-f`}
+          key={`${at}-f`}
           className="inline-flex align-middle flex-col text-center leading-none"
         >
-          <span className="border-b border-current px-0.5">
-            {renderMathExpression(match[2], `${index}-n`)}
+          <span className={name.endsWith('binom') ? 'px-0.5' : 'border-b border-current px-0.5'}>
+            {renderMathExpression(top, `${at}-n`)}
           </span>
-          <span className="px-0.5">{renderMathExpression(match[3], `${index}-d`)}</span>
+          <span className="px-0.5">{renderMathExpression(bottom, `${at}-d`)}</span>
         </span>
       );
-    } else if (match[5] !== undefined) {
-      nodes.push(
-        <span key={`${index}-r`} className="whitespace-nowrap">
-          {match[4] && <sup>{match[4]}</sup>}√
-          <span className="border-t border-current px-0.5">
-            {renderMathExpression(match[5], `${index}-v`)}
+      push(
+        name.endsWith('binom') ? (
+          <span key={`${at}-c`} className="whitespace-nowrap">
+            ({stacked})
           </span>
+        ) : (
+          stacked
+        )
+      );
+      continue;
+    }
+    const body = group();
+    if (body === null) {
+      text += `\\${name}`;
+      continue;
+    }
+    if (name === 'mathbb') {
+      text += body
+        .split('')
+        .map((letter) => MATHBB[letter] ?? letter)
+        .join('');
+    } else if (name.startsWith('text')) {
+      push(
+        name === 'textbf' ? (
+          <strong key={`${at}-t`}>{body}</strong>
+        ) : (
+          body.replace(/\\([{}%$&#_])/g, '$1')
+        )
+      );
+    } else if (name === 'overline' || name === 'bar') {
+      push(
+        <span key={`${at}-o`} className="border-t border-current">
+          {renderMathExpression(body, `${at}-ov`)}
         </span>
       );
-    } else if (match[6] !== undefined || match[7] !== undefined) {
-      nodes.push(
-        <sup key={`${index}-s`}>{renderMathExpression(match[6] ?? match[7], `${index}-sv`)}</sup>
+    } else if (
+      name === 'vec' ||
+      name === 'overrightarrow' ||
+      name === 'hat' ||
+      name === 'widehat'
+    ) {
+      push(
+        <span
+          key={`${at}-a`}
+          className="inline-flex flex-col items-center align-bottom leading-none"
+        >
+          <span aria-hidden="true" className="text-[0.7em] leading-none">
+            {name === 'hat' || name === 'widehat' ? '^' : '→'}
+          </span>
+          <span>{renderMathExpression(body, `${at}-av`)}</span>
+        </span>
       );
-    } else if (match[8] !== undefined || match[9] !== undefined) {
-      nodes.push(
-        <sub key={`${index}-b`}>{renderMathExpression(match[8] ?? match[9], `${index}-bv`)}</sub>
+    } else if (name === 'boxed') {
+      push(
+        <span key={`${at}-x`} className="rounded border border-current px-1">
+          {renderMathExpression(body, `${at}-xv`)}
+        </span>
       );
-    } else if (match[10] !== undefined) {
-      nodes.push(match[10]);
-    } else nodes.push(symbols[match[0]] ?? match[0]);
-    cursor = index + match[0].length;
+    } else {
+      // mathrm, mathbf, mathit, operatorname: the letters as written.
+      push(renderMathExpression(body, `${at}-m`));
+    }
   }
-  if (cursor < source.length) nodes.push(source.slice(cursor));
+  flush();
   return <React.Fragment key={key}>{nodes}</React.Fragment>;
 }
 
