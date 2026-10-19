@@ -77,6 +77,21 @@ function mathOf(sentence: string): string {
     .join(' ');
 }
 
+/** Text up to the first `.` or `;` outside math, so a conclusion does not borrow the next sentence's interval. */
+function firstClause(text: string): string {
+  let out = '';
+  for (const segment of splitMathSegments(text)) {
+    if (segment.math) {
+      out += segment.raw;
+      continue;
+    }
+    const end = segment.body.search(/[.;]/);
+    if (end >= 0) return out + segment.body.slice(0, end);
+    out += segment.body;
+  }
+  return out;
+}
+
 function notationChecks(draft: AiLessonDraft): DraftCheck[] {
   const checks: DraftCheck[] = [];
   const list = sentences(`${draft.INTRO}\n\n${draft.MAIN_CONTENT}`);
@@ -186,7 +201,7 @@ function exampleMathChecks(draft: AiLessonDraft): DraftCheck[] {
             ? 'down'
             : null;
         if (!direction) continue;
-        for (const interval of readIntervals(mathOf(part))) {
+        for (const interval of readIntervals(mathOf(firstClause(part)))) {
           if (pieces.some((piece) => piece.direction === direction && inside(interval, piece))) {
             continue;
           }

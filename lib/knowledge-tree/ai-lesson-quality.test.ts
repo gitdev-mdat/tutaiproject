@@ -83,6 +83,18 @@ describe('reviewLessonDraft on a beginner-oriented draft', () => {
     expect(warnings).toEqual([]);
   });
 
+  it('reads each conclusion within its own sentence (real Gemini wording)', () => {
+    const geminiWording = {
+      ...improved,
+      EXAMPLE: improved.EXAMPLE.replace(
+        'Bước 4: Hàm số nghịch biến trên $(-\\infty; 2)$ và đồng biến trên $(2; +\\infty)$.',
+        "Bước 4: Kết luận: Vì $y' > 0$ trên $(2; +\\infty)$ nên hàm số đồng biến trên khoảng $(2; +\\infty)$. Vì $y' < 0$ trên $(-\\infty; 2)$ nên hàm số nghịch biến trên khoảng $(-\\infty; 2)$."
+      ),
+    };
+    expect(geminiWording.EXAMPLE).not.toBe(improved.EXAMPLE);
+    expect(ids(geminiWording).filter((id) => id.startsWith('example-0-'))).toEqual([]);
+  });
+
   it('catches a wrong derivative and a reversed conclusion in a worked example', () => {
     const wrong = {
       ...improved,
