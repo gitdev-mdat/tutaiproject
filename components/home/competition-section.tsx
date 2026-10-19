@@ -38,15 +38,7 @@ function getPrizeCount(rankFrom: number, rankTo: number) {
 export function CompetitionSection() {
   const sectionRef = React.useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = React.useState(false);
-  const [participantCount, setParticipantCount] = React.useState(
-    Math.max(0, featuredCompetition.participantCount - 24)
-  );
   const competition = featuredCompetition;
-  const participantPreview = competition.participantPreview ?? [];
-  const remainingParticipants = Math.max(
-    0,
-    competition.participantCount - participantPreview.length
-  );
 
   React.useEffect(() => {
     const section = sectionRef.current;
@@ -64,32 +56,6 @@ export function CompetitionSection() {
     observer.observe(section);
     return () => observer.disconnect();
   }, []);
-
-  React.useEffect(() => {
-    if (!isVisible) return;
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const animationFrame = window.requestAnimationFrame(() => {
-        setParticipantCount(competition.participantCount);
-      });
-      return () => window.cancelAnimationFrame(animationFrame);
-    }
-
-    const from = Math.max(0, competition.participantCount - 24);
-    const duration = 720;
-    const startedAt = performance.now();
-    let animationFrame = 0;
-
-    const updateCount = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / duration);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setParticipantCount(Math.round(from + (competition.participantCount - from) * eased));
-      if (progress < 1) animationFrame = window.requestAnimationFrame(updateCount);
-    };
-
-    animationFrame = window.requestAnimationFrame(updateCount);
-    return () => window.cancelAnimationFrame(animationFrame);
-  }, [competition.participantCount, isVisible]);
 
   return (
     <div ref={sectionRef} className={styles.section} data-visible={isVisible}>
@@ -136,11 +102,6 @@ export function CompetitionSection() {
                   </div>
                 );
               })}
-            </div>
-
-            <div className={styles.learningNote}>
-              <BarChart3 size={18} aria-hidden="true" />
-              <span>Kết quả thi giúp Tú Tài hiểu rõ phần kiến thức em cần củng cố tiếp theo.</span>
             </div>
           </div>
 
@@ -223,23 +184,6 @@ export function CompetitionSection() {
               </div>
 
               <div className={styles.eventSignals}>
-                <div className={styles.participants}>
-                  <div className={styles.avatarStack} aria-hidden="true">
-                    {participantPreview.slice(0, 3).map((participant, index) => (
-                      <span key={participant.id} style={{ zIndex: 4 - index }}>
-                        {participant.initials}
-                      </span>
-                    ))}
-                    {remainingParticipants > 0 && <strong>+{remainingParticipants}</strong>}
-                  </div>
-                  <div>
-                    <strong>
-                      {new Intl.NumberFormat('vi-VN').format(participantCount)} học sinh đã tham gia
-                    </strong>
-                    <span>Cùng tranh tài, cùng tiến bộ.</span>
-                  </div>
-                </div>
-
                 <div className={styles.countdown}>
                   <Clock3 size={22} aria-hidden="true" />
                   <div>

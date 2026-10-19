@@ -100,21 +100,17 @@
 .eyebrow,
 .headlineLine,
 .description,
-.learningNote,
 .eventStage,
 .loopStep,
-.prizeTier,
-.participants {
+.prizeTier {
   opacity: 0;
 }
 
 .eyebrow,
 .headlineLine,
 .description,
-.learningNote,
 .loopStep,
-.prizeTier,
-.participants {
+.prizeTier {
   transform: translateY(12px);
 }
 
@@ -190,24 +186,6 @@
   color: #61a0ff;
   filter: drop-shadow(0 0 4px #fff);
   transform: translateY(-50%);
-}
-
-.learningNote {
-  display: flex;
-  max-width: 640px;
-  align-items: flex-start;
-  gap: 11px;
-  margin-top: 24px;
-  color: #52637e;
-  font-size: 13px;
-  font-weight: 560;
-  line-height: 1.55;
-}
-
-.learningNote svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: #1768f5;
 }
 
 .eventStage {
@@ -623,60 +601,6 @@
   align-items: center;
   margin: 22px 0 18px;
 }
-.participants {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 14px;
-}
-.avatarStack {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-}
-.avatarStack span,
-.avatarStack strong {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 2px solid #0b2a59;
-  border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(145deg, #5b8ee5, #183f7d);
-  font-size: 9px;
-  font-weight: 800;
-}
-.avatarStack span + span,
-.avatarStack strong {
-  margin-left: -10px;
-}
-.avatarStack span:nth-child(2) {
-  background: linear-gradient(145deg, #e58f8f, #7e3351);
-}
-.avatarStack span:nth-child(3) {
-  background: linear-gradient(145deg, #59b9a6, #176457);
-}
-.avatarStack strong {
-  width: 46px;
-  color: #bcd9ff;
-  background: #124caa;
-  font-size: 9px;
-}
-.participants > div:last-child > strong,
-.participants > div:last-child > span {
-  display: block;
-}
-.participants > div:last-child > strong {
-  color: #eff5ff;
-  font-size: 12px;
-  line-height: 1.35;
-}
-.participants > div:last-child > span {
-  margin-top: 3px;
-  color: #7892b4;
-  font-size: 10px;
-}
 
 .countdown {
   display: flex;
@@ -761,11 +685,9 @@
 .section[data-visible='true'] .eyebrow,
 .section[data-visible='true'] .headlineLine,
 .section[data-visible='true'] .description,
-.section[data-visible='true'] .learningNote,
 .section[data-visible='true'] .eventStage,
 .section[data-visible='true'] .loopStep,
-.section[data-visible='true'] .prizeTier,
-.section[data-visible='true'] .participants {
+.section[data-visible='true'] .prizeTier {
   animation: revealUp 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -788,9 +710,6 @@
   animation-name: presentCard;
   animation-delay: 250ms;
   animation-duration: 760ms;
-}
-.section[data-visible='true'] .learningNote {
-  animation-delay: 1780ms;
 }
 
 .section[data-visible='true'] .loopStep:nth-child(1) {
@@ -831,21 +750,6 @@
 }
 .section[data-visible='true'] .prizeTier:nth-child(3) {
   animation-delay: 1000ms;
-}
-.section[data-visible='true'] .participants {
-  animation-delay: 1110ms;
-}
-.section[data-visible='true'] .avatarStack span:nth-child(1) {
-  animation: avatarSettle 380ms 1120ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.section[data-visible='true'] .avatarStack span:nth-child(2) {
-  animation: avatarSettle 380ms 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.section[data-visible='true'] .avatarStack span:nth-child(3) {
-  animation: avatarSettle 380ms 1280ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.section[data-visible='true'] .avatarStack strong {
-  animation: avatarSettle 380ms 1360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .section[data-visible='true'] .prizeAmount::after {
   animation: prizeShimmer 820ms 660ms cubic-bezier(0.4, 0, 0.2, 1) 1 both;
@@ -1124,38 +1028,25 @@
     height: 76px;
     border-radius: 18px;
   }
-  .avatarStack span {
-    display: none;
-  }
-  .avatarStack strong {
-    width: 48px;
-    margin-left: 0;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .eyebrow,
   .headlineLine,
   .description,
-  .learningNote,
   .eventStage,
   .loopStep,
-  .prizeTier,
-  .participants {
+  .prizeTier {
     opacity: 1;
     transform: none;
   }
   .section[data-visible='true'] .eyebrow,
   .section[data-visible='true'] .headlineLine,
   .section[data-visible='true'] .description,
-  .section[data-visible='true'] .learningNote,
   .section[data-visible='true'] .eventStage,
   .section[data-visible='true'] .loopStep,
   .section[data-visible='true'] .loopArrow,
   .section[data-visible='true'] .prizeTier,
-  .section[data-visible='true'] .participants,
-  .section[data-visible='true'] .avatarStack span,
-  .section[data-visible='true'] .avatarStack strong,
   .section[data-visible='true'] .trophyGlow,
   .section[data-visible='true'] .status span,
   .section[data-visible='true'] .cardAtmosphere,

@@ -1,29 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ComponentType, type CSSProperties } from 'react';
-import {
-  ArrowRight,
-  BarChart3,
-  BookOpen,
-  CalendarCheck,
-  ChartNoAxesCombined,
-  CheckCircle2,
-  Clock3,
-  Dumbbell,
-  FileText,
-  Lightbulb,
-  LockKeyhole,
-  Map,
-  Settings,
-  Sparkles,
-  Target,
-  TriangleAlert,
-  TrendingUp,
-  UnlockKeyhole,
-} from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { ArrowRight, BookOpen, CheckCircle2, Dumbbell } from 'lucide-react';
 
-import { TuTaiMark } from '@/components/layout/public-header';
 import type { LandingCta } from '@/lib/navigation/landing-cta';
 
 import {
@@ -33,131 +13,33 @@ import {
 } from './product-demo-cursor';
 import styles from './transformation-section.module.css';
 
-type IconComponent = ComponentType<{
-  size?: number;
-  strokeWidth?: number;
-  'aria-hidden'?: boolean;
-}>;
-
-const BENEFITS: Array<{
-  title: string;
-  description: string;
-  Icon: IconComponent;
-  tone: 'blue' | 'violet' | 'cyan';
-}> = [
-  {
-    title: 'Không học lan man',
-    description: 'Tập trung vào đúng phần em cần cải thiện.',
-    Icon: Target,
-    tone: 'blue',
-  },
-  {
-    title: 'Biết rõ học gì trước',
-    description: 'Tú Tài sắp sẵn bài học và luyện tập phù hợp mỗi ngày.',
-    Icon: CalendarCheck,
-    tone: 'violet',
-  },
-  {
-    title: 'Tiến bộ đúng trọng tâm',
-    description: 'Theo dõi tiến độ và điều chỉnh liên tục cho em.',
-    Icon: TrendingUp,
-    tone: 'cyan',
-  },
-];
-
-const NAV_ITEMS: Array<{ label: string; Icon: IconComponent }> = [
-  { label: 'Hôm nay', Icon: CalendarCheck },
-  { label: 'Lộ trình', Icon: Map },
-  { label: 'Bài học', Icon: BookOpen },
-  { label: 'Luyện tập', Icon: Dumbbell },
-  { label: 'Đề thi', Icon: FileText },
-  { label: 'Thống kê', Icon: BarChart3 },
-  { label: 'Cài đặt', Icon: Settings },
-];
-
-const STATS: Array<{
-  value: string;
-  label: string;
-  Icon: IconComponent;
-  tone: 'blue' | 'amber' | 'green';
-}> = [
-  { value: '4/12', label: 'Chương đã vững', Icon: BookOpen, tone: 'blue' },
-  { value: '5/12', label: 'Chương cần ôn', Icon: ChartNoAxesCombined, tone: 'amber' },
-  { value: '38%', label: 'Tiến độ lộ trình', Icon: TrendingUp, tone: 'green' },
-];
-
-function BenefitList() {
-  return (
-    <ul className={styles.benefitList} aria-label="Lợi ích của lộ trình học mỗi ngày">
-      {BENEFITS.map(({ title, description, Icon, tone }, index) => (
-        <li
-          key={title}
-          className={`${styles.benefit} ${styles.reveal}`}
-          style={{ '--reveal-delay': `${220 + index * 90}ms` } as CSSProperties}
-        >
-          <span className={`${styles.benefitIcon} ${styles[tone]}`} aria-hidden="true">
-            <Icon size={18} strokeWidth={2} />
-          </span>
-          <span>
-            <strong>{title}</strong>
-            <small>{description}</small>
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function ProductNavigation() {
-  return (
-    <nav className={styles.productNav} aria-label="Điều hướng ứng dụng Tú Tài">
-      <div className={styles.productLogo} aria-label="Tú Tài">
-        <TuTaiMark size={28} />
-      </div>
-      <div className={styles.navItems}>
-        {NAV_ITEMS.map(({ label, Icon }, index) => (
-          <div
-            key={label}
-            className={`${styles.navItem} ${index === 0 ? styles.navItemActive : ''}`}
-            aria-current={index === 0 ? 'page' : undefined}
-            title={label}
-          >
-            <Icon size={17} strokeWidth={index === 0 ? 2.25 : 1.8} aria-hidden={true} />
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-    </nav>
-  );
-}
-
 interface TodayTaskCardProps {
   index: number;
   title: string;
-  progress: number;
   meta: string;
   action: string;
-  note?: string;
+  /** Reading progress; only the lesson card has one. */
+  progress?: number;
   secondary?: boolean;
-  unlocked?: boolean;
+  ready?: boolean;
+  becomingReady?: boolean;
   completed?: boolean;
-  unlocking?: boolean;
 }
 
 function TodayTaskCard({
   index,
   title,
-  progress,
   meta,
   action,
-  note,
+  progress,
   secondary = false,
-  unlocked = false,
+  ready = false,
+  becomingReady = false,
   completed = false,
-  unlocking = false,
 }: TodayTaskCardProps) {
-  const cardClassName = `${styles.taskCard} ${secondary ? styles.taskSecondary : styles.taskPrimary} ${unlocked ? styles.taskUnlocked : ''} ${completed ? styles.taskCompleted : ''} ${unlocking ? styles.taskUnlocking : ''}`;
-  const actionClassName = `${styles.taskAction} ${secondary ? styles.taskActionSecondary : ''} ${!unlocked && secondary ? styles.taskActionLocked : ''}`;
+  const cardClassName = `${styles.taskCard} ${secondary ? styles.taskSecondary : styles.taskPrimary} ${ready ? styles.taskReady : ''} ${completed ? styles.taskCompleted : ''} ${becomingReady ? styles.taskBecomingReady : ''}`;
+  const actionClassName = `${styles.taskAction} ${secondary ? styles.taskActionSecondary : ''}`;
+  const Icon = secondary ? Dumbbell : BookOpen;
 
   return (
     <article className={cardClassName} data-demo-card={secondary ? undefined : 'primary'}>
@@ -169,60 +51,34 @@ function TodayTaskCard({
         data-demo-icon={secondary ? undefined : 'primary'}
         aria-hidden="true"
       >
-        {secondary ? (
-          unlocked || unlocking ? (
-            <UnlockKeyhole size={26} strokeWidth={1.9} />
-          ) : (
-            <LockKeyhole size={25} strokeWidth={1.9} />
-          )
-        ) : (
-          <BookOpen size={28} strokeWidth={1.9} />
-        )}
+        <Icon size={secondary ? 26 : 28} strokeWidth={1.9} />
       </span>
       <div className={styles.taskBody}>
         <h4>{title}</h4>
-        <div className={styles.progressRow}>
-          <div
-            className={styles.progressTrack}
-            role="progressbar"
-            aria-label={`Tiến độ ${title}`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress}
-          >
-            <span
-              className={styles.progressFill}
-              data-demo-progress={secondary ? undefined : 'primary'}
-              style={{ '--task-progress': `${progress}%` } as CSSProperties}
-            />
+        {progress !== undefined ? (
+          <div className={styles.progressRow}>
+            <div
+              className={styles.progressTrack}
+              role="progressbar"
+              aria-label={`Tiến độ ${title}`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+            >
+              <span
+                className={styles.progressFill}
+                data-demo-progress="primary"
+                style={{ '--task-progress': `${progress}%` } as CSSProperties}
+              />
+            </div>
+            <strong>{progress}%</strong>
           </div>
-          <strong>{progress}%</strong>
-        </div>
-        <div className={styles.taskMeta}>
-          <span>
-            <Clock3 size={13} strokeWidth={1.9} aria-hidden={true} />
-            {meta}
-          </span>
-          {note ? (
-            <span className={styles.unlockNote}>
-              {unlocking ? (
-                <UnlockKeyhole size={12} strokeWidth={1.9} aria-hidden={true} />
-              ) : !unlocked ? (
-                <LockKeyhole size={12} strokeWidth={1.9} aria-hidden={true} />
-              ) : null}
-              {note}
-            </span>
-          ) : null}
-        </div>
+        ) : null}
+        <p className={styles.taskMeta}>{meta}</p>
       </div>
-      {secondary && !unlocked ? (
-        <span className={actionClassName} aria-disabled="true" aria-label={`${action}: đang khóa`}>
-          {unlocking ? (
-            <UnlockKeyhole size={13} strokeWidth={2} aria-hidden="true" />
-          ) : (
-            <LockKeyhole size={13} strokeWidth={2} aria-hidden="true" />
-          )}
-          {unlocking ? 'Đang mở…' : 'Đang khóa'}
+      {secondary && !ready ? (
+        <span className={actionClassName} aria-disabled="true">
+          Sau bài học
         </span>
       ) : (
         <Link
@@ -258,11 +114,7 @@ function LessonExperience({ scene }: { scene: ProductDemoScene }) {
           ? 1
           : 0;
   const completed = scene === 'LESSON_COMPLETE';
-  const steps = [
-    ['Nhận diện dạng bài', 'Tìm biểu thức phù hợp để đặt ẩn'],
-    ['Chọn biến u', 'Đặt u = u(x) để rút gọn biểu thức'],
-    ['Biến đổi biểu thức', 'Đưa tích phân về dạng quen thuộc'],
-  ] as const;
+  const steps = ['Nhận diện dạng bài', 'Chọn biến u', 'Biến đổi biểu thức'] as const;
 
   return (
     <div
@@ -273,7 +125,7 @@ function LessonExperience({ scene }: { scene: ProductDemoScene }) {
     >
       <header className={styles.lessonHeader}>
         <div>
-          <span className={styles.todayLabel}>BÀI HỌC ĐƯỢC ĐỀ XUẤT</span>
+          <span className={styles.todayLabel}>BÀI HỌC</span>
           <h3>Phương pháp đổi biến số</h3>
           <p>Toán 12 · Nguyên hàm</p>
         </div>
@@ -292,12 +144,8 @@ function LessonExperience({ scene }: { scene: ProductDemoScene }) {
           <span className={styles.formulaSweep} aria-hidden="true" />
         </div>
 
-        <p className={styles.conceptHint}>
-          Chọn <strong>u</strong> sao cho phần còn lại của biểu thức chính là{' '}
-          <strong>u&apos;(x) dx</strong>.
-        </p>
         <div className={styles.lessonSteps} aria-label="Các bước trong bài học">
-          {steps.map(([title, detail], index) => {
+          {steps.map((title, index) => {
             const step = index + 1;
             const isComplete = step <= completedSteps;
             const isActive = step === activeStep;
@@ -311,42 +159,12 @@ function LessonExperience({ scene }: { scene: ProductDemoScene }) {
                 <span className={styles.lessonStepMarker} aria-hidden="true">
                   {isComplete || completed ? <CheckCircle2 size={18} strokeWidth={2.4} /> : step}
                 </span>
-                <span>
-                  <strong>{title}</strong>
-                  <small>{detail}</small>
-                </span>
+                <strong>{title}</strong>
               </div>
             );
           })}
         </div>
       </article>
-
-      <div className={styles.lessonOutcome}>
-        <div className={styles.lessonProgressHeading}>
-          <span>Tiến độ bài học</span>
-          <strong>{completed ? '100%' : '35%'}</strong>
-        </div>
-        <div
-          className={styles.lessonProgressTrack}
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={completed ? 100 : 35}
-        >
-          <span />
-        </div>
-        <span className={styles.progressGain}>Hoàn thành 100%</span>
-
-        <div className={styles.tutaiResponse}>
-          <span aria-hidden="true">
-            <TuTaiMark size={25} />
-          </span>
-          <div>
-            <strong>Hoàn thành bài học</strong>
-            <p>Em đã sẵn sàng luyện tập.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -404,23 +222,14 @@ function PracticeCelebration({ scene }: { scene: ProductDemoScene }) {
   if (finalSummary) {
     return (
       <div className={styles.finalSummary} aria-live="polite">
-        <span className={styles.summaryLabel}>HOÀN THÀNH MỤC TIÊU HÔM NAY</span>
+        <span className={styles.summaryLabel}>LỘ TRÌNH TOÁN 12</span>
         <span className={styles.summaryCheck} aria-hidden="true">
           <CheckCircle2 size={42} strokeWidth={2.1} />
         </span>
-        <h3>Hôm nay em đã hoàn thành</h3>
-        <div className={styles.summaryItems}>
-          <span>
-            <CheckCircle2 size={18} strokeWidth={2.4} aria-hidden="true" />
-            Phương pháp đổi biến số
-          </span>
-          <span>
-            <CheckCircle2 size={18} strokeWidth={2.4} aria-hidden="true" />3 câu luyện trọng tâm
-          </span>
-        </div>
+        <h3>Xong bài Phương pháp đổi biến số</h3>
         <div className={styles.summaryProgress}>
-          <span>Tiến độ hôm nay</span>
-          <strong>100%</strong>
+          <span>Bước tiếp theo</span>
+          <strong>Tích phân từng phần</strong>
         </div>
       </div>
     );
@@ -448,22 +257,12 @@ function PracticeCelebration({ scene }: { scene: ProductDemoScene }) {
         </div>
       ) : null}
       <div className={styles.practiceCompletionCard}>
-        <span className={styles.completionLabel}>LUYỆN TẬP HOÀN THÀNH</span>
+        <span className={styles.completionLabel}>LUYỆN TẬP</span>
         <span className={styles.completionCheck} aria-hidden="true">
           <CheckCircle2 size={46} strokeWidth={2.1} />
         </span>
-        <h3>Xuất sắc! Em đã hoàn thành 3/3 câu</h3>
-        <p>Phương pháp đổi biến số đã được củng cố.</p>
-        <div className={styles.completionStats}>
-          <span>
-            <strong>3/3</strong>
-            chính xác
-          </span>
-          <span>
-            <strong>100%</strong>
-            hoàn thành
-          </span>
-        </div>
+        <h3>3/3 câu đúng</h3>
+        <p>Đạt từ 80% trở lên, bài này đã hoàn thành.</p>
       </div>
     </div>
   );
@@ -482,9 +281,6 @@ function PracticeExperience({ scene }: { scene: ProductDemoScene }) {
   const question = PRACTICE_QUESTIONS[questionIndex];
   const answered = scene.endsWith('_PRESS') || scene.endsWith('_FEEDBACK');
   const feedback = scene.endsWith('_FEEDBACK');
-  const completedCount = feedback ? questionNumber : questionIndex;
-  const progress =
-    completedCount === 1 ? 33 : completedCount === 2 ? 67 : completedCount === 3 ? 100 : 0;
 
   return (
     <div
@@ -494,8 +290,8 @@ function PracticeExperience({ scene }: { scene: ProductDemoScene }) {
     >
       <header className={styles.practiceHeader}>
         <div>
-          <span className={styles.todayLabel}>LUYỆN TẬP ĐÃ MỞ KHÓA</span>
-          <h3>3 câu luyện trọng tâm</h3>
+          <span className={styles.todayLabel}>LUYỆN TẬP</span>
+          <h3>3 câu luyện tập</h3>
           <p>Phương pháp đổi biến số · Toán 12</p>
         </div>
         <span className={styles.practiceCount}>Câu {questionNumber} / 3</span>
@@ -525,22 +321,6 @@ function PracticeExperience({ scene }: { scene: ProductDemoScene }) {
       </article>
 
       <div className={styles.practiceFooter}>
-        <div className={styles.practiceProgress}>
-          <div>
-            <span>Tiến độ luyện tập</span>
-            <strong>{completedCount}/3 câu hoàn thành</strong>
-          </div>
-          <span
-            className={styles.practiceProgressTrack}
-            role="progressbar"
-            aria-label="Tiến độ luyện tập"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress}
-          >
-            <span style={{ '--practice-progress': `${progress}%` } as CSSProperties} />
-          </span>
-        </div>
         <div className={styles.answerFeedback} aria-live="polite">
           <CheckCircle2 size={20} strokeWidth={2.4} aria-hidden="true" />
           <span>
@@ -553,74 +333,36 @@ function PracticeExperience({ scene }: { scene: ProductDemoScene }) {
   );
 }
 
-function MiniStatCards() {
+// Toán 12 (GDPT 2018) has six chapters; the example student is in chapter 4.
+const CHAPTERS = [
+  'Ứng dụng đạo hàm',
+  'Vectơ trong không gian',
+  'Thống kê',
+  'Nguyên hàm và tích phân',
+  'Tọa độ trong không gian',
+  'Xác suất',
+] as const;
+const CURRENT_CHAPTER = 3;
+
+function ChapterTrack() {
   return (
-    <div className={styles.statsGrid} aria-label="Tiến độ học tập">
-      {STATS.map(({ value, label, Icon, tone }) => (
-        <article key={label} className={`${styles.statCard} ${styles[`stat${tone}`]}`}>
-          <span className={styles.statIcon} aria-hidden="true">
-            <Icon size={20} strokeWidth={2} />
-          </span>
-          <div>
-            <strong>{value}</strong>
-            <small>{label}</small>
-          </div>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function RecommendationReasonCard() {
-  return (
-    <aside className={styles.reasonCard} aria-label="Lý do đề xuất bài học">
-      <span className={styles.reasonIcon} aria-hidden="true">
-        <Lightbulb size={25} strokeWidth={1.9} />
-      </span>
-      <div className={styles.reasonSummary}>
-        <h4>Vì sao Tú Tài đề xuất bài này?</h4>
-        <p className={styles.reasonDesktopCopy}>
-          Dựa trên mục tiêu 8.5+ và kết quả gần đây, đổi biến số là chủ đề em còn yếu. Học chắc phần
-          này sẽ giúp em tăng điểm nhanh hơn.
-        </p>
-      </div>
-      <span className={styles.reasonPulse} aria-hidden="true">
-        <span />
-      </span>
-
-      <div className={styles.reasonDetails}>
-        <div className={styles.reasonDetailRow}>
-          <Target size={16} strokeWidth={2} aria-hidden={true} />
-          <span>Mục tiêu của em:</span>
-          <strong className={styles.reasonBlue}>8.5+</strong>
-        </div>
-        <div className={styles.reasonDetailRow}>
-          <Dumbbell size={16} strokeWidth={2} aria-hidden={true} />
-          <span>Chủ đề còn yếu:</span>
-          <strong className={styles.reasonViolet}>Đổi biến số / Tích phân</strong>
-        </div>
-        <div className={styles.reasonDetailRow}>
-          <TriangleAlert size={16} strokeWidth={2} aria-hidden={true} />
-          <span>Kết quả gần đây:</span>
-          <strong className={styles.reasonOrange}>Sai 2/3 câu liên quan</strong>
-        </div>
-      </div>
-
-      <p className={styles.reasonExplanation}>
-        Tú Tài đề xuất em học phần này trước để tăng điểm nhanh hơn.
+    <div className={styles.chapterTrack}>
+      <ol aria-label="Các chương Toán 12">
+        {CHAPTERS.map((chapter, index) => (
+          <li
+            key={chapter}
+            data-state={
+              index < CURRENT_CHAPTER ? 'done' : index === CURRENT_CHAPTER ? 'current' : 'later'
+            }
+            title={chapter}
+          />
+        ))}
+      </ol>
+      <p>
+        Chương {CURRENT_CHAPTER + 1}/{CHAPTERS.length} ·{' '}
+        <strong>{CHAPTERS[CURRENT_CHAPTER]}</strong>
       </p>
-
-      <div className={styles.reasonActions}>
-        <Link href="/auth/register" className={styles.reasonCta}>
-          Học ngay
-          <ArrowRight size={17} strokeWidth={2.2} aria-hidden={true} />
-        </Link>
-        <div className={styles.reasonLockNote}>
-          <LockKeyhole size={16} strokeWidth={1.9} aria-hidden={true} />
-          <span>Sau khi học xong, 3 câu luyện trọng tâm sẽ được mở khóa</span>
-        </div>
-      </div>
-    </aside>
+    </div>
   );
 }
 
@@ -642,13 +384,13 @@ function ProductShowcaseShell() {
     'PRACTICE_HOVER',
     'PRACTICE_PRESS',
   ].includes(demoScene);
-  const practiceUnlocked = [
+  const practiceReady = [
     'PRACTICE_READY',
     'PRACTICE_APPROACH',
     'PRACTICE_HOVER',
     'PRACTICE_PRESS',
   ].includes(demoScene);
-  const practiceUnlocking = demoScene === 'PRACTICE_UNLOCKING';
+  const practiceBecomingReady = demoScene === 'PRACTICE_UNLOCKING';
 
   return (
     <div
@@ -659,7 +401,6 @@ function ProductShowcaseShell() {
     >
       <div className={styles.stageGlow} aria-hidden="true" />
       <div className={styles.productShell}>
-        <ProductNavigation />
         <div className={styles.productMain}>
           <div
             className={`${styles.demoScene} ${lessonVisible ? styles.demoSceneLesson : practiceVisible ? styles.demoScenePractice : styles.demoSceneRoadmap}`}
@@ -673,62 +414,41 @@ function ProductShowcaseShell() {
               <div
                 className={styles.roadmapExperience}
                 data-completed={lessonCompleted ? 'true' : 'false'}
-                data-unlocking={practiceUnlocking ? 'true' : 'false'}
               >
                 <header className={styles.productHeader}>
                   <div>
-                    <span className={styles.todayLabel}>LỘ TRÌNH CỦA EM</span>
+                    <span className={styles.todayLabel}>LỘ TRÌNH TOÁN 12</span>
                     <h3>Hôm nay em nên học gì?</h3>
                   </div>
-                  <span className={styles.goalChip}>
-                    <Target size={15} strokeWidth={2} aria-hidden={true} />
-                    Mục tiêu <strong>8.5+</strong>
-                  </span>
                 </header>
+
+                <ChapterTrack />
 
                 <div className={styles.taskList}>
                   <TodayTaskCard
                     index={1}
                     title="Phương pháp đổi biến số"
                     progress={lessonCompleted ? 100 : 35}
-                    meta={lessonCompleted ? 'Đã hoàn thành' : 'Bài học · Toán 12'}
-                    action={lessonCompleted ? 'Xem lại' : 'Học'}
+                    meta={lessonCompleted ? 'Đã học xong' : 'Đang học dở, mở lại đúng chỗ'}
+                    action={lessonCompleted ? 'Xem lại' : 'Học tiếp'}
                     completed={lessonCompleted}
                   />
-                  <div
-                    className={styles.unlockBridge}
-                    data-visible={practiceUnlocking ? 'true' : 'false'}
-                    aria-hidden={practiceUnlocking ? undefined : 'true'}
-                  >
-                    <span />
-                    Bài học hoàn thành · Đang mở khóa luyện tập
-                  </div>
                   <TodayTaskCard
                     index={2}
-                    title="3 câu luyện trọng tâm"
-                    progress={0}
-                    meta={practiceUnlocked ? '3 câu · ~5 phút' : 'Bài luyện · Toán 12'}
-                    note={
-                      practiceUnlocking
-                        ? 'Bài học hoàn thành · Đang mở khóa…'
-                        : practiceUnlocked
-                          ? 'Đã mở khóa · Sẵn sàng luyện tập'
-                          : 'Mở khóa khi hoàn thành Bài học 1'
-                    }
+                    title="3 câu luyện tập"
+                    meta="Đúng 80% là xong bài"
                     action="Luyện tập"
                     secondary
-                    unlocked={practiceUnlocked}
-                    unlocking={practiceUnlocking}
+                    ready={practiceReady}
+                    becomingReady={practiceBecomingReady}
                   />
                 </div>
-
-                <MiniStatCards />
-                <RecommendationReasonCard />
               </div>
             )}
           </div>
         </div>
       </div>
+      <p className={styles.stageCaption}>Giao diện minh họa, số liệu là ví dụ.</p>
       <ProductDemoCursor hostRef={productStageRef} onSceneChange={setDemoScene} />
     </div>
   );
@@ -789,11 +509,7 @@ export function TransformationSection({ primaryCta }: { primaryCta: LandingCta }
 
       <div className={styles.container}>
         <div className={styles.editorial}>
-          <div className={`${styles.eyebrow} ${styles.reveal}`}>
-            <Sparkles size={14} strokeWidth={2} aria-hidden={true} />
-            <span className={styles.desktopEyebrowText}>TRẢI NGHIỆM MỖI NGÀY</span>
-            <span className={styles.mobileEyebrowText}>LỘ TRÌNH CỦA EM</span>
-          </div>
+          <p className={`${styles.eyebrow} ${styles.reveal}`}>LỘ TRÌNH</p>
 
           <h2 id="daily-experience-title" className={`${styles.heading} ${styles.reveal}`}>
             <span>Mở Tú Tài lên.</span>
@@ -802,22 +518,12 @@ export function TransformationSection({ primaryCta }: { primaryCta: LandingCta }
           </h2>
 
           <p className={`${styles.description} ${styles.reveal}`}>
-            <span className={styles.desktopDescription}>
-              Từ lộ trình cá nhân, Tú Tài sắp sẵn bài học, bài luyện
-              <br /> và bước tiếp theo để em tiến bộ mỗi ngày
-              <br /> mà không học lan man.
-            </span>
-            <span className={styles.mobileDescription}>
-              Tú Tài sắp sẵn bài học, bài luyện và bước tiếp theo để em tiến bộ mỗi ngày mà không
-              học lan man.
-            </span>
+            Mỗi lần mở chỉ có một bước tiếp theo, kèm lý do. Học dở thì mở lại đúng chỗ đang dừng.
           </p>
-
-          <BenefitList />
 
           <div
             className={`${styles.actions} ${styles.reveal}`}
-            style={{ '--reveal-delay': '520ms' } as CSSProperties}
+            style={{ '--reveal-delay': '320ms' } as CSSProperties}
           >
             <Link href={primaryCta.path} className={styles.primaryCta}>
               <span>{primaryCta.label}</span>
@@ -825,10 +531,6 @@ export function TransformationSection({ primaryCta }: { primaryCta: LandingCta }
                 <ArrowRight size={17} strokeWidth={2.2} />
               </span>
             </Link>
-            <a href="#product-preview" className={styles.secondaryCta}>
-              Tìm hiểu cách Tú Tài cá nhân hóa
-              <ArrowRight size={14} strokeWidth={2} aria-hidden={true} />
-            </a>
           </div>
         </div>
 
