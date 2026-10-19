@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { LessonDraftError } from '@/lib/knowledge-tree/ai-lesson-draft';
 import {
   getLessonDraftAvailability,
+  previewLessonDraftContext,
   requestLessonDraft,
 } from '@/lib/knowledge-tree/ai-lesson-draft-service';
 import { adminApiGuard } from '@/lib/auth/admin';
@@ -10,11 +11,17 @@ type RouteContext = { params: Promise<{ nodeId: string }> };
 
 export const dynamic = 'force-dynamic';
 
-/** Whether AI drafting can run here, and why not. Never reveals configuration values. */
-export async function GET() {
+/**
+ * Whether AI drafting can run here, and why not, plus the curriculum context the
+ * draft would be written from. Never reveals configuration values.
+ */
+export async function GET(_request: Request, context: RouteContext) {
   const denied = await adminApiGuard();
   if (denied) return denied;
-  return NextResponse.json(getLessonDraftAvailability());
+  const availability = getLessonDraftAvailability();
+  const { nodeId } = await context.params;
+  const preview = await previewLessonDraftContext(nodeId).catch(() => null);
+  return NextResponse.json({ ...availability, context: preview });
 }
 
 /**
@@ -37,8 +44,8 @@ export async function POST(request: Request, context: RouteContext) {
     const body = await request.json().catch(() => {
       throw new LessonDraftError('INVALID_REQUEST');
     });
-    const draft = await requestLessonDraft(nodeId, body);
-    return NextResponse.json({ draft });
+    // { draft, plan, checks, context }: a proposal for review, never saved here.
+    return NextResponse.json(await requestLessonDraft(nodeId, body));
   } catch (error: unknown) {
     if (error instanceof LessonDraftError) {
       return NextResponse.json(

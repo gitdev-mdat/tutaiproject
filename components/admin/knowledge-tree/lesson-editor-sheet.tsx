@@ -40,6 +40,28 @@ import type {
 } from '@/lib/knowledge-tree/knowledge-tree-types';
 import type { AiDraftBlockType } from '@/lib/knowledge-tree/ai-lesson-draft';
 import { AiDraftPanel } from './ai-draft-panel';
+import { findMathIssues } from '@/lib/content/math-notation';
+
+/** Says which formulas a student would see as raw source, before the lesson is saved. */
+function MathFieldStatus({ value }: { value: string }) {
+  const issues = findMathIssues(value);
+  const problems = [
+    issues.outsideMath.length > 0 &&
+      `${issues.outsideMath.join(', ')} nằm ngoài $…$ (viết trong $…$ hoặc dùng ký tự như →)`,
+    issues.unsupported.length > 0 && `chưa hiển thị được ${issues.unsupported.join(', ')}`,
+    issues.unbalancedDollar && 'thiếu dấu $ đóng công thức',
+    issues.unbalancedBraces && 'dấu { } trong công thức không khớp',
+  ].filter(Boolean);
+  if (!problems.length) return null;
+  return (
+    <p
+      role="status"
+      className="border-t border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-800"
+    >
+      Công thức sẽ hiện thô cho học sinh: {problems.join('; ')}.
+    </p>
+  );
+}
 import { PublicationBadge } from './publication-badge';
 
 interface Props {
@@ -404,6 +426,7 @@ function LessonEditor({
                     aria-required={meta.required}
                     className={`${meta.type === 'GRAPH' ? 'min-h-[56px] font-mono' : 'min-h-[96px]'} resize-y rounded-none border-0 bg-transparent px-4 py-3 text-[15px] leading-7 shadow-none focus-visible:ring-0`}
                   />
+                  {meta.type !== 'GRAPH' && <MathFieldStatus value={block.content} />}
                   {meta.type === 'GRAPH' && (
                     <GraphFieldStatus
                       value={block.content}

@@ -9,6 +9,8 @@ import {
   repairLatexEscapes,
   sanitizeDraftText,
   withDraftLock,
+  inferLessonStage,
+  parseLessonDraftResult,
   type LessonDraftContext,
 } from './ai-lesson-draft';
 import { getLessonDraftAvailability } from './ai-lesson-draft-service';
@@ -36,22 +38,23 @@ describe('AI lesson draft', () => {
   it('builds a prompt from curriculum context with the $...$ math rule', () => {
     const prompt = buildLessonDraftPrompt({ ...context, note: 'Nhấn mạnh ý nghĩa hình học' });
     expect(prompt).toContain('Toán học › Lớp 12 › Hàm số và ứng dụng đạo hàm');
-    expect(prompt).toContain('Tên kiến thức: Đạo hàm');
+    expect(prompt).toContain('Tên bài: Đạo hàm');
     expect(prompt).toContain('$...$');
     expect(prompt).toContain('Nhấn mạnh ý nghĩa hình học');
-    expect(prompt).not.toContain('Giáo viên đã viết');
+    expect(prompt).not.toContain('Nội dung giáo viên đã viết');
   });
 
   it('includes existing content only when the admin sends it', () => {
     const prompt = buildLessonDraftPrompt({ ...context, existing: { OBJECTIVE: 'Mục tiêu cũ' } });
-    expect(prompt).toContain('Giáo viên đã viết');
+    expect(prompt).toContain('Nội dung giáo viên đã viết');
     expect(prompt).toContain('Mục tiêu cũ');
   });
 
   it('returns a validated draft from a mock provider', async () => {
     const provider = vi.fn(async () => JSON.stringify(validDraft));
-    const draft = await generateLessonDraft(context, provider);
+    const { draft, plan } = await generateLessonDraft(context, provider);
     expect(provider).toHaveBeenCalledTimes(1);
+    expect(plan).toEqual({ prerequisites: [], newNotation: [], teacherNotes: [] });
     expect(draft.OBJECTIVE).toContain('Phát biểu');
     expect(draft.MAIN_CONTENT).toContain('$\\lim_{h \\to 0}');
     expect(draft.COMMON_MISTAKE).toBe('');
@@ -115,10 +118,10 @@ describe('AI lesson draft', () => {
 
   it('strips HTML, scripts and markdown while keeping math', () => {
     const text = sanitizeDraftText(
-      '<p>**Định nghĩa**</p><script>alert(1)</script>\n# Tiêu đề\n* ý một<br>Với $a<b$ và $x^2 \\ge 0$'
+      '<p>Ý **chính**</p><script>alert(1)</script>\n# Tiêu đề\n* ý một<br>Với $a<b$ và $x^2 \\ge 0$'
     );
     expect(text).not.toMatch(/<script|alert|<p>|\*\*|^#/m);
-    expect(text).toContain('Định nghĩa');
+    expect(text).toContain('Ý chính');
     expect(text).toContain('- ý một');
     expect(text).toContain('$a<b$');
     expect(text).toContain('$x^2 \\ge 0$');
@@ -169,5 +172,73 @@ describe('AI lesson draft', () => {
         GEMINI_API_KEY: 'set',
       }).available
     ).toBe(false);
+  });
+});
+
+describe('AI lesson draft contract', () => {
+  it('guesses the learning stage from the title and says where the guess came from', () => {
+    expect(inferLessonStage('Tính đơn điệu của hàm số (P1)')).toEqual({
+      stage: 'INTRODUCTORY',
+      source: 'title',
+    });
+    expect(inferLessonStage('Tính đơn điệu của hàm số (P2)').stage).toBe('APPLICATION');
+    expect(inferLessonStage('Ôn tập chủ đề Một số yếu tố xác suất (P1)').stage).toBe('REVISION');
+    expect(inferLessonStage('Kiểm tra cuối học kì I').stage).toBe('REVISION');
+    expect(inferLessonStage('Nguyên hàm')).toEqual({ stage: 'INTRODUCTORY', source: 'default' });
+  });
+
+  it('tells the model the stage, learner, sequence and unverified prerequisites', () => {
+    const prompt = buildLessonDraftPrompt({
+      ...context,
+      title: 'Tính đơn điệu của hàm số (P1)',
+      stage: 'INTRODUCTORY',
+      learnerLevel: 'FOUNDATION',
+      sequence: { position: 1, total: 17, earlier: [], later: ['Tính đơn điệu của hàm số (P2)'] },
+    });
+    expect(prompt).toContain('bài 1/17');
+    expect(prompt).toContain('Đây là bài MỞ ĐẦU');
+    expect(prompt).toContain('học sinh cần củng cố nền');
+    expect(prompt).toContain('Không dạy trước nội dung của các bài này');
+    expect(prompt).toContain('Chưa có danh sách kiến thức nền được xác nhận');
+    expect(prompt).toContain('\\rightarrow');
+    expect(prompt).not.toMatch(/undefined/);
+  });
+
+  it('says earlier lessons are not proof of mastery and uses admin-stated prerequisites', () => {
+    const prompt = buildLessonDraftPrompt({
+      ...context,
+      sequence: { position: 3, total: 5, earlier: ['Bài A', 'Bài B'], later: [] },
+      prerequisites: 'đạo hàm của hàm đa thức',
+    });
+    expect(prompt).toContain('Xếp trước KHÔNG có nghĩa là học sinh đã nắm vững');
+    expect(prompt).toContain(
+      'Kiến thức nền giáo viên xác nhận bài này cần: đạo hàm của hàm đa thức'
+    );
+  });
+
+  it('accepts stage, learner level and prerequisites from the admin and rejects unknown values', () => {
+    expect(
+      parseLessonDraftRequest({ stage: 'REVISION', learnerLevel: 'ADVANCED', prerequisites: ' x ' })
+    ).toEqual({ stage: 'REVISION', learnerLevel: 'ADVANCED', prerequisites: 'x' });
+    expect(() => parseLessonDraftRequest({ stage: 'EXPERT' })).toThrow(LessonDraftError);
+    expect(() => parseLessonDraftRequest({ prerequisites: 'a'.repeat(401) })).toThrow(
+      LessonDraftError
+    );
+  });
+
+  it('keeps the plan for the admin, a drawable GRAPH, and repairs \\rightarrow', () => {
+    const raw = String.raw`{"plan":{"prerequisites":["Đạo hàm"],"newNotation":["$f'(x)$"],"teacherNotes":[]},"OBJECTIVE":"- Xét được tính đơn điệu.","MAIN_CONTENT":"**Ý tưởng.** Tập xác định $\rightarrow$ đạo hàm $\nearrow$ rồi Tính f'(x) \rightarrow Xét dấu.","EXAMPLE":"Ví dụ 1. Cho $y = x^2$. Lời giải. Bước 1: $y' = 2x$.","GRAPH":"y = x^3 - 3x"}`;
+    const { draft, plan } = parseLessonDraftResult(raw);
+    expect(draft.MAIN_CONTENT).toBe(
+      String.raw`**Ý tưởng.** Tập xác định $\rightarrow$ đạo hàm $\nearrow$ rồi Tính f'(x) → Xét dấu.`
+    );
+    expect(draft.GRAPH).toBe('y = x^3 - 3x');
+    expect(plan.prerequisites).toEqual(['Đạo hàm']);
+    expect(parseLessonDraftResult(raw.replace('y = x^3 - 3x', 'y = sin(x)')).draft.GRAPH).toBe('');
+  });
+
+  it('does not treat a newline before a word as a LaTeX command', () => {
+    const json = JSON.stringify({ OBJECTIVE: 'a\nto b\nne c\nTa có' });
+    expect(repairLatexEscapes(json)).toBe(json);
   });
 });
