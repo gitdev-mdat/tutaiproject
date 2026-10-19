@@ -193,9 +193,12 @@ function exampleMathChecks(draft: AiLessonDraft): DraftCheck[] {
 // ─── Teaching structure ──────────────────────────────────────────────────────
 
 const FORMAL_OPENING = /^(?:giả sử|cho hàm số|cho |định lí|định lý|định nghĩa|nếu |với mọi)/i;
-/** Edge cases and formal subtleties that do not belong among a first lesson's mistakes. */
+/**
+ * Edge cases and formal subtleties that do not belong among a first lesson's mistakes.
+ * Writing intervals with ∪ is left out on purpose: it is the mistake beginners make most.
+ */
 const ADVANCED_MISTAKE =
-  /vô số|hữu hạn điểm|tham số\s*\$?\s*m\b|\\cup|∪|trường hợp đặc biệt|ngoại lệ|giới hạn một bên|không liên tục/i;
+  /vô số|hữu hạn điểm|tham số\s*\$?\s*m\b|trường hợp đặc biệt|ngoại lệ|giới hạn một bên|không liên tục/i;
 /** Solving f(x) = 0 where the method needs f'(x) = 0. */
 const WRONG_EQUATION = /\$\s*(?:f\s*\(\s*x\s*\)|y)\s*=\s*0\s*\$/;
 
@@ -272,7 +275,7 @@ function structureChecks(draft: AiLessonDraft, stage: LessonStage, math: boolean
       message: `Có ${mistakes.length} lỗi hay gặp; giữ 1–3 lỗi học sinh dễ mắc nhất trong bài này.`,
     });
   }
-  if (math && (stage === 'INTRODUCTORY' || stage === 'APPLICATION')) {
+  if (math && stage === 'INTRODUCTORY') {
     for (const mistake of mistakes) {
       if (!ADVANCED_MISTAKE.test(mistake.toLocaleLowerCase('vi'))) continue;
       checks.push({
@@ -371,7 +374,9 @@ export function reviewLessonDraft(
   const checks = [
     ...mathFormatChecks(draft),
     ...structureChecks(draft, options.stage, math),
-    ...(math ? [...notationChecks(draft), ...exampleMathChecks(draft)] : []),
+    // Later lessons build on notation the first lesson introduced.
+    ...(math && options.stage === 'INTRODUCTORY' ? notationChecks(draft) : []),
+    ...(math ? exampleMathChecks(draft) : []),
   ];
   return checks.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warning' ? -1 : 1));
 }

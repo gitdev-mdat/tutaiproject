@@ -350,12 +350,33 @@ export function readGroup(source: string, start: number): { body: string; end: n
  *   character (`Tính f'(x) \rightarrow Xét dấu` → `Tính f'(x) → Xét dấu`);
  * - outside `$…$`, a command with arguments (`\frac{1}{2}`) is wrapped in `$…$`.
  * Unknown commands are left as they are so the authoring checks can report them.
+ * Each line is handled on its own, the way lessons render.
  */
 export function normalizeGeneratedMath(text: string): string {
   const collapsed = text.replace(/\\\\(?=[A-Za-z]{2,})/g, '\\');
-  return splitMathSegments(collapsed)
-    .map((segment) => (segment.math ? segment.raw : normalizeProse(segment.body)))
-    .join('');
+  // Line by line, as lessons render: an unclosed $ on one line must not pair with the next.
+  return collapsed
+    .split('\n')
+    .map(closeTrailingFormula)
+    .map((line) =>
+      splitMathSegments(line)
+        .map((segment) => (segment.math ? segment.raw : normalizeProse(segment.body)))
+        .join('')
+    )
+    .join('\n');
+}
+
+/**
+ * A line whose last formula was never closed, when what follows the `$` is a single
+ * token such as `\mathbb{R}.`: close it before the final punctuation. Anything longer
+ * is left for the authoring checks, since guessing where a formula ends could change it.
+ */
+function closeTrailingFormula(line: string): string {
+  const dollars = (line.replace(/\\\$/g, '').match(/\$/g) ?? []).length;
+  if (dollars % 2 === 0) return line;
+  const match = /\$([^\s$]+?)([.,;:!?]?)\s*$/.exec(line);
+  if (!match || !/[\\\w]/.test(match[1])) return line;
+  return `${line.slice(0, match.index)}$${match[1]}$${match[2]}`;
 }
 
 function normalizeProse(prose: string): string {

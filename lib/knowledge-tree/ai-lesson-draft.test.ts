@@ -200,6 +200,7 @@ describe('AI lesson draft contract', () => {
     expect(prompt).toContain('học sinh cần củng cố nền');
     expect(prompt).toContain('Không dạy trước nội dung của các bài này');
     expect(prompt).toContain('Chưa có danh sách kiến thức nền được xác nhận');
+    expect(prompt).toContain('Với quy tắc trung tâm của bài, viết 1–2 câu "vì sao"');
     expect(prompt).toContain('\\rightarrow');
     expect(prompt).not.toMatch(/undefined/);
   });

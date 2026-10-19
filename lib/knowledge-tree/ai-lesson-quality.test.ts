@@ -55,8 +55,20 @@ describe('reviewLessonDraft on the published "Tính đơn điệu của hàm s�
     expect(found.some((id) => id.startsWith('notation-đạo hàm'))).toBe(true);
   });
 
-  it('flags the advanced common mistakes (∪ notation, f′ = 0 at infinitely many points)', () => {
-    expect(found.filter((id) => id.startsWith('advanced-mistake')).length).toBe(2);
+  it('flags the edge-case mistake (f′ = 0 at infinitely many points) but not the ∪ one beginners make', () => {
+    const advanced = reviewLessonDraft(production, options).filter((c) =>
+      c.id.startsWith('advanced-mistake')
+    );
+    expect(advanced).toHaveLength(1);
+    expect(advanced[0].message).toContain('vô số điểm');
+  });
+
+  it('treats the same text as fine for a later lesson that builds on it', () => {
+    const later = reviewLessonDraft(production, { ...options, stage: 'APPLICATION' }).map(
+      (c) => c.id
+    );
+    expect(later.some((id) => id.startsWith('advanced-mistake'))).toBe(false);
+    expect(later.some((id) => id.startsWith('notation-'))).toBe(false);
   });
 
   it('finds the example mathematically consistent and the maths renderable', () => {

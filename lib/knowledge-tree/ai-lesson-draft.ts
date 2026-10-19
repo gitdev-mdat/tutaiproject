@@ -413,7 +413,7 @@ export function buildLessonDraftPrompt(context: LessonDraftContext): string {
     '- Trước một phát biểu chính thức (định nghĩa, định lí, công thức, quy tắc), cho học sinh thấy vấn đề hoặc trực giác qua một trường hợp cụ thể.',
     '- Lần đầu dùng một ký hiệu hay thuật ngữ, nói ngay nó nghĩa là gì và vì sao cần nó. Ví dụ cách viết: "$\\vec{AB}$ là vectơ đi từ điểm $A$ đến điểm $B$".',
     '- Khi bài dựa vào kiến thức cũ, viết một ý "Nhắc lại nhanh" 2–4 câu kèm một ví dụ nhỏ; không dạy lại cả chương cũ.',
-    '- Giải thích vì sao quy tắc, quy trình đúng, đủ để học sinh tự giải thích lại cho bạn.',
+    '- Giải thích vì sao quy tắc, quy trình đúng, đủ để học sinh tự giải thích lại cho bạn. Với quy tắc trung tâm của bài, viết 1–2 câu "vì sao" ngay trước khi phát biểu, dựa trên ý nghĩa học sinh đã biết (hình ảnh, ý nghĩa hình học hay một phép thử bằng số nhỏ). Một chữ "Do đó" không thay được lời giải thích.',
     '- Có thể kết thúc một ý quan trọng bằng một dòng "Thử nhanh: …" và đáp án ngay sau đó.',
     '- Ngắn gọn: mỗi ý khoảng 60–150 từ, không lặp một ý ở nhiều phần. Mục tiêu là giải thích đúng lúc, không phải viết dài.',
     '',

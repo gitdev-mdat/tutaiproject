@@ -39,3 +39,32 @@ describe('findMathIssues', () => {
     expect(findMathIssues(String.raw`$\frac{1}{2$`).unbalancedBraces).toBe(true);
   });
 });
+
+describe('normalizeGeneratedMath, an unclosed formula', () => {
+  it('stays on its own line instead of swallowing the next one', () => {
+    // From a real Gemini draft: the first line lost its closing $.
+    const text = String.raw`- đồng biến trên $\mathbb{R}.
+- vì sao $y' \ge 0$ khi $\Delta \le 0$.`;
+    expect(normalizeGeneratedMath(text).split('\n')[1]).toBe(
+      String.raw`- vì sao $y' \ge 0$ khi $\Delta \le 0$.`
+    );
+  });
+});
+
+describe('normalizeGeneratedMath, closing a formula', () => {
+  it('closes a one-token formula left open at the end of a line', () => {
+    expect(normalizeGeneratedMath(String.raw`- đồng biến trên $\mathbb{R}.`)).toBe(
+      String.raw`- đồng biến trên $\mathbb{R}$.`
+    );
+  });
+
+  it('does not guess where a longer unclosed formula ends', () => {
+    const text = String.raw`Ta có $y' = 3x^2 - 3 với mọi x.`;
+    expect(normalizeGeneratedMath(text)).toBe(text);
+  });
+
+  it('leaves balanced lines alone', () => {
+    const text = String.raw`Với $x \in \mathbb{R}$ thì $y' > 0$.`;
+    expect(normalizeGeneratedMath(text)).toBe(text);
+  });
+});
