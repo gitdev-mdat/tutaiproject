@@ -116,3 +116,15 @@ describe('reviewLessonDraft on a beginner-oriented draft', () => {
     expect(found).not.toContain('formal-opening');
   });
 });
+
+describe('reviewLessonDraft, the interactive graph', () => {
+  it('notes a graph whose function no example works through', () => {
+    const checks = reviewLessonDraft({ ...improved, GRAPH: 'y = x^3 - 3x' }, options);
+    expect(checks.find((c) => c.id === 'graph-not-in-examples')?.severity).toBe('info');
+  });
+
+  it('accepts the function of a worked example', () => {
+    const checks = reviewLessonDraft(improved, options);
+    expect(checks.some((c) => c.id === 'graph-not-in-examples')).toBe(false);
+  });
+});

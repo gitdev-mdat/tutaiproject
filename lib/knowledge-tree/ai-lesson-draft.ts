@@ -293,7 +293,7 @@ const STAGE_GUIDE: Record<LessonStage, string> = {
 
 const LEVEL_GUIDE: Record<LearnerLevel, string> = {
   FOUNDATION:
-    'Người đọc: học sinh cần củng cố nền. Câu ngắn, mỗi phép tính viết ra từng bước, nhắc lại cụ thể công thức của lớp dưới khi dùng tới, số liệu đơn giản.',
+    'Người đọc: học sinh cần củng cố nền. Bài ngắn hơn bản thường, câu ngắn, mỗi phép tính viết ra từng bước, nhắc lại cụ thể công thức của lớp dưới khi dùng tới, số liệu đơn giản. Ưu tiên cách làm dễ kiểm chứng (ví dụ thay một giá trị thử để biết dấu) hơn quy tắc phải nhớ; không thêm dạng ví dụ mới.',
   STANDARD:
     'Người đọc: học sinh trung bình – khá. Giải thích đủ ý, không bỏ bước quan trọng, nhắc lại ngắn kiến thức nền khi cần.',
   ADVANCED:
@@ -411,7 +411,10 @@ export function buildLessonDraftPrompt(context: LessonDraftContext): string {
     '',
     '# Cách dạy',
     '- Trước một phát biểu chính thức (định nghĩa, định lí, công thức, quy tắc), cho học sinh thấy vấn đề hoặc trực giác qua một trường hợp cụ thể.',
-    '- Lần đầu dùng một ký hiệu hay thuật ngữ, nói ngay nó nghĩa là gì và vì sao cần nó. Ví dụ cách viết: "$\\vec{AB}$ là vectơ đi từ điểm $A$ đến điểm $B$".',
+    '- Lần đầu dùng một ký hiệu hay thuật ngữ, nói ngay nó nghĩa là gì và vì sao cần nó. Ví dụ cách viết: "$\\overrightarrow{AB}$ là vectơ đi từ điểm $A$ đến điểm $B$". Cách nói tắt quen miệng của giáo viên (như "trong trái ngoài cùng", $\\Delta\'$, "giá của vectơ") cũng phải giải thích hoặc nói đầy đủ.',
+    '- Phát biểu đúng mức: điều kiện đủ viết "nếu … thì"; chỉ viết "khi và chỉ khi" khi điều đó thật sự đúng; giữ đủ giả thiết (tập xác định, khoảng đang xét).',
+    '- Ví dụ làm đúng theo các bước vừa nêu, cùng số và tên bước. Không nhắc đến bảng nếu lời giải không trình bày nó; xét dấu bằng lời hoặc bằng giá trị thử.',
+    '- Ký hiệu theo sách giáo khoa Việt Nam: $A(1; -2; 3)$, $D = \\mathbb{R} \\setminus \\{1\\}$. Không dùng một chữ cái cho hai đối tượng trong cùng bài (ví dụ điểm $A$ và hệ số $A$).',
     '- Khi bài dựa vào kiến thức cũ, viết một ý "Nhắc lại nhanh" 2–4 câu kèm một ví dụ nhỏ; không dạy lại cả chương cũ.',
     '- Giải thích vì sao quy tắc, quy trình đúng, đủ để học sinh tự giải thích lại cho bạn. Với quy tắc trung tâm của bài, viết 1–2 câu "vì sao" ngay trước khi phát biểu, dựa trên ý nghĩa học sinh đã biết (hình ảnh, ý nghĩa hình học hay một phép thử bằng số nhỏ). Một chữ "Do đó" không thay được lời giải thích.',
     '- Có thể kết thúc một ý quan trọng bằng một dòng "Thử nhanh: …" và đáp án ngay sau đó.',
@@ -424,10 +427,10 @@ export function buildLessonDraftPrompt(context: LessonDraftContext): string {
     '- MAIN_CONTENT: 2–4 ý theo thứ tự dạy. Mỗi ý là một đoạn bắt đầu bằng nhãn in đậm có dấu chấm, như "**Nhắc lại nhanh.** …" hoặc "**Ý nghĩa của dấu đạo hàm.** …". Các đoạn cách nhau một dòng trống. Nếu bài có quy trình làm bài, đặt nó ở ý cuối, nhãn bắt đầu bằng "**Các bước", mỗi bước một dòng "1. …", "2. …" kèm lí do ngắn.',
     '- EXAMPLE: mỗi ví dụ bắt đầu bằng "Ví dụ 1." (rồi "Ví dụ 2." …) và đề bài; dòng "Lời giải." rồi mỗi bước một dòng "Bước 1: …". Mỗi bước nói làm gì và vì sao, có kết luận. Các ví dụ cách nhau một dòng trống.' +
       (math ? ' Hàm số trong đề viết dạng "$y = …$".' : ''),
-    '- COMMON_MISTAKE: chỉ 1–3 lỗi mà học sinh ở đúng giai đoạn này dễ mắc khi làm bài tập của CHÍNH bài này, gắn với kiến thức và ví dụ đã dạy. Mỗi lỗi đúng MỘT dòng "- ": cách làm sai cụ thể (kèm ví dụ ngắn nếu được), vì sao sai, cách làm đúng. Không đưa trường hợp hiếm, cách viết hình thức hay tình huống nâng cao chỉ để bài trông sâu. Không cần đủ 3 lỗi.',
+    '- COMMON_MISTAKE: chỉ 1–3 lỗi mà học sinh ở đúng giai đoạn này dễ mắc khi làm bài tập của CHÍNH bài này, gắn với tình huống bài đã dạy hoặc ví dụ đã làm. Mỗi lỗi đúng MỘT dòng "- ": cách làm sai cụ thể (kèm ví dụ ngắn nếu được), vì sao sai (tốt nhất bằng một phản ví dụ hay phép thử số), cách làm đúng. Không đưa trường hợp hiếm, cách viết hình thức hay tình huống nâng cao chỉ để bài trông sâu. Không cần đủ 3 lỗi.',
     '- RECAP: 3–5 dòng "- ", dòng đầu là ý cốt lõi nhất của bài.',
     math
-      ? '- GRAPH: chỉ với bài về hàm số và đồ thị: một hàm đa thức hoặc phân thức, dạng "y = …" (ví dụ y = x^3 - 3x), để học sinh khám phá trên đồ thị tương tác: dự đoán đồ thị đi lên hay đi xuống, kéo điểm xem dấu đạo hàm, xem bảng biến thiên. Nên trùng hàm của ví dụ điển hình. Bài không cần đồ thị thì để chuỗi rỗng.'
+      ? '- GRAPH: chỉ với bài về hàm số và đồ thị: một hàm đa thức hoặc phân thức, dạng "y = …" (ví dụ y = x^3 - 3x), để học sinh khám phá trên đồ thị tương tác: dự đoán đồ thị đi lên hay đi xuống, kéo điểm xem dấu đạo hàm, xem bảng biến thiên. Phải trùng hàm của một ví dụ trong bài. Bài không cần đồ thị, hoặc không có hàm nào hợp, thì để chuỗi rỗng.'
       : '- GRAPH: để chuỗi rỗng.',
     '',
     '# Định dạng',
@@ -444,6 +447,7 @@ export function buildLessonDraftPrompt(context: LessonDraftContext): string {
     '- Mỗi ví dụ minh hoạ đúng ý nó được dùng để minh hoạ; lời giải khớp với lí thuyết đã nêu.',
     '- Mọi ký hiệu, thuật ngữ đều đã được giải thích trước hoặc ngay khi dùng.',
     '- Mỗi lỗi hay gặp liên quan trực tiếp đến điều bài đã dạy và hợp với giai đoạn học.',
+    '- Đọc lại mọi phát biểu tổng quát, kể cả trong Ghi nhớ và Lỗi hay gặp: đúng giả thiết, không nói quá.',
     '',
     'Trả về đúng một đối tượng JSON theo schema. Khóa "plan" dành cho giáo viên, học sinh không thấy: plan.prerequisites là kiến thức nền bài giả định và đã nhắc lại; plan.newNotation là ký hiệu, thuật ngữ mới bài giải thích; plan.teacherNotes là tối đa 3 điểm giáo viên nên kiểm tra hoặc bổ sung (ví dụ thông tin chương trình còn thiếu).',
     'Trong chuỗi JSON, mỗi dấu \\ của LaTeX phải viết thành \\\\ (ví dụ \\\\frac, \\\\rightarrow, \\\\notin).',

@@ -134,7 +134,20 @@ const formatInterval = ([from, to]: [number, number]) =>
 
 function exampleMathChecks(draft: AiLessonDraft): DraftCheck[] {
   const checks: DraftCheck[] = [];
-  parseExamples(draft.EXAMPLE).forEach((example, index) => {
+  const examples = parseExamples(draft.EXAMPLE);
+
+  // The interactive graph should show a function the student has just worked through.
+  const graph = draft.GRAPH.trim() ? parseFunction(draft.GRAPH.trim()) : null;
+  if (graph?.ok && !examples.some((example) => example.fn && sameFunction(example.fn, graph.fn))) {
+    checks.push({
+      id: 'graph-not-in-examples',
+      block: 'GRAPH',
+      severity: 'info',
+      message: `Đồ thị tương tác dùng ${draft.GRAPH.trim()}, không trùng hàm nào trong phần Ví dụ. Nên dùng hàm của một ví dụ để học sinh nối hình với lời giải.`,
+    });
+  }
+
+  examples.forEach((example, index) => {
     if (!example.fn) return;
     const label = example.title || `Ví dụ ${index + 1}`;
     const solution = example.steps.map((step) => step.body).join('\n');
