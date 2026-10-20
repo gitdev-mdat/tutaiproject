@@ -3,6 +3,7 @@
 import * as React from 'react';
 import {
   AlertCircle,
+  BookOpen,
   CheckCircle2,
   ChevronDown,
   Download,
@@ -58,6 +59,7 @@ import { LessonEditorSheet } from './lesson-editor-sheet';
 import { PublicationBadge } from './publication-badge';
 import { WorkQueue } from './work-queue';
 import { MigrationDialog } from './migration-dialog';
+import { TextbookLibrarySheet } from '@/components/admin/textbooks/textbook-library-sheet';
 
 const repo = new ApiKnowledgeRepository();
 
@@ -117,6 +119,7 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
   const [lessonNodeId, setLessonNodeId] = React.useState<string | null>(null);
   const [localDrafts, setLocalDrafts] = React.useState<LocalDraftSnapshot | null>(null);
   const [migrationOpen, setMigrationOpen] = React.useState(false);
+  const [libraryOpen, setLibraryOpen] = React.useState(false);
   const noticeTimer = React.useRef<number | undefined>(undefined);
   const explorerRef = React.useRef<HTMLElement>(null);
 
@@ -511,6 +514,9 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setLibraryOpen(true)}>
+              <BookOpen /> Sách tham chiếu
+            </Button>
             <Button
               variant="outline"
               onClick={() => setImportOpen(true)}
@@ -802,6 +808,8 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
         />
       )}
 
+      <TextbookLibrarySheet open={libraryOpen} onOpenChange={setLibraryOpen} />
+
       <LessonEditorSheet
         node={lessonNode}
         nodes={nodes}
@@ -814,6 +822,7 @@ export function KnowledgeTreeManager({ previewEmpty = false }: { previewEmpty?: 
         }
         repo={repo}
         onClose={() => setLessonNodeId(null)}
+        onOpenLibrary={() => setLibraryOpen(true)}
         onSaved={(nodeId, summary, message) => {
           setSummaries((current) => ({ ...current, [nodeId]: summary }));
           flash(message);

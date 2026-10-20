@@ -191,6 +191,7 @@ export class ApiKnowledgeRepository implements IKnowledgeRepository {
       stage?: LessonStage;
       learnerLevel?: LearnerLevel;
       prerequisites?: string;
+      useReferences?: boolean;
     },
     signal?: AbortSignal
   ): Promise<KnowledgeResult<LessonDraftResponse>> {

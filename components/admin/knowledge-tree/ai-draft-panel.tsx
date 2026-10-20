@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, Info, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, BookMarked, Info, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import type { ApiKnowledgeRepository } from '@/lib/knowledge-tree/api-knowledge-repository';
@@ -22,6 +22,37 @@ import type { DraftCheck } from '@/lib/knowledge-tree/ai-lesson-quality';
 import type { LessonDraftContextSummary } from '@/lib/knowledge-tree/ai-lesson-draft-service';
 import { ARTICLE_BODY_BLOCKS } from '@/lib/knowledge-tree/knowledge-article';
 import type { KnowledgeArticleBlock } from '@/lib/knowledge-tree/knowledge-tree-types';
+import { InlineText } from '@/components/learning/rich-text';
+
+const REFERENCE_KINDS: Record<string, string> = {
+  THEORY: 'Lí thuyết',
+  METHOD: 'Phương pháp',
+  WORKED_EXAMPLE: 'Ví dụ',
+  EXERCISE: 'Bài tập',
+  SOLUTION: 'Lời giải',
+};
+
+/** Which approved textbook extracts ground the draft, with book and page. */
+function ReferenceList({ items }: { items: LessonDraftContextSummary['references']['items'] }) {
+  return (
+    <ul className="mt-1.5 space-y-1 text-xs leading-5 text-slate-600">
+      {items.map((item) => (
+        <li key={item.artifactId} className="flex gap-1.5">
+          <span className="shrink-0 font-medium text-slate-700">
+            {REFERENCE_KINDS[item.kind] ?? item.kind}:
+          </span>
+          <span className="min-w-0">
+            <InlineText text={item.title} />{' '}
+            <span className="text-slate-400">
+              · {item.documentTitle}, tr. {item.printedPages.join(', ')}
+              {item.truncated ? ' · đã rút gọn' : ''}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 type Phase =
   | { kind: 'checking' }
@@ -68,6 +99,7 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
   const [stage, setStage] = React.useState<LessonStage | ''>('');
   const [learnerLevel, setLearnerLevel] = React.useState<LearnerLevel | ''>('');
   const [prerequisites, setPrerequisites] = React.useState('');
+  const [useReferences, setUseReferences] = React.useState(true);
   const controller = React.useRef<AbortController | null>(null);
 
   const current = React.useMemo(() => {
@@ -115,6 +147,7 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
         stage: stage || undefined,
         learnerLevel: learnerLevel || undefined,
         prerequisites: prerequisites.trim() || undefined,
+        useReferences,
       },
       abort.signal
     );
@@ -257,6 +290,36 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
                     className="mt-1 min-h-[52px] bg-white text-sm"
                   />
                 </div>
+                {context.references.approved > 0 ? (
+                  <div className="rounded-md border border-emerald-200 bg-white px-3 py-2">
+                    <label className="flex items-start gap-2 text-sm text-slate-800">
+                      <input
+                        type="checkbox"
+                        className="mt-1 size-4 accent-violet-600"
+                        checked={useReferences}
+                        onChange={(event) => setUseReferences(event.target.checked)}
+                      />
+                      <span>
+                        <BookMarked
+                          className="mr-1 inline size-3.5 text-emerald-700"
+                          aria-hidden="true"
+                        />
+                        Dựa trên {context.references.items.length} trích đoạn sách đã duyệt
+                        {context.references.approved > context.references.items.length &&
+                          ` (trong ${context.references.approved}, giới hạn để bản nháp tập trung)`}
+                      </span>
+                    </label>
+                    <ReferenceList items={context.references.items} />
+                  </div>
+                ) : (
+                  <p className="flex gap-1.5 text-xs leading-5 text-slate-500">
+                    <BookMarked className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                    <span>
+                      {context.references.error ??
+                        'Bài này chưa có trích đoạn sách đã duyệt. Có thể thêm ở tab “Tư liệu”.'}
+                    </span>
+                  </p>
+                )}
                 {context.missing.length > 0 && (
                   <p className="flex gap-1.5 text-xs leading-5 text-slate-500">
                     <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
@@ -330,7 +393,18 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
             <p className="text-xs text-slate-500">
               Soạn cho: {STAGE_LABELS[phase.context.stage]} ·{' '}
               {LEARNER_LEVEL_LABELS[phase.context.learnerLevel]}
+              {phase.context.references.used
+                ? ` · dựa trên ${phase.context.references.items.length} trích đoạn sách đã duyệt`
+                : ' · không dùng tư liệu sách'}
             </p>
+            {phase.context.references.used && (
+              <details className="rounded-lg border border-emerald-200 px-3 py-2 text-xs">
+                <summary className="cursor-pointer font-semibold text-slate-700">
+                  Nguồn tư liệu đã dùng (để đối chiếu)
+                </summary>
+                <ReferenceList items={phase.context.references.items} />
+              </details>
+            )}
             <section
               aria-label="Kiểm tra tự động"
               className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2.5"

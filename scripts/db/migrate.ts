@@ -1,8 +1,14 @@
 // Applies pending SQL migrations. Usage: DATABASE_URL=... pnpm db:migrate [--dry-run]
+import { loadEnvFile } from 'node:process';
 import { runMigrations } from '@/lib/db/migrations';
 import { connect } from './connect';
 
 async function main() {
+  try {
+    loadEnvFile('.env.local');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
   const sql = connect();
   const dryRun = process.argv.includes('--dry-run');
   try {

@@ -101,7 +101,25 @@ export interface LessonDraftContext {
   /** Present only when the admin chose to send the current content. */
   existing?: Partial<Record<AiDraftBlockType, string>>;
   note?: string;
+  /** Admin-approved textbook material linked to this node, already bounded in size. */
+  references?: DraftReference[];
 }
+
+/** One approved textbook extract handed to the model as grounding, with its source. */
+export interface DraftReference {
+  kind: 'THEORY' | 'METHOD' | 'WORKED_EXAMPLE' | 'EXERCISE' | 'SOLUTION';
+  title: string;
+  content: string;
+  source: string;
+}
+
+const REFERENCE_KIND_LABELS: Record<DraftReference['kind'], string> = {
+  THEORY: 'Lí thuyết',
+  METHOD: 'Phương pháp',
+  WORKED_EXAMPLE: 'Ví dụ có lời giải',
+  EXERCISE: 'Bài tập',
+  SOLUTION: 'Lời giải',
+};
 
 /** What the model says it assumed and introduced; shown to the admin, never to students. */
 export interface LessonDraftPlan {
@@ -163,6 +181,8 @@ export interface LessonDraftRequest {
   stage?: LessonStage;
   learnerLevel?: LearnerLevel;
   prerequisites?: string;
+  /** False when the admin chose to draft without the approved textbook references. */
+  useReferences?: boolean;
 }
 
 export function parseLessonDraftRequest(body: unknown): LessonDraftRequest {
@@ -208,6 +228,11 @@ export function parseLessonDraftRequest(body: unknown): LessonDraftRequest {
       );
     }
     if (prerequisites) request.prerequisites = prerequisites;
+  }
+
+  if (input.useReferences !== undefined) {
+    if (typeof input.useReferences !== 'boolean') throw new LessonDraftError('INVALID_REQUEST');
+    request.useReferences = input.useReferences;
   }
 
   if (input.existing !== undefined && input.existing !== null) {
@@ -392,6 +417,22 @@ function contextLines(context: LessonDraftContext): string[] {
   return lines;
 }
 
+function referenceSection(references: DraftReference[] | undefined): string {
+  if (!references?.length) return '';
+  return [
+    '# Tư liệu tham khảo giáo viên đã duyệt',
+    'Các trích đoạn dưới đây lấy từ sách tham khảo và đã được giáo viên duyệt cho bài này. Dùng chúng làm căn cứ cho định nghĩa, điều kiện, phương pháp và ví dụ; ưu tiên chúng khi khác với hiểu biết chung của bạn.',
+    '- Viết lại theo cách dạy ở trên và đúng giai đoạn học; không chép nguyên văn cả đoạn, không ghép nối các trích đoạn.',
+    '- Chỉ dùng phần hợp với bài này; trích đoạn nâng cao hơn giai đoạn học thì bỏ qua hoặc chỉ nhắc ý chính.',
+    '- Có thể dùng lại một ví dụ, bài tập trong tư liệu (đổi số nếu cần) khi nó minh hoạ đúng ý; tự tính lại mọi kết quả.',
+    '- Không nhắc tên sách, số trang hay chữ "sách" trong nội dung cho học sinh. Trong plan.teacherNotes, ghi ngắn tư liệu nào đã dùng và chỗ nào bạn sửa hoặc không dùng, vì sao.',
+    ...references.map(
+      (reference, index) =>
+        `[Tư liệu ${index + 1}: ${REFERENCE_KIND_LABELS[reference.kind]} · ${reference.title} · ${reference.source}]\n${reference.content}`
+    ),
+  ].join('\n');
+}
+
 export function buildLessonDraftPrompt(context: LessonDraftContext): string {
   const math = isMath(context.subject);
   const existing = context.existing
@@ -438,6 +479,7 @@ export function buildLessonDraftPrompt(context: LessonDraftContext): string {
     '- Văn bản thuần. Chỉ dùng in đậm cho nhãn đầu mỗi ý; không HTML, không tiêu đề "#", không khối mã, không bảng.',
     `- Mọi biểu thức toán viết trong $...$ theo LaTeX đơn giản. Chỉ dùng các lệnh: ${SUPPORTED_LATEX}, cùng ^ và _. Không viết lệnh LaTeX nào ngoài cặp $...$; trong lời văn dùng ký tự "→", "⇒".`,
     '',
+    referenceSection(context.references),
     existing
       ? `# Nội dung giáo viên đã viết\nGiữ ý đúng, bổ sung chỗ thiếu, sửa chỗ sai, viết lại theo cách dạy ở trên:\n${existing}`
       : '',
