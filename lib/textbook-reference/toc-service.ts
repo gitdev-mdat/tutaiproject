@@ -96,6 +96,31 @@ export function buildTocEntries(
   });
 }
 
+/**
+ * Recomputes end pages and PDF locations after an Admin corrected start pages,
+ * keeping every entry's id and parent so links and extracts stay attached.
+ */
+export function recomputeTocRanges(
+  entries: TextbookTocEntry[],
+  document: Pick<TextbookDocumentRecord, 'anchors' | 'pageLayout'>
+): TextbookTocEntry[] {
+  return entries.map((entry, index) => {
+    const next = entries
+      .slice(index + 1)
+      .find((candidate) => candidate.level <= entry.level && candidate.printedStartPage !== null);
+    const start = entry.printedStartPage;
+    return {
+      ...entry,
+      printedEndPage:
+        start !== null && next?.printedStartPage
+          ? Math.max(start, next.printedStartPage - 1)
+          : null,
+      locations:
+        start !== null ? [mapPrintedPage(start, document.anchors, document.pageLayout)] : [],
+    };
+  });
+}
+
 /** Reads the printed table of contents from the chosen PDF pages with one provider call. */
 export async function runTocJob(
   job: TextbookExtractionJob,

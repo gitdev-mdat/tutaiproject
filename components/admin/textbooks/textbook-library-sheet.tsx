@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowLeft, FileUp, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, FileUp, Loader2, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
@@ -360,7 +360,7 @@ function DocumentDetail({
               await onChanged();
             }}
           />
-          {document.tocEntries.length > 0 && <TocBrowser view={view} />}
+          {document.tocEntries.length > 0 && <TocBrowser view={view} onSaved={load} />}
         </>
       ) : null}
     </div>
@@ -655,9 +655,53 @@ function PageSetup({
   );
 }
 
-function TocBrowser({ view }: { view: DocumentView }) {
+function TocBrowser({ view, onSaved }: { view: DocumentView; onSaved: () => Promise<void> }) {
   const { document } = view;
   const [query, setQuery] = React.useState('');
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState<Record<string, { heading: string; page: string }>>({});
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const changes = Object.entries(draft)
+    .map(([entryId, value]) => {
+      const entry = document.tocEntries.find((item) => item.id === entryId)!;
+      const page = value.page.trim() ? Number(value.page) : null;
+      return { entryId, heading: value.heading, printedStartPage: page, entry };
+    })
+    .filter(
+      (change) =>
+        change.heading.trim() !== change.entry.originalHeading ||
+        change.printedStartPage !== change.entry.printedStartPage
+    );
+  const save = async (confirmComplete: boolean) => {
+    setBusy(true);
+    setError(null);
+    const result = await textbookApi.correctToc(
+      document.id,
+      changes.map(({ entryId, heading, printedStartPage }) => ({
+        entryId,
+        heading,
+        printedStartPage,
+      })),
+      confirmComplete
+    );
+    setBusy(false);
+    if (!result.ok) return setError(result.error);
+    setEditing(false);
+    setDraft({});
+    await onSaved();
+  };
+  const field = (entryId: string) => {
+    const entry = document.tocEntries.find((item) => item.id === entryId)!;
+    return (
+      draft[entryId] ?? {
+        heading: entry.originalHeading,
+        page: entry.printedStartPage ? String(entry.printedStartPage) : '',
+      }
+    );
+  };
+  const setField = (entryId: string, patch: Partial<{ heading: string; page: string }>) =>
+    setDraft((current) => ({ ...current, [entryId]: { ...field(entryId), ...patch } }));
   const normalized = query.trim().toLocaleLowerCase('vi');
   const linked = new Map<string, string[]>();
   for (const mapping of view.mappings.filter((item) => item.status === 'CONFIRMED'))
@@ -676,9 +720,16 @@ function TocBrowser({ view }: { view: DocumentView }) {
           Mục lục{' '}
           <span className="font-normal text-slate-500">
             · {document.tocEntries.length} mục
-            {document.tocIndexCompleteness === 'PARTIAL' ? ', AI đọc, cần đối chiếu' : ''}
+            {document.tocIndexCompleteness === 'PARTIAL'
+              ? ', AI đọc, cần đối chiếu'
+              : ', đã đối chiếu'}
           </span>
         </h3>
+        {!editing && (
+          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+            <Pencil /> Sửa mục lục
+          </Button>
+        )}
         <div className="relative w-full sm:w-56">
           <Search
             className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
@@ -700,30 +751,90 @@ function TocBrowser({ view }: { view: DocumentView }) {
             className="flex items-start gap-3 py-1.5 pr-4 text-sm"
             style={{ paddingLeft: `${16 + (normalized ? 0 : (entry.level - minLevel) * 16)}px` }}
           >
-            <span
-              className={`min-w-0 flex-1 leading-5 ${entry.level === minLevel ? 'font-semibold text-slate-900' : 'text-slate-700'}`}
-            >
-              <InlineText text={entry.originalHeading} />
-              {linked.get(entry.id)?.map((title) => (
+            {editing ? (
+              <>
+                <Input
+                  value={field(entry.id).heading}
+                  onChange={(event) => setField(entry.id, { heading: event.target.value })}
+                  aria-label={`Tên mục ${entry.originalHeading}`}
+                  className="h-8 min-w-0 flex-1 text-sm"
+                />
+                <Input
+                  value={field(entry.id).page}
+                  onChange={(event) =>
+                    setField(entry.id, { page: event.target.value.replace(/D/g, '') })
+                  }
+                  inputMode="numeric"
+                  aria-label={`Trang bắt đầu của ${entry.originalHeading}`}
+                  className="h-8 w-16 shrink-0 text-sm tabular-nums"
+                />
+              </>
+            ) : (
+              <>
                 <span
-                  key={title}
-                  className="ml-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 align-middle text-xs font-medium text-blue-800"
+                  className={`min-w-0 flex-1 leading-5 ${entry.level === minLevel ? 'font-semibold text-slate-900' : 'text-slate-700'}`}
                 >
-                  {title}
+                  <InlineText text={entry.originalHeading} />
+                  {linked.get(entry.id)?.map((title) => (
+                    <span
+                      key={title}
+                      className="ml-2 inline-flex rounded-full bg-blue-50 px-2 py-0.5 align-middle text-xs font-medium text-blue-800"
+                    >
+                      {title}
+                    </span>
+                  ))}
                 </span>
-              ))}
-            </span>
-            <span className="shrink-0 pt-0.5 text-xs tabular-nums text-slate-500">
-              {pageRange(entry.printedStartPage, entry.printedEndPage)}
-              {entry.locations[0]?.position === 'UNCERTAIN' && (
-                <span className="ml-1 text-amber-700" title="Ngoài khoảng mốc trang">
-                  ·?
+                <span className="shrink-0 pt-0.5 text-xs tabular-nums text-slate-500">
+                  {pageRange(entry.printedStartPage, entry.printedEndPage)}
+                  {entry.locations[0]?.position === 'UNCERTAIN' && (
+                    <span className="ml-1 text-amber-700" title="Ngoài khoảng mốc trang">
+                      ·?
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
+              </>
+            )}
           </li>
         ))}
       </ol>
+      {editing && (
+        <div className="space-y-2 border-t border-slate-100 px-4 py-3">
+          <p className="text-xs text-slate-500">
+            Sửa tên và trang bắt đầu theo đúng sách; trang kết thúc tự tính lại. Mục đã liên kết và
+            trích đoạn vẫn giữ nguyên.
+          </p>
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                setEditing(false);
+                setDraft({});
+                setError(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || changes.length === 0}
+              onClick={() => void save(false)}
+            >
+              Lưu {changes.length || ''} thay đổi
+            </Button>
+            <Button size="sm" disabled={busy} onClick={() => void save(true)}>
+              {busy && <Loader2 className="animate-spin" />} Lưu và xác nhận đã đối chiếu
+            </Button>
+          </div>
+        </div>
+      )}
       <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
         Liên kết mục với bài học trong tab “Tư liệu” của từng bài. Trang có dấu ? nằm ngoài khoảng
         mốc, cần thêm mốc trước khi trích.

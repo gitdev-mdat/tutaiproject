@@ -176,6 +176,26 @@ export async function replaceTextbookAnchors(documentId: string, anchors: Textbo
  * Knowledge Tree or has extracted artifacts, so reviewed work never loses its
  * section; such a book keeps its index.
  */
+/** Rewrites entry payloads in place (same ids and parents), e.g. after an Admin correction. */
+export async function updateTextbookTocEntries(
+  documentId: string,
+  entries: TextbookTocEntry[],
+  completeness?: TextbookDocumentRecord['tocIndexCompleteness']
+): Promise<void> {
+  await sql().begin(async (tx) => {
+    for (const entry of entries) {
+      await tx`
+        update tutai.textbook_toc_entries set payload = ${tx.json(entry as never)}
+        where document_id = ${documentId} and id = ${entry.id}`;
+    }
+    await tx`
+      update tutai.textbook_documents set
+        metadata = metadata || ${tx.json((completeness ? { tocIndexCompleteness: completeness } : {}) as never)},
+        updated_at = now()
+      where id = ${documentId}`;
+  });
+}
+
 export async function replaceTextbookToc(
   documentId: string,
   entries: TextbookTocEntry[],
