@@ -9,7 +9,7 @@ import {
   documentStorageKey,
   privateObjectInfo,
 } from './object-storage';
-import { anchorsAgree, layoutOf } from './page-mapping';
+import { anchorsAgree, layoutOf, normalizedHeading } from './page-mapping';
 import {
   closeTextbookUpload,
   enqueueTextbookJob,
@@ -22,8 +22,9 @@ import {
   openTextbookUpload,
   replaceTextbookAnchors,
   updateTextbookDocument,
+  updateTextbookTocEntries,
 } from './repository';
-import { MAX_TOC_PAGES, tocJobKey } from './toc-service';
+import { MAX_TOC_PAGES, recomputeTocRanges, tocJobKey } from './toc-service';
 import type { PageLayout, TextbookAnchor, TextbookDocumentRecord } from './types';
 
 /** Matches the Supabase free-plan per-file limit; the private bucket is created with it. */
@@ -276,4 +277,49 @@ export async function registerLocalTextbook(bytes: Buffer, filename: string, tit
   const { uploadPrivateTextbook } = await import('./object-storage');
   await uploadPrivateTextbook(documentStorageKey(sha256), bytes);
   return registerUploadedDocument({ sha256, byteSize: bytes.length, ...valid });
+}
+
+/**
+ * Admin corrections to the AI-read outline: heading text and start page of
+ * entries. Ids and structure stay, so linked sections and extracts keep
+ * pointing at the same entries; edited entries count as checked.
+ */
+export async function correctTextbookToc(
+  documentId: string,
+  changes: Array<{ entryId: string; heading: string; printedStartPage: number | null }>,
+  confirmComplete: boolean
+) {
+  const document = await getTextbookDocument(documentId);
+  if (!document) throw new TextbookRequestError('Không tìm thấy sách.', 404);
+  if (!document.tocEntries.length) throw new TextbookRequestError('Sách chưa có mục lục.', 409);
+  const byId = new Map(changes.map((change) => [change.entryId, change]));
+  for (const change of changes) {
+    if (!document.tocEntries.some((entry) => entry.id === change.entryId))
+      throw new TextbookRequestError('Không tìm thấy mục trong mục lục.', 404);
+    if (!change.heading.trim()) throw new TextbookRequestError('Tên mục không được để trống.');
+    if (
+      change.printedStartPage !== null &&
+      (!Number.isInteger(change.printedStartPage) || change.printedStartPage < 1)
+    )
+      throw new TextbookRequestError('Số trang phải là số nguyên dương.');
+  }
+  const edited = document.tocEntries.map((entry) => {
+    const change = byId.get(entry.id);
+    if (!change) return entry;
+    const heading = change.heading.replace(/\s+/g, ' ').trim();
+    return {
+      ...entry,
+      originalHeading: heading,
+      normalizedHeading: normalizedHeading(heading),
+      printedStartPage: change.printedStartPage,
+      status: 'VERIFIED' as const,
+    };
+  });
+  const entries = recomputeTocRanges(edited, document);
+  await updateTextbookTocEntries(documentId, entries, confirmComplete ? 'COMPLETE' : undefined);
+  return {
+    ...document,
+    tocEntries: entries,
+    tocIndexCompleteness: confirmComplete ? 'COMPLETE' : document.tocIndexCompleteness,
+  };
 }

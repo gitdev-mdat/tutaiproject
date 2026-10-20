@@ -12,7 +12,9 @@ function numberedSegments(content: string): Array<{ number: number; content: str
   });
 }
 
-function expressionFingerprint(content: string, kind: TextbookArtifact['kind']): string | null {
+function expressionFingerprint(raw: string, kind: TextbookArtifact['kind']): string | null {
+  // Plain text and $…$ LaTeX ("\left( \frac{x}{\ln x} \right)'") reduce to the same form.
+  const content = raw.replaceAll('$', '').replace(/\\(?:left|right)/g, '');
   const expression =
     kind === 'EXERCISE'
       ? /\b(?:hàm số\s+)?y\s*=\s*([^\n.;?]+)/iu.exec(content)?.[1]
@@ -20,7 +22,8 @@ function expressionFingerprint(content: string, kind: TextbookArtifact['kind']):
   return (
     expression
       ?.replace(/\s+(?:nghịch biến|đồng biến|trên khoảng|trên các khoảng|trên R)\b.*$/iu, '')
-      .replace(/\\(?:left|right)/g, '')
+      .replace(/\\frac/g, '')
+      .replace(/\\/g, '')
       .replace(/\s+/g, '')
       .replace(/[{}$]/g, '')
       .toLocaleLowerCase('vi') ?? null

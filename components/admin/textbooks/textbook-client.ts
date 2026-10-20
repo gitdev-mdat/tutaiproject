@@ -99,6 +99,17 @@ export const textbookApi = {
     anchors: TextbookAnchor[];
     tocPdfPages: number[];
   }) => post<{ document: TextbookDocumentRecord }>({ action: 'page-setup', ...input }),
+  correctToc: (
+    documentId: string,
+    changes: Array<{ entryId: string; heading: string; printedStartPage: number | null }>,
+    confirmComplete: boolean
+  ) =>
+    post<{ document: TextbookDocumentRecord }>({
+      action: 'correct-toc',
+      documentId,
+      changes,
+      confirmComplete,
+    }),
   indexToc: (documentId: string) =>
     post<{ job: TextbookExtractionJob }>({ action: 'index-toc', documentId }),
   link: (documentId: string, entryId: string, knowledgeNodeId: string) =>

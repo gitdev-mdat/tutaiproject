@@ -21,6 +21,21 @@ function artifact(kind: TextbookArtifact['kind'], id: string, content: string): 
 }
 
 describe('textbook exercise links', () => {
+  it('links a LaTeX fraction exercise to a solution written with \\left( … \\right)′', () => {
+    const exercise = artifact(
+      'EXERCISE',
+      'ex',
+      'Câu 1: Cho hàm số $y = \\frac{x}{\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?'
+    );
+    const solution = artifact(
+      'SOLUTION',
+      'sol',
+      "Câu 1: Đáp án D.\n\nTa có: $y' = \\left(\\frac{x}{\\ln x}\\right)' = \\frac{\\ln x - 1}{(\\ln x)^2}$."
+    );
+    const [linkedExercise] = splitAndLinkExercises([exercise, solution]);
+    expect(linkedExercise.pairedArtifactId).toBe('sol');
+  });
+
   it('links a LaTeX-formatted exercise to its "Lời giải Câu n" solution and checks the derivative', () => {
     const exercise = {
       ...artifact('EXERCISE', 'ex', 'Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?'),

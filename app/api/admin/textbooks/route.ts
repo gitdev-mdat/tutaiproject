@@ -6,6 +6,7 @@ import {
   cancelTextbookUpload,
   completeTextbookUpload,
   initTextbookUpload,
+  correctTextbookToc,
   requestTocIndex,
   saveTextbookPageSetup,
 } from '@/lib/textbook-reference/document-service';
@@ -58,6 +59,20 @@ const mutation = z.discriminatedUnion('action', [
     tocPdfPages: z.array(z.number().int().positive()).min(1).max(4),
   }),
   z.object({ action: z.literal('index-toc'), documentId: z.string() }),
+  z.object({
+    action: z.literal('correct-toc'),
+    documentId: z.string(),
+    changes: z
+      .array(
+        z.object({
+          entryId: z.string(),
+          heading: z.string().max(400),
+          printedStartPage: z.number().int().positive().max(5000).nullable(),
+        })
+      )
+      .max(400),
+    confirmComplete: z.boolean().default(false),
+  }),
   z.object({
     action: z.literal('confirm-mapping'),
     documentId: z.string(),
@@ -279,6 +294,14 @@ export async function POST(request: Request) {
       case 'page-setup':
         return NextResponse.json({
           document: await saveTextbookPageSetup(input.documentId, input),
+        });
+      case 'correct-toc':
+        return NextResponse.json({
+          document: await correctTextbookToc(
+            input.documentId,
+            input.changes,
+            input.confirmComplete
+          ),
         });
       case 'index-toc':
         return NextResponse.json(await requestTocIndex(input.documentId), { status: 202 });
