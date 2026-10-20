@@ -29,13 +29,15 @@ function expressionFingerprint(content: string, kind: TextbookArtifact['kind']):
 
 function artifactQuestionNumber(artifact: TextbookArtifact): string | null {
   return (
-    /^Câu\s+(\d+)/u.exec(artifact.title)?.[1] ??
+    /^(?:Lời giải\s+)?Câu\s+(\d+)/u.exec(artifact.title)?.[1] ??
     /^(?:Lời giải\s+)?Câu\s+(\d+)\s*:/u.exec(artifact.content)?.[1] ??
     null
   );
 }
 
-export function verifiesSimplePolynomialDerivative(solution: string): boolean {
+export function verifiesSimplePolynomialDerivative(text: string): boolean {
+  // Formulas may arrive inside $…$; the check reads the bare expression.
+  const solution = text.replaceAll('$', '');
   const match = /y'\s*=\s*\(([^)]+)\)\s*'\s*=\s*([^\n]+)/iu.exec(solution);
   if (!match) return false;
   const parse = (source: string): Map<number, number> | null => {

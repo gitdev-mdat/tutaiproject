@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { InlineText, RichText } from '@/components/learning/rich-text';
+import { findMathIssues, hasMathIssues } from '@/lib/content/math-notation';
 import type { TextbookArtifact, TextbookTocEntry } from '@/lib/textbook-reference/types';
 import { textbookApi, type LessonSection, type LessonView } from './textbook-client';
 import { JobLine, KIND_LABELS, pageRange, usePolling, WorkerNotice } from './textbook-status';
@@ -601,6 +602,15 @@ function ArtifactCard({
           ) : (
             <RichText content={artifact.content} className="text-sm leading-7 text-slate-800" />
           )}
+          {!editing &&
+            hasMathIssues(
+              findMathIssues(`${artifact.title}
+${artifact.content}`)
+            ) && (
+              <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
+                Có công thức chưa hiển thị được. Bấm “Sửa” để viết lại trước khi duyệt.
+              </p>
+            )}
           <p className="text-xs text-slate-500">
             Nguồn: tr. {artifact.printedPages.join(', ')} (trang PDF {artifact.pdfPages.join(', ')})
             {paired && (

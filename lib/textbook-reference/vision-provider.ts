@@ -48,8 +48,8 @@ export const geminiVisionProvider: VisionProvider = async ({
   const usage = (
     response as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } }
   ).usageMetadata;
-  const finishReason = (response as { candidates?: Array<{ finishReason?: string }> }).candidates?.[0]
-    ?.finishReason;
+  const finishReason = (response as { candidates?: Array<{ finishReason?: string }> })
+    .candidates?.[0]?.finishReason;
   if (finishReason === 'MAX_TOKENS')
     throw new Error('Gemini response was cut off before it finished (output limit reached).');
   return {

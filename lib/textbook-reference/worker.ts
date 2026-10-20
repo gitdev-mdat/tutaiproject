@@ -109,7 +109,8 @@ export function readableError(error: unknown): string {
     if (parsed.error?.code)
       return `Gemini từ chối yêu cầu (HTTP ${parsed.error.code}${parsed.error.status ? `, ${parsed.error.status}` : ''}). Thử lại; nếu lặp lại, kiểm tra cấu hình mô hình.`;
   } catch {}
-  if ((error as { code?: string })?.code === 'TIMEOUT') return 'Gemini phản hồi quá lâu. Thử lại sau.';
+  if ((error as { code?: string })?.code === 'TIMEOUT')
+    return 'Gemini phản hồi quá lâu. Thử lại sau.';
   return message.slice(0, 400);
 }
 

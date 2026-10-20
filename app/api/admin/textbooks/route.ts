@@ -141,7 +141,7 @@ function suggestionsFor(title: string, documents: TextbookDocumentRecord[]) {
         };
       })
     )
-    .filter((item) => item.score >= 0.5)
+    .filter((item) => item.score >= 0.75)
     .sort((a, b) => b.score - a.score || a.entry.level - b.entry.level)
     .slice(0, 5);
 }

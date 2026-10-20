@@ -21,6 +21,21 @@ function artifact(kind: TextbookArtifact['kind'], id: string, content: string): 
 }
 
 describe('textbook exercise links', () => {
+  it('links a LaTeX-formatted exercise to its "Lời giải Câu n" solution and checks the derivative', () => {
+    const exercise = {
+      ...artifact('EXERCISE', 'ex', 'Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?'),
+      title: 'Câu 3: Tính đơn điệu của hàm số $y = x^3 + 3x^2 - 4$',
+    };
+    const solution = {
+      ...artifact('SOLUTION', 'sol', "Đáp án A.\n$y' = (x^3 + 3x^2 - 4)' = 3x^2 + 6x$"),
+      title: 'Lời giải Câu 3: Tính đơn điệu của hàm số $y = x^3 + 3x^2 - 4$',
+    };
+    const [linkedExercise, linkedSolution] = splitAndLinkExercises([exercise, solution]);
+    expect(linkedExercise.pairedArtifactId).toBe('sol');
+    expect(linkedSolution.pairedArtifactId).toBe('ex');
+    expect(linkedSolution.verificationNotes.join(' ')).toContain('Deterministic check passed');
+  });
+
   it('splits numbered items and links only a matching numbered formula', () => {
     const results = splitAndLinkExercises([
       artifact(

@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createHash, randomUUID } from 'node:crypto';
 import { GEMINI_MODELS } from '@/lib/config/models';
+import { findMathIssues, hasMathIssues } from '@/lib/content/math-notation';
 import { mapPrintedPage } from './page-mapping';
 import { splitAndLinkExercises } from './artifact-linking';
 import { renderPrintedPageCrops } from './pdf-pages';
@@ -16,8 +17,8 @@ import {
 import { visionProviderFor, type VisionProvider } from './vision-provider';
 import type { TextbookArtifact, TextbookDocumentRecord, TextbookExtractionJob } from './types';
 
-// v5: formulas come back as $...$ LaTeX so they render like lesson text.
-export const PROMPT_VERSION = 'textbook-knowledge-v5';
+// v5: formulas come back as $...$ LaTeX; v7: only LaTeX the lesson renderer supports (no \text, no environments).
+export const PROMPT_VERSION = 'textbook-knowledge-v7';
 export const MAX_PAGES_PER_REQUEST = 6;
 
 const TEXTBOOK_RESPONSE_SCHEMA = {
@@ -260,12 +261,14 @@ export async function runExtractionJob(
   }
   const provider = options.provider ?? visionProviderFor();
   const images = await renderPrintedPageCrops(await options.readPdf(plan.document), plan.locations);
-  const prompt = `Trích xuất kiến thức giáo dục bằng tiếng Việt từ đúng ${plan.pages.length} ảnh trang sách đính kèm. Không bổ sung điều không đọc được. Giữ nguyên nội dung công thức; viết MỌI công thức, ký hiệu toán trong content và title bằng LaTeX đặt trong $...$ (ví dụ $f'(x) \\ge 0$, $x \\in I$, $y = \\frac{ax+b}{cx+d}$, $D = \\mathbb{R} \\setminus \\{-3\\}$); ký hiệu không đọc chắc thì viết [?] và nêu trong verificationNotes. Chỉ trả tối đa 5 item: một THEORY, một METHOD, một WORKED_EXAMPLE, một EXERCISE và một SOLUTION. Với EXERCISE/SOLUTION, chỉ chọn một cặp có cùng số Câu và công thức khớp trên các trang được gửi; nếu không đối chiếu được thì bỏ cả hai. Mỗi câu hỏi và lời giải là một item riêng. Trả JSON {"items":[{"kind":"THEORY|METHOD|WORKED_EXAMPLE|EXERCISE|SOLUTION","title":"...","content":"...","mathematicalNotation":["..."],"printedPages":[number],"exerciseReference":"...","solutionReference":"...","verificationNotes":["..."]}]}. Mục lục liên quan: ${plan.entries.map((entry) => entry.originalHeading).join(' / ')}. Mỗi item phải ghi số trang in nhìn thấy trong ảnh.`;
+  const prompt = `Trích xuất kiến thức giáo dục bằng tiếng Việt từ đúng ${plan.pages.length} ảnh trang sách đính kèm. Không bổ sung điều không đọc được. Giữ nguyên nội dung công thức; viết MỌI công thức, ký hiệu toán trong content và title bằng LaTeX đặt trong $...$ (ví dụ $f'(x) \\ge 0$, $x \\in I$, $y = \\frac{ax+b}{cx+d}$, $D = \\mathbb{R} \\setminus \\{-3\\}$); ký hiệu không đọc chắc thì viết [?] và nêu trong verificationNotes. Trong $...$ chỉ dùng lệnh LaTeX thông dụng (\\frac, \\sqrt, \\le, \\ge, \\ne, \\in, \\infty, \\mathbb{R}, \\setminus, \\Leftrightarrow, \\Rightarrow, \\forall, chữ Hy Lạp); lời văn để ngoài $...$, không dùng \\text; không dùng môi trường \\begin{...}: hệ hoặc tuyển nghiệm viết bằng lời, ví dụ "$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$". Chỉ trả tối đa 5 item: một THEORY, một METHOD, một WORKED_EXAMPLE, một EXERCISE và một SOLUTION. Với EXERCISE/SOLUTION, chỉ chọn một cặp có cùng số Câu và công thức khớp trên các trang được gửi; nếu không đối chiếu được thì bỏ cả hai. Mỗi câu hỏi và lời giải là một item riêng. Trả JSON {"items":[{"kind":"THEORY|METHOD|WORKED_EXAMPLE|EXERCISE|SOLUTION","title":"...","content":"...","mathematicalNotation":["..."],"printedPages":[number],"exerciseReference":"...","solutionReference":"...","verificationNotes":["..."]}]}. Mục lục liên quan: ${plan.entries.map((entry) => entry.originalHeading).join(' / ')}. Mỗi item phải ghi số trang in nhìn thấy trong ảnh.`;
   const response = await provider({
     model: plan.model,
     prompt,
     images: images.map((image) => image.bytes),
     schema: TEXTBOOK_RESPONSE_SCHEMA,
+    // Room for the model's own reasoning plus five items; a cut-off answer fails the job.
+    maxOutputTokens: 24576,
   });
   const parsed = parseJson(response.text) as { items?: unknown };
   if (!Array.isArray(parsed.items)) throw new Error('Gemini response is missing the items array.');
@@ -309,7 +312,18 @@ export async function runExtractionJob(
       createdAt: new Date().toISOString(),
     };
   });
-  const artifacts = splitAndLinkExercises(extracted);
+  const artifacts = splitAndLinkExercises(extracted).map((artifact) => {
+    const issues = findMathIssues(`${artifact.title}\n${artifact.content}`);
+    if (!hasMathIssues(issues)) return artifact;
+    const raw = [...issues.unsupported, ...issues.outsideMath];
+    return {
+      ...artifact,
+      verificationNotes: [
+        ...artifact.verificationNotes,
+        `Công thức sẽ hiện thô${raw.length ? ` (${raw.join(', ')})` : ''}; sửa trước khi duyệt.`,
+      ],
+    };
+  });
   await insertTextbookArtifacts(artifacts);
   return {
     job: {

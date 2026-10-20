@@ -256,7 +256,7 @@ function LessonEditor({
           <div
             role="tablist"
             aria-label="Chế độ soạn bài"
-            className="inline-flex rounded-lg bg-slate-100 p-1"
+            className="inline-flex max-w-full overflow-x-auto rounded-lg bg-slate-100 p-1"
           >
             {(
               [
@@ -271,7 +271,7 @@ function LessonEditor({
                 role="tab"
                 aria-selected={tab === value}
                 onClick={() => setTab(value)}
-                className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                className={`inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 sm:px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                   tab === value
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
