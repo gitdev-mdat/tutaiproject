@@ -1,112 +1,58 @@
 # Textbook reference backend
 
-Last Updated: 2026-10-19
-Status: local pilot plus durable PostgreSQL/Storage adapter; isolated integration pending
+Last Updated: 2026-10-20
 
-## Existing curriculum persistence audit
+Scanned textbooks are private authoring sources for the Knowledge Tree. The workflow has separate, persisted states:
 
-The application has two modes, selected by `DATABASE_URL`:
+upload → verify (worker) → page setup + table of contents (worker, Gemini) → link a section to a Knowledge Tree node → extract chosen pages (worker, Gemini) → Admin review → approved extracts ground AI lesson drafts.
 
-- In the current local checkout no `DATABASE_URL` is configured, so curriculum reads and writes use the JSON files under `data/`.
-- With `DATABASE_URL`, `tutai.content_documents` is the durable source for `knowledge-tree/tree`, `knowledge-tree/articles`, the three Question Bank documents, and `exams/exams`. The Knowledge Tree service reads this same store; the textbook API now does too. A missing database document reads as empty rather than silently restoring a JSON seed.
-- Student roadmaps and practice/exam attempts use dedicated PostgreSQL tables when the database is configured.
-- PostgreSQL is also the durable auth/student-profile store. The `tutai` schema is server-only, has RLS enabled, and grants no access to browser `anon`/`authenticated` roles.
-- Question Bank metadata is in `content_documents`, but imported binary assets and legacy Knowledge Graph data still use filesystem/JSON paths. Those are separate existing persistence gaps; this backend does not migrate or rewrite them.
-- This repository has no Supabase Storage client/configuration in the current local environment. The adapter added here uses the configured Supabase Storage HTTP API only when the owner supplies a private bucket and server-only service key. It does not create a bucket or change Supabase/Vercel resources.
+An indexed book is not extracted, an extract is not approved until an Admin approves it, and an approved extract is only drafting context: it never becomes student content or a Question Bank item on its own.
 
-The authoritative Knowledge Tree identifier is the existing node `id` read from `readKnowledgeTree()`. Textbook mappings store that ID; they never create curriculum nodes. Knowledge Tree nodes, lesson articles, questions, and exam definitions are not copied into the textbook tables.
+## Storage
 
-## Durable backend
+- PostgreSQL (`db/migrations/0006_textbook_reference.sql`, schema `tutai`, RLS on, no `anon`/`authenticated` grants): documents, uploads, page anchors, outline entries, mappings, jobs, artifacts, worker heartbeats. Every write is a targeted statement (`repository.ts`).
+- Supabase Storage, one **private** bucket: `documents/<sha256>.pdf`. The server verifies `public: false` before every use and never issues download URLs. The service key is read only on the server.
 
-Migration `db/migrations/0004_textbook_reference.sql` adds dedicated tables under `tutai` for document metadata, page anchors, TOC entries and parent relationships, Knowledge Tree mappings, extraction jobs, and reviewable artifacts. PDF bytes never enter PostgreSQL. Artifact payloads stay structured JSON and include source-page provenance.
-
-The original PDF is stored as `documents/<sha256>.pdf` in the configured Supabase Storage bucket. Registration deduplicates by SHA-256 in PostgreSQL and uses the same deterministic object key. The adapter verifies the bucket reports `public: false` before upload, download, or cleanup; it does not issue public or signed URLs. Production APIs fail closed unless PostgreSQL and all private-storage settings are configured.
-
-The current registration entry point is the server-side CLI, which accepts a local PDF path; it does not accept a filesystem path from an HTTP request. The existing 50 MB fixture must not be sent through a Vercel function. A browser-to-private-storage upload handshake is not implemented yet, so a future Admin UI that uploads new PDFs needs a separately reviewed signed-upload protocol. The UI can already list/browse durable documents and use the mapping, extraction, status, and review APIs below.
-
-Required server-only settings:
+Required server settings (names only; all four or the feature reports "not configured" with HTTP 503):
 
 ```text
-DATABASE_URL
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-TEXTBOOK_STORAGE_BUCKET
+DATABASE_URL  SUPABASE_URL  SUPABASE_SERVICE_ROLE_KEY  TEXTBOOK_STORAGE_BUCKET
 ```
 
-The bucket must already exist and be private. Apply the migration only to an isolated test/staging database first. The local integration suite intentionally requires the exact database name `textbook_reference_test`; it never resets or drops a database, including `tutai_e2e`. This checkout cannot verify which settings or migrations are present in the live Production project.
+Optional: `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`) if the Storage gateway requires an `apikey` header on signed uploads. The worker also needs `GEMINI_API_KEY`.
 
-The old `tmp/textbook-reference/` store remains available for local QA when `DATABASE_URL` is absent. It is not used as Production persistence. To copy this verified local pilot into a configured isolated durable backend without another Gemini call:
+## Browser upload
+
+`POST /api/admin/textbooks {action:'upload-init'}` (Admin only) checks the SHA-256 the browser computed: a known book is returned as a duplicate before any byte is sent. Otherwise the server opens one pending upload per hash and returns a signed token for exactly that object. The browser uploads straight to Storage's resumable (TUS) endpoint in 6 MB chunks (`tus-upload.ts`), so the PDF never passes through a Vercel function. An interrupted upload resumes from Storage's offset; `upload-complete` checks the stored size and queues a `VERIFY` job, which checks the checksum and page count. Limit: 50 MB (the Supabase free-plan file limit; the bucket is created with it).
+
+## Worker
+
+`pnpm textbooks:worker` polls the queue and reports a heartbeat; `-- --once` runs one job. Jobs are leased with `FOR UPDATE SKIP LOCKED` for 10 minutes; a job whose worker died is resumed by the next worker, and a worker that lost its lease cannot overwrite the result. Rendering uses pdf.js with its wasm decoders (JBIG2/JPEG 2000), so no Poppler install is needed. No hosted worker exists: when none is running, jobs stay queued and the Admin UI says so.
+
+Extraction is cached by `sha256(file, pages, sections, prompt version, model)`: a repeated request returns the stored artifacts without calling Gemini.
+
+## Admin API (`app/api/admin/textbooks/route.ts`)
+
+All routes use `adminApiGuard()` (401 signed out, 403 non-admin) and reject cross-origin POSTs.
+
+- `GET` library + worker status; `?documentId=` book with outline, jobs, artifacts, mappings; `?nodeId=` a lesson's linked sections, artifacts, jobs and suggestions.
+- `POST` actions: `upload-init`, `upload-complete`, `upload-cancel`, `page-setup`, `index-toc`, `confirm-mapping`, `remove-mapping`, `extract` (1–6 printed pages inside a linked section), `cancel-job`, `review-artifact` (`approve` | `reject` | `reopen`), `edit-artifact` (only while awaiting review).
+
+## Lesson drafting
+
+`reference-service.ts` returns approved extracts reachable from a node through confirmed mappings (the section and its subsections), at most 6 items / 6000 characters, theory and method first. The AI draft panel shows them with book and page, the Admin can turn them off, and the draft is still only a proposal applied in the editor.
+
+## Operations
 
 ```powershell
-$env:DATABASE_URL = "<isolated-db-connection-ending-in-textbook_reference_test>"
+# isolated DB first; never point this at Production without the owner's decision
 pnpm db:migrate
-pnpm textbooks:import-local-pilot -- "C:\Users\ADMIN\Downloads\math_book_3.pdf"
-# Or register a different local source PDF:
-pnpm textbooks:register -- "C:\path\to\source.pdf" "Optional title"
+pnpm textbooks:setup-storage      # creates the private bucket if missing
+pnpm textbooks:worker
+pnpm textbooks:register -- C:\path\book.pdf "Title"          # optional CLI upload
+pnpm textbooks:import-local-pilot -- C:\path\math_book_3.pdf  # copy the pre-database pilot
 ```
 
-Set the connection string from the database owner in the local shell only; do not commit it or run this migration command with Production credentials.
+## Tests
 
-The import matches the source by SHA-256, uploads the PDF privately, and copies that document's observed TOC, anchors, mappings, extraction history, artifacts, and review statuses. It does not import other local documents or alter authored curriculum.
-
-## Worker lifecycle
-
-An Admin queues a bounded extraction through the API. A worker running on a machine with the repository, DB/storage credentials, Poppler, and Gemini credentials leases one job from PostgreSQL with `FOR UPDATE SKIP LOCKED`. A ten-minute lease allows another worker to resume after interruption. Each job stores status/attempt/error history in PostgreSQL. The worker downloads the private PDF to a short-lived scratch directory, renders only requested page crops, invokes Gemini, and removes the downloaded source and rendered pages afterward. A DB active-job uniqueness index prevents concurrent duplicate extraction keys. Existing artifacts, especially approved ones, are not overwritten by re-extraction.
-
-No hosted background worker is configured by this change. The documented local worker runs only while its computer and network connection are available:
-
-```powershell
-pnpm textbooks:worker -- --once
-```
-
-Use `pnpm textbooks:worker` for one bounded job per invocation; run it again to continue the queue. Do not claim autonomous Production processing unless an always-on worker is separately deployed and authorized.
-
-## TOC and pilot evidence
-
-The provided PDF is scanned; registration samples text but does not OCR the book. The known first-topic pilot has 17 TOC entries, but the index is explicitly `PARTIAL`: only the monotonicity section and major headings observed on TOC PDF pages 5–7 are indexed. It is not a verified complete book index. Inspected anchors are printed pages 13, 29, 33, and 34 at PDF pages 7, 15, 17, and 18. Only the current matching monotonicity Knowledge Tree node is linkable; absent P1/P2 nodes are not inferred.
-
-The extraction cap remains six printed pages per job. Existing exercise/solution matching, mathematical checks, provenance, `NEEDS_REVIEW` state, and extraction-key cache are retained. Approval is reference-only and cannot publish a lesson or question. There is no full-book OCR or automatic student-content update.
-
-## Admin API contract for the future UI
-
-All routes are server-side and require the existing `adminApiGuard()`. Students receive 401/403 and have no source-PDF endpoint. The service key is only read by server code.
-
-### `GET /api/admin/textbooks?q=<heading>&nodeId=<node-id>&approvedOnly=true`
-
-Returns:
-
-```ts
-{
-  documents: TextbookDocumentRecord[]; // each document includes tocIndexCompleteness
-  jobs: TextbookExtractionJob[];
-  artifacts: TextbookArtifact[];
-  mappings: (TextbookKnowledgeMapping & { knowledgeNodeTitle: string | null })[];
-  candidates: Array<{
-    documentId: string;
-    entryId: string;
-    entryHeading: string;
-    candidates: Array<{
-      knowledgeNodeId: string; title: string; confidence: number;
-      status: 'EXACT_CANDIDATE' | 'CANDIDATE'; confirmationRequired: true;
-    }>;
-  }>;
-}
-```
-
-`q` filters TOC headings. `nodeId` filters artifacts through a confirmed mapping. `approvedOnly=true` returns only approved artifacts; this is the retrieval contract for lesson drafting and must remain server-side.
-
-### `POST /api/admin/textbooks`
-
-- `{ action: 'confirm-mapping', documentId, entryId, knowledgeNodeId }` checks the document/entry and resolves the node against the current canonical tree before saving a confirmed mapping.
-- `{ action: 'extract', documentId, entryIds, knowledgeNodeId, printedPages }` queues 1–6 printed pages within the selected TOC ranges and confirmed mapping. Returns 202 with a queued job or 200 on cache reuse.
-- `{ action: 'review-artifact', artifactId, decision: 'approve' | 'reject' }` records human review. Approval never publishes to student-facing content.
-
-Expected errors: 400 malformed body, 401 unauthenticated, 403 non-admin, 404 unknown document/entry/node/artifact, 422 invalid page range/mapping or uncertain anchor, 503 durable backend not configured, and 500 unexpected persistence/provider failure. Every mutation remains admin-only; there is no direct object URL response.
-
-The server-side registration function is `registerTextbook(sourcePath, title?)`, exposed by `pnpm textbooks:register`. It returns `{ document, duplicate, scanDetection }`; duplicate identity is SHA-256, never filename. There is no HTTP upload endpoint yet, due to the source PDF size and serverless request limits.
-
-## Verification
-
-The opt-in durable integration test migrates and writes only to the exact `textbook_reference_test` database and verifies persistence, artifact approval protection, and exclusive job claiming. It is skipped when that database is not configured. The opt-in Storage integration test requires a bucket named exactly `textbook-reference-test`, uploads/downloads a fixture, and removes it. No tests touch Production or reset `tutai_e2e`.
-
-This checkout currently has no DB or Supabase Storage credentials, and Docker is not running. Therefore migration, private object storage, and durable end-to-end restart/cache/review integration have not yet been executed here. The previous local PDF/Gemini pilot remains available in ignored `tmp/` data; do not present it as proof of durable persistence.
+`durable-integration.test.ts` runs only against a database named exactly `textbook_reference_test` and a bucket named exactly `textbook-reference-test` (`TEST_DATABASE_URL`, `TEST_SUPABASE_URL`, `TEST_SUPABASE_SERVICE_ROLE_KEY`, `TEST_TEXTBOOK_STORAGE_BUCKET`, `TEST_TEXTBOOK_PDF`). It is skipped, and reported as skipped, without them.
