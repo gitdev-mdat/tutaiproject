@@ -1,6 +1,10 @@
 import 'server-only';
 
-import { approvedArtifactsForNode, durableTextbookBackendConfigured, listTextbookDocuments } from './repository';
+import {
+  approvedArtifactsForNode,
+  durableTextbookBackendConfigured,
+  listTextbookDocuments,
+} from './repository';
 import type { ExtractedArtifactKind, TextbookArtifact } from './types';
 
 /** Returns only human-approved artifacts explicitly mapped to the requested node. */

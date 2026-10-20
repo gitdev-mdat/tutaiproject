@@ -73,11 +73,12 @@ function toDocument(row: Row, anchors: TextbookAnchor[], tocEntries: TextbookToc
 }
 
 /** Documents with their page anchors; table-of-contents entries only when asked for. */
-export async function listTextbookDocuments(
-  { withToc = false }: { withToc?: boolean } = {}
-): Promise<TextbookDocumentRecord[]> {
+export async function listTextbookDocuments({
+  withToc = false,
+}: { withToc?: boolean } = {}): Promise<TextbookDocumentRecord[]> {
   const db = sql();
-  const documents = await db`select id, status, metadata from tutai.textbook_documents order by created_at`;
+  const documents =
+    await db`select id, status, metadata from tutai.textbook_documents order by created_at`;
   if (!documents.length) return [];
   const ids = documents.map((row) => row.id as string);
   const anchors = await db`
@@ -91,7 +92,10 @@ export async function listTextbookDocuments(
   const group = <T>(rows: Row[]) => {
     const map = new Map<string, T[]>();
     for (const row of rows)
-      map.set(row.document_id as string, [...(map.get(row.document_id as string) ?? []), row.payload as T]);
+      map.set(row.document_id as string, [
+        ...(map.get(row.document_id as string) ?? []),
+        row.payload as T,
+      ]);
     return map;
   };
   const anchorsBy = group<TextbookAnchor>(anchors);
@@ -103,7 +107,8 @@ export async function listTextbookDocuments(
 
 export async function getTextbookDocument(id: string): Promise<TextbookDocumentRecord | null> {
   const db = sql();
-  const [row] = await db`select id, status, metadata from tutai.textbook_documents where id = ${id}`;
+  const [row] =
+    await db`select id, status, metadata from tutai.textbook_documents where id = ${id}`;
   if (!row) return null;
   const anchors = await db`
     select payload from tutai.textbook_page_anchors where document_id = ${id} order by printed_page`;
@@ -125,7 +130,12 @@ export async function findTextbookBySha(sha256: string): Promise<TextbookDocumen
 export async function insertTextbookDocument(
   document: TextbookDocumentRecord
 ): Promise<{ document: TextbookDocumentRecord; duplicate: boolean }> {
-  const { anchors: _anchors, tocEntries: _toc, status, ...metadata } = document;
+  // Anchors and outline live in their own tables; status has its own column.
+  const metadata: Partial<TextbookDocumentRecord> = { ...document };
+  delete metadata.anchors;
+  delete metadata.tocEntries;
+  delete metadata.status;
+  const { status } = document;
   const inserted = await sql()`
     insert into tutai.textbook_documents (id, sha256, status, metadata)
     values (${document.id}, ${document.sha256}, ${status}, ${json(metadata)})
@@ -276,7 +286,9 @@ export const JOB_LEASE_SECONDS = 600;
  * worker processes never run the same job. A RUNNING job whose lease expired
  * (its worker died) is picked up again and resumes.
  */
-export async function claimNextTextbookJob(workerId: string): Promise<TextbookExtractionJob | null> {
+export async function claimNextTextbookJob(
+  workerId: string
+): Promise<TextbookExtractionJob | null> {
   return sql().begin(async (tx) => {
     const [row] = await tx`
       select * from tutai.textbook_jobs
@@ -360,7 +372,9 @@ export async function listTextbookArtifacts(
  * Approved artifacts reachable from a Knowledge Tree node through a confirmed
  * mapping: the mapped section itself or any section below it.
  */
-export async function approvedArtifactsForNode(knowledgeNodeId: string): Promise<TextbookArtifact[]> {
+export async function approvedArtifactsForNode(
+  knowledgeNodeId: string
+): Promise<TextbookArtifact[]> {
   const rows = await sql()`
     with recursive covered as (
       select m.document_id, m.entry_id as id

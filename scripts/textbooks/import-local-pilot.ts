@@ -42,9 +42,14 @@ async function main() {
   const sha256 = createHash('sha256').update(bytes).digest('hex');
   const local = await readLocalTextbookPilot();
   const source = local.documents.find((document) => document.sha256 === sha256);
-  if (!source) throw new Error('The selected PDF does not match a document in the local pilot index.');
+  if (!source)
+    throw new Error('The selected PDF does not match a document in the local pilot index.');
 
-  const { document, duplicate } = await registerLocalTextbook(bytes, path.basename(sourcePath), source.title);
+  const { document, duplicate } = await registerLocalTextbook(
+    bytes,
+    path.basename(sourcePath),
+    source.title
+  );
   if (duplicate && document.tocEntries.length)
     throw new Error(`Already imported as ${document.id}; nothing changed.`);
 
@@ -53,11 +58,17 @@ async function main() {
   const nodeFor = (id: string) => nodeOverride ?? id;
   for (const mapping of mappings)
     if (!tree.nodes.some((node) => node.id === nodeFor(mapping.knowledgeNodeId)))
-      throw new Error(`Knowledge Tree node ${nodeFor(mapping.knowledgeNodeId)} does not exist here; pass --node.`);
+      throw new Error(
+        `Knowledge Tree node ${nodeFor(mapping.knowledgeNodeId)} does not exist here; pass --node.`
+      );
 
   await replaceTextbookAnchors(document.id, source.anchors);
   await updateTextbookDocument(document.id, { pageLayout: 'TWO_UP', tocPdfPages: [5, 6, 7] });
-  await replaceTextbookToc(document.id, source.tocEntries, source.tocIndexCompleteness ?? 'PARTIAL');
+  await replaceTextbookToc(
+    document.id,
+    source.tocEntries,
+    source.tocIndexCompleteness ?? 'PARTIAL'
+  );
   // The import does not skip verification: the book stays VERIFYING until the worker checks it.
   const pendingVerify = (await listTextbookJobs({ documentId: document.id })).some(
     (job) => job.kind === 'VERIFY' && job.status !== 'COMPLETED'

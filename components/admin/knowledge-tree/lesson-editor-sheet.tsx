@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
+  BookMarked,
   CheckCircle2,
   Circle,
   ExternalLink,
@@ -40,6 +41,7 @@ import type {
 } from '@/lib/knowledge-tree/knowledge-tree-types';
 import type { AiDraftBlockType } from '@/lib/knowledge-tree/ai-lesson-draft';
 import { AiDraftPanel } from './ai-draft-panel';
+import { LessonReferencesPanel } from '@/components/admin/textbooks/lesson-references-panel';
 import { findMathIssues } from '@/lib/content/math-notation';
 
 /** Says which formulas a student would see as raw source, before the lesson is saved. */
@@ -70,6 +72,8 @@ interface Props {
   breadcrumb: string[];
   repo: ApiKnowledgeRepository;
   onClose: () => void;
+  /** Opens the textbook library over the editor. */
+  onOpenLibrary?: () => void;
   onSaved: (nodeId: string, summary: ArticleSummary, message: string) => void;
 }
 
@@ -100,6 +104,7 @@ function LessonEditor({
   breadcrumb,
   repo,
   onClose,
+  onOpenLibrary,
   onSaved,
 }: Props & { node: KnowledgeTreeNode }) {
   const [loadState, setLoadState] = React.useState<'loading' | 'ready' | 'error'>('loading');
@@ -107,7 +112,7 @@ function LessonEditor({
   const [title, setTitle] = React.useState(node.title);
   const [blocks, setBlocks] = React.useState<KnowledgeArticleBlock[]>(normalizeArticleBlocks([]));
   const [dirty, setDirty] = React.useState(false);
-  const [tab, setTab] = React.useState<'edit' | 'preview'>('edit');
+  const [tab, setTab] = React.useState<'edit' | 'preview' | 'references'>('edit');
   const scrollRef = React.useRef<HTMLDivElement>(null);
   // The preview is read from its first stage, not from wherever the editor was scrolled.
   React.useEffect(() => {
@@ -257,6 +262,7 @@ function LessonEditor({
               [
                 ['edit', 'Soạn bài', PenLine],
                 ['preview', 'Xem như học sinh', Eye],
+                ['references', 'Tư liệu', BookMarked],
               ] as const
             ).map(([value, label, Icon]) => (
               <button
@@ -324,6 +330,8 @@ function LessonEditor({
               Thử lại
             </Button>
           </div>
+        ) : tab === 'references' ? (
+          <LessonReferencesPanel nodeId={node.id} onOpenLibrary={() => onOpenLibrary?.()} />
         ) : tab === 'preview' ? (
           <article className="mx-auto max-w-[1040px] rounded-2xl border border-slate-200 bg-[#FBFCFE] p-5 sm:p-8">
             <LessonJourney

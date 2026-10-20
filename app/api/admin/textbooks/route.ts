@@ -107,7 +107,10 @@ function failure(error: unknown) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   if (error instanceof TextbookBackendUnavailableError) return unavailable(error.missing);
   console.error('[textbooks] operation failed', (error as Error)?.message);
-  return NextResponse.json({ error: 'Thao tác chưa thực hiện được. Thử lại sau.' }, { status: 500 });
+  return NextResponse.json(
+    { error: 'Thao tác chưa thực hiện được. Thử lại sau.' },
+    { status: 500 }
+  );
 }
 
 const summary = ({ tocEntries, ...document }: TextbookDocumentRecord) => ({
@@ -118,7 +121,11 @@ const summary = ({ tocEntries, ...document }: TextbookDocumentRecord) => ({
 /** Section suggestions for a lesson: TOC headings that share words with its title. */
 function suggestionsFor(title: string, documents: TextbookDocumentRecord[]) {
   const words = (value: string) =>
-    new Set(normalizedHeading(value).split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 2));
+    new Set(
+      normalizedHeading(value)
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((word) => word.length > 2)
+    );
   const wanted = words(title.replace(/\(P\d+\)/i, ''));
   if (!wanted.size) return [];
   return documents
@@ -222,7 +229,10 @@ export async function GET(request: Request) {
         sections,
         jobs,
         approvedCount: approved.length,
-        documents: documents.map(summary),
+        // Indexed books with their outline, for linking another section to this lesson.
+        documents: documents
+          .filter((document) => document.status === 'INDEXED')
+          .map((document) => ({ ...summary(document), tocEntries: document.tocEntries })),
         suggestions: suggestionsFor(
           node.title,
           documents.filter((document) => document.status === 'INDEXED')
@@ -267,7 +277,9 @@ export async function POST(request: Request) {
         await cancelTextbookUpload(input.uploadId);
         return NextResponse.json({ cancelled: true });
       case 'page-setup':
-        return NextResponse.json({ document: await saveTextbookPageSetup(input.documentId, input) });
+        return NextResponse.json({
+          document: await saveTextbookPageSetup(input.documentId, input),
+        });
       case 'index-toc':
         return NextResponse.json(await requestTocIndex(input.documentId), { status: 202 });
       case 'confirm-mapping':
@@ -277,14 +289,16 @@ export async function POST(request: Request) {
           throw new TextbookRequestError('Không tìm thấy mục trong mục lục.', 404);
         const tree = await readKnowledgeTree();
         const node = tree.nodes.find((item) => item.id === input.knowledgeNodeId);
-        if (!node) throw new TextbookRequestError('Không tìm thấy bài học trong Cây kiến thức.', 404);
+        if (!node)
+          throw new TextbookRequestError('Không tìm thấy bài học trong Cây kiến thức.', 404);
         const mapping = {
           id: `map-${input.documentId}-${input.entryId}-${input.knowledgeNodeId}`,
           documentId: input.documentId,
           entryId: input.entryId,
           knowledgeNodeId: input.knowledgeNodeId,
           confidence: 1,
-          status: input.action === 'confirm-mapping' ? ('CONFIRMED' as const) : ('REJECTED' as const),
+          status:
+            input.action === 'confirm-mapping' ? ('CONFIRMED' as const) : ('REJECTED' as const),
           confirmationRequired: false,
           updatedAt: new Date().toISOString(),
         };

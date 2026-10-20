@@ -18,7 +18,6 @@ const TOC_RESPONSE_SCHEMA = {
   properties: {
     entries: {
       type: 'array',
-      maxItems: 250,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -63,7 +62,10 @@ export function buildTocEntries(
 ): TextbookTocEntry[] {
   const clean = raw
     .map((item) => ({
-      heading: item.heading.replace(/\s*\.{3,}\s*\d*\s*$/, '').replace(/\s+/g, ' ').trim(),
+      heading: item.heading
+        .replace(/\s*\.{3,}\s*\d*\s*$/, '')
+        .replace(/\s+/g, ' ')
+        .trim(),
       level: Math.min(Math.max(Math.round(item.level) || 1, 1), 6),
       printedPage: item.printedPage && item.printedPage > 0 ? Math.round(item.printedPage) : null,
     }))
@@ -87,7 +89,8 @@ export function buildTocEntries(
       level: item.level,
       printedStartPage: start,
       printedEndPage: end,
-      locations: start !== null ? [mapPrintedPage(start, document.anchors, document.pageLayout)] : [],
+      locations:
+        start !== null ? [mapPrintedPage(start, document.anchors, document.pageLayout)] : [],
       status: 'OBSERVED',
     };
   });
@@ -116,9 +119,13 @@ export async function runTocJob(
     ].join('\n'),
     images: images.map((image) => image.bytes),
     schema: TOC_RESPONSE_SCHEMA,
+    maxOutputTokens: 32768,
   });
   const parsed = JSON.parse(
-    response.text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+    response.text
+      .trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/, '')
   ) as { entries?: RawTocEntry[] };
   if (!Array.isArray(parsed.entries) || parsed.entries.length === 0)
     throw new Error('No table-of-contents lines were read from the selected pages.');

@@ -140,7 +140,9 @@ async function planExtraction(input: ExtractionRequest) {
     )
   )
     throw new TextbookRequestError('Có trang nằm ngoài phạm vi của mục đã chọn.');
-  const locations = pages.map((printedPage) => mapPrintedPage(printedPage, document.anchors, document.pageLayout));
+  const locations = pages.map((printedPage) =>
+    mapPrintedPage(printedPage, document.anchors, document.pageLayout)
+  );
   if (locations.some((location) => location.position === 'UNCERTAIN'))
     throw new TextbookRequestError(
       'Có trang chưa xác định được vị trí trong PDF. Thêm mốc trang bao quanh các trang này.'
@@ -233,7 +235,10 @@ export function verifyJob(documentId: string, sha256: string) {
 /** Runs an EXTRACT job: renders the requested pages, calls the provider once, stores artifacts. */
 export async function runExtractionJob(
   job: TextbookExtractionJob,
-  options: { provider?: VisionProvider; readPdf: (document: TextbookDocumentRecord) => Promise<Buffer> }
+  options: {
+    provider?: VisionProvider;
+    readPdf: (document: TextbookDocumentRecord) => Promise<Buffer>;
+  }
 ): Promise<{ job: TextbookExtractionJob; artifacts: TextbookArtifact[] }> {
   const start = Date.now();
   const plan = await planExtraction(job);
@@ -243,7 +248,13 @@ export async function runExtractionJob(
   if (cached.length) {
     // Another job stored these first (or this job was interrupted after storing).
     return {
-      job: { ...job, status: 'COMPLETED', cacheHit: true, pagesProcessed: plan.pages, durationMs: Date.now() - start },
+      job: {
+        ...job,
+        status: 'COMPLETED',
+        cacheHit: true,
+        pagesProcessed: plan.pages,
+        durationMs: Date.now() - start,
+      },
       artifacts: cached,
     };
   }
@@ -257,8 +268,7 @@ export async function runExtractionJob(
     schema: TEXTBOOK_RESPONSE_SCHEMA,
   });
   const parsed = parseJson(response.text) as { items?: unknown };
-  if (!Array.isArray(parsed.items))
-    throw new Error('Gemini response is missing the items array.');
+  if (!Array.isArray(parsed.items)) throw new Error('Gemini response is missing the items array.');
   if (parsed.items.length === 0)
     throw new Error('Gemini returned no extractable educational items for this page batch.');
   const extracted = parsed.items.map((raw): TextbookArtifact => {
@@ -287,8 +297,10 @@ export async function runExtractionJob(
           )
         ),
       ],
-      exerciseReference: typeof item.exerciseReference === 'string' ? item.exerciseReference : undefined,
-      solutionReference: typeof item.solutionReference === 'string' ? item.solutionReference : undefined,
+      exerciseReference:
+        typeof item.exerciseReference === 'string' ? item.exerciseReference : undefined,
+      solutionReference:
+        typeof item.solutionReference === 'string' ? item.solutionReference : undefined,
       reviewStatus: 'NEEDS_REVIEW',
       verificationNotes: Array.isArray(item.verificationNotes)
         ? item.verificationNotes.map(String)

@@ -57,7 +57,7 @@ export async function processNextTextbookJob(
     if (!document) throw new Error('Textbook not found.');
     result = await runJob(job, document, options.provider);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = readableError(error);
     result = { ...job, status: 'FAILED', error: message, durationMs: Date.now() - start };
     await markDocumentAfterFailure(job, error).catch(() => {});
   }
@@ -101,8 +101,20 @@ async function runJob(
   return done;
 }
 
-async function markDocumentAfterFailure(job: TextbookExtractionJob, error: unknown) {
+/** Provider errors arrive as raw JSON; the Admin sees a short reason instead. */
+export function readableError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
+  try {
+    const parsed = JSON.parse(message) as { error?: { code?: number; status?: string } };
+    if (parsed.error?.code)
+      return `Gemini từ chối yêu cầu (HTTP ${parsed.error.code}${parsed.error.status ? `, ${parsed.error.status}` : ''}). Thử lại; nếu lặp lại, kiểm tra cấu hình mô hình.`;
+  } catch {}
+  if ((error as { code?: string })?.code === 'TIMEOUT') return 'Gemini phản hồi quá lâu. Thử lại sau.';
+  return message.slice(0, 400);
+}
+
+async function markDocumentAfterFailure(job: TextbookExtractionJob, error: unknown) {
+  const message = readableError(error);
   if (job.kind === 'VERIFY') {
     await updateTextbookDocument(job.documentId, {
       status: 'FAILED',

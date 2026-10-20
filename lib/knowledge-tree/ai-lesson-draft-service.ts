@@ -178,7 +178,14 @@ async function loadReferences(
       references,
       summary: {
         approved: approvedCount,
-        items: references.map(({ content: _content, ...rest }) => rest),
+        items: references.map((reference) => ({
+          artifactId: reference.artifactId,
+          kind: reference.kind,
+          title: reference.title,
+          documentTitle: reference.documentTitle,
+          printedPages: reference.printedPages,
+          truncated: reference.truncated,
+        })),
         used: references.length > 0,
       },
     };

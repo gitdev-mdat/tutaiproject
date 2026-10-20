@@ -51,15 +51,33 @@ export async function renderPrintedPageCrops(
   try {
     const output = [];
     for (const location of pages) {
-      if (location.position === 'UNCERTAIN' || location.pdfPage < 1 || location.pdfPage > pdf.numPages)
+      if (
+        location.position === 'UNCERTAIN' ||
+        location.pdfPage < 1 ||
+        location.pdfPage > pdf.numPages
+      )
         throw new Error(`Printed page ${location.printedPage} has no verified PDF-page location.`);
       const half = location.position === 'LEFT' || location.position === 'RIGHT';
-      const full = await renderPage(pdf, location.pdfPage, half ? printedPageWidth * 2 : printedPageWidth);
+      const full = await renderPage(
+        pdf,
+        location.pdfPage,
+        half ? printedPageWidth * 2 : printedPageWidth
+      );
       const width = half ? Math.floor(full.width / 2) : full.width;
       const crop = createCanvas(width, full.height);
       crop
         .getContext('2d')
-        .drawImage(full, location.position === 'RIGHT' ? full.width - width : 0, 0, width, full.height, 0, 0, width, full.height);
+        .drawImage(
+          full,
+          location.position === 'RIGHT' ? full.width - width : 0,
+          0,
+          width,
+          full.height,
+          0,
+          0,
+          width,
+          full.height
+        );
       output.push({ ...location, bytes: crop.toBuffer('image/png') });
     }
     return output;
@@ -78,8 +96,12 @@ export async function renderPdfPages(
   try {
     const output = [];
     for (const pdfPage of pdfPages) {
-      if (pdfPage < 1 || pdfPage > pdf.numPages) throw new Error(`PDF page ${pdfPage} does not exist.`);
-      output.push({ pdfPage, bytes: (await renderPage(pdf, pdfPage, width)).toBuffer('image/png') });
+      if (pdfPage < 1 || pdfPage > pdf.numPages)
+        throw new Error(`PDF page ${pdfPage} does not exist.`);
+      output.push({
+        pdfPage,
+        bytes: (await renderPage(pdf, pdfPage, width)).toBuffer('image/png'),
+      });
     }
     return output;
   } finally {
@@ -97,7 +119,10 @@ export async function inspectPdf(bytes: Uint8Array) {
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
       textCharacterCounts.push(
-        content.items.map((item) => ('str' in item ? item.str : '')).join('').trim().length
+        content.items
+          .map((item) => ('str' in item ? item.str : ''))
+          .join('')
+          .trim().length
       );
     }
     return {

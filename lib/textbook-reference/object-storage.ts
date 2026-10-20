@@ -75,7 +75,9 @@ export async function assertPrivateBucket(): Promise<void> {
 }
 
 /** Creates the private bucket when it does not exist. Never makes an existing bucket public. */
-export async function ensurePrivateBucket(fileSizeLimitBytes: number): Promise<'created' | 'exists'> {
+export async function ensurePrivateBucket(
+  fileSizeLimitBytes: number
+): Promise<'created' | 'exists'> {
   const config = storageConfig();
   const response = await fetch(`${config.base}/storage/v1/bucket`, {
     method: 'POST',

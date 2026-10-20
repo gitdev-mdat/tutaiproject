@@ -40,7 +40,8 @@ export interface UploadInit {
 }
 
 function validateUpload(input: UploadInit) {
-  if (!/^[0-9a-f]{64}$/.test(input.sha256)) throw new TextbookRequestError('Mã kiểm tra tệp không hợp lệ.');
+  if (!/^[0-9a-f]{64}$/.test(input.sha256))
+    throw new TextbookRequestError('Mã kiểm tra tệp không hợp lệ.');
   if (!Number.isSafeInteger(input.byteSize) || input.byteSize <= 0)
     throw new TextbookRequestError('Kích thước tệp không hợp lệ.');
   if (input.byteSize > MAX_TEXTBOOK_BYTES)
@@ -52,9 +53,12 @@ function validateUpload(input: UploadInit) {
   return { filename, title };
 }
 
-async function registerUploadedDocument(
-  input: { sha256: string; byteSize: number; filename: string; title: string }
-): Promise<{ document: TextbookDocumentRecord; duplicate: boolean }> {
+async function registerUploadedDocument(input: {
+  sha256: string;
+  byteSize: number;
+  filename: string;
+  title: string;
+}): Promise<{ document: TextbookDocumentRecord; duplicate: boolean }> {
   const document: TextbookDocumentRecord = {
     id: `textbook-${input.sha256.slice(0, 16)}`,
     originalFilename: input.filename,
@@ -82,7 +86,13 @@ export type UploadInitResult =
   | {
       kind: 'upload';
       uploadId: string;
-      tus: { endpoint: string; token: string; bucket: string; objectName: string; chunkSize: number };
+      tus: {
+        endpoint: string;
+        token: string;
+        bucket: string;
+        objectName: string;
+        chunkSize: number;
+      };
       publishableKey: string | null;
     };
 
@@ -91,7 +101,10 @@ export type UploadInitResult =
  * before any byte is sent. The browser gets a token for exactly one private
  * object and uploads it straight to Storage, never through this server.
  */
-export async function initTextbookUpload(input: UploadInit, adminId: string): Promise<UploadInitResult> {
+export async function initTextbookUpload(
+  input: UploadInit,
+  adminId: string
+): Promise<UploadInitResult> {
   const { filename, title } = validateUpload(input);
   const existing = await findTextbookBySha(input.sha256);
   if (existing && existing.status !== 'FAILED') return { kind: 'duplicate', document: existing };
@@ -177,8 +190,7 @@ export function validateAnchors(
   const printed = new Set(anchors.map((anchor) => anchor.printedPage));
   if (printed.size !== anchors.length) return 'Mỗi số trang in chỉ nhập một lần.';
   for (const anchor of anchors) {
-    if (pdfPageCount && anchor.pdfPage > pdfPageCount)
-      return `PDF chỉ có ${pdfPageCount} trang.`;
+    if (pdfPageCount && anchor.pdfPage > pdfPageCount) return `PDF chỉ có ${pdfPageCount} trang.`;
     if (layout === 'SINGLE' && anchor.position !== 'FULL') return 'Sách một trang mỗi trang PDF.';
     if (layout === 'TWO_UP' && anchor.position !== 'LEFT' && anchor.position !== 'RIGHT')
       return 'Với bản quét hai trang, chọn nửa trái hoặc phải.';
@@ -213,7 +225,10 @@ export async function saveTextbookPageSetup(
       listTextbookArtifacts({ documentId }),
     ]);
     if (mappings.length || artifacts.length)
-      throw new TextbookRequestError('Sách đã có mục được liên kết; mốc trang và mục lục được giữ nguyên.', 409);
+      throw new TextbookRequestError(
+        'Sách đã có mục được liên kết; mốc trang và mục lục được giữ nguyên.',
+        409
+      );
   }
   await replaceTextbookAnchors(documentId, anchors);
   await updateTextbookDocument(documentId, { pageLayout: input.layout, tocPdfPages });

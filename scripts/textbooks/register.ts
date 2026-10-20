@@ -21,7 +21,12 @@ async function main() {
       process.argv[3]
     );
     console.log(
-      JSON.stringify({ duplicate, id: document.id, sha256: document.sha256, status: document.status })
+      JSON.stringify({
+        duplicate,
+        id: document.id,
+        sha256: document.sha256,
+        status: document.status,
+      })
     );
   } finally {
     await closeSql();

@@ -1,9 +1,4 @@
-import type {
-  PageLayout,
-  PagePosition,
-  TextbookAnchor,
-  TextbookPageLocation,
-} from './types';
+import type { PageLayout, PagePosition, TextbookAnchor, TextbookPageLocation } from './types';
 
 const UNCERTAIN = (printedPage: number, pdfPage = -1): TextbookPageLocation => ({
   printedPage,
@@ -23,7 +18,8 @@ export function layoutOf(anchors: TextbookAnchor[]): PageLayout {
  * is 2·pdfPage (+1 for the right half), for single pages it is the PDF page.
  */
 function slotOffset(anchor: TextbookAnchor, layout: PageLayout): number | null {
-  if (layout === 'SINGLE') return anchor.position === 'FULL' ? anchor.pdfPage - anchor.printedPage : null;
+  if (layout === 'SINGLE')
+    return anchor.position === 'FULL' ? anchor.pdfPage - anchor.printedPage : null;
   if (anchor.position !== 'LEFT' && anchor.position !== 'RIGHT') return null;
   return 2 * anchor.pdfPage + (anchor.position === 'RIGHT' ? 1 : 0) - anchor.printedPage;
 }
@@ -52,7 +48,8 @@ export function mapPrintedPage(
   const insideVerifiedInterval = lower.printedPage !== upper.printedPage;
   const slot = printedPage + offset;
   const pdfPage = layout === 'SINGLE' ? slot : Math.floor(slot / 2);
-  if (pdfPage < 1 || (!isAnchored && !insideVerifiedInterval)) return UNCERTAIN(printedPage, pdfPage);
+  if (pdfPage < 1 || (!isAnchored && !insideVerifiedInterval))
+    return UNCERTAIN(printedPage, pdfPage);
 
   const position: PagePosition = layout === 'SINGLE' ? 'FULL' : slot % 2 ? 'RIGHT' : 'LEFT';
   return {

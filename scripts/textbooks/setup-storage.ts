@@ -11,7 +11,9 @@ async function main() {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
   const result = await ensurePrivateBucket(MAX_TEXTBOOK_BYTES);
-  console.log(JSON.stringify({ bucket: process.env.TEXTBOOK_STORAGE_BUCKET, result, public: false }));
+  console.log(
+    JSON.stringify({ bucket: process.env.TEXTBOOK_STORAGE_BUCKET, result, public: false })
+  );
 }
 
 void main().catch((error) => {

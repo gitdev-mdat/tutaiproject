@@ -92,7 +92,7 @@ export async function tusUpload(target: TusTarget, file: Blob, options: TusOptio
     if (signal?.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
     const chunk = file.slice(offset, Math.min(offset + target.chunkSize, file.size));
     try {
-      const response = await fetch(url, {
+      const response: Response = await fetch(url, {
         method: 'PATCH',
         headers: headers(target, {
           'Upload-Offset': String(offset),
@@ -108,7 +108,8 @@ export async function tusUpload(target: TusTarget, file: Blob, options: TusOptio
         offset = actual;
         continue;
       }
-      if (!response.ok) throw new TusUploadError(`Tải lên bị từ chối (HTTP ${response.status}).`, response.status);
+      if (!response.ok)
+        throw new TusUploadError(`Tải lên bị từ chối (HTTP ${response.status}).`, response.status);
       offset = Number(response.headers.get('upload-offset') ?? offset + chunk.size);
       failures = 0;
       onProgress?.(offset, file.size);

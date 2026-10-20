@@ -6,7 +6,11 @@
 import { loadEnvFile } from 'node:process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { closeSql } from '@/lib/db/postgres';
-import { assertTextbookBackend, recordWorkerHeartbeat, removeWorker } from '@/lib/textbook-reference/repository';
+import {
+  assertTextbookBackend,
+  recordWorkerHeartbeat,
+  removeWorker,
+} from '@/lib/textbook-reference/repository';
 import { newWorkerIdentity, processNextTextbookJob } from '@/lib/textbook-reference/worker';
 
 const POLL_MS = 5_000;
