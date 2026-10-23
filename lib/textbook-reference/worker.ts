@@ -2,7 +2,8 @@ import 'server-only';
 
 import os from 'node:os';
 import { runExtractionJob } from './extraction-service';
-import { downloadPrivateTextbook, TextbookChecksumError } from './object-storage';
+import { downloadPrivateTextbook } from './object-storage';
+import { describeJobError } from './job-errors';
 import { inspectPdf } from './pdf-pages';
 import {
   claimNextTextbookJob,
@@ -22,10 +23,13 @@ export interface WorkerIdentity {
   startedAt: string;
 }
 
-export function newWorkerIdentity(): WorkerIdentity {
+/** A job interrupted this many times (its worker died each time) is failed instead of looping. */
+export const MAX_JOB_ATTEMPTS = 3;
+
+export function newWorkerIdentity(hostname = os.hostname()): WorkerIdentity {
   return {
-    id: `worker-${os.hostname()}-${process.pid}-${Date.now().toString(36)}`,
-    hostname: os.hostname(),
+    id: `worker-${hostname}-${process.pid}-${Date.now().toString(36)}`,
+    hostname,
     startedAt: new Date().toISOString(),
   };
 }
@@ -53,13 +57,25 @@ export async function processNextTextbookJob(
   const start = Date.now();
   let result: TextbookExtractionJob;
   try {
+    if (job.attempts > MAX_JOB_ATTEMPTS)
+      throw Object.assign(new Error(`Interrupted ${job.attempts - 1} times.`), {
+        code: 'INTERRUPTED',
+      });
     const document = await getTextbookDocument(job.documentId);
     if (!document) throw new Error('Textbook not found.');
     result = await runJob(job, document, options.provider);
   } catch (error) {
-    const message = readableError(error);
-    result = { ...job, status: 'FAILED', error: message, durationMs: Date.now() - start };
-    await markDocumentAfterFailure(job, error).catch(() => {});
+    const described = describeJobError(error);
+    result = {
+      ...job,
+      status: 'FAILED',
+      error: described.message,
+      errorCode: described.code,
+      errorDetail: described.detail,
+      retryable: described.retryable,
+      durationMs: Date.now() - start,
+    };
+    await markDocumentAfterFailure(job, described.message, described.code).catch(() => {});
   }
   result.updatedAt = new Date().toISOString();
   const recorded = await finishTextbookJob(result, worker.id);
@@ -85,9 +101,10 @@ async function runJob(
     return { ...job, status: 'COMPLETED', durationMs: Date.now() - start };
   }
   if (job.kind === 'INDEX_TOC') {
+    // The book is "being read" only from the moment a worker actually starts.
+    await updateTextbookDocument(document.id, { status: 'INDEXING', processingErrors: [] });
     const { entries, usage } = await runTocJob(job, document, await readPdf(document), provider);
     await replaceTextbookToc(document.id, entries, 'PARTIAL');
-    await updateTextbookDocument(document.id, { processingErrors: [] });
     return {
       ...job,
       status: 'COMPLETED',
@@ -101,31 +118,14 @@ async function runJob(
   return done;
 }
 
-/** Provider errors arrive as raw JSON; the Admin sees a short reason instead. */
-export function readableError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  try {
-    const parsed = JSON.parse(message) as { error?: { code?: number; status?: string } };
-    if (parsed.error?.code)
-      return `Gemini từ chối yêu cầu (HTTP ${parsed.error.code}${parsed.error.status ? `, ${parsed.error.status}` : ''}). Thử lại; nếu lặp lại, kiểm tra cấu hình mô hình.`;
-  } catch {}
-  if ((error as { code?: string })?.code === 'TIMEOUT')
-    return 'Gemini phản hồi quá lâu. Thử lại sau.';
-  return message.slice(0, 400);
-}
-
-async function markDocumentAfterFailure(job: TextbookExtractionJob, error: unknown) {
-  const message = readableError(error);
+async function markDocumentAfterFailure(job: TextbookExtractionJob, message: string, code: string) {
   if (job.kind === 'VERIFY') {
     await updateTextbookDocument(job.documentId, {
       status: 'FAILED',
-      processingErrors: [
-        error instanceof TextbookChecksumError
-          ? 'Tệp đã lưu không khớp mã kiểm tra. Hãy tải lên lại.'
-          : `Không mở được PDF: ${message}`,
-      ],
+      processingErrors: [code === 'FILE' ? message : `Không mở được PDF: ${message}`],
     });
   } else if (job.kind === 'INDEX_TOC') {
+    // An existing outline stays; a failed re-read never removes it.
     const document = await getTextbookDocument(job.documentId);
     await updateTextbookDocument(job.documentId, {
       status: document?.tocEntries.length ? 'INDEXED' : 'REGISTERED',
