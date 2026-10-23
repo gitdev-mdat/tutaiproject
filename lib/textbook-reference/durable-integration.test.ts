@@ -244,7 +244,8 @@ describe.skipIf(!READY)(
       ).rejects.toThrow(/không khớp/);
       const queued = await requestTocIndex(documentId);
       expect(queued.job.kind).toBe('INDEX_TOC');
-      expect((await getTextbookDocument(documentId))?.status).toBe('INDEXING');
+      // Queued is not running: the book keeps its status until a worker starts.
+      expect((await getTextbookDocument(documentId))?.status).toBe('REGISTERED');
       const outcome = await processNextTextbookJob(workerA, { provider });
       expect(outcome?.job.status).toBe('COMPLETED');
       expect(calls.toc).toBe(1);

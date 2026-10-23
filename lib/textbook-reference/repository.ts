@@ -249,10 +249,24 @@ export async function saveTextbookMapping(mapping: TextbookKnowledgeMapping): Pr
 // ─── Jobs ────────────────────────────────────────────────────────────────────
 
 function toJob(row: Row): TextbookExtractionJob {
+  const payload = row.payload as TextbookExtractionJob;
+  const status = row.status as TextbookExtractionJob['status'];
+  // Claiming a job updates the columns, not the payload: read live state from the row.
+  const started = [...(payload.history ?? [])]
+    .reverse()
+    .find((entry) => entry.status === 'RUNNING');
   return {
-    ...(row.payload as TextbookExtractionJob),
-    status: row.status as TextbookExtractionJob['status'],
+    ...payload,
+    status,
     attempts: row.attempts as number,
+    updatedAt: row.updated_at
+      ? new Date(row.updated_at as string).toISOString()
+      : payload.updatedAt,
+    ...(started ? { startedAt: started.at } : {}),
+    leaseUntil:
+      status === 'RUNNING' && row.lease_until
+        ? new Date(row.lease_until as string).toISOString()
+        : null,
   };
 }
 
@@ -299,7 +313,11 @@ export async function listTextbookJobs(
   return rows.map(toJob);
 }
 
-export const JOB_LEASE_SECONDS = 600;
+/**
+ * Longest a job may run before another worker may take it over. A job is one
+ * PDF download, a few page renders and one Gemini call (120 s timeout).
+ */
+export const JOB_LEASE_SECONDS = 360;
 
 /**
  * Leases the oldest runnable job with `FOR UPDATE SKIP LOCKED`, so independent

@@ -14,6 +14,8 @@ import type {
 
 export type DocumentSummary = Omit<TextbookDocumentRecord, 'tocEntries'> & {
   tocEntryCount: number;
+  /** Newest file-check or outline job (library list only). */
+  setupJob?: TextbookExtractionJob | null;
 };
 
 export type ApiResult<T> =
@@ -110,8 +112,8 @@ export const textbookApi = {
       changes,
       confirmComplete,
     }),
-  indexToc: (documentId: string) =>
-    post<{ job: TextbookExtractionJob }>({ action: 'index-toc', documentId }),
+  indexToc: (documentId: string, replace = false) =>
+    post<{ job: TextbookExtractionJob }>({ action: 'index-toc', documentId, replace }),
   link: (documentId: string, entryId: string, knowledgeNodeId: string) =>
     post({ action: 'confirm-mapping', documentId, entryId, knowledgeNodeId }),
   unlink: (documentId: string, entryId: string, knowledgeNodeId: string) =>

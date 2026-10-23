@@ -117,7 +117,7 @@ export function LessonReferencesPanel({
           <BookOpen /> Thư viện sách
         </Button>
       </div>
-      <WorkerNotice worker={view.worker} waiting={pending.length} compact />
+      <WorkerNotice worker={view.worker} jobs={pending} />
       <div
         role="status"
         aria-live="polite"
@@ -360,9 +360,7 @@ function SectionCard({
         ? 'Các trang này đã được trích trước đây; dùng lại kết quả, không gọi AI.'
         : result.data.existing
           ? 'Việc trích các trang này đã có trong hàng đợi.'
-          : result.data.worker.online
-            ? 'Đã đưa vào hàng đợi. Bộ xử lý sẽ trích trong ít phút.'
-            : 'Đã đưa vào hàng đợi. Việc sẽ chạy khi bộ xử lý bật.'
+          : 'Đã ghi nhận. AI sẽ bắt đầu trích trong giây lát; trạng thái hiện ngay bên dưới.'
     );
     await onChanged();
   };

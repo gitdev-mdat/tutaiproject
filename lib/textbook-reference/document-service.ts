@@ -236,14 +236,24 @@ export async function saveTextbookPageSetup(
   return { ...document, anchors, pageLayout: input.layout, tocPdfPages };
 }
 
-/** Queues reading the printed table of contents. */
-export async function requestTocIndex(documentId: string) {
+/**
+ * Queues reading the printed table of contents. The book's status changes only
+ * when a worker actually starts, so a waiting job is never shown as running.
+ * An existing outline (possibly corrected by an Admin) is replaced only when
+ * the caller says so explicitly.
+ */
+export async function requestTocIndex(documentId: string, options: { replace?: boolean } = {}) {
   const document = await getTextbookDocument(documentId);
   if (!document) throw new TextbookRequestError('Không tìm thấy sách.', 404);
   if (!['REGISTERED', 'INDEXED', 'FAILED'].includes(document.status) || !document.pdfPageCount)
     throw new TextbookRequestError('Sách chưa được kiểm tra xong.', 409);
   if (!document.tocPdfPages?.length || document.anchors.length < 2)
     throw new TextbookRequestError('Chọn trang mục lục và nhập mốc trang trước.');
+  if (document.tocEntries.length && !options.replace)
+    throw new TextbookRequestError(
+      'Sách đã có mục lục. Xác nhận đọc lại để thay mục lục hiện có.',
+      409
+    );
   const now = new Date().toISOString();
   const { job, existing } = await enqueueTextbookJob({
     id: randomUUID(),
@@ -262,7 +272,6 @@ export async function requestTocIndex(documentId: string) {
     createdAt: now,
     updatedAt: now,
   });
-  await updateTextbookDocument(documentId, { status: 'INDEXING' });
   return { job, existing, layout: document.pageLayout ?? layoutOf(document.anchors) };
 }
 

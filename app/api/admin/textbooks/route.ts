@@ -14,6 +14,10 @@ import {
   queueTextbookExtraction,
   TextbookRequestError,
 } from '@/lib/textbook-reference/extraction-service';
+import {
+  processTextbookQueueAfterResponse,
+  resumeStalledQueue,
+} from '@/lib/textbook-reference/inline-runner';
 import { normalizedHeading } from '@/lib/textbook-reference/page-mapping';
 import {
   approvedArtifactsForNode,
@@ -30,9 +34,11 @@ import {
   TextbookBackendUnavailableError,
   textbookWorkerStatus,
 } from '@/lib/textbook-reference/repository';
-import type { TextbookDocumentRecord } from '@/lib/textbook-reference/types';
+import type { TextbookDocumentRecord, TextbookExtractionJob } from '@/lib/textbook-reference/types';
 
 export const dynamic = 'force-dynamic';
+// Queued jobs run in this function after the response (inline-runner.ts).
+export const maxDuration = 300;
 
 const anchor = z.object({
   printedPage: z.number().int().positive().max(5000),
@@ -58,7 +64,11 @@ const mutation = z.discriminatedUnion('action', [
     anchors: z.array(anchor).min(2).max(20),
     tocPdfPages: z.array(z.number().int().positive()).min(1).max(4),
   }),
-  z.object({ action: z.literal('index-toc'), documentId: z.string() }),
+  z.object({
+    action: z.literal('index-toc'),
+    documentId: z.string(),
+    replace: z.boolean().optional().default(false),
+  }),
   z.object({
     action: z.literal('correct-toc'),
     documentId: z.string(),
@@ -133,6 +143,11 @@ const summary = ({ tocEntries, ...document }: TextbookDocumentRecord) => ({
   tocEntryCount: tocEntries.length,
 });
 
+/** The newest file-check or table-of-contents job of a book, which decides its status line. */
+function latestSetupJob(jobs: TextbookExtractionJob[], documentId: string) {
+  return jobs.find((job) => job.documentId === documentId && job.kind !== 'EXTRACT') ?? null;
+}
+
 /** Section suggestions for a lesson: TOC headings that share words with its title. */
 function suggestionsFor(title: string, documents: TextbookDocumentRecord[]) {
   const words = (value: string) =>
@@ -185,6 +200,7 @@ export async function GET(request: Request) {
         listTextbookArtifacts({ documentId }),
         readKnowledgeTree(),
       ]);
+      await resumeStalledQueue(jobs);
       const titles = new Map(tree.nodes.map((node) => [node.id, node.title]));
       return NextResponse.json({
         worker,
@@ -216,6 +232,7 @@ export async function GET(request: Request) {
         ).then((lists) => lists.flat().filter((job) => job.knowledgeNodeId === nodeId)),
         approvedArtifactsForNode(nodeId),
       ]);
+      await resumeStalledQueue(jobs);
       const byDocument = new Map(documents.map((document) => [document.id, document]));
       const sections = confirmed.flatMap((mapping) => {
         const document = byDocument.get(mapping.documentId);
@@ -260,8 +277,18 @@ export async function GET(request: Request) {
         ),
       });
     }
-    const documents = await listTextbookDocuments();
-    return NextResponse.json({ worker, documents: documents.map(summary) });
+    const [documents, jobs] = await Promise.all([
+      listTextbookDocuments(),
+      listTextbookJobs({ limit: 100 }),
+    ]);
+    await resumeStalledQueue(jobs);
+    return NextResponse.json({
+      worker,
+      documents: documents.map((document) => ({
+        ...summary(document),
+        setupJob: latestSetupJob(jobs, document.id),
+      })),
+    });
   } catch (error) {
     return failure(error);
   }
@@ -286,8 +313,11 @@ export async function POST(request: Request) {
     switch (input.action) {
       case 'upload-init':
         return NextResponse.json(await initTextbookUpload(input, adminId));
-      case 'upload-complete':
-        return NextResponse.json(await completeTextbookUpload(input.uploadId));
+      case 'upload-complete': {
+        const completed = await completeTextbookUpload(input.uploadId);
+        processTextbookQueueAfterResponse();
+        return NextResponse.json(completed);
+      }
       case 'upload-cancel':
         await cancelTextbookUpload(input.uploadId);
         return NextResponse.json({ cancelled: true });
@@ -303,8 +333,11 @@ export async function POST(request: Request) {
             input.confirmComplete
           ),
         });
-      case 'index-toc':
-        return NextResponse.json(await requestTocIndex(input.documentId), { status: 202 });
+      case 'index-toc': {
+        const queued = await requestTocIndex(input.documentId, { replace: input.replace });
+        processTextbookQueueAfterResponse();
+        return NextResponse.json(queued, { status: 202 });
+      }
       case 'confirm-mapping':
       case 'remove-mapping': {
         const document = await getTextbookDocument(input.documentId);
@@ -330,6 +363,7 @@ export async function POST(request: Request) {
       }
       case 'extract': {
         const result = await queueTextbookExtraction(input);
+        if (!result.cacheHit) processTextbookQueueAfterResponse();
         return NextResponse.json(
           { ...result, worker: await textbookWorkerStatus() },
           { status: result.cacheHit ? 200 : 202 }

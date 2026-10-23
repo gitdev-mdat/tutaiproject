@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import type { PagePosition } from './types';
 
@@ -18,8 +19,18 @@ export async function openPdf(bytes: Uint8Array) {
     isEvalSupported: false,
     verbosity: 0,
     // Scanned books are often JBIG2/JPEG 2000; their decoders ship as wasm next to pdf.js.
-    wasmUrl: `${path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'wasm').replaceAll(path.sep, '/')}/`,
+    wasmUrl: `${wasmDirectory().replaceAll(path.sep, '/')}/`,
   }).promise;
+}
+
+/** The installed pdf.js package's wasm folder (a pnpm symlink locally, a real folder on Vercel). */
+function wasmDirectory() {
+  try {
+    const resolve = createRequire(path.join(process.cwd(), 'package.json')).resolve;
+    return path.join(path.dirname(resolve('pdfjs-dist/package.json')), 'wasm');
+  } catch {
+    return path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'wasm');
+  }
 }
 
 async function renderPage(pdf: PdfDocument, pdfPage: number, targetWidth: number) {

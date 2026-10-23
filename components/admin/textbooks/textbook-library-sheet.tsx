@@ -16,7 +16,15 @@ import {
   type LibraryView,
   type UploadPhase,
 } from './textbook-client';
-import { JobLine, pageRange, StatusPill, usePolling, WorkerNotice } from './textbook-status';
+import { bookState } from '@/lib/textbook-reference/processing-state';
+import {
+  JobHistory,
+  pageRange,
+  ProcessingCard,
+  StatusPill,
+  usePolling,
+  WorkerNotice,
+} from './textbook-status';
 
 const MB = 1024 * 1024;
 
@@ -56,9 +64,7 @@ function Library({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
-  const busy = library?.documents.some(
-    (document) => document.status === 'VERIFYING' || document.status === 'INDEXING'
-  );
+  const busy = library?.documents.some((document) => bookState(document, document.setupJob).active);
   usePolling(!!busy && !selected, load);
 
   return (
@@ -107,11 +113,9 @@ function Library({ onClose }: { onClose: () => void }) {
           <div className="space-y-4">
             <WorkerNotice
               worker={library.worker}
-              waiting={
-                library.documents.filter(
-                  (document) => document.status === 'VERIFYING' || document.status === 'INDEXING'
-                ).length
-              }
+              jobs={library.documents.flatMap((document) =>
+                document.setupJob ? [document.setupJob] : []
+              )}
             />
             <Uploader
               onDone={async (documentId) => {
@@ -138,7 +142,7 @@ function Library({ onClose }: { onClose: () => void }) {
                         </p>
                         <p className="text-xs text-slate-500">{documentFacts(document)}</p>
                       </div>
-                      <StatusPill status={document.status} />
+                      <StatusPill state={bookState(document, document.setupJob)} />
                     </button>
                   </li>
                 ))}
@@ -297,9 +301,17 @@ function DocumentDetail({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
-  const pending =
-    view?.jobs.filter((job) => job.status === 'QUEUED' || job.status === 'RUNNING') ?? [];
-  usePolling(pending.length > 0, load);
+  const [retrying, setRetrying] = React.useState(false);
+  const [actionError, setActionError] = React.useState<string | null>(null);
+  const setupJobs = view?.jobs.filter((job) => job.kind !== 'EXTRACT') ?? [];
+  const state = view
+    ? bookState(
+        { ...view.document, tocEntryCount: view.document.tocEntries.length },
+        setupJobs[0] ?? null
+      )
+    : null;
+  const pending = view?.jobs.some((job) => job.status === 'QUEUED' || job.status === 'RUNNING');
+  usePolling(!!pending || !!state?.active, load);
 
   if (error)
     return (
@@ -307,12 +319,35 @@ function DocumentDetail({
         {error}
       </p>
     );
-  if (!view)
+  if (!view || !state)
     return <div className="h-40 animate-pulse rounded-xl bg-slate-200/70" aria-busy="true" />;
   const { document } = view;
-  const setupJobs = view.jobs.filter((job) => job.kind !== 'EXTRACT').slice(0, 3);
   const locked =
     view.mappings.some((mapping) => mapping.status === 'CONFIRMED') || view.artifacts.length > 0;
+  const refresh = async () => {
+    await load();
+    await onChanged();
+  };
+  const readToc = async (replace: boolean) => {
+    setRetrying(true);
+    setActionError(null);
+    const queued = await textbookApi.indexToc(document.id, replace);
+    setRetrying(false);
+    if (!queued.ok) return setActionError(queued.error);
+    await refresh();
+  };
+  const canRead = !locked && (state.key === 'READY_TO_READ' || state.key === 'TOC_FAILED');
+  const action = canRead ? (
+    <Button
+      size="sm"
+      variant={state.key === 'TOC_FAILED' && state.job?.retryable === false ? 'outline' : 'default'}
+      disabled={retrying}
+      onClick={() => void readToc(state.previousTocKept === true)}
+    >
+      {retrying && <Loader2 className="animate-spin" />}
+      {state.key === 'READY_TO_READ' ? 'Đọc mục lục' : 'Thử lại'}
+    </Button>
+  ) : undefined;
 
   return (
     <div className="space-y-4">
@@ -321,48 +356,36 @@ function DocumentDetail({
           <h2 className="min-w-0 flex-1 text-base font-semibold text-slate-950">
             {document.title}
           </h2>
-          <StatusPill status={document.status} />
+          <StatusPill state={state} />
         </div>
         <p className="mt-0.5 text-xs text-slate-500">
           {documentFacts({ ...document, tocEntryCount: document.tocEntries.length })} ·{' '}
           {document.originalFilename}
         </p>
       </div>
-      <WorkerNotice worker={view.worker} waiting={pending.length} />
-      {setupJobs.length > 0 && (
-        <div className="space-y-1">
-          {setupJobs.map((job) => (
-            <JobLine key={job.id} job={job} showError={false} />
-          ))}
-        </div>
-      )}
-      {document.processingErrors.length > 0 && document.status !== 'INDEXED' && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {document.processingErrors[document.processingErrors.length - 1]}
-          {document.status === 'FAILED' && ' Tải tệp lên lại để thay bản lỗi.'}
+      <ProcessingCard
+        state={state}
+        worker={view.worker}
+        action={action}
+        onCancel={async () => {
+          if (state.job) await textbookApi.cancelJob(state.job.id);
+          await refresh();
+        }}
+      />
+      {actionError && (
+        <p role="alert" className="text-sm text-red-700">
+          {actionError}
         </p>
       )}
-
-      {document.status === 'VERIFYING' ? (
-        <Step title="1. Kiểm tra tệp" done={false}>
-          <p className="text-sm text-slate-600">
-            Bộ xử lý mở tệp đã lưu, đối chiếu mã kiểm tra và đếm số trang. Sau bước này mới thiết
-            lập trang.
-          </p>
-        </Step>
-      ) : document.status !== 'FAILED' ? (
-        <>
-          <PageSetup
-            view={view}
-            locked={locked}
-            onSaved={async () => {
-              await load();
-              await onChanged();
-            }}
-          />
-          {document.tocEntries.length > 0 && <TocBrowser view={view} onSaved={load} />}
-        </>
-      ) : null}
+      {state.key !== 'CHECK_WAITING' &&
+        state.key !== 'CHECK_RUNNING' &&
+        state.key !== 'FILE_FAILED' && (
+          <>
+            <PageSetup view={view} locked={locked} processing={state.active} onSaved={refresh} />
+            {document.tocEntries.length > 0 && <TocBrowser view={view} onSaved={load} />}
+          </>
+        )}
+      <JobHistory jobs={setupJobs.slice(1, 6)} />
     </div>
   );
 }
@@ -401,10 +424,13 @@ function parseList(value: string) {
 function PageSetup({
   view,
   locked,
+  processing,
   onSaved,
 }: {
   view: DocumentView;
   locked: boolean;
+  /** A file check or outline read is waiting or running: settings stay read-only. */
+  processing: boolean;
   onSaved: () => Promise<void>;
 }) {
   const { document } = view;
@@ -424,10 +450,11 @@ function PageSetup({
   const [tocPages, setTocPages] = React.useState(document.tocPdfPages?.join(', ') ?? '');
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [editing, setEditing] = React.useState(document.tocEntries.length === 0);
-  const indexing = document.status === 'INDEXING';
+  const hasToc = document.tocEntries.length > 0;
+  const configured = (document.tocPdfPages?.length ?? 0) > 0 && document.anchors.length >= 2;
+  const [editing, setEditing] = React.useState(!configured);
 
-  if (!editing || locked)
+  if (!editing || locked || processing)
     return (
       <Step title="Thiết lập trang" done>
         <p className="text-sm text-slate-600">
@@ -450,15 +477,10 @@ function PageSetup({
             Đã có mục được liên kết nên mốc trang và mục lục được giữ cố định.
           </p>
         ) : (
-          !indexing && (
+          !processing && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {document.tocEntries.length === 0 && (
-                <Button size="sm" disabled={busy} onClick={() => void retry()}>
-                  {busy && <Loader2 className="animate-spin" />} Đọc lại mục lục
-                </Button>
-              )}
-              <Button size="sm" variant="outline" disabled={busy} onClick={() => setEditing(true)}>
-                Sửa thiết lập
+              <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                <Pencil /> Sửa thiết lập
               </Button>
             </div>
           )
@@ -470,15 +492,6 @@ function PageSetup({
         )}
       </Step>
     );
-
-  async function retry() {
-    setBusy(true);
-    setError(null);
-    const queued = await textbookApi.indexToc(document.id);
-    setBusy(false);
-    if (!queued.ok) return setError(queued.error);
-    await onSaved();
-  }
 
   const save = async () => {
     setBusy(true);
@@ -501,7 +514,7 @@ function PageSetup({
       setBusy(false);
       return setError(saved.error);
     }
-    const queued = await textbookApi.indexToc(document.id);
+    const queued = await textbookApi.indexToc(document.id, hasToc);
     setBusy(false);
     if (!queued.ok) return setError(queued.error);
     setEditing(false);
@@ -638,16 +651,20 @@ function PageSetup({
           </p>
         )}
         <div className="flex flex-wrap justify-end gap-2">
-          {document.tocEntries.length > 0 && (
+          {configured && (
             <Button size="sm" variant="ghost" disabled={busy} onClick={() => setEditing(false)}>
               Hủy
             </Button>
           )}
           <Button size="sm" disabled={busy} onClick={() => void save()}>
-            {busy && <Loader2 className="animate-spin" />} Lưu và đọc mục lục
+            {busy && <Loader2 className="animate-spin" />}
+            {hasToc ? 'Lưu và đọc lại mục lục' : 'Lưu và đọc mục lục'}
           </Button>
         </div>
         <p className="text-xs text-slate-500">
+          {hasToc
+            ? `Đọc lại sẽ thay ${document.tocEntries.length} mục hiện có, kể cả các chỗ đã sửa tay. `
+            : ''}
           AI chỉ đọc các trang mục lục đã chọn. Bạn kiểm tra kết quả ở danh sách mục bên dưới.
         </p>
       </div>

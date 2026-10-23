@@ -91,6 +91,18 @@ export interface TextbookArtifact {
   reviewedAt?: string;
 }
 
+export type TextbookJobErrorCode =
+  | 'BILLING'
+  | 'QUOTA'
+  | 'AUTH'
+  | 'MODEL'
+  | 'UNAVAILABLE'
+  | 'TIMEOUT'
+  | 'OUTPUT_LIMIT'
+  | 'INTERRUPTED'
+  | 'FILE'
+  | 'UNKNOWN';
+
 export type TextbookJobKind = 'VERIFY' | 'INDEX_TOC' | 'EXTRACT';
 export type TextbookJobStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
@@ -115,7 +127,18 @@ export interface TextbookExtractionJob {
   tokenUsage?: { input?: number; output?: number };
   cacheHit: boolean;
   durationMs?: number;
+  /** Plain-language reason shown to the Admin. */
   error?: string;
+  /** Machine-readable failure class (see job-errors.ts). */
+  errorCode?: TextbookJobErrorCode;
+  /** Technical detail for the diagnostics section (provider status, no secrets). */
+  errorDetail?: string;
+  /** False when retrying cannot help until someone fixes the cause (billing, key, model). */
+  retryable?: boolean;
+  /** When the current or last attempt started (RUNNING jobs). */
+  startedAt?: string;
+  /** Lease expiry of a RUNNING job; past it the job counts as interrupted. */
+  leaseUntil?: string | null;
   history?: Array<{ status: TextbookJobStatus; attempts: number; error?: string; at: string }>;
   createdAt: string;
   updatedAt: string;
