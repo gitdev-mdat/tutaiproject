@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   ChevronDown,
   Eye,
@@ -105,6 +106,16 @@ function QuestionCard({
           <Chip tone="bg-violet-50 text-violet-700 ring-violet-200">
             <Sparkles className="mr-1 size-3" />
             AI gợi ý
+          </Chip>
+        )}
+        {question.textbookSource && (
+          <Chip tone="bg-slate-50 text-slate-700 ring-slate-200">
+            <BookOpen className="mr-1 size-3" />
+            Sách {question.textbookSource.documentTitle} · Câu{' '}
+            {question.textbookSource.questionNumber ?? '?'} · đáp án{' '}
+            {question.textbookSource.verification === 'ADMIN_SOLVED'
+              ? 'Admin tự giải'
+              : 'theo lời giải in trong sách'}
           </Chip>
         )}
         {pinned && state === 'IN_PRACTICE' && (
@@ -608,6 +619,13 @@ export function LessonPracticeWorkspace({
         >
           <Sparkles className="size-4" /> Gợi ý bằng AI
         </button>
+        <Link
+          href={`/admin/practice/${coverage.lessonId}/textbook`}
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          data-testid="open-textbook-exercises"
+        >
+          <BookOpen className="size-4" /> Bài tập từ sách
+        </Link>
       </div>
 
       <div ref={editorRef} className="scroll-mt-4">

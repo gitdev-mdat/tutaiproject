@@ -37,6 +37,8 @@ import {
   saveTextbookMapping,
 } from './repository';
 import { selectLessonReferences } from './reference-service';
+import { confirmSolution, rejectSolution } from './practice-service';
+import { proposeSolutions } from './solution-matching';
 import type { VisionProvider } from './vision-provider';
 import { processNextTextbookJob } from './worker';
 import type { TextbookArtifact, TextbookTocEntry } from './types';
@@ -367,22 +369,51 @@ describe.skipIf(!READY)('exercise-only textbook pages on isolated PostgreSQL', (
     );
     const job = await runQueued();
     expect(job).toMatchObject({ status: 'COMPLETED', outcome: 'COMPLETE' });
+    // Suggested, not paired: nothing is stored until an Admin confirms.
     expect(job.diagnostics?.solutionsMatched).toBe(1);
-    const all = await listTextbookArtifacts({ documentId: DOC });
+    let all = await listTextbookArtifacts({ documentId: DOC });
     const byNumber = (kind: string, number: string) =>
       all.find((item) => item.kind === kind && item.questionNumber === number)!;
+    expect(byNumber('EXERCISE', '1')).toMatchObject({
+      solutionStatus: 'UNRESOLVED',
+      answer: { status: 'UNRESOLVED' },
+    });
+    expect(byNumber('EXERCISE', '1').pairedArtifactId).toBeUndefined();
+    const proposals = proposeSolutions(all);
+    expect(proposals.get(byNumber('EXERCISE', '1').id)).toMatchObject({
+      status: 'SUGGESTED',
+      candidates: [{ solutionId: byNumber('SOLUTION', '1').id, strength: 'STRONG' }],
+    });
+    expect(proposals.get(byNumber('EXERCISE', '2').id)?.status).toBe('NEEDS_CONFIRMATION');
+    // Dạng 2's Câu 3 restates Dạng 1 Câu 3's function, but its set differs: at most a weak
+    // candidate with the conflict spelled out, never a suggestion.
+    const third = proposals.get(byNumber('EXERCISE', '3').id)!;
+    expect(third.status).toBe('NEEDS_CONFIRMATION');
+    expect(third.candidates[0]).toMatchObject({ strength: 'WEAK' });
+    expect(third.candidates[0].conflicts).toContain('Lời giải thuộc dạng 2, đề thuộc dạng 1');
+
+    // The Admin confirms Câu 1 and rejects the unrelated Câu 2 solution.
+    await confirmSolution(byNumber('EXERCISE', '1').id, byNumber('SOLUTION', '1').id, 'it-admin');
+    await rejectSolution(byNumber('EXERCISE', '2').id, byNumber('SOLUTION', '2').id);
+    all = await listTextbookArtifacts({ documentId: DOC });
     expect(byNumber('EXERCISE', '1')).toMatchObject({
       solutionStatus: 'MATCHED',
       pairedArtifactId: byNumber('SOLUTION', '1').id,
       answer: { status: 'FROM_SOLUTION', choice: 'B' },
       reviewStatus: 'NEEDS_REVIEW',
+      practice: { verification: { method: 'TEXTBOOK_SOLUTION', answer: 'B', by: 'it-admin' } },
     });
-    expect(byNumber('EXERCISE', '2')).toMatchObject({
-      solutionStatus: 'UNRESOLVED',
-      answer: { status: 'UNRESOLVED' },
+    expect(byNumber('SOLUTION', '1').pairedArtifactId).toBe(byNumber('EXERCISE', '1').id);
+    expect(proposeSolutions(all).get(byNumber('EXERCISE', '2').id)).toEqual({
+      status: 'UNRESOLVED',
+      candidates: [],
     });
-    expect(byNumber('EXERCISE', '2').pairedArtifactId).toBeUndefined();
-    expect(byNumber('EXERCISE', '3').pairedArtifactId).toBeUndefined();
+    // One printed solution can never be confirmed for a second question.
+    await expect(
+      confirmSolution(byNumber('EXERCISE', '2').id, byNumber('SOLUTION', '1').id, 'it-admin')
+    ).rejects.toThrow(/đã được xác nhận cho một câu khác/);
+    // The extracted text is never touched by these decisions.
+    expect(byNumber('EXERCISE', '1').content).toContain('Câu 1');
   });
 
   it('5 unresolved questions stay out of AI drafting even when approved; approved theory is unchanged', async () => {

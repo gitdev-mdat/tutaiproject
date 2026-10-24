@@ -12,7 +12,7 @@ import {
   type ItemValidationContext,
 } from './extraction-response';
 import { mapPrintedPage } from './page-mapping';
-import { matchSolutions, statementMatches } from './solution-matching';
+import { proposeSolutions, solutionProblemTypes, statementMatches } from './solution-matching';
 import { sectionState, usableByAi } from './section-state';
 import { selectLessonReferences } from './reference-service';
 import type { TextbookAnchor, TextbookArtifact, TextbookTocEntry } from './types';
@@ -306,7 +306,7 @@ describe('question/solution matching', () => {
     expect(statementMatches(real, 'Câu 7: Đáp án C.').ok).toBe(false);
   });
 
-  it('pairs only within the same chapter, problem type and number, with a verified statement', () => {
+  it('suggests only within the same chapter, problem type and number, with a verified statement', () => {
     const exercises = [
       artifact({
         id: 'e1',
@@ -363,14 +363,22 @@ describe('question/solution matching', () => {
         content: "Câu 2. Ta có $y' = 6x^2 - 6$.",
       }),
     ];
-    const { matches, unverified } = matchSolutions([...exercises, ...solutions]);
-    expect(matches).toEqual([
-      expect.objectContaining({ exerciseId: 'e1', solutionId: 's1', answerChoice: 'B' }),
-    ]);
-    expect(unverified.map((item) => item.exerciseId).sort()).toEqual(['e1b', 'e2']);
+    const proposals = proposeSolutions([...exercises, ...solutions]);
+    expect(proposals.get('e1')).toMatchObject({
+      status: 'SUGGESTED',
+      candidates: [{ solutionId: 's1', strength: 'STRONG', answerChoice: 'B' }],
+    });
+    // Same number and set, but the mathematics is about another function: weak, never suggested.
+    expect(proposals.get('e2')).toMatchObject({
+      status: 'NEEDS_CONFIRMATION',
+      candidates: [{ solutionId: 's2', strength: 'WEAK' }],
+    });
+    // Dạng 2 Câu 1 only sees the Dạng 2 solution, and only as a weak candidate.
+    expect(proposals.get('e1b')?.candidates.map((c) => c.solutionId)).toEqual(['s1b']);
+    expect(proposals.get('e1b')?.status).toBe('NEEDS_CONFIRMATION');
   });
 
-  it('leaves a question unresolved when two solutions fit, or the solution names no set', () => {
+  it('asks for confirmation when two solutions fit, or the solution names no set', () => {
     const exercise = artifact({
       id: 'e1',
       kind: 'EXERCISE',
@@ -392,7 +400,7 @@ describe('question/solution matching', () => {
       exerciseSet: solutionSet('dạng 1'),
       content: "$y' = 2x - 2$",
     });
-    expect(matchSolutions([exercise, a, b]).matches).toEqual([]);
+    expect(proposeSolutions([exercise, a, b]).get('e1')?.status).toBe('NEEDS_CONFIRMATION');
     const unnamed = artifact({
       id: 'c',
       kind: 'SOLUTION',
@@ -400,7 +408,100 @@ describe('question/solution matching', () => {
       exerciseSet: solutionSet(null),
       content: "$y' = 2x - 2$",
     });
-    expect(matchSolutions([exercise, unnamed]).matches).toEqual([]);
+    const lone = proposeSolutions([exercise, unnamed]).get('e1')!;
+    expect(lone.status).toBe('NEEDS_CONFIRMATION');
+    expect(lone.candidates[0].conflicts).toContain('Chưa xác định được lời giải thuộc dạng nào');
+  });
+
+  it('infers the problem type of solutions printed after their heading page', () => {
+    const sol = (id: string, n: string, page: number, type: string | null) =>
+      artifact({
+        id,
+        kind: 'SOLUTION',
+        entryId: 'toc-9',
+        questionNumber: n,
+        exerciseSet: solutionSet(type),
+        printedPages: [page],
+        content: `Câu ${n}: Đáp án A.`,
+      });
+    const types = solutionProblemTypes([
+      sol('a1', '1', 29, 'dạng 1'),
+      sol('a2', '2', 29, null),
+      sol('a14', '14', 30, null),
+      sol('a15', '15', 31, null),
+      sol('b1', '1', 31, 'dạng 2'),
+      sol('b2', '2', 31, null),
+      sol('b3', '3', 32, null),
+    ]);
+    expect(Object.fromEntries([...types].map(([id, t]) => [id, t.problemType]))).toEqual({
+      a1: 'dạng 1',
+      a2: 'dạng 1',
+      a14: 'dạng 1',
+      a15: 'dạng 1',
+      b1: 'dạng 2',
+      b2: 'dạng 2',
+      b3: 'dạng 2',
+    });
+    expect(types.get('a14')?.inferred).toBe(true);
+    expect(types.get('b1')?.inferred).toBe(false);
+  });
+
+  it('drops rejected solutions and solutions confirmed for another question; flags a wrong answer', () => {
+    const exercise = artifact({
+      id: 'e3',
+      kind: 'EXERCISE',
+      questionNumber: '3',
+      exerciseSet: set1,
+      content: 'Câu 3: Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?',
+      choices: [
+        { label: 'A', text: '$(-2; 0)$' },
+        { label: 'B', text: '$(-\\infty; -2)$' },
+        { label: 'C', text: '$(0; +\\infty)$' },
+        { label: 'D', text: '$\\mathbb{R}$' },
+      ],
+    });
+    const right = artifact({
+      id: 'r',
+      kind: 'SOLUTION',
+      questionNumber: '3',
+      answerChoice: 'A',
+      exerciseSet: solutionSet('dạng 1'),
+      content: "Câu 3: Đáp án A.\n$y' = (x^3 + 3x^2 - 4)' = 3x^2 + 6x$",
+    });
+    const wrong = artifact({
+      ...right,
+      id: 'w',
+      answerChoice: 'C',
+      content: right.content.replace('Đáp án A', 'Đáp án C'),
+    });
+    const both = proposeSolutions([exercise, right, wrong]).get('e3')!;
+    expect(both.candidates.find((c) => c.solutionId === 'r')).toMatchObject({
+      strength: 'STRONG',
+      conflicts: [],
+    });
+    expect(both.candidates.find((c) => c.solutionId === 'w')?.conflicts.join(' ')).toMatch(
+      /phương án C không đúng/
+    );
+    expect(both.status).toBe('SUGGESTED');
+    const rejected = proposeSolutions([
+      { ...exercise, practice: { rejectedSolutionIds: ['r'] } },
+      right,
+    ]).get('e3')!;
+    expect(rejected).toEqual({ status: 'UNRESOLVED', candidates: [] });
+    const other = artifact({
+      ...exercise,
+      id: 'e3b',
+      practice: {
+        verification: {
+          method: 'TEXTBOOK_SOLUTION',
+          answer: 'A',
+          solutionArtifactId: 'r',
+          by: 'a',
+          at: 't',
+        },
+      },
+    });
+    expect(proposeSolutions([exercise, other, right]).get('e3')?.candidates).toEqual([]);
   });
 });
 

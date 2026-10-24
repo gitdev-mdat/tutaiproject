@@ -280,6 +280,23 @@ export async function saveManyQuestions(questions: Question[]): Promise<void> {
   );
 }
 
+/**
+ * Reads and rewrites the question list under the document lock, so a check
+ * ("is this exercise already imported?") and the write it decides cannot race
+ * another import.
+ */
+export async function updateQuestionsLocked<R>(
+  change: (questions: Question[]) => { questions: Question[]; result: R }
+): Promise<R> {
+  let result: R | undefined;
+  await updateDocument<Question>(questionsSource, 'questions', (current) => {
+    const next = change(current);
+    result = next.result;
+    return next.questions;
+  });
+  return result as R;
+}
+
 export async function getMetrics(): Promise<QuestionBankMetrics> {
   const store = await readStore();
   const all = store.questions;

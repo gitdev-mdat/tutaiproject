@@ -94,17 +94,48 @@ export interface ExerciseSetRef {
 
 /**
  * Question/solution lifecycle, adapted to the artifact row instead of a separate
- * state machine: an extracted question is reviewable at once (reviewStatus
- * NEEDS_REVIEW) whatever its solution status. UNRESOLVED: no solution located yet.
- * MATCHED: a solution from the same set, number and statement was paired.
- * VERIFIED is not stored: it is MATCHED with both sides approved by an Admin.
+ * state machine. Only an Admin's decision is stored:
+ * UNRESOLVED: no solution confirmed (the matcher's live suggestions are computed
+ *   on read, see `practice-state.ts`: SUGGESTED / NEEDS_CONFIRMATION).
+ * MATCHED: an Admin confirmed the printed solution; the answer is the book's.
+ * ADMIN_VERIFIED: an Admin solved the question independently; the answer is theirs.
+ * Practice eligibility (Question Bank import) is derived, never stored.
  */
-export type SolutionStatus = 'UNRESOLVED' | 'MATCHED';
+export type SolutionStatus =
+  'UNRESOLVED' | 'SUGGESTED' | 'NEEDS_CONFIRMATION' | 'MATCHED' | 'ADMIN_VERIFIED';
 
-/** An exercise's answer is never guessed: it is unresolved until a matched solution gives it. */
+/** An exercise's answer is never guessed: it comes from a confirmed solution or an Admin. */
 export type ExerciseAnswer =
   | { status: 'UNRESOLVED' }
-  | { status: 'FROM_SOLUTION'; choice: string | null; solutionArtifactId: string };
+  | { status: 'FROM_SOLUTION'; choice: string | null; solutionArtifactId: string }
+  | { status: 'ADMIN_VERIFIED'; choice: string };
+
+/** How an exercise's answer was verified, as recorded on the Question Bank question too. */
+export type PracticeVerificationMethod = 'TEXTBOOK_SOLUTION' | 'ADMIN_SOLVED';
+
+/**
+ * The Admin's practice decisions on one EXERCISE artifact. The extracted text
+ * itself is never changed: corrections live in `draft` and go to the Question Bank.
+ */
+export interface ExercisePracticeRecord {
+  verification?: {
+    method: PracticeVerificationMethod;
+    answer: string;
+    solutionArtifactId: string | null;
+    /** Evidence against the pairing that the Admin checked and accepted. */
+    acknowledgedConflicts?: string[];
+    by: string;
+    at: string;
+  };
+  /** Solutions the Admin said are not this question's; never suggested again. */
+  rejectedSolutionIds?: string[];
+  /** Corrected stem, choices and explanation (LaTeX), saved without publishing anything. */
+  draft?: { stem: string; choices: ExerciseChoice[]; explanation: string; by: string; at: string };
+  /** The lesson the Admin assigned, overriding the suggestion. */
+  lesson?: { lessonId: string; by: string; at: string };
+  /** Question Bank question created from this exercise (stable mapping). */
+  imported?: { questionId: string; lessonId: string; by: string; at: string };
+}
 
 export interface TextbookArtifact {
   id: string;
@@ -131,6 +162,8 @@ export interface TextbookArtifact {
   answer?: ExerciseAnswer;
   /** SOLUTION only: the choice the printed solution selects ("Chọn A"), if it states one. */
   answerChoice?: string | null;
+  /** EXERCISE only: the Admin's practice decisions (verification, lesson, import mapping). */
+  practice?: ExercisePracticeRecord;
   /** Prompt version that produced the artifact. */
   promptVersion?: string;
   reviewStatus: ArtifactReviewStatus;

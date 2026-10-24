@@ -6,6 +6,7 @@ import { getSql } from '@/lib/db/postgres';
 import { artifactsCoveredByMappings } from './lesson-coverage';
 import type {
   ArtifactReviewStatus,
+  ExercisePracticeRecord,
   TextbookAnchor,
   TextbookArtifact,
   TextbookDocumentRecord,
@@ -480,6 +481,77 @@ export async function pairTextbookArtifacts(
         set payload = payload || ${tx.json(JSON.parse(JSON.stringify(fields(artifact))) as never)}
         where id = ${artifact.id}`;
     return true;
+  });
+}
+
+export async function getTextbookArtifact(id: string): Promise<TextbookArtifact | null> {
+  const [row] = await sql()`select * from tutai.textbook_artifacts where id = ${id}`;
+  return row ? toArtifact(row) : null;
+}
+
+export type ExercisePracticeChange =
+  | {
+      practice: ExercisePracticeRecord;
+      /** Compatibility fields the reference view reads (solutionStatus, answer, pairing). */
+      fields?: Partial<
+        Pick<
+          TextbookArtifact,
+          'solutionStatus' | 'answer' | 'pairedArtifactId' | 'solutionReference'
+        >
+      >;
+      /** Solution to mark as this exercise's, or to release (null). */
+      solution?: { id: string; paired: boolean };
+    }
+  | { error: string };
+
+/**
+ * Changes one exercise's practice decisions under a row lock. `change` sees the
+ * current row and may ask whether a solution is already confirmed for another
+ * exercise, so one printed solution can never be confirmed for two questions.
+ * The extracted text and the review decision are never written here.
+ */
+export async function updateExercisePractice(
+  id: string,
+  change: (
+    exercise: TextbookArtifact,
+    confirmedElsewhere: (solutionId: string) => Promise<boolean>
+  ) => Promise<ExercisePracticeChange> | ExercisePracticeChange
+): Promise<{ artifact: TextbookArtifact } | { error: string; status: 404 | 409 | 422 }> {
+  return sql().begin(async (tx) => {
+    const [row] = await tx`
+      select * from tutai.textbook_artifacts where id = ${id} and payload->>'kind' = 'EXERCISE' for update`;
+    if (!row) return { error: 'Không tìm thấy câu hỏi.', status: 404 as const };
+    const exercise = toArtifact(row);
+    const decided = await change(exercise, async (solutionId) => {
+      const rows = await tx`
+        select id from tutai.textbook_artifacts
+        where document_id = ${exercise.documentId} and id <> ${id}
+          and payload->'practice'->'verification'->>'solutionArtifactId' = ${solutionId}`;
+      return rows.length > 0;
+    });
+    if ('error' in decided) return { error: decided.error, status: 409 as const };
+    const patch = JSON.parse(JSON.stringify({ ...decided.fields, practice: decided.practice }));
+    for (const key of ['pairedArtifactId', 'solutionReference'] as const)
+      if (decided.fields && key in decided.fields && decided.fields[key] === undefined)
+        patch[key] = null;
+    const [updated] = await tx`
+      update tutai.textbook_artifacts set payload = payload || ${tx.json(patch)}
+      where id = ${id} returning *`;
+    if (decided.solution) {
+      const { id: solutionId, paired } = decided.solution;
+      await tx`
+        update tutai.textbook_artifacts set payload = payload || ${tx.json(
+          paired
+            ? {
+                pairedArtifactId: id,
+                exerciseReference: `${exercise.title} (tr. ${exercise.printedPages.join(', ')})`,
+              }
+            : { pairedArtifactId: null, exerciseReference: null }
+        )}
+        where id = ${solutionId} and payload->>'kind' = 'SOLUTION'
+          and (payload->>'pairedArtifactId' is null or payload->>'pairedArtifactId' = ${id})`;
+    }
+    return { artifact: toArtifact(updated) };
   });
 }
 

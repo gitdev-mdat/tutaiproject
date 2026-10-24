@@ -272,6 +272,35 @@ export interface Question {
   importJobId?: string;
   hasMedia?: boolean;
   importOrigin?: QuestionImportOrigin;
+
+  /** Admin-only provenance of a question imported from a textbook exercise. */
+  textbookSource?: TextbookQuestionSource;
+}
+
+/**
+ * Where a textbook-imported question came from and how its answer was verified.
+ * The import is keyed by `exerciseArtifactId` (also `externalId`), so importing
+ * the same exercise again updates the same draft and never creates a second one.
+ */
+export interface TextbookQuestionSource {
+  documentId: string;
+  documentTitle: string;
+  exerciseArtifactId: string;
+  solutionArtifactId: string | null;
+  exerciseSetEntryId: string;
+  questionNumber: string | null;
+  exercisePages: number[];
+  solutionPages: number[];
+  /** TEXTBOOK_SOLUTION: the book's printed solution, confirmed by an Admin. ADMIN_SOLVED: an Admin's own solution. */
+  verification: 'TEXTBOOK_SOLUTION' | 'ADMIN_SOLVED';
+  /** Evidence against the pairing that the Admin checked and accepted. */
+  acknowledgedConflicts?: string[];
+  verifiedBy: string;
+  verifiedAt: string;
+  /** Deterministic check of the answer, when one applies. */
+  answerCheck?: string;
+  citation?: string;
+  importedAt: string;
 }
 
 export const QUESTION_IMPORT_ORIGIN_VALUES = [

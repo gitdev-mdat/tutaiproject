@@ -1,0 +1,278 @@
+{
+ "note": "Real Gemini (gemini-3.5-flash, prompt v9) output for math_book_3.pdf: printed pages 19-20 (Bài tập rèn luyện kỹ năng, Dạng 1) and 29 (Hướng dẫn giải chi tiết). Recorded 2026-10-24.",
+ "exercises": [
+  {
+   "questionNumber": "1",
+   "content": "Cho hàm số $y = \\frac{x}{\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?\nA. Hàm số luôn đồng biến trên $(0; +\\infty)$\nB. Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$\nC. Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$\nD. Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số luôn đồng biến trên $(0; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$"
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  },
+  {
+   "questionNumber": "2",
+   "content": "Cho hàm số $y = x - \\ln(x + 1)$. Khẳng định nào dưới đây là đúng?\nA. Hàm số có tập xác định là $\\mathbb{R} \\setminus \\{-1\\}$\nB. Hàm số đồng biến trên $(-1; +\\infty)$\nC. Hàm số đồng biến trên $(-\\infty; 0)$\nD. Hàm số nghịch biến trên $(-1; 0)$\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số có tập xác định là $\\mathbb{R} \\setminus \\{-1\\}$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số đồng biến trên $(-1; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đồng biến trên $(-\\infty; 0)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến trên $(-1; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  },
+  {
+   "questionNumber": "3",
+   "content": "Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?\nA. $(-2; 0)$\nB. $(-\\infty; -2)$\nC. $(0; +\\infty)$\nD. $\\mathbb{R}$\n(Trích đề thi thử lần I – THPT Kim Liên Hà Nội)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-2; 0)$"
+    },
+    {
+     "label": "B",
+     "text": "$(-\\infty; -2)$"
+    },
+    {
+     "label": "C",
+     "text": "$(0; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "$\\mathbb{R}$"
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  },
+  {
+   "questionNumber": "4",
+   "content": "Cho hàm số $y = \\frac{-x + 2}{x - 1}$. Khẳng định nào dưới đây là đúng?\nA. Hàm số đồng biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$\nB. Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$\nC. Hàm số nghịch biến trên tập $\\mathbb{R} \\setminus \\{1\\}$\nD. Hàm số nghịch biến với mọi $x \\ne 1$.\n(Trích đề thi thử lần I – THPT chuyên KHTN)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đồng biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số nghịch biến trên tập $\\mathbb{R} \\setminus \\{1\\}$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến với mọi $x \\ne 1$."
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  },
+  {
+   "questionNumber": "5",
+   "content": "Hàm số $y = -x^3 + 3x^2 + 9x$ đồng biến trên khoảng nào sau đây?\nA. $(-2; 3)$\nB. $(-2; -1)$\nC. $\\mathbb{R}$\nD. $(2; 3)$\n(Trích đề thi thử lần I – THPT chuyên Lam Sơn)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-2; 3)$"
+    },
+    {
+     "label": "B",
+     "text": "$(-2; -1)$"
+    },
+    {
+     "label": "C",
+     "text": "$\\mathbb{R}$"
+    },
+    {
+     "label": "D",
+     "text": "$(2; 3)$"
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  },
+  {
+   "questionNumber": "6",
+   "content": "Cho hàm số $y = -x^3 - 6x^2 + 10$. Chọn khẳng định đúng trong các khẳng định sau :\nA. Hàm số đã cho đồng biến trên khoảng $(-\\infty; 0)$\nB. Hàm số đã cho đồng biến trên khoảng $(-\\infty; -4)$\nC. Hàm số đã cho đồng biến trên khoảng $(0; +\\infty)$\nD. Hàm số đã cho đồng biến trên khoảng $(-4; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; 0)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; -4)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(0; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-4; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  },
+  {
+   "questionNumber": "7",
+   "content": "Cho hàm số $y = x^4 - 2x^2 - 1$. Khẳng định nào sau đây là đúng?\nA. Hàm số đã cho đồng biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$\nB. Hàm số đã cho nghịch biến trên khoảng $(0; +\\infty)$\nC. Hàm số đã cho nghịch biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$\nD. Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(0; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  },
+  {
+   "questionNumber": "8",
+   "content": "Hàm số $f(x)$ có đạo hàm $f'(x) = x^2(x + 2)$. Phát biểu nào sau đây là đúng?\nA. Hàm số đồng biến trên khoảng $(-2; +\\infty)$\nB. Hàm số nghịch biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$\nC. Hàm số đồng biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$\nD. Hàm số nghịch biến trên khoảng $(-2; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đồng biến trên khoảng $(-2; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số nghịch biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đồng biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến trên khoảng $(-2; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "printedPages": [
+    19
+   ]
+  }
+ ],
+ "solutions": [
+  {
+   "questionNumber": "1",
+   "answerChoice": "D",
+   "content": "Câu 1: Đáp án D.\nCách 1: Cách tư duy.\nTập xác định: $D = (0; +\n\n\\infty) \\setminus \\{1\\}$.\nTa có: $y' = \\left(\\frac{x}{\\ln x}\\right)' = \\frac{\\ln x - 1}{(\\ln x)^2}$.\n$y' = 0 \\Leftrightarrow \\ln x = 1 \\Leftrightarrow x = e$;",
+   "printedPages": [
+    29
+   ],
+   "exerciseSetLabel": "Dạng 1: Bài tập không chứa tham số"
+  },
+  {
+   "questionNumber": "2",
+   "answerChoice": "D",
+   "content": "Câu 2: Đáp án D.\nTập xác định: $D = (-1; +\\infty) \\Rightarrow$ loại A.\n$y' = [x - \\ln(x + 1)]' = \\frac{x}{x + 1}$.\n$y' = 0 \\Leftrightarrow x = 0$",
+   "printedPages": [
+    29
+   ],
+   "exerciseSetLabel": "Dạng 1: Bài tập không chứa tham số"
+  },
+  {
+   "questionNumber": "3",
+   "answerChoice": "A",
+   "content": "Câu 3: Đáp án A.\nTập xác định: $D = \\mathbb{R}$.\n$y' = (x^3 + 3x^2 - 4)' = 3x^2 + 6x$\n$y' = 0 \\Leftrightarrow$\n$x = 0$\n$x = -2$\nTa có hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng N, tức hàm số nghịch biến trên $(-2; 0)$.",
+   "printedPages": [
+    29
+   ],
+   "exerciseSetLabel": "Dạng 1: Bài tập không chứa tham số"
+  },
+  {
+   "questionNumber": "4",
+   "answerChoice": "B",
+   "content": "Câu 4: Đáp án B.\nTập xác định: $D = \\mathbb{R} \\setminus \\{1\\}$.\nTa có $ad - bc = 1 - 2 = -1 < 0$\nSuy ra hàm số nghịch biến trên từng khoảng $(-\\infty; 1)$ và $(1; +\\infty)$.",
+   "printedPages": [
+    29
+   ],
+   "exerciseSetLabel": "Dạng 1: Bài tập không chứa tham số"
+  },
+  {
+   "questionNumber": "5",
+   "answerChoice": "D",
+   "content": "Câu 5: Đáp án D.\nTập xác định: $D = \\mathbb{R}$.\n$y' = (-x^3 + 3x^2 + 9x)' = -3x^2 + 6x + 9$\n$y' = 0 \\Leftrightarrow$\n$x = 3$\n$x = -1$\nTa thấy hàm số có hệ số $a = -1 < 0$ nên hàm số đồng biến trên $(-1; 3)$.",
+   "printedPages": [
+    29
+   ],
+   "exerciseSetLabel": "Dạng 1: Bài tập không chứa tham số"
+  },
+  {
+   "questionNumber": "6",
+   "answerChoice": "D",
+   "content": "Câu 6: Đáp án D.\nTập xác định: $D = \\mathbb{R}$.\n$y' = (-x^3 - 6x^2 + 10)' = -3x^2 - 12x$\n$y' = 0 \\Leftrightarrow$\n$x = 0$\n$x = -4$\nDo hệ số $a = -1 < 0$ nên hàm số đồng biến trên $(-4; 0)$",
+   "printedPages": [
+    29
+   ],
+   "exerciseSetLabel": "Dạng 1: Bài tập không chứa tham số"
+  },
+  {
+   "questionNumber": "7",
+   "answerChoice": "C",
+   "content": "Câu 7: Đáp án C.",
+   "printedPages": [
+    29
+   ],
+   "exerciseSetLabel": "Dạng 1: Bài tập không chứa tham số"
+  }
+ ]
+}
