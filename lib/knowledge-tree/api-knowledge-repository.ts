@@ -16,8 +16,13 @@ import {
   type UpdateNodeInput,
 } from './knowledge-repository';
 import { childrenOf } from './knowledge-tree';
-import type { AiDraftBlockType, LearnerLevel, LessonStage } from './ai-lesson-draft';
-import type { LessonDraftContextSummary, LessonDraftResponse } from './ai-lesson-draft-service';
+import type {
+  AiDraftBlockType,
+  LearnerLevel,
+  LessonDraftMode,
+  LessonStage,
+} from './ai-lesson-draft';
+import type { LessonDraftPreview, LessonDraftResponse } from './ai-lesson-draft-service';
 import type { ArticleSummary } from './learning-visibility';
 import type {
   KnowledgeArticle,
@@ -172,12 +177,12 @@ export class ApiKnowledgeRepository implements IKnowledgeRepository {
   async getAiDraftAvailability(nodeId: string): Promise<{
     available: boolean;
     reason?: string;
-    context?: LessonDraftContextSummary | null;
+    context?: LessonDraftPreview | null;
   }> {
     const result = await request<{
       available: boolean;
       reason?: string;
-      context?: LessonDraftContextSummary | null;
+      context?: LessonDraftPreview | null;
     }>(`/api/knowledge-tree/${encodeURIComponent(nodeId)}/article/ai-draft`);
     return result.ok ? result.data : { available: false, reason: result.error.message };
   }
@@ -192,6 +197,7 @@ export class ApiKnowledgeRepository implements IKnowledgeRepository {
       learnerLevel?: LearnerLevel;
       prerequisites?: string;
       useReferences?: boolean;
+      mode?: LessonDraftMode;
     },
     signal?: AbortSignal
   ): Promise<KnowledgeResult<LessonDraftResponse>> {
@@ -199,6 +205,19 @@ export class ApiKnowledgeRepository implements IKnowledgeRepository {
       `/api/knowledge-tree/${encodeURIComponent(nodeId)}/article/ai-draft`,
       { method: 'POST', body: JSON.stringify(input), signal }
     );
+  }
+
+  /** Notes that reviewed AI parts were applied to the editor, or saved with the lesson. */
+  async recordAiDraft(
+    nodeId: string,
+    generationId: string,
+    status: 'APPLIED' | 'SAVED',
+    blocks?: AiDraftBlockType[]
+  ): Promise<void> {
+    await request(`/api/knowledge-tree/${encodeURIComponent(nodeId)}/article/ai-draft`, {
+      method: 'PATCH',
+      body: JSON.stringify({ generationId, status, blocks }),
+    });
   }
 
   // Source attachments have no server storage yet; the admin page does not expose them.

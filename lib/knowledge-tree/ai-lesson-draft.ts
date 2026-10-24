@@ -134,11 +134,20 @@ export interface LessonDraftResult {
 }
 
 export type LessonDraftErrorCode =
-  'UNAVAILABLE' | 'INVALID_REQUEST' | 'BUSY' | 'TIMEOUT' | 'QUOTA' | 'MALFORMED' | 'PROVIDER';
+  | 'UNAVAILABLE'
+  | 'INVALID_REQUEST'
+  | 'NO_REFERENCES'
+  | 'BUSY'
+  | 'TIMEOUT'
+  | 'QUOTA'
+  | 'MALFORMED'
+  | 'PROVIDER';
 
 const ERROR_MESSAGES: Record<LessonDraftErrorCode, string> = {
   UNAVAILABLE: 'Tính năng soạn nháp bằng AI chưa được bật.',
   INVALID_REQUEST: 'Yêu cầu không hợp lệ.',
+  NO_REFERENCES:
+    'Bài này chưa có trích đoạn sách đã duyệt, nên không soạn theo sách được. Duyệt tư liệu trước, hoặc chọn soạn chung.',
   BUSY: 'AI đang soạn nháp cho bài này. Chờ yêu cầu trước hoàn tất.',
   TIMEOUT: 'AI phản hồi quá lâu nên yêu cầu đã dừng. Thử lại sau ít phút.',
   QUOTA: 'Đã hết hạn mức gọi AI. Thử lại sau hoặc kiểm tra gói Gemini.',
@@ -149,6 +158,7 @@ const ERROR_MESSAGES: Record<LessonDraftErrorCode, string> = {
 const ERROR_STATUS: Record<LessonDraftErrorCode, number> = {
   UNAVAILABLE: 403,
   INVALID_REQUEST: 400,
+  NO_REFERENCES: 409,
   BUSY: 409,
   TIMEOUT: 504,
   QUOTA: 429,
@@ -183,7 +193,21 @@ export interface LessonDraftRequest {
   prerequisites?: string;
   /** False when the admin chose to draft without the approved textbook references. */
   useReferences?: boolean;
+  /**
+   * The source mode the admin chose before generating. TEXTBOOK fails instead of
+   * quietly drafting without the book; GENERAL never sends textbook material.
+   */
+  mode?: LessonDraftMode;
 }
+
+export const LESSON_DRAFT_MODES = ['TEXTBOOK', 'GENERAL'] as const;
+export type LessonDraftMode = (typeof LESSON_DRAFT_MODES)[number];
+
+/**
+ * Version of the drafting prompt, stored with every generation so a draft can
+ * be traced to the instructions it was written under. Bump on prompt changes.
+ */
+export const LESSON_DRAFT_PROMPT_VERSION = 'lesson-draft-v12';
 
 export function parseLessonDraftRequest(body: unknown): LessonDraftRequest {
   if (!body || typeof body !== 'object') return {};
@@ -233,6 +257,11 @@ export function parseLessonDraftRequest(body: unknown): LessonDraftRequest {
   if (input.useReferences !== undefined) {
     if (typeof input.useReferences !== 'boolean') throw new LessonDraftError('INVALID_REQUEST');
     request.useReferences = input.useReferences;
+  }
+  if (input.mode !== undefined && input.mode !== null) {
+    if (!LESSON_DRAFT_MODES.includes(input.mode as LessonDraftMode))
+      throw new LessonDraftError('INVALID_REQUEST');
+    request.mode = input.mode as LessonDraftMode;
   }
 
   if (input.existing !== undefined && input.existing !== null) {

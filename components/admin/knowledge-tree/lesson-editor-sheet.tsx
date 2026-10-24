@@ -43,6 +43,8 @@ import type { AiDraftBlockType } from '@/lib/knowledge-tree/ai-lesson-draft';
 import { AiDraftPanel } from './ai-draft-panel';
 import { LessonReferencesPanel } from '@/components/admin/textbooks/lesson-references-panel';
 import { findMathIssues } from '@/lib/content/math-notation';
+import type { LessonTextbookReadiness } from '@/lib/textbook-reference/lesson-view';
+import { textbookApi } from '@/components/admin/textbooks/textbook-client';
 
 /** Says which formulas a student would see as raw source, before the lesson is saved. */
 function MathFieldStatus({ value }: { value: string }) {
@@ -126,7 +128,11 @@ function LessonEditor({
     blocks: KnowledgeArticleBlock[];
     dirty: boolean;
     count: number;
+    generationId: string | null;
   } | null>(null);
+  // Saving a lesson students already see, with AI parts in it, needs one explicit confirmation.
+  const [confirmLiveSave, setConfirmLiveSave] = React.useState(false);
+  const [readiness, setReadiness] = React.useState<LessonTextbookReadiness | null>(null);
 
   const load = React.useCallback(async () => {
     setLoadState('loading');
@@ -148,6 +154,17 @@ function LessonEditor({
     void load();
   }, [load]);
 
+  // Whether this lesson has approved textbook material, shown on the "Tư liệu" tab.
+  React.useEffect(() => {
+    let cancelled = false;
+    void textbookApi.lesson(node.id).then((result) => {
+      if (!cancelled && result.ok) setReadiness(result.data.readiness);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [node.id]);
+
   const draftArticle = { title: title.trim() || node.title, blocks } as KnowledgeArticle;
   const validation = validateArticle(draftArticle);
   const state = getLessonPublicationState(nodes, node.id, saved);
@@ -162,8 +179,18 @@ function LessonEditor({
   };
 
   /** Applies reviewed AI parts to the editor only; the admin still saves explicitly. */
-  const applyAiDraft = (parts: Partial<Record<AiDraftBlockType, string>>) => {
-    setAiUndo({ blocks, dirty, count: Object.keys(parts).length });
+  const applyAiDraft = (
+    parts: Partial<Record<AiDraftBlockType, string>>,
+    generationId: string | null
+  ) => {
+    setAiUndo({ blocks, dirty, count: Object.keys(parts).length, generationId });
+    if (generationId)
+      void repo.recordAiDraft(
+        node.id,
+        generationId,
+        'APPLIED',
+        Object.keys(parts) as AiDraftBlockType[]
+      );
     setBlocks((current) =>
       current.map((block) =>
         parts[block.type as AiDraftBlockType] !== undefined
@@ -180,9 +207,16 @@ function LessonEditor({
     setBlocks(aiUndo.blocks);
     setDirty(aiUndo.dirty);
     setAiUndo(null);
+    setConfirmLiveSave(false);
   };
 
-  const save = async (mode: 'draft' | 'publish' | 'unpublish') => {
+  const save = async (mode: 'draft' | 'publish' | 'unpublish', confirmed = false) => {
+    // AI parts going straight to students: ask once, with the choice to hide first.
+    if (mode === 'draft' && published && aiUndo && !confirmed) {
+      setConfirmLiveSave(true);
+      return;
+    }
+    setConfirmLiveSave(false);
     setSaving(mode);
     setError(null);
     const publishToLearning = mode === 'publish' || (mode === 'draft' && published);
@@ -204,6 +238,7 @@ function LessonEditor({
     }
     setSaved(result.data);
     setDirty(false);
+    if (aiUndo?.generationId) void repo.recordAiDraft(node.id, aiUndo.generationId, 'SAVED');
     setAiUndo(null);
     const message =
       mode === 'publish'
@@ -279,6 +314,22 @@ function LessonEditor({
               >
                 <Icon className="size-4" aria-hidden="true" />
                 {label}
+                {value === 'references' && readiness && readiness.linkedSections > 0 && (
+                  <span
+                    className={`rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${
+                      readiness.approved > 0
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-900'
+                    }`}
+                    title={
+                      readiness.approved > 0
+                        ? `${readiness.approved} trích đoạn đã duyệt, AI dùng được`
+                        : 'Chưa có trích đoạn đã duyệt'
+                    }
+                  >
+                    {readiness.approved > 0 ? `${readiness.approved} sẵn sàng` : 'chưa duyệt'}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -331,7 +382,15 @@ function LessonEditor({
             </Button>
           </div>
         ) : tab === 'references' ? (
-          <LessonReferencesPanel nodeId={node.id} onOpenLibrary={() => onOpenLibrary?.()} />
+          <LessonReferencesPanel
+            nodeId={node.id}
+            onOpenLibrary={() => onOpenLibrary?.()}
+            onReadinessChange={setReadiness}
+            onOpenAiDraft={() => {
+              setTab('edit');
+              setAiOpen(true);
+            }}
+          />
         ) : tab === 'preview' ? (
           <article className="mx-auto max-w-[1040px] rounded-2xl border border-slate-200 bg-[#FBFCFE] p-5 sm:p-8">
             <LessonJourney
@@ -361,8 +420,10 @@ function LessonEditor({
                 nodeId={node.id}
                 repo={repo}
                 blocks={blocks}
+                published={published}
                 onApply={applyAiDraft}
                 onClose={() => setAiOpen(false)}
+                onOpenReferences={() => setTab('references')}
               />
             )}
             {aiUndo && (
@@ -371,8 +432,8 @@ function LessonEditor({
                 className="flex flex-wrap items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm text-violet-900"
               >
                 <span className="min-w-0 flex-1">
-                  Đã đưa {aiUndo.count} phần do AI đề xuất vào bài. Chưa lưu, hãy đọc lại trước khi
-                  lưu.
+                  Đã đưa {aiUndo.count} phần do AI đề xuất vào trình soạn. Chưa lưu
+                  {published ? '; học sinh vẫn thấy bản cũ' : ''}. Đọc lại trước khi lưu.
                 </span>
                 <Button size="sm" variant="ghost" onClick={undoAiDraft}>
                   Hoàn tác
@@ -459,6 +520,42 @@ function LessonEditor({
                 ` Còn thiếu: ${error.missing.map((item) => REQUIRED_LABELS[item] ?? item).join(', ')}.`}
             </div>
           )}
+          {confirmLiveSave && (
+            <div
+              role="alertdialog"
+              aria-label="Xác nhận cập nhật bài đang hiển thị"
+              className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-950"
+            >
+              <p className="font-semibold">Bài này đang hiển thị cho học sinh.</p>
+              <p className="mt-0.5 leading-6">
+                Lưu bây giờ sẽ thay nội dung học sinh đang học bằng bản có {aiUndo?.count ?? 0} phần
+                do AI đề xuất. Nếu chưa chắc, lưu và tạm ẩn bài để xem lại trước.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => setTab('preview')}>
+                  <Eye /> Xem như học sinh
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!!saving}
+                  onClick={() => void save('unpublish')}
+                >
+                  <EyeOff /> Lưu và tạm ẩn khỏi học sinh
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!!saving || !validation.isValid}
+                  onClick={() => void save('draft', true)}
+                >
+                  Lưu và cập nhật cho học sinh
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirmLiveSave(false)}>
+                  Tiếp tục soạn
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="min-w-0 flex-1 text-sm">
               {archived ? (
@@ -509,7 +606,7 @@ function LessonEditor({
                     onClick={() => void save('draft')}
                   >
                     {saving === 'draft' && <Loader2 className="animate-spin" />}
-                    Lưu thay đổi
+                    Lưu và cập nhật cho học sinh
                   </Button>
                 </>
               ) : (

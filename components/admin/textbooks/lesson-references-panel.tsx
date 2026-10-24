@@ -2,14 +2,17 @@
 
 import * as React from 'react';
 import {
+  AlertTriangle,
   BookOpen,
   Check,
   ChevronDown,
+  Lightbulb,
   Link2,
   Loader2,
   Pencil,
   RotateCcw,
   Search,
+  Sparkles,
   Unlink,
   X,
 } from 'lucide-react';
@@ -18,25 +21,46 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { InlineText, RichText } from '@/components/learning/rich-text';
 import { findMathIssues, hasMathIssues } from '@/lib/content/math-notation';
+import { entrySpan, formatSpan, type PageSpan } from '@/lib/textbook-reference/lesson-coverage';
+import { formatPageList } from '@/lib/textbook-reference/section-state';
+import type { LessonTextbookReadiness } from '@/lib/textbook-reference/lesson-view';
 import type { TextbookArtifact, TextbookTocEntry } from '@/lib/textbook-reference/types';
-import { textbookApi, type LessonSection, type LessonView } from './textbook-client';
-import { JobLine, KIND_LABELS, pageRange, usePolling, WorkerNotice } from './textbook-status';
+import {
+  textbookApi,
+  type LessonRecommendation,
+  type LessonSection,
+  type LessonView,
+} from './textbook-client';
+import { JobLine, KIND_LABELS, usePolling, WorkerNotice } from './textbook-status';
 
 const MAX_PAGES = 6;
 
+const TONE: Record<LessonSection['state']['tone'], string> = {
+  neutral: 'bg-slate-100 text-slate-700 ring-slate-200',
+  waiting: 'bg-amber-50 text-amber-800 ring-amber-200',
+  working: 'bg-blue-50 text-blue-800 ring-blue-200',
+  attention: 'bg-amber-50 text-amber-900 ring-amber-200',
+  error: 'bg-red-50 text-red-700 ring-red-200',
+  success: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+};
+
 /**
- * The textbook side of one lesson: which book sections back it, extraction of
- * chosen pages, and review of what was extracted. Only approved extracts are
- * offered to AI drafting; nothing here reaches students.
+ * The textbook side of one lesson, as one path: link a section → extract its
+ * pages → review what was extracted → approved extracts are what AI drafting
+ * reads. Every state shown comes from stored jobs and artifacts; nothing here
+ * reaches students.
  */
 export function LessonReferencesPanel({
   nodeId,
   onOpenLibrary,
-  onApprovedChange,
+  onReadinessChange,
+  onOpenAiDraft,
 }: {
   nodeId: string;
   onOpenLibrary: () => void;
-  onApprovedChange?: (count: number) => void;
+  onReadinessChange?: (readiness: LessonTextbookReadiness) => void;
+  /** Opens AI drafting once material is ready. */
+  onOpenAiDraft?: () => void;
 }) {
   const [view, setView] = React.useState<LessonView | null>(null);
   const [error, setError] = React.useState<{ text: string; unavailable?: boolean } | null>(null);
@@ -51,8 +75,8 @@ export function LessonReferencesPanel({
     }
     setError(null);
     setView(result.data);
-    onApprovedChange?.(result.data.approvedCount);
-  }, [nodeId, onApprovedChange]);
+    onReadinessChange?.(result.data.readiness);
+  }, [nodeId, onReadinessChange]);
 
   React.useEffect(() => {
     // Loading the lesson's references from the server is an external sync.
@@ -66,7 +90,7 @@ export function LessonReferencesPanel({
 
   const flash = (text: string) => {
     setNotice(text);
-    window.setTimeout(() => setNotice(null), 4000);
+    window.setTimeout(() => setNotice(null), 5000);
   };
 
   if (error && !view)
@@ -98,25 +122,36 @@ export function LessonReferencesPanel({
       </div>
     );
 
+  const link = async (
+    documentId: string,
+    entry: TextbookTocEntry,
+    range: PageSpan | null,
+    message: string
+  ) => {
+    const result = await textbookApi.link(documentId, entry.id, view.node.id, range);
+    if (!result.ok) return result.error;
+    setLinking(false);
+    await load();
+    flash(message);
+    return null;
+  };
+
+  // Not using a suggestion stores a declined link, so it is not suggested again; linking undoes it.
+  const decline = async (item: LessonRecommendation) => {
+    const result = await textbookApi.unlink(item.documentId, item.entry.id, view.node.id);
+    if (!result.ok) return result.error;
+    await load();
+    flash(`Đã ẩn gợi ý “${item.entry.originalHeading}”. Vẫn tìm lại được trong mục lục.`);
+    return null;
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-        <p className="min-w-0 flex-1 text-sm leading-6 text-slate-600">
-          {view.approvedCount > 0 ? (
-            <>
-              <span className="font-semibold text-emerald-700">
-                {view.approvedCount} trích đoạn đã duyệt
-              </span>{' '}
-              sẽ làm căn cứ khi soạn nháp bằng AI. Học sinh không thấy tư liệu này.
-            </>
-          ) : (
-            'Liên kết mục sách, trích các trang cần dùng rồi duyệt. Chỉ trích đoạn đã duyệt mới được dùng khi soạn nháp bằng AI.'
-          )}
-        </p>
-        <Button size="sm" variant="ghost" onClick={onOpenLibrary}>
-          <BookOpen /> Thư viện sách
-        </Button>
-      </div>
+      <ReadinessSummary
+        readiness={view.readiness}
+        onOpenAiDraft={onOpenAiDraft}
+        onOpenLibrary={onOpenLibrary}
+      />
       <WorkerNotice worker={view.worker} jobs={pending} />
       <div
         role="status"
@@ -131,42 +166,383 @@ export function LessonReferencesPanel({
           key={section.mapping.id}
           section={section}
           nodeId={nodeId}
-          jobs={view.jobs.filter(
-            (job) => job.documentId === section.document.id && job.kind === 'EXTRACT'
+          otherLessons={view.otherLinks.filter(
+            (item) => item.documentId === section.document.id && item.entryId === section.entry.id
           )}
           onChanged={load}
           onFlash={flash}
         />
       ))}
 
-      {view.sections.length === 0 || linking ? (
+      {(view.recommendations.length > 0 || view.coverage.some((item) => item.previous)) && (
+        <Recommendations view={view} onLink={link} onDecline={decline} />
+      )}
+
+      {view.sections.length === 0 && view.recommendations.length === 0 ? (
+        <LinkPicker view={view} onOpenLibrary={onOpenLibrary} onLink={link} />
+      ) : linking ? (
         <LinkPicker
           view={view}
-          onCancel={view.sections.length ? () => setLinking(false) : undefined}
+          onCancel={() => setLinking(false)}
           onOpenLibrary={onOpenLibrary}
-          onLinked={async (heading) => {
-            setLinking(false);
-            await load();
-            flash(`Đã liên kết “${heading}”.`);
-          }}
+          onLink={link}
         />
       ) : (
-        <Button variant="outline" size="sm" onClick={() => setLinking(true)}>
-          <Link2 /> Liên kết thêm mục sách
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setLinking(true)}>
+            <Search /> Tìm mục khác trong mục lục
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onOpenLibrary}>
+            <BookOpen /> Thư viện sách
+          </Button>
+        </div>
       )}
     </div>
   );
 }
 
+const STEPS = ['Liên kết mục sách', 'Trích trang', 'Duyệt nội dung', 'AI dùng được'] as const;
+
+/**
+ * The four steps with their real counts and the one thing to do next. Linked is
+ * not usable: only the last step's number is what AI drafting will read.
+ */
+function ReadinessSummary({
+  readiness,
+  onOpenAiDraft,
+  onOpenLibrary,
+}: {
+  readiness: LessonTextbookReadiness;
+  onOpenAiDraft?: () => void;
+  onOpenLibrary: () => void;
+}) {
+  const { linkedSections, approved, needsReview, activeJobs, failedSections, notExtracted } =
+    readiness;
+  const extracted = linkedSections - notExtracted;
+  const marks = [
+    linkedSections > 0 ? `${linkedSections} mục` : 'chưa có',
+    linkedSections === 0
+      ? '—'
+      : activeJobs > 0
+        ? `đang xử lý ${activeJobs}`
+        : `${extracted}/${linkedSections} mục`,
+    needsReview > 0 ? `${needsReview} chờ duyệt` : approved > 0 ? 'xong' : '—',
+    approved > 0 ? `${approved} trích đoạn` : 'chưa có',
+  ];
+  const done = [linkedSections > 0, extracted > 0, approved > 0, approved > 0];
+  const next =
+    linkedSections === 0
+      ? 'Liên kết mục sách dạy nội dung bài này. Liên kết chỉ cho biết bài dùng phần nào của sách; AI chưa đọc gì.'
+      : approved > 0
+        ? `AI soạn nháp sẽ đọc nguyên văn ${approved} trích đoạn đã duyệt.${needsReview ? ` ${needsReview} trích đoạn khác chưa duyệt nên chưa được dùng.` : ''}`
+        : needsReview > 0
+          ? `Duyệt ${needsReview} trích đoạn bên dưới. Đến khi có trích đoạn đã duyệt, AI soạn nháp không dùng sách.`
+          : activeJobs > 0
+            ? 'Đang trích trang; kết quả sẽ hiện ở mục tương ứng để duyệt. AI chưa dùng gì từ sách.'
+            : failedSections > 0
+              ? 'Lần trích gần nhất bị lỗi. Xem lí do ở mục tương ứng và thử lại.'
+              : 'Đã liên kết nhưng chưa trích trang nào. Chọn trang trong mục và bấm “Trích xuất”: liên kết thôi chưa cho AI đọc được nội dung sách.';
+  return (
+    <section
+      aria-label="Tình trạng tư liệu sách cho AI"
+      className="rounded-xl border border-slate-200 bg-white px-4 py-3"
+    >
+      <ol className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
+        {STEPS.map((label, index) => (
+          <li key={label} className="min-w-0">
+            <p
+              className={`flex items-center gap-1.5 text-xs font-medium ${done[index] ? 'text-slate-800' : 'text-slate-500'}`}
+            >
+              <span
+                className={`flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] ring-1 ${
+                  done[index]
+                    ? index === 3
+                      ? 'bg-emerald-600 text-white ring-emerald-600'
+                      : 'bg-slate-800 text-white ring-slate-800'
+                    : 'bg-white text-slate-500 ring-slate-300'
+                }`}
+                aria-hidden="true"
+              >
+                {done[index] ? <Check className="size-3" /> : index + 1}
+              </span>
+              {label}
+            </p>
+            <p
+              className={`ml-5.5 text-sm tabular-nums ${index === 3 && approved > 0 ? 'font-semibold text-emerald-700' : 'text-slate-600'}`}
+            >
+              {marks[index]}
+            </p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 border-t border-slate-100 pt-2.5 text-sm leading-6 text-slate-700">
+        {next} <span className="text-slate-500">Học sinh không thấy tư liệu này.</span>
+      </p>
+      {(approved > 0 && onOpenAiDraft) || linkedSections === 0 ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {approved > 0 && onOpenAiDraft && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-violet-200 text-violet-700 hover:bg-violet-50"
+              onClick={onOpenAiDraft}
+            >
+              <Sparkles /> Soạn nháp theo sách
+            </Button>
+          )}
+          {linkedSections === 0 && (
+            <Button size="sm" variant="ghost" onClick={onOpenLibrary}>
+              <BookOpen /> Thư viện sách
+            </Button>
+          )}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+const STRENGTH: Record<LessonRecommendation['strength'], { label: string; className: string }> = {
+  STRONG: { label: 'Phù hợp nhất', className: 'bg-blue-50 text-blue-800 ring-blue-200' },
+  POSSIBLE: { label: 'Có thể dùng', className: 'bg-slate-100 text-slate-700 ring-slate-200' },
+  WEAK: { label: 'Cần cân nhắc', className: 'bg-amber-50 text-amber-900 ring-amber-200' },
+};
+
+type LinkFn = (
+  documentId: string,
+  entry: TextbookTocEntry,
+  range: PageSpan | null,
+  message: string
+) => Promise<string | null>;
+
+/** Suggestions, visibly separate from confirmed links; nothing is linked until the Admin says so. */
+function Recommendations({
+  view,
+  onLink,
+  onDecline,
+}: {
+  view: LessonView;
+  onLink: LinkFn;
+  onDecline: (item: LessonRecommendation) => Promise<string | null>;
+}) {
+  return (
+    <section
+      aria-label="Gợi ý mục sách"
+      className="rounded-xl border border-dashed border-blue-300 bg-blue-50/30"
+    >
+      <div className="px-4 pb-1 pt-3">
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+          <Lightbulb className="size-4 text-blue-600" aria-hidden="true" /> Gợi ý, chưa liên kết
+        </h3>
+        {view.coverage
+          .filter((item) => item.previous)
+          .map((item) => (
+            <p key={item.documentId} className="mt-1 text-xs leading-5 text-slate-600">
+              {item.documentTitle}: bài trước trong chương trình, “{item.previous!.title}”, dùng{' '}
+              {formatSpan(item.previous!.span)} (đến “
+              <InlineText text={item.previous!.lastHeading} />
+              ”).
+              {item.next && (
+                <>
+                  {' '}
+                  Bài sau, “{item.next.title}”, bắt đầu từ tr. {item.next.span.start}.
+                </>
+              )}
+              {item.skipped.length > 0 && (
+                <> {item.skipped.length} bài ở giữa chưa liên kết sách này.</>
+              )}
+            </p>
+          ))}
+      </div>
+      {view.recommendations.length === 0 ? (
+        <p className="px-4 pb-3 text-sm text-slate-500">
+          Chưa có mục nào nối tiếp phù hợp. Tìm trong mục lục bên dưới.
+        </p>
+      ) : (
+        <ul className="space-y-2 p-3">
+          {view.recommendations.map((item) => (
+            <RecommendationCard
+              key={`${item.documentId}-${item.entry.id}`}
+              item={item}
+              onLink={onLink}
+              onDecline={onDecline}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RangeFields({
+  span,
+  limit,
+  onChange,
+}: {
+  span: { start: string; end: string };
+  limit: PageSpan | null;
+  onChange: (span: { start: string; end: string }) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <label className="text-xs font-medium text-slate-600">
+        Từ trang
+        <Input
+          value={span.start}
+          inputMode="numeric"
+          onChange={(event) => onChange({ ...span, start: event.target.value })}
+          className="mt-1 h-8 w-20 bg-white"
+        />
+      </label>
+      <label className="text-xs font-medium text-slate-600">
+        đến trang
+        <Input
+          value={span.end}
+          inputMode="numeric"
+          onChange={(event) => onChange({ ...span, end: event.target.value })}
+          className="mt-1 h-8 w-20 bg-white"
+        />
+      </label>
+      {limit && <span className="pb-1.5 text-xs text-slate-500">trong {formatSpan(limit)}</span>}
+    </div>
+  );
+}
+
+function parseRange(value: { start: string; end: string }, limit: PageSpan | null) {
+  const start = Number(value.start);
+  const end = Number(value.end || value.start);
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start <= 0 || end < start)
+    return { error: 'Nhập trang bắt đầu và kết thúc, ví dụ 21 và 24.' };
+  if (limit && (start < limit.start || end > limit.end))
+    return { error: `Trang phải nằm trong ${formatSpan(limit)} của mục này.` };
+  return { span: { start, end } };
+}
+
+function RecommendationCard({
+  item,
+  onLink,
+  onDecline,
+}: {
+  item: LessonRecommendation;
+  onLink: LinkFn;
+  onDecline: (item: LessonRecommendation) => Promise<string | null>;
+}) {
+  const whole = entrySpan(item.entry);
+  const [editing, setEditing] = React.useState(false);
+  const [range, setRange] = React.useState({
+    start: String(item.span?.start ?? ''),
+    end: String(item.span?.end ?? ''),
+  });
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const strength = STRENGTH[item.strength];
+
+  const confirm = async (span: PageSpan | null) => {
+    setBusy(true);
+    setError(null);
+    const message = `Đã liên kết “${item.entry.originalHeading}”${span ? ` (${formatSpan(span)})` : ''}. Bước tiếp theo: trích trang để AI có nội dung để đọc.`;
+    const failure = await onLink(item.documentId, item.entry, span, message);
+    setBusy(false);
+    if (failure) setError(failure);
+  };
+  const decline = async () => {
+    setBusy(true);
+    setError(null);
+    const result = await onDecline(item);
+    setBusy(false);
+    if (result) setError(result);
+  };
+
+  const parsed = parseRange(range, whole);
+  return (
+    <li className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+      <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+        <p className="min-w-0 flex-1 text-sm font-semibold leading-5 text-slate-900">
+          <InlineText text={item.entry.originalHeading} />
+        </p>
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${strength.className}`}
+        >
+          {strength.label}
+        </span>
+      </div>
+      <p className="text-xs text-slate-500">
+        {item.documentTitle} · {formatSpan(item.span)}
+        {item.partial && whole && <> (phần còn lại của mục {formatSpan(whole)})</>}
+      </p>
+      <ul className="mt-1.5 space-y-0.5 text-xs leading-5 text-slate-700">
+        {item.reasons.map((reason) => (
+          <li key={reason}>{reason}</li>
+        ))}
+        {item.linkedElsewhere.map((other) => (
+          <li key={other.nodeId} className="text-slate-600">
+            Đang dùng cho “{other.title}” ({formatSpan(other.span)}).
+          </li>
+        ))}
+        {item.warnings.map((warning) => (
+          <li key={warning} className="flex gap-1 text-amber-800">
+            <AlertTriangle className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
+            {warning}
+          </li>
+        ))}
+      </ul>
+      {editing && (
+        <div className="mt-2 space-y-1.5 rounded-md bg-slate-50 p-2">
+          <RangeFields span={range} limit={whole} onChange={setRange} />
+          {parsed.error && <p className="text-xs text-amber-800">{parsed.error}</p>}
+        </div>
+      )}
+      <div className="mt-2 flex flex-wrap gap-2">
+        {editing ? (
+          <>
+            <Button
+              size="sm"
+              disabled={busy || !parsed.span}
+              onClick={() => parsed.span && void confirm(parsed.span)}
+            >
+              {busy ? <Loader2 className="animate-spin" /> : <Link2 />} Liên kết{' '}
+              {parsed.span ? formatSpan(parsed.span) : ''}
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => setEditing(false)}>
+              Hủy
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => void confirm(item.partial ? item.span : null)}
+            >
+              {busy ? <Loader2 className="animate-spin" /> : <Link2 />} Liên kết{' '}
+              {formatSpan(item.span)}
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => setEditing(true)}>
+              <Pencil /> Chỉnh trang
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => void decline()}>
+              <X /> Không dùng
+            </Button>
+          </>
+        )}
+      </div>
+      {error && (
+        <p role="alert" className="mt-1.5 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+    </li>
+  );
+}
+
 function LinkPicker({
   view,
-  onLinked,
+  onLink,
   onCancel,
   onOpenLibrary,
 }: {
   view: LessonView;
-  onLinked: (heading: string) => void;
+  onLink: LinkFn;
   onCancel?: () => void;
   onOpenLibrary: () => void;
 }) {
@@ -186,15 +562,19 @@ function LinkPicker({
         )
         .filter((item) => !linked.has(`${item.documentId}\0${item.entry.id}`))
         .slice(0, 12)
-    : view.suggestions;
+    : [];
 
   const link = async (documentId: string, entry: TextbookTocEntry) => {
     setBusy(entry.id);
     setError(null);
-    const result = await textbookApi.link(documentId, entry.id, view.node.id);
+    const failure = await onLink(
+      documentId,
+      entry,
+      null,
+      `Đã liên kết “${entry.originalHeading}”. Bước tiếp theo: trích trang để AI có nội dung để đọc.`
+    );
     setBusy(null);
-    if (!result.ok) return setError(result.error);
-    onLinked(entry.originalHeading);
+    if (failure) setError(failure);
   };
 
   if (!view.documents.length)
@@ -211,11 +591,9 @@ function LinkPicker({
     );
 
   return (
-    <section aria-label="Liên kết mục sách" className="rounded-xl border border-slate-200 bg-white">
+    <section aria-label="Tìm mục sách" className="rounded-xl border border-slate-200 bg-white">
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
-        <h3 className="flex-1 text-sm font-semibold text-slate-900">
-          Liên kết mục sách với bài này
-        </h3>
+        <h3 className="flex-1 text-sm font-semibold text-slate-900">Tìm mục trong mục lục sách</h3>
         {onCancel && (
           <Button size="icon-sm" variant="ghost" aria-label="Đóng" onClick={onCancel}>
             <X />
@@ -231,18 +609,15 @@ function LinkPicker({
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Tìm trong mục lục…"
+            placeholder="Ví dụ: tham số, cực trị…"
             aria-label="Tìm mục trong mục lục sách"
             className="h-9 pl-9"
           />
         </div>
-        {!normalized && results.length > 0 && (
-          <p className="text-xs font-medium text-slate-500">Gợi ý theo tên bài</p>
-        )}
-        {results.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            {normalized ? 'Không có mục nào khớp.' : 'Chưa có gợi ý. Gõ tên mục để tìm.'}
-          </p>
+        {!normalized ? (
+          <p className="text-sm text-slate-500">Gõ một phần tên mục để tìm.</p>
+        ) : results.length === 0 ? (
+          <p className="text-sm text-slate-500">Không có mục nào khớp.</p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100">
             {results.map((item) => (
@@ -255,8 +630,7 @@ function LinkPicker({
                     <InlineText text={item.entry.originalHeading} />
                   </p>
                   <p className="text-xs text-slate-500">
-                    {item.documentTitle} ·{' '}
-                    {pageRange(item.entry.printedStartPage, item.entry.printedEndPage)}
+                    {item.documentTitle} · {formatSpan(entrySpan(item.entry))}
                   </p>
                 </div>
                 <Button
@@ -298,49 +672,62 @@ function parsePages(value: string): number[] {
   return [...pages].sort((a, b) => a - b);
 }
 
+/** The next pages worth extracting: the first unread pages of the linked range, at most six. */
+function defaultPages(section: LessonSection) {
+  const remaining = section.state.remainingPages ?? [];
+  const first = remaining.slice(0, MAX_PAGES);
+  if (!first.length)
+    return String(section.state.span?.start ?? section.entry.printedStartPage ?? '');
+  const contiguous = first.every((page, index) => index === 0 || page === first[index - 1] + 1);
+  return contiguous && first.length > 1
+    ? `${first[0]}-${first[first.length - 1]}`
+    : first.join(', ');
+}
+
 function SectionCard({
   section,
   nodeId,
-  jobs,
+  otherLessons,
   onChanged,
   onFlash,
 }: {
   section: LessonSection;
   nodeId: string;
-  jobs: LessonView['jobs'];
+  otherLessons: LessonView['otherLinks'];
   onChanged: () => Promise<void>;
   onFlash: (text: string) => void;
 }) {
-  const { entry, document } = section;
-  const [pagesText, setPagesText] = React.useState(String(entry.printedStartPage ?? ''));
-  const [busy, setBusy] = React.useState<'extract' | 'unlink' | null>(null);
+  const { entry, document, state } = section;
+  const span = state.span;
+  const whole = entrySpan(entry);
+  const narrowed = !!span && !!whole && (span.start !== whole.start || span.end !== whole.end);
+  const [pagesText, setPagesText] = React.useState(() => defaultPages(section));
+  const [busy, setBusy] = React.useState<'extract' | 'unlink' | 'range' | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [showSubsections, setShowSubsections] = React.useState(false);
+  const [editingRange, setEditingRange] = React.useState(false);
+  const [range, setRange] = React.useState({
+    start: String(span?.start ?? ''),
+    end: String(span?.end ?? ''),
+  });
   const pages = parsePages(pagesText);
-  const outside =
-    entry.printedStartPage !== null &&
-    pages.some(
-      (page) =>
-        page < entry.printedStartPage! ||
-        (entry.printedEndPage !== null && page > entry.printedEndPage)
-    );
+  const outside = !!span && pages.some((page) => page < span.start || page > span.end);
   const pageProblem = !pages.length
     ? 'Nhập số trang in, ví dụ 13, 16 hoặc 13-15.'
     : pages.length > MAX_PAGES
       ? `Mỗi lần trích tối đa ${MAX_PAGES} trang.`
       : outside
-        ? `Trang phải nằm trong ${pageRange(entry.printedStartPage, entry.printedEndPage)}.`
+        ? `Trang phải nằm trong ${formatSpan(span)} đã liên kết.`
         : null;
 
-  const extract = async () => {
-    if (pageProblem) return;
+  const extract = async (chosen = pages, entryIds?: string[]) => {
     setBusy('extract');
     setError(null);
     // The section that contains every chosen page most tightly, so provenance stays precise.
     const candidates = [entry, ...section.subsections].filter(
       (item) =>
         item.printedStartPage !== null &&
-        pages.every(
+        chosen.every(
           (page) =>
             page >= item.printedStartPage! &&
             (item.printedEndPage === null || page <= item.printedEndPage)
@@ -349,9 +736,9 @@ function SectionCard({
     const target = candidates.sort((a, b) => b.level - a.level)[0] ?? entry;
     const result = await textbookApi.extract({
       documentId: document.id,
-      entryIds: [target.id],
+      entryIds: entryIds ?? [target.id],
       knowledgeNodeId: nodeId,
-      printedPages: pages,
+      printedPages: chosen,
     });
     setBusy(null);
     if (!result.ok) return setError(result.error);
@@ -360,7 +747,7 @@ function SectionCard({
         ? 'Các trang này đã được trích trước đây; dùng lại kết quả, không gọi AI.'
         : result.data.existing
           ? 'Việc trích các trang này đã có trong hàng đợi.'
-          : 'Đã ghi nhận. AI sẽ bắt đầu trích trong giây lát; trạng thái hiện ngay bên dưới.'
+          : 'Đã đưa vào hàng đợi. Trạng thái thật hiện ngay ở mục này.'
     );
     await onChanged();
   };
@@ -370,31 +757,59 @@ function SectionCard({
     const result = await textbookApi.unlink(document.id, entry.id, nodeId);
     setBusy(null);
     if (!result.ok) return setError(result.error);
-    onFlash('Đã bỏ liên kết. Trích đoạn của mục này không còn được dùng cho bài.');
+    onFlash(
+      'Đã bỏ liên kết. Trích đoạn của mục này vẫn được giữ, nhưng không còn dùng cho bài này.'
+    );
     await onChanged();
   };
 
-  const latest = jobs.slice(0, 3);
+  const parsedRange = parseRange(range, whole);
+  const saveRange = async (next: PageSpan | null) => {
+    setBusy('range');
+    setError(null);
+    const result = await textbookApi.link(document.id, entry.id, nodeId, next);
+    setBusy(null);
+    if (!result.ok) return setError(result.error);
+    setEditingRange(false);
+    onFlash(next ? `Bài này giờ dùng ${formatSpan(next)} của mục.` : 'Bài này dùng cả mục.');
+    await onChanged();
+  };
+
+  const recent = section.jobs.slice(0, 3);
   const byKind = (['THEORY', 'METHOD', 'WORKED_EXAMPLE', 'EXERCISE', 'SOLUTION'] as const)
     .map((kind) => ({
       kind,
       items: section.artifacts.filter((artifact) => artifact.kind === kind),
     }))
     .filter((group) => group.items.length);
+  const approvedIds = new Set(
+    section.artifacts.filter((item) => item.reviewStatus === 'APPROVED').map((item) => item.id)
+  );
 
   return (
     <section
       className="overflow-hidden rounded-xl border border-slate-200 bg-white"
       aria-label={entry.originalHeading}
     >
-      <header className="flex items-start gap-3 px-4 py-3">
+      <header className="flex items-start gap-3 px-4 pt-3">
         <BookOpen className="mt-0.5 size-4 shrink-0 text-slate-400" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold leading-5 text-slate-950">
-            <InlineText text={entry.originalHeading} />
-          </h3>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="text-sm font-semibold leading-5 text-slate-950">
+              <InlineText text={entry.originalHeading} />
+            </h3>
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${TONE[state.tone]}`}
+            >
+              {state.key === 'EXTRACTING' && (
+                <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+              )}
+              {state.label}
+            </span>
+          </div>
           <p className="text-xs text-slate-500">
-            {document.title} · {pageRange(entry.printedStartPage, entry.printedEndPage)}
+            {document.title} · {formatSpan(span)}
+            {narrowed && <> (một phần của mục {formatSpan(whole)})</>}
             {section.subsections.length > 0 && (
               <>
                 {' · '}
@@ -408,7 +823,21 @@ function SectionCard({
                 </button>
               </>
             )}
+            {' · '}
+            <button
+              type="button"
+              className="font-medium text-slate-600 underline-offset-2 hover:underline"
+              onClick={() => setEditingRange((value) => !value)}
+            >
+              Chỉnh trang
+            </button>
           </p>
+          {otherLessons.length > 0 && (
+            <p className="text-xs text-slate-500">
+              Cũng dùng cho:{' '}
+              {otherLessons.map((item) => `“${item.title ?? 'bài khác'}”`).join(', ')}
+            </p>
+          )}
         </div>
         <Button
           size="sm"
@@ -420,6 +849,51 @@ function SectionCard({
           <Unlink /> <span className="hidden sm:inline">Bỏ liên kết</span>
         </Button>
       </header>
+      <p className="px-4 pb-3 pl-11 pt-1 text-xs leading-5 text-slate-600">
+        {state.next}
+        {state.extractedPages.length > 0 && (
+          <>
+            {' '}
+            Đã trích: {formatPageList(state.extractedPages)}
+            {state.remainingPages && state.remainingPages.length > 0 && (
+              <>; chưa trích: {formatPageList(state.remainingPages)}</>
+            )}
+            .
+          </>
+        )}
+      </p>
+      {editingRange && (
+        <div className="mx-4 mb-3 space-y-2 rounded-lg bg-slate-50 p-3">
+          <p className="text-xs leading-5 text-slate-600">
+            Khi hai bài chia nhau một mục, chọn đúng phần bài này dùng. AI chỉ đọc trích đoạn từ các
+            trang này.
+          </p>
+          <RangeFields span={range} limit={whole} onChange={setRange} />
+          {parsedRange.error && <p className="text-xs text-amber-800">{parsedRange.error}</p>}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              disabled={busy !== null || !parsedRange.span}
+              onClick={() => parsedRange.span && void saveRange(parsedRange.span)}
+            >
+              {busy === 'range' && <Loader2 className="animate-spin" />} Lưu phạm vi trang
+            </Button>
+            {narrowed && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy !== null}
+                onClick={() => void saveRange(null)}
+              >
+                Dùng cả mục
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => setEditingRange(false)}>
+              Hủy
+            </Button>
+          </div>
+        </div>
+      )}
       {showSubsections && (
         <ul className="mx-4 mb-3 space-y-0.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
           {section.subsections.map((item) => (
@@ -432,7 +906,7 @@ function SectionCard({
                 <InlineText text={item.originalHeading} />
               </span>
               <span className="shrink-0 tabular-nums text-slate-400">
-                {pageRange(item.printedStartPage, item.printedEndPage)}
+                {formatSpan(entrySpan(item))}
               </span>
             </li>
           ))}
@@ -455,7 +929,7 @@ function SectionCard({
           <Button
             size="sm"
             className="h-9"
-            disabled={!!pageProblem || busy !== null}
+            disabled={!!pageProblem || busy !== null || !!state.activeJob}
             onClick={() => void extract()}
           >
             {busy === 'extract' ? <Loader2 className="animate-spin" /> : null} Trích xuất
@@ -466,21 +940,48 @@ function SectionCard({
         >
           {pageProblem && pagesText
             ? pageProblem
-            : 'Dùng số trang in trên sách. AI đọc đúng các trang này, không đọc cả cuốn.'}
+            : 'Dùng số trang in trên sách. AI chỉ đọc đúng các trang này; kết quả cần bạn duyệt trước khi dùng.'}
         </p>
-        {latest.length > 0 && (
-          <div className="mt-2 space-y-1">
-            {latest.map((job) => (
-              <JobLine
-                key={job.id}
-                job={job}
-                onCancel={async () => {
-                  await textbookApi.cancelJob(job.id);
-                  await onChanged();
-                }}
-              />
-            ))}
+        {state.failedJob && !state.activeJob && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-red-50 px-2.5 py-1.5 text-xs text-red-800">
+            <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              {state.failedJob.error ?? 'Lần trích gần nhất bị lỗi.'}
+            </span>
+            {state.failedJob.retryable !== false && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 bg-white"
+                disabled={busy !== null}
+                onClick={() =>
+                  void extract(state.failedJob!.printedPages, state.failedJob!.entryIds)
+                }
+              >
+                <RotateCcw /> Thử lại {formatPageList(state.failedJob.printedPages)}
+              </Button>
+            )}
           </div>
+        )}
+        {recent.length > 0 && (
+          <details className="mt-2 text-xs text-slate-500">
+            <summary className="cursor-pointer font-medium text-slate-600">
+              Lịch sử trích xuất ({section.jobs.length})
+            </summary>
+            <div className="mt-1 space-y-1">
+              {recent.map((job) => (
+                <JobLine
+                  key={job.id}
+                  job={job}
+                  showError={false}
+                  onCancel={async () => {
+                    await textbookApi.cancelJob(job.id);
+                    await onChanged();
+                  }}
+                />
+              ))}
+            </div>
+          </details>
         )}
         {error && (
           <p role="alert" className="mt-2 text-sm text-red-700">
@@ -502,6 +1003,9 @@ function SectionCard({
                     key={artifact.id}
                     artifact={artifact}
                     paired={section.artifacts.find((item) => item.id === artifact.pairedArtifactId)}
+                    pairedApproved={
+                      !!artifact.pairedArtifactId && approvedIds.has(artifact.pairedArtifactId)
+                    }
                     onChanged={onChanged}
                   />
                 ))}
@@ -516,12 +1020,12 @@ function SectionCard({
 
 const REVIEW_STYLES = {
   NEEDS_REVIEW: {
-    label: 'Chờ duyệt',
-    className: 'border-slate-200',
-    badge: 'bg-slate-100 text-slate-700',
+    label: 'Chờ duyệt · AI chưa dùng',
+    className: 'border-amber-200',
+    badge: 'bg-amber-50 text-amber-900',
   },
   APPROVED: {
-    label: 'Đã duyệt',
+    label: 'Đã duyệt · AI dùng được',
     className: 'border-emerald-200 bg-emerald-50/30',
     badge: 'bg-emerald-100 text-emerald-800',
   },
@@ -535,10 +1039,12 @@ const REVIEW_STYLES = {
 function ArtifactCard({
   artifact,
   paired,
+  pairedApproved,
   onChanged,
 }: {
   artifact: TextbookArtifact;
   paired?: TextbookArtifact;
+  pairedApproved: boolean;
   onChanged: () => Promise<void>;
 }) {
   const [busy, setBusy] = React.useState(false);
@@ -548,6 +1054,13 @@ function ArtifactCard({
   const [content, setContent] = React.useState(artifact.content);
   const [open, setOpen] = React.useState(artifact.reviewStatus === 'NEEDS_REVIEW');
   const style = REVIEW_STYLES[artifact.reviewStatus];
+  const mathProblem = hasMathIssues(findMathIssues(`${artifact.title}\n${artifact.content}`));
+  // Mirrors the selection rule: an exercise whose paired solution is not approved is skipped.
+  const exerciseSkipped =
+    artifact.kind === 'EXERCISE' &&
+    artifact.reviewStatus === 'APPROVED' &&
+    !!artifact.pairedArtifactId &&
+    !pairedApproved;
 
   const run = async (action: () => Promise<{ ok: boolean; error?: string }>) => {
     setBusy(true);
@@ -573,6 +1086,9 @@ function ArtifactCard({
         />
         <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-slate-900">
           <InlineText text={artifact.title} />
+          <span className="ml-1.5 text-xs font-normal text-slate-500">
+            tr. {artifact.printedPages.join(', ')}
+          </span>
         </span>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>
           {style.label}
@@ -600,15 +1116,21 @@ function ArtifactCard({
           ) : (
             <RichText content={artifact.content} className="text-sm leading-7 text-slate-800" />
           )}
-          {!editing &&
-            hasMathIssues(
-              findMathIssues(`${artifact.title}
-${artifact.content}`)
-            ) && (
-              <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
-                Có công thức chưa hiển thị được. Bấm “Sửa” để viết lại trước khi duyệt.
-              </p>
-            )}
+          {!editing && mathProblem && (
+            <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
+              Có công thức chưa hiển thị được. Bấm “Sửa” để viết lại trước khi duyệt.
+            </p>
+          )}
+          {exerciseSkipped && (
+            <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
+              Lời giải ghép với bài này chưa được duyệt, nên AI sẽ bỏ qua bài tập này.
+            </p>
+          )}
+          {artifact.kind === 'EXERCISE' && !artifact.pairedArtifactId && (
+            <p className="text-xs text-slate-500">
+              Chưa tìm thấy lời giải đi kèm trong các trang đã trích.
+            </p>
+          )}
           <p className="text-xs text-slate-500">
             Nguồn: tr. {artifact.printedPages.join(', ')} (trang PDF {artifact.pdfPages.join(', ')})
             {paired && (
@@ -638,7 +1160,7 @@ ${artifact.content}`)
                   disabled={busy}
                   onClick={() => void run(() => textbookApi.review(artifact.id, 'approve'))}
                 >
-                  <Check /> Duyệt
+                  <Check /> Duyệt cho AI dùng
                 </Button>
                 <Button
                   size="sm"
@@ -683,7 +1205,7 @@ ${artifact.content}`)
                 disabled={busy}
                 onClick={() => void run(() => textbookApi.review(artifact.id, 'reopen'))}
               >
-                <RotateCcw /> Duyệt lại
+                <RotateCcw /> {artifact.reviewStatus === 'APPROVED' ? 'Bỏ duyệt' : 'Duyệt lại'}
               </Button>
             )}
           </div>

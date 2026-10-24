@@ -152,6 +152,12 @@ export interface TextbookKnowledgeMapping {
   confidence: number;
   status: 'CONFIRMED' | 'REJECTED';
   confirmationRequired: boolean;
+  /**
+   * Printed pages of the section this lesson uses, when the Admin narrowed them
+   * (P1/P2 can split a section). Absent: the whole section, as the outline says.
+   */
+  printedStartPage?: number | null;
+  printedEndPage?: number | null;
   updatedAt: string;
 }
 

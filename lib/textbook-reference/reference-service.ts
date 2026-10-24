@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { createHash } from 'node:crypto';
 import {
   approvedArtifactsForNode,
   durableTextbookBackendConfigured,
@@ -37,6 +38,10 @@ export function approvedReferencesForNode<
 /** What a lesson draft may quote from: approved, bounded, with its source. */
 export interface LessonReference {
   artifactId: string;
+  documentId: string;
+  entryId: string;
+  /** SHA-256 of the full approved text, so a draft can be traced to this exact version. */
+  contentSha256: string;
   kind: ExtractedArtifactKind;
   title: string;
   content: string;
@@ -90,6 +95,9 @@ export function selectLessonReferences(
     total += text.length;
     selected.push({
       artifactId: artifact.id,
+      documentId: artifact.documentId,
+      entryId: artifact.entryId,
+      contentSha256: createHash('sha256').update(artifact.content).digest('hex'),
       kind: artifact.kind,
       title: artifact.title,
       content: text,

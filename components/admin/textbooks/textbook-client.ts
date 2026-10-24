@@ -1,6 +1,7 @@
 'use client';
 
 import { tusUpload } from '@/lib/textbook-reference/tus-upload';
+import type { LessonTextbookView } from '@/lib/textbook-reference/lesson-view';
 import type {
   PageLayout,
   TextbookAnchor,
@@ -8,7 +9,6 @@ import type {
   TextbookDocumentRecord,
   TextbookExtractionJob,
   TextbookKnowledgeMapping,
-  TextbookTocEntry,
   TextbookWorkerStatus,
 } from '@/lib/textbook-reference/types';
 
@@ -34,28 +34,9 @@ export interface DocumentView {
   mappings: Array<TextbookKnowledgeMapping & { knowledgeNodeTitle: string | null }>;
 }
 
-export interface LessonSection {
-  mapping: TextbookKnowledgeMapping;
-  document: DocumentSummary;
-  entry: TextbookTocEntry;
-  subsections: TextbookTocEntry[];
-  artifacts: TextbookArtifact[];
-}
-
-export interface LessonView {
-  worker: TextbookWorkerStatus;
-  node: { id: string; title: string };
-  sections: LessonSection[];
-  jobs: TextbookExtractionJob[];
-  approvedCount: number;
-  documents: Array<DocumentSummary & { tocEntries: TextbookTocEntry[] }>;
-  suggestions: Array<{
-    documentId: string;
-    documentTitle: string;
-    entry: TextbookTocEntry;
-    score: number;
-  }>;
-}
+export type LessonView = LessonTextbookView & { worker: TextbookWorkerStatus };
+export type LessonSection = LessonView['sections'][number];
+export type LessonRecommendation = LessonView['recommendations'][number];
 
 const ENDPOINT = '/api/admin/textbooks';
 
@@ -114,8 +95,20 @@ export const textbookApi = {
     }),
   indexToc: (documentId: string, replace = false) =>
     post<{ job: TextbookExtractionJob }>({ action: 'index-toc', documentId, replace }),
-  link: (documentId: string, entryId: string, knowledgeNodeId: string) =>
-    post({ action: 'confirm-mapping', documentId, entryId, knowledgeNodeId }),
+  /** Links a section, or re-links it with a narrower page range (null range: whole section). */
+  link: (
+    documentId: string,
+    entryId: string,
+    knowledgeNodeId: string,
+    range?: { start: number; end: number } | null
+  ) =>
+    post({
+      action: 'confirm-mapping',
+      documentId,
+      entryId,
+      knowledgeNodeId,
+      ...(range && { printedStartPage: range.start, printedEndPage: range.end }),
+    }),
   unlink: (documentId: string, entryId: string, knowledgeNodeId: string) =>
     post({ action: 'remove-mapping', documentId, entryId, knowledgeNodeId }),
   extract: (input: {
