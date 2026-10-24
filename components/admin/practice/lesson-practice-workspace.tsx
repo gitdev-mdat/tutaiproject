@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   ChevronDown,
   Eye,
@@ -608,6 +609,13 @@ export function LessonPracticeWorkspace({
         >
           <Sparkles className="size-4" /> Gợi ý bằng AI
         </button>
+        <Link
+          href={`/admin/practice/${coverage.lessonId}/textbook`}
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          data-testid="open-textbook-exercises"
+        >
+          <BookOpen className="size-4" /> Bài tập từ sách
+        </Link>
       </div>
 
       <div ref={editorRef} className="scroll-mt-4">

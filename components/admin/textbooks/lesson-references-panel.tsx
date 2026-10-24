@@ -173,6 +173,23 @@ export function LessonReferencesPanel({
         {notice}
       </div>
 
+      {view.sections.length > 0 && (
+        <a
+          href={`/admin/practice/${nodeId}/textbook`}
+          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm hover:bg-slate-50"
+          data-testid="textbook-exercises-link"
+        >
+          <BookOpen className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-slate-900">Bài tập từ sách cho bài này</span>
+            <span className="block text-xs text-slate-600">
+              Câu hỏi trong các phần bài tập của chương được ghép lời giải, kiểm tra và nhập vào
+              Ngân hàng câu hỏi ở trang riêng. Phần dưới chỉ là tư liệu lý thuyết.
+            </span>
+          </span>
+        </a>
+      )}
+
       {view.sections.map((section) => (
         <SectionCard
           key={section.mapping.id}
@@ -791,7 +808,16 @@ function SectionCard({
   };
 
   const recent = section.jobs.slice(0, 3);
-  const byKind = (['THEORY', 'METHOD', 'WORKED_EXAMPLE', 'EXERCISE', 'SOLUTION'] as const)
+  // Exercises and solutions are practice material, not theory: counted here, worked on in "Bài tập từ sách".
+  const practiceItems = {
+    exercises: section.artifacts.filter(
+      (a) => a.kind === 'EXERCISE' && a.reviewStatus !== 'REJECTED'
+    ).length,
+    solutions: section.artifacts.filter(
+      (a) => a.kind === 'SOLUTION' && a.reviewStatus !== 'REJECTED'
+    ).length,
+  };
+  const byKind = (['THEORY', 'METHOD', 'WORKED_EXAMPLE'] as const)
     .map((kind) => ({
       kind,
       items: section.artifacts
@@ -997,6 +1023,28 @@ function SectionCard({
         )}
       </div>
 
+      {(practiceItems.exercises > 0 || practiceItems.solutions > 0) && (
+        <div
+          className="flex flex-col gap-2 border-t border-slate-100 px-4 py-3 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between"
+          data-testid="section-practice-summary"
+        >
+          <p>
+            {[
+              practiceItems.exercises ? `${practiceItems.exercises} câu bài tập` : null,
+              practiceItems.solutions ? `${practiceItems.solutions} lời giải` : null,
+            ]
+              .filter(Boolean)
+              .join(' và ')}{' '}
+            trích từ mục này là tư liệu luyện tập, không phải lý thuyết cho AI.
+          </p>
+          <a
+            href={`/admin/practice/${nodeId}/textbook`}
+            className="shrink-0 font-semibold text-primary hover:underline"
+          >
+            Ghép lời giải và đưa vào luyện tập
+          </a>
+        </div>
+      )}
       {byKind.length > 0 && (
         <div className="space-y-4 border-t border-slate-100 px-4 py-4">
           {byKind.map((group) => (
@@ -1009,12 +1057,6 @@ function SectionCard({
                   </span>
                 )}
               </h4>
-              {group.kind === 'EXERCISE' && (
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Câu hỏi trích từ sách chỉ là tư liệu soạn bài: không tự đưa vào Ngân hàng câu hỏi
-                  hay cho học sinh. Đáp án chỉ lấy từ lời giải in trong sách, không do AI đoán.
-                </p>
-              )}
               <ul className="mt-2 space-y-2">
                 {group.items.map((artifact) => (
                   <ArtifactCard

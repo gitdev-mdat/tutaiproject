@@ -16,8 +16,9 @@ import {
   TEXTBOOK_RESPONSE_SCHEMA,
   validateItem,
 } from './extraction-response';
-import { applySolutionMatch, matchSolutions } from './solution-matching';
+import { proposeSolutions } from './solution-matching';
 import { renderPrintedPageCrops } from './pdf-pages';
+import { isPracticeSourceForLesson } from './practice-sources';
 import {
   enqueueTextbookJob,
   getTextbookDocument,
@@ -25,7 +26,6 @@ import {
   listTextbookArtifacts,
   listTextbookJobs,
   listTextbookMappings,
-  pairTextbookArtifacts,
   recordFinishedTextbookJob,
 } from './repository';
 import { visionProviderFor, type VisionProvider } from './vision-provider';
@@ -126,7 +126,15 @@ async function planExtraction(input: ExtractionRequest) {
       'Có trang chưa xác định được vị trí trong PDF. Thêm mốc trang bao quanh các trang này.'
     );
   const mappings = await listTextbookMappings({ documentId: document.id });
-  if (!mappingCoversEntries(document, mappings, document.id, input.knowledgeNodeId, entries))
+  // Exercise sets and "Hướng dẫn giải" sections of a chapter the lesson is linked
+  // in are practice sources: extractable without linking them as lesson references.
+  const practiceSource = entries.every((entry) =>
+    isPracticeSourceForLesson(entry, document, mappings, input.knowledgeNodeId)
+  );
+  if (
+    !practiceSource &&
+    !mappingCoversEntries(document, mappings, document.id, input.knowledgeNodeId, entries)
+  )
     throw new TextbookRequestError('Mục này chưa được liên kết với bài học trong Cây kiến thức.');
   // A link narrowed to part of a section only allows extraction inside that part.
   const spans = mappings
@@ -145,6 +153,7 @@ async function planExtraction(input: ExtractionRequest) {
       )
     );
   if (
+    !practiceSource &&
     !spans.some((span) => span === null) &&
     pages.some((page) => !spans.some((span) => span && page >= span.start && page <= span.end))
   )
@@ -423,19 +432,11 @@ export async function runExtractionJob(
 }
 
 /**
- * Pairs the book's unresolved questions with solutions extracted in any batch.
- * Only pairing metadata changes; no artifact's text or review decision does.
- * Returns how many pairs were made now.
+ * How many of the book's questions now have a suggested solution. Suggestions
+ * are computed on read and never stored: a pair only becomes real when an
+ * Admin confirms it in the textbook-exercises workspace.
  */
 export async function matchStoredSolutions(documentId: string): Promise<number> {
-  const artifacts = await listTextbookArtifacts({ documentId });
-  const { matches } = matchSolutions(artifacts);
-  let paired = 0;
-  for (const match of matches) {
-    const exercise = artifacts.find((item) => item.id === match.exerciseId)!;
-    const solution = artifacts.find((item) => item.id === match.solutionId)!;
-    applySolutionMatch(exercise, solution, match);
-    if (await pairTextbookArtifacts(exercise, solution)) paired += 1;
-  }
-  return paired;
+  const proposals = proposeSolutions(await listTextbookArtifacts({ documentId }));
+  return [...proposals.values()].filter((proposal) => proposal.status === 'SUGGESTED').length;
 }
