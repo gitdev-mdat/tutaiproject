@@ -80,6 +80,8 @@ export async function GET(request: Request) {
   const locations = pages.map((page) => mapPrintedPage(page, ANCHORS, 'TWO_UP'));
   const images = await renderPrintedPageCrops(pdf, locations as never);
   const image = url.searchParams.get('image');
+  if (image !== null && url.searchParams.get('b64'))
+    return NextResponse.json({ b64: images[Number(image)].bytes.toString('base64') });
   if (image !== null)
     return new NextResponse(new Uint8Array(images[Number(image)].bytes), {
       headers: { 'content-type': 'image/png' },
