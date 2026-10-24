@@ -47,7 +47,20 @@ const MESSAGES: Record<TextbookJobErrorCode, { message: string; retryable: boole
     message: 'Không đọc được tệp PDF đã lưu. Tải tệp lên lại.',
     retryable: false,
   },
-  UNKNOWN: { message: 'Xử lý thất bại vì một lỗi không xác định.', retryable: true },
+  INVALID_RESPONSE: {
+    message:
+      'Gemini đã trả lời nhưng không có câu hỏi hay nội dung nào dùng được. Có thể thử lại một lần; nếu vẫn lỗi, trích từng trang một.',
+    retryable: true,
+  },
+  UNREADABLE: {
+    message:
+      'Gemini không đọc được bản quét của các trang này. Kiểm tra mốc trang (đúng trang, đúng nửa trái/phải) và chất lượng bản quét; gửi lại y nguyên sẽ không giúp.',
+    retryable: false,
+  },
+  UNKNOWN: {
+    message: 'Xử lý thất bại vì một lỗi chưa phân loại. Xem “Chi tiết kỹ thuật”, rồi thử lại.',
+    retryable: true,
+  },
 };
 
 function fromHttp(code: number, status: string, text: string): TextbookJobErrorCode {
@@ -83,6 +96,8 @@ export function describeJobError(error: unknown): JobErrorDescription {
   if (code === 'UNKNOWN') {
     const known = (error as { code?: string; status?: number; name?: string } | null) ?? {};
     if (known.code === 'TIMEOUT') code = 'TIMEOUT';
+    else if (known.code === 'INVALID_RESPONSE') code = 'INVALID_RESPONSE';
+    else if (known.code === 'UNREADABLE') code = 'UNREADABLE';
     else if (known.code === 'INTERRUPTED') code = 'INTERRUPTED';
     else if (known.name === 'TextbookChecksumError') code = 'FILE';
     else if (typeof known.status === 'number') code = fromHttp(known.status, '', raw);
@@ -91,7 +106,8 @@ export function describeJobError(error: unknown): JobErrorDescription {
   const { message, retryable } = MESSAGES[code];
   return {
     code,
-    message: code === 'UNKNOWN' ? `${message} Chi tiết: ${raw.slice(0, 200)}` : message,
+    // Provider internals stay in `detail` (the diagnostics view), never in the message.
+    message,
     detail,
     retryable,
   };

@@ -71,12 +71,14 @@ export function selectLessonReferences(
 ): LessonReference[] {
   const byId = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
   const ordered = [...artifacts]
-    // An exercise without its approved solution teaches nothing reliable; skip it.
+    // An exercise without its approved solution teaches nothing reliable; skip it,
+    // including a question whose solution has not been located yet.
     .filter(
       (artifact) =>
         artifact.kind !== 'EXERCISE' ||
-        !artifact.pairedArtifactId ||
-        byId.has(artifact.pairedArtifactId)
+        (artifact.pairedArtifactId
+          ? byId.has(artifact.pairedArtifactId)
+          : artifact.solutionStatus !== 'UNRESOLVED')
     )
     .sort(
       (a, b) =>

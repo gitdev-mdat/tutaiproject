@@ -56,7 +56,16 @@ export async function renderPrintedPageCrops(
   bytes: Uint8Array,
   pages: Array<{ printedPage: number; pdfPage: number; position: PagePosition }>,
   printedPageWidth = 1100
-): Promise<Array<{ printedPage: number; pdfPage: number; position: PagePosition; bytes: Buffer }>> {
+): Promise<
+  Array<{
+    printedPage: number;
+    pdfPage: number;
+    position: PagePosition;
+    width: number;
+    height: number;
+    bytes: Buffer;
+  }>
+> {
   const { createCanvas } = await import('@napi-rs/canvas');
   const pdf = await openPdf(bytes);
   try {
@@ -89,7 +98,14 @@ export async function renderPrintedPageCrops(
           width,
           full.height
         );
-      output.push({ ...location, bytes: crop.toBuffer('image/png') });
+      output.push({
+        printedPage: location.printedPage,
+        pdfPage: location.pdfPage,
+        position: location.position,
+        width,
+        height: full.height,
+        bytes: crop.toBuffer('image/png'),
+      });
     }
     return output;
   } finally {

@@ -71,6 +71,41 @@ export type ExtractedArtifactKind =
   'THEORY' | 'METHOD' | 'WORKED_EXAMPLE' | 'EXERCISE' | 'SOLUTION';
 export type ArtifactReviewStatus = 'NEEDS_REVIEW' | 'APPROVED' | 'REJECTED';
 
+/** One answer choice of a multiple-choice exercise, as printed. */
+export interface ExerciseChoice {
+  label: 'A' | 'B' | 'C' | 'D';
+  text: string;
+}
+
+/**
+ * Which printed exercise set a question or solution belongs to, from the table
+ * of contents: matching a solution to a question needs the set and problem
+ * type, never the question number alone (numbers restart in every set).
+ */
+export interface ExerciseSetRef {
+  /** Outline entry the extraction ran under (e.g. "Bài tập rèn luyện kỹ năng"). */
+  entryId: string;
+  heading: string;
+  /** Level-2 ancestor ("I.I. Tính đơn điệu của hàm số"), the scope solutions are searched in. */
+  chapterEntryId: string | null;
+  /** Normalized problem type ("dạng 1"), from the outline or the printed solution heading. */
+  problemType: string | null;
+}
+
+/**
+ * Question/solution lifecycle, adapted to the artifact row instead of a separate
+ * state machine: an extracted question is reviewable at once (reviewStatus
+ * NEEDS_REVIEW) whatever its solution status. UNRESOLVED: no solution located yet.
+ * MATCHED: a solution from the same set, number and statement was paired.
+ * VERIFIED is not stored: it is MATCHED with both sides approved by an Admin.
+ */
+export type SolutionStatus = 'UNRESOLVED' | 'MATCHED';
+
+/** An exercise's answer is never guessed: it is unresolved until a matched solution gives it. */
+export type ExerciseAnswer =
+  | { status: 'UNRESOLVED' }
+  | { status: 'FROM_SOLUTION'; choice: string | null; solutionArtifactId: string };
+
 export interface TextbookArtifact {
   id: string;
   documentId: string;
@@ -84,6 +119,20 @@ export interface TextbookArtifact {
   exerciseReference?: string;
   solutionReference?: string;
   pairedArtifactId?: string;
+  /** EXERCISE/SOLUTION: printed question number ("3"), as seen on the page. */
+  questionNumber?: string;
+  /** EXERCISE: printed A–D choices, when the question is multiple choice. */
+  choices?: ExerciseChoice[];
+  /** The question relies on a figure, graph or table that is not reproduced as text. */
+  hasDiagram?: boolean;
+  exerciseSet?: ExerciseSetRef;
+  /** EXERCISE only. */
+  solutionStatus?: SolutionStatus;
+  answer?: ExerciseAnswer;
+  /** SOLUTION only: the choice the printed solution selects ("Chọn A"), if it states one. */
+  answerChoice?: string | null;
+  /** Prompt version that produced the artifact. */
+  promptVersion?: string;
   reviewStatus: ArtifactReviewStatus;
   verificationNotes: string[];
   extractionKey: string;
@@ -101,7 +150,44 @@ export type TextbookJobErrorCode =
   | 'OUTPUT_LIMIT'
   | 'INTERRUPTED'
   | 'FILE'
+  | 'INVALID_RESPONSE' // the provider answered, but not with usable structured data
+  | 'UNREADABLE' // the provider could not read the scanned pages
   | 'UNKNOWN';
+
+/**
+ * What a finished extraction found. COMPLETE: every page read, every item valid.
+ * PARTIAL: valid items were stored, but some item was rejected, cut off or a page
+ * region was unreadable. EMPTY: the pages were read and hold nothing to extract.
+ */
+export type ExtractionOutcome = 'COMPLETE' | 'PARTIAL' | 'EMPTY';
+
+export interface ExtractionPageReport {
+  printedPage: number;
+  status: 'READ' | 'PARTLY_READABLE' | 'UNREADABLE' | 'NO_EDUCATIONAL_CONTENT';
+  note?: string;
+}
+
+/** Facts about one provider round trip, kept on the job for the diagnostics view. */
+export interface ExtractionDiagnostics {
+  promptVersion: string;
+  images: Array<{
+    printedPage: number;
+    pdfPage: number;
+    position: PagePosition;
+    width: number;
+    height: number;
+  }>;
+  finishReason?: string;
+  responseChars: number;
+  itemsReturned: number;
+  itemsAccepted: number;
+  rejectedItems: Array<{ reference: string; reason: string }>;
+  unreadable: Array<{ printedPage: number; reference: string; reason: string }>;
+  pageReports: ExtractionPageReport[];
+  truncated: boolean;
+  questions: number;
+  solutionsMatched: number;
+}
 
 export type TextbookJobKind = 'VERIFY' | 'INDEX_TOC' | 'EXTRACT';
 export type TextbookJobStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
@@ -135,6 +221,11 @@ export interface TextbookExtractionJob {
   errorDetail?: string;
   /** False when retrying cannot help until someone fixes the cause (billing, key, model). */
   retryable?: boolean;
+  /** EXTRACT: prompt version the job was planned with; a retry with a newer one reads differently. */
+  promptVersion?: string;
+  /** EXTRACT, COMPLETED: what the pages yielded. */
+  outcome?: ExtractionOutcome;
+  diagnostics?: ExtractionDiagnostics;
   /** When the current or last attempt started (RUNNING jobs). */
   startedAt?: string;
   /** Lease expiry of a RUNNING job; past it the job counts as interrupted. */

@@ -24,7 +24,12 @@ import { findMathIssues, hasMathIssues } from '@/lib/content/math-notation';
 import { entrySpan, formatSpan, type PageSpan } from '@/lib/textbook-reference/lesson-coverage';
 import { formatPageList } from '@/lib/textbook-reference/section-state';
 import type { LessonTextbookReadiness } from '@/lib/textbook-reference/lesson-view';
-import type { TextbookArtifact, TextbookTocEntry } from '@/lib/textbook-reference/types';
+import { PROMPT_VERSION } from '@/lib/textbook-reference/prompt-version';
+import type {
+  TextbookArtifact,
+  TextbookExtractionJob,
+  TextbookTocEntry,
+} from '@/lib/textbook-reference/types';
 import {
   textbookApi,
   type LessonRecommendation,
@@ -145,6 +150,13 @@ export function LessonReferencesPanel({
     return null;
   };
 
+  // A question may be paired with a solution extracted under another linked section.
+  const lessonArtifacts = [
+    ...new Map(
+      view.sections.flatMap((section) => section.artifacts).map((item) => [item.id, item])
+    ).values(),
+  ];
+
   return (
     <div className="space-y-4">
       <ReadinessSummary
@@ -165,6 +177,7 @@ export function LessonReferencesPanel({
         <SectionCard
           key={section.mapping.id}
           section={section}
+          lessonArtifacts={lessonArtifacts}
           nodeId={nodeId}
           otherLessons={view.otherLinks.filter(
             (item) => item.documentId === section.document.id && item.entryId === section.entry.id
@@ -686,12 +699,14 @@ function defaultPages(section: LessonSection) {
 
 function SectionCard({
   section,
+  lessonArtifacts,
   nodeId,
   otherLessons,
   onChanged,
   onFlash,
 }: {
   section: LessonSection;
+  lessonArtifacts: TextbookArtifact[];
   nodeId: string;
   otherLessons: LessonView['otherLinks'];
   onChanged: () => Promise<void>;
@@ -779,11 +794,17 @@ function SectionCard({
   const byKind = (['THEORY', 'METHOD', 'WORKED_EXAMPLE', 'EXERCISE', 'SOLUTION'] as const)
     .map((kind) => ({
       kind,
-      items: section.artifacts.filter((artifact) => artifact.kind === kind),
+      items: section.artifacts
+        .filter((artifact) => artifact.kind === kind)
+        .sort(
+          (a, b) =>
+            (a.printedPages[0] ?? 0) - (b.printedPages[0] ?? 0) ||
+            Number(a.questionNumber ?? 0) - Number(b.questionNumber ?? 0)
+        ),
     }))
     .filter((group) => group.items.length);
   const approvedIds = new Set(
-    section.artifacts.filter((item) => item.reviewStatus === 'APPROVED').map((item) => item.id)
+    lessonArtifacts.filter((item) => item.reviewStatus === 'APPROVED').map((item) => item.id)
   );
 
   return (
@@ -942,26 +963,12 @@ function SectionCard({
             ? pageProblem
             : 'Dùng số trang in trên sách. AI chỉ đọc đúng các trang này; kết quả cần bạn duyệt trước khi dùng.'}
         </p>
-        {state.failedJob && !state.activeJob && (
-          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-red-50 px-2.5 py-1.5 text-xs text-red-800">
-            <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 flex-1">
-              {state.failedJob.error ?? 'Lần trích gần nhất bị lỗi.'}
-            </span>
-            {state.failedJob.retryable !== false && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 bg-white"
-                disabled={busy !== null}
-                onClick={() =>
-                  void extract(state.failedJob!.printedPages, state.failedJob!.entryIds)
-                }
-              >
-                <RotateCcw /> Thử lại {formatPageList(state.failedJob.printedPages)}
-              </Button>
-            )}
-          </div>
+        {!state.activeJob && (state.failedJob || state.lastCompletedJob) && (
+          <ExtractionResult
+            section={section}
+            busy={busy !== null}
+            onRetry={(job) => void extract(job.printedPages, job.entryIds)}
+          />
         )}
         {recent.length > 0 && (
           <details className="mt-2 text-xs text-slate-500">
@@ -996,13 +1003,24 @@ function SectionCard({
             <div key={group.kind}>
               <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {KIND_LABELS[group.kind]}
+                {group.items.length > 1 && (
+                  <span className="ml-1 font-normal normal-case tabular-nums">
+                    ({group.items.length})
+                  </span>
+                )}
               </h4>
+              {group.kind === 'EXERCISE' && (
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Câu hỏi trích từ sách chỉ là tư liệu soạn bài: không tự đưa vào Ngân hàng câu hỏi
+                  hay cho học sinh. Đáp án chỉ lấy từ lời giải in trong sách, không do AI đoán.
+                </p>
+              )}
               <ul className="mt-2 space-y-2">
                 {group.items.map((artifact) => (
                   <ArtifactCard
                     key={artifact.id}
                     artifact={artifact}
-                    paired={section.artifacts.find((item) => item.id === artifact.pairedArtifactId)}
+                    paired={lessonArtifacts.find((item) => item.id === artifact.pairedArtifactId)}
                     pairedApproved={
                       !!artifact.pairedArtifactId && approvedIds.has(artifact.pairedArtifactId)
                     }
@@ -1015,6 +1033,226 @@ function SectionCard({
         </div>
       )}
     </section>
+  );
+}
+
+const OUTCOME: Record<
+  'COMPLETE' | 'PARTIAL' | 'EMPTY' | 'FAILED' | 'CACHED',
+  { label: string; box: string; chip: string }
+> = {
+  COMPLETE: {
+    label: 'Trích đủ',
+    box: 'border-emerald-200 bg-emerald-50/50',
+    chip: 'bg-emerald-100 text-emerald-800',
+  },
+  PARTIAL: {
+    label: 'Trích được một phần',
+    box: 'border-amber-200 bg-amber-50/60',
+    chip: 'bg-amber-100 text-amber-900',
+  },
+  EMPTY: {
+    label: 'Không có nội dung để trích',
+    box: 'border-slate-200 bg-white',
+    chip: 'bg-slate-100 text-slate-700',
+  },
+  FAILED: {
+    label: 'Chưa trích được',
+    box: 'border-red-200 bg-red-50/60',
+    chip: 'bg-red-100 text-red-800',
+  },
+  CACHED: {
+    label: 'Dùng lại kết quả đã có',
+    box: 'border-slate-200 bg-white',
+    chip: 'bg-slate-100 text-slate-700',
+  },
+};
+
+const HALF: Record<string, string> = { LEFT: 'nửa trái', RIGHT: 'nửa phải', FULL: 'cả trang' };
+const PAGE_STATUS: Record<string, string> = {
+  READ: 'đọc được',
+  PARTLY_READABLE: 'đọc được một phần',
+  UNREADABLE: 'không đọc được',
+  NO_EDUCATIONAL_CONTENT: 'không có nội dung học tập',
+};
+
+/**
+ * The newest extraction of a section in one box: which printed pages were read
+ * (and where they sit in the PDF), whether it succeeded fully or partly, how many
+ * questions and matched solutions it produced, and the one next step. Provider
+ * details stay folded under "Chi tiết kỹ thuật".
+ */
+function ExtractionResult({
+  section,
+  busy,
+  onRetry,
+}: {
+  section: LessonSection;
+  busy: boolean;
+  onRetry: (job: TextbookExtractionJob) => void;
+}) {
+  const { state } = section;
+  const job = state.failedJob ?? state.lastCompletedJob;
+  if (!job) return null;
+  const failed = job.status === 'FAILED';
+  const kind = failed
+    ? 'FAILED'
+    : job.cacheHit
+      ? 'CACHED'
+      : (job.outcome ?? (job.providerCalls ? 'COMPLETE' : 'CACHED'));
+  const style = OUTCOME[kind];
+  const diagnostics = job.diagnostics;
+  const read = diagnostics?.images.length
+    ? diagnostics.images
+        .map(
+          (image) =>
+            `tr. ${image.printedPage} (PDF ${image.pdfPage}, ${HALF[image.position] ?? image.position})`
+        )
+        .join(', ')
+    : null;
+  const jobArtifacts = section.artifacts.filter((artifact) =>
+    artifact.printedPages.some((page) => job.printedPages.includes(page))
+  );
+  const questions = jobArtifacts.filter(
+    (artifact) => artifact.kind === 'EXERCISE' && artifact.reviewStatus !== 'REJECTED'
+  );
+  const solutions = jobArtifacts.filter(
+    (artifact) => artifact.kind === 'SOLUTION' && artifact.reviewStatus !== 'REJECTED'
+  );
+  const others = jobArtifacts.length - questions.length - solutions.length;
+  const waiting = jobArtifacts.filter(
+    (artifact) => artifact.reviewStatus === 'NEEDS_REVIEW'
+  ).length;
+  const missed = [
+    ...(diagnostics?.unreadable ?? []).map(
+      (item) => `${item.reference || 'Một vùng'} (tr. ${item.printedPage}): ${item.reason}`
+    ),
+    ...(diagnostics?.rejectedItems ?? []).map((item) => `${item.reference}: ${item.reason}`),
+  ];
+  const newStrategy = (job.promptVersion ?? 'cũ') !== PROMPT_VERSION;
+  const counts = [
+    questions.length > 0 && `${questions.length} câu hỏi`,
+    questions.length > 0 &&
+      `${questions.filter((item) => item.pairedArtifactId).length} có lời giải`,
+    solutions.length > 0 && `${solutions.length} lời giải`,
+    others > 0 && `${others} trích đoạn lí thuyết/ví dụ`,
+    waiting > 0 && `${waiting} chờ duyệt`,
+  ].filter(Boolean);
+  const next = failed
+    ? job.retryable === false
+      ? 'Sửa nguyên nhân trước khi trích lại; gửi lại y nguyên không giúp.'
+      : newStrategy
+        ? 'Thử lại sẽ dùng cách đọc mới cho trang chỉ có bài tập: mỗi câu là một mục và không cần lời giải đi kèm.'
+        : 'Thử lại gửi đúng yêu cầu này thêm một lần; nên dùng khi lỗi do mạng hoặc Gemini quá tải. Nếu vẫn lỗi, trích từng trang một.'
+    : kind === 'EMPTY'
+      ? 'Các trang này không có lí thuyết, ví dụ hay bài tập. Kiểm tra lại số trang hoặc chọn trang khác.'
+      : waiting > 0
+        ? `Duyệt ${waiting} mục bên dưới, đối chiếu với bản quét.${questions.some((item) => !item.pairedArtifactId) ? ' Câu chưa có lời giải: trích các trang “Hướng dẫn giải” tương ứng, hệ thống sẽ tự ghép khi đối chiếu được.' : ''}`
+        : missed.length > 0
+          ? 'Các mục còn thiếu cần trích lại từng trang hoặc nhập tay.'
+          : 'Không cần làm gì thêm với lần trích này.';
+
+  return (
+    <div
+      role={failed ? 'alert' : 'status'}
+      className={`mt-2 space-y-1.5 rounded-lg border px-3 py-2.5 text-xs leading-5 text-slate-700 ${style.box}`}
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="font-semibold text-slate-900">
+          Lần trích {formatPageList(job.printedPages)}
+        </span>
+        <span className={`rounded-full px-2 py-0.5 font-medium ${style.chip}`}>{style.label}</span>
+        {counts.length > 0 && <span className="tabular-nums">{counts.join(' · ')}</span>}
+      </div>
+      {read && <p>Đã gửi cho AI: {read}.</p>}
+      {failed && <p className="font-medium text-red-800">{job.error ?? 'Lần trích này bị lỗi.'}</p>}
+      {kind === 'CACHED' && (
+        <p>
+          Các trang này đã được trích trước đây; dùng lại kết quả, không gọi AI và không tạo bản
+          trùng.
+        </p>
+      )}
+      {missed.length > 0 && (
+        <div>
+          <p className="font-medium text-amber-900">
+            Chưa trích được {missed.length} mục (đã giữ nguồn trang):
+          </p>
+          <ul className="list-disc pl-4">
+            {missed.slice(0, 6).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p>
+        <span className="font-medium text-slate-900">Tiếp theo: </span>
+        {next}
+      </p>
+      {failed && job.retryable !== false && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 bg-white"
+          disabled={busy}
+          onClick={() => onRetry(job)}
+        >
+          <RotateCcw /> Thử lại {formatPageList(job.printedPages)}
+        </Button>
+      )}
+      <details className="text-slate-500">
+        <summary className="cursor-pointer font-medium text-slate-600">Chi tiết kỹ thuật</summary>
+        <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 break-words">
+          {failed && (
+            <>
+              <dt>Loại lỗi</dt>
+              <dd>{job.errorCode ?? '—'}</dd>
+              <dt>Chi tiết</dt>
+              <dd className="font-mono text-[11px]">{job.errorDetail ?? '—'}</dd>
+            </>
+          )}
+          <dt>Mô hình</dt>
+          <dd>
+            {job.model ?? '—'} · cách đọc {job.promptVersion ?? 'trước v9'}
+          </dd>
+          <dt>Lượt gọi AI</dt>
+          <dd className="tabular-nums">
+            {job.providerCalls ?? (job.cacheHit ? 0 : 'không được ghi (lần chạy trước bản sửa)')}
+            {job.tokenUsage &&
+              ` · ${job.tokenUsage.input ?? '?'} token vào, ${job.tokenUsage.output ?? '?'} token ra`}
+          </dd>
+          {diagnostics && (
+            <>
+              <dt>Ảnh trang</dt>
+              <dd className="tabular-nums">
+                {diagnostics.images
+                  .map((image) => `tr. ${image.printedPage}: ${image.width}×${image.height}px`)
+                  .join('; ')}
+              </dd>
+              <dt>Phản hồi</dt>
+              <dd className="tabular-nums">
+                {diagnostics.responseChars} ký tự · kết thúc {diagnostics.finishReason ?? '—'}
+                {diagnostics.truncated && ' (bị cắt)'} · {diagnostics.itemsReturned} mục trả về,{' '}
+                {diagnostics.itemsAccepted} hợp lệ
+              </dd>
+              {diagnostics.pageReports.length > 0 && (
+                <>
+                  <dt>Từng trang</dt>
+                  <dd>
+                    {diagnostics.pageReports
+                      .map(
+                        (page) =>
+                          `tr. ${page.printedPage}: ${PAGE_STATUS[page.status] ?? page.status}${page.note ? ` (${page.note})` : ''}`
+                      )
+                      .join('; ')}
+                  </dd>
+                </>
+              )}
+            </>
+          )}
+          <dt>Mã việc</dt>
+          <dd className="font-mono text-[11px]">{job.id}</dd>
+        </dl>
+      </details>
+    </div>
   );
 }
 
@@ -1053,7 +1291,17 @@ function ArtifactCard({
   const [title, setTitle] = React.useState(artifact.title);
   const [content, setContent] = React.useState(artifact.content);
   const [open, setOpen] = React.useState(artifact.reviewStatus === 'NEEDS_REVIEW');
-  const style = REVIEW_STYLES[artifact.reviewStatus];
+  const awaitingSolution =
+    artifact.kind === 'EXERCISE' &&
+    artifact.reviewStatus === 'APPROVED' &&
+    (artifact.pairedArtifactId ? !pairedApproved : artifact.solutionStatus === 'UNRESOLVED');
+  const style = awaitingSolution
+    ? {
+        ...REVIEW_STYLES.APPROVED,
+        label: 'Đã duyệt đề · AI chưa dùng',
+        className: 'border-amber-200',
+      }
+    : REVIEW_STYLES[artifact.reviewStatus];
   const mathProblem = hasMathIssues(findMathIssues(`${artifact.title}\n${artifact.content}`));
   // Mirrors the selection rule: an exercise whose paired solution is not approved is skipped.
   const exerciseSkipped =
@@ -1086,6 +1334,13 @@ function ArtifactCard({
         />
         <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-slate-900">
           <InlineText text={artifact.title} />
+          {artifact.kind === 'EXERCISE' && (
+            <span
+              className={`ml-1.5 whitespace-nowrap rounded px-1 py-px text-[11px] font-medium ${artifact.pairedArtifactId ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}
+            >
+              {artifact.pairedArtifactId ? 'có lời giải' : 'chưa có lời giải'}
+            </span>
+          )}
           <span className="ml-1.5 text-xs font-normal text-slate-500">
             tr. {artifact.printedPages.join(', ')}
           </span>
@@ -1126,10 +1381,12 @@ function ArtifactCard({
               Lời giải ghép với bài này chưa được duyệt, nên AI sẽ bỏ qua bài tập này.
             </p>
           )}
-          {artifact.kind === 'EXERCISE' && !artifact.pairedArtifactId && (
-            <p className="text-xs text-slate-500">
-              Chưa tìm thấy lời giải đi kèm trong các trang đã trích.
-            </p>
+          {artifact.kind === 'EXERCISE' && (
+            <SolutionStatusNote
+              artifact={artifact}
+              paired={paired}
+              pairedApproved={pairedApproved}
+            />
           )}
           <p className="text-xs text-slate-500">
             Nguồn: tr. {artifact.printedPages.join(', ')} (trang PDF {artifact.pdfPages.join(', ')})
@@ -1217,5 +1474,44 @@ function ArtifactCard({
         </div>
       )}
     </li>
+  );
+}
+
+/** Where a question stands on its solution, and its answer only as the book's solution gives it. */
+function SolutionStatusNote({
+  artifact,
+  paired,
+  pairedApproved,
+}: {
+  artifact: TextbookArtifact;
+  paired?: TextbookArtifact;
+  pairedApproved: boolean;
+}) {
+  const verified =
+    !!artifact.pairedArtifactId && artifact.reviewStatus === 'APPROVED' && pairedApproved;
+  const answer =
+    artifact.answer?.status === 'FROM_SOLUTION'
+      ? artifact.answer.choice
+        ? `Đáp án theo lời giải trong sách: ${artifact.answer.choice}.`
+        : 'Lời giải trong sách không ghi rõ phương án.'
+      : 'Đáp án: chưa xác định (chưa có lời giải).';
+  return (
+    <div className="space-y-1 rounded-md bg-slate-50 px-2.5 py-1.5 text-xs leading-5 text-slate-600">
+      <p>
+        <span className="font-medium text-slate-800">
+          {verified
+            ? 'Đã xác minh: đề và lời giải đều đã duyệt.'
+            : artifact.pairedArtifactId
+              ? `Đã ghép lời giải ${paired ? `“${paired.title}”, tr. ${paired.printedPages.join(', ')}` : (artifact.solutionReference ?? '')}; ${paired ? 'cần duyệt cả hai.' : 'liên kết mục chứa lời giải với bài này để duyệt và để AI dùng được.'}`
+              : 'Chưa tìm thấy lời giải.'}
+        </span>{' '}
+      </p>
+      <p>{answer}</p>
+      {artifact.hasDiagram && (
+        <p className="text-amber-900">
+          Câu này dựa vào hình hoặc bảng: xem trên bản quét, hình không được chép lại.
+        </p>
+      )}
+    </div>
   );
 }

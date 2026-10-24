@@ -36,6 +36,55 @@ export interface SectionState {
   remainingPages: number[] | null;
   activeJob: TextbookExtractionJob | null;
   failedJob: TextbookExtractionJob | null;
+  /** Where this chapter prints its detailed solutions, from the outline. */
+  solutionSection: { id: string; heading: string; start: number | null; end: number | null } | null;
+  /** Newest finished extraction, with its outcome and diagnostics. */
+  lastCompletedJob: TextbookExtractionJob | null;
+  /** Approved items AI drafting really reads (questions without a located solution excluded). */
+  aiUsable: number;
+  questions: {
+    total: number;
+    withSolution: number;
+    /** Matched and both sides approved by an Admin. */
+    verified: number;
+    awaitingSolution: number;
+  };
+}
+
+type StateArtifact = Pick<
+  TextbookArtifact,
+  'id' | 'kind' | 'reviewStatus' | 'printedPages' | 'pairedArtifactId' | 'solutionStatus'
+>;
+
+/**
+ * Whether AI drafting reads an approved artifact. Mirrors reference selection:
+ * an exercise counts only with its approved solution; a question whose solution
+ * has not been located is reviewable but not used.
+ */
+export function usableByAi(artifact: StateArtifact, approvedIds: Set<string>) {
+  if (artifact.reviewStatus !== 'APPROVED') return false;
+  if (artifact.kind !== 'EXERCISE') return true;
+  return artifact.pairedArtifactId
+    ? approvedIds.has(artifact.pairedArtifactId)
+    : artifact.solutionStatus !== 'UNRESOLVED';
+}
+
+/** The chapter's "Hướng dẫn giải" / "Lời giải" / "Đáp án" outline entry, if it has one. */
+export function solutionSectionFor(entry: TextbookTocEntry, tocEntries: TextbookTocEntry[]) {
+  let chapter: TextbookTocEntry | undefined = entry;
+  while (chapter && chapter.level > 2)
+    chapter = tocEntries.find((candidate) => candidate.id === chapter?.parentId);
+  if (!chapter) return null;
+  const inChapter = entryWithDescendants(tocEntries, chapter.id);
+  return (
+    tocEntries.find(
+      (candidate) =>
+        candidate.id !== entry.id &&
+        inChapter.has(candidate.id) &&
+        candidate.printedStartPage !== null &&
+        /hướng dẫn giải|lời giải|đáp án/iu.test(candidate.originalHeading)
+    ) ?? null
+  );
 }
 
 export function jobsForSection(
@@ -75,15 +124,54 @@ export function sectionState(input: {
   entry: TextbookTocEntry;
   tocEntries: TextbookTocEntry[];
   /** Artifacts of this section already limited to the link's pages. */
-  artifacts: Pick<TextbookArtifact, 'reviewStatus' | 'printedPages'>[];
+  artifacts: StateArtifact[];
   /** Extraction jobs of this lesson, newest first. */
   jobs: TextbookExtractionJob[];
+  /**
+   * Approved artifacts this lesson can reach through any of its links: a question
+   * extracted here may be paired with a solution extracted under another section.
+   */
+  lessonApprovedIds?: Set<string>;
 }): SectionState {
   const covered = entryWithDescendants(input.tocEntries, input.entry.id);
   const span = mappingSpan(input.mapping, input.entry);
   const jobs = jobsForSection(input.jobs, input.documentId, covered);
   const inSpan = (page: number) => !span || (page >= span.start && page <= span.end);
   const approved = input.artifacts.filter((item) => item.reviewStatus === 'APPROVED').length;
+  const approvedIds =
+    input.lessonApprovedIds ??
+    new Set(
+      input.artifacts.filter((item) => item.reviewStatus === 'APPROVED').map((item) => item.id)
+    );
+  const solutionSection = solutionSectionFor(input.entry, input.tocEntries);
+  const whereSolutions = solutionSection
+    ? `mục “${solutionSection.originalHeading}” (${pageList(
+        Array.from(
+          {
+            length:
+              (solutionSection.printedEndPage ?? solutionSection.printedStartPage!) -
+              solutionSection.printedStartPage! +
+              1,
+          },
+          (_, index) => solutionSection.printedStartPage! + index
+        )
+      )})`
+    : 'phần “Hướng dẫn giải” của sách';
+  const aiUsable = input.artifacts.filter((item) => usableByAi(item, approvedIds)).length;
+  const exercises = input.artifacts.filter(
+    (item) => item.kind === 'EXERCISE' && item.reviewStatus !== 'REJECTED'
+  );
+  const questions = {
+    total: exercises.length,
+    withSolution: exercises.filter((item) => item.pairedArtifactId).length,
+    verified: exercises.filter(
+      (item) =>
+        item.pairedArtifactId &&
+        item.reviewStatus === 'APPROVED' &&
+        approvedIds.has(item.pairedArtifactId)
+    ).length,
+    awaitingSolution: exercises.filter((item) => !item.pairedArtifactId).length,
+  };
   const needsReview = input.artifacts.filter((item) => item.reviewStatus === 'NEEDS_REVIEW').length;
   const rejected = input.artifacts.filter((item) => item.reviewStatus === 'REJECTED').length;
   const extracted = new Set<number>();
@@ -103,7 +191,19 @@ export function sectionState(input: {
     null;
   const newest = jobs[0] ?? null;
   const failedJob = newest?.status === 'FAILED' ? newest : null;
+  const lastCompletedJob = jobs.find((job) => job.status === 'COMPLETED') ?? null;
   const base = {
+    solutionSection: solutionSection
+      ? {
+          id: solutionSection.id,
+          heading: solutionSection.originalHeading,
+          start: solutionSection.printedStartPage,
+          end: solutionSection.printedEndPage,
+        }
+      : null,
+    lastCompletedJob,
+    aiUsable,
+    questions,
     span,
     approved,
     needsReview,
@@ -115,13 +215,17 @@ export function sectionState(input: {
   };
   const reviewNext = needsReview > 0 ? ` ${needsReview} trích đoạn khác đang chờ duyệt.` : '';
 
-  if (approved > 0)
+  const awaiting =
+    questions.awaitingSolution > 0
+      ? ` ${questions.awaitingSolution} câu hỏi chưa có lời giải nên AI chưa dùng; liên kết và trích ${whereSolutions} để hệ thống ghép.`
+      : '';
+  if (aiUsable > 0)
     return {
       ...base,
       key: 'READY',
       tone: 'success',
-      label: `Sẵn sàng cho AI · ${approved} đã duyệt`,
-      next: `AI soạn nháp sẽ dùng ${approved} trích đoạn đã duyệt của mục này.${reviewNext}`,
+      label: `Sẵn sàng cho AI · ${aiUsable} đã duyệt`,
+      next: `AI soạn nháp sẽ dùng ${aiUsable} trích đoạn đã duyệt của mục này.${reviewNext}${awaiting}`,
     };
   if (activeJob)
     return {
@@ -143,18 +247,27 @@ export function sectionState(input: {
       key: 'NEEDS_REVIEW',
       tone: 'attention',
       label: `Đã trích, chờ duyệt · ${needsReview}`,
-      next: 'Đọc và duyệt trích đoạn bên dưới. AI chỉ dùng trích đoạn đã duyệt.',
+      next:
+        questions.total > 0
+          ? `Đối chiếu từng câu với bản quét rồi duyệt. Câu chưa có lời giải vẫn duyệt được, nhưng AI chỉ dùng câu đã ghép lời giải.${questions.awaitingSolution ? ` Lời giải: liên kết và trích ${whereSolutions}.` : ''}`
+          : 'Đọc và duyệt trích đoạn bên dưới. AI chỉ dùng trích đoạn đã duyệt.',
     };
+  if (approved > 0)
+    return {
+      ...base,
+      key: 'NEEDS_REVIEW',
+      tone: 'attention',
+      label: `Đã duyệt ${approved} · chờ lời giải`,
+      next: `Câu hỏi đã duyệt nhưng chưa có lời giải, nên AI chưa dùng.${awaiting}`,
+    };
+  // The reason is shown once, in the failure box under the page field.
   if (failedJob)
     return {
       ...base,
       key: 'FAILED',
       tone: 'error',
       label: 'Trích xuất lỗi',
-      next:
-        failedJob.retryable === false
-          ? `${failedJob.error ?? 'Lần trích gần nhất bị lỗi.'} Thử lại chưa giúp được cho đến khi cấu hình được sửa.`
-          : `${failedJob.error ?? 'Lần trích gần nhất bị lỗi.'} Có thể thử lại.`,
+      next: 'Lần trích gần nhất chưa lấy được nội dung. Lí do và cách xử lý ở bên dưới.',
     };
   if (extractedPages.length > 0)
     return {

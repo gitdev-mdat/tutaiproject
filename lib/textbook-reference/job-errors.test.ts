@@ -52,9 +52,21 @@ describe('describeJobError', () => {
     ).toBe('OUTPUT_LIMIT');
   });
 
-  it('keeps the real reason of an unknown error instead of hiding it', () => {
+  it('keeps the real reason of an unknown error in the diagnostics, not the message', () => {
     const described = describeJobError(new Error('connect ECONNREFUSED'));
     expect(described.code).toBe('UNKNOWN');
-    expect(described.message).toContain('connect ECONNREFUSED');
+    expect(described.detail).toContain('connect ECONNREFUSED');
+    expect(described.message).not.toContain('ECONNREFUSED');
+  });
+
+  it('classifies an unusable answer and an unreadable scan instead of "unknown"', () => {
+    const invalid = describeJobError(
+      Object.assign(new Error('Gemini returned 0 items, none valid'), { code: 'INVALID_RESPONSE' })
+    );
+    expect(invalid).toMatchObject({ code: 'INVALID_RESPONSE', retryable: true });
+    expect(invalid.message).not.toMatch(/Gemini returned/);
+    expect(
+      describeJobError(Object.assign(new Error('p.19 UNREADABLE'), { code: 'UNREADABLE' }))
+    ).toMatchObject({ code: 'UNREADABLE', retryable: false });
   });
 });

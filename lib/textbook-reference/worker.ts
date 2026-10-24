@@ -48,7 +48,12 @@ export interface JobOutcome {
  */
 export async function processNextTextbookJob(
   worker: WorkerIdentity,
-  options: { provider?: VisionProvider; onClaim?: (job: TextbookExtractionJob) => void } = {}
+  options: {
+    provider?: VisionProvider;
+    onClaim?: (job: TextbookExtractionJob) => void;
+    /** Where the PDF bytes come from; private Storage unless a test supplies them. */
+    readPdf?: (document: TextbookDocumentRecord) => Promise<Buffer>;
+  } = {}
 ): Promise<JobOutcome | null> {
   const job = await claimNextTextbookJob(worker.id);
   if (!job) return null;
@@ -63,11 +68,14 @@ export async function processNextTextbookJob(
       });
     const document = await getTextbookDocument(job.documentId);
     if (!document) throw new Error('Textbook not found.');
-    result = await runJob(job, document, options.provider);
+    result = await runJob(job, document, options.provider, options.readPdf);
   } catch (error) {
     const described = describeJobError(error);
+    // A failure after the provider answered still records what the call cost and showed.
+    const spent = (error as { jobFields?: Partial<TextbookExtractionJob> } | null)?.jobFields;
     result = {
       ...job,
+      ...spent,
       status: 'FAILED',
       error: described.message,
       errorCode: described.code,
@@ -86,10 +94,10 @@ export async function processNextTextbookJob(
 async function runJob(
   job: TextbookExtractionJob,
   document: TextbookDocumentRecord,
-  provider?: VisionProvider
+  provider?: VisionProvider,
+  readPdf = (doc: TextbookDocumentRecord) => downloadPrivateTextbook(doc.storageKey)
 ): Promise<TextbookExtractionJob> {
   const start = Date.now();
-  const readPdf = (doc: TextbookDocumentRecord) => downloadPrivateTextbook(doc.storageKey);
   if (job.kind === 'VERIFY') {
     const inspected = await inspectPdf(await readPdf(document));
     await updateTextbookDocument(document.id, {

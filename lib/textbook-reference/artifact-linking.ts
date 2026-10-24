@@ -78,8 +78,8 @@ export function verifiesSimplePolynomialDerivative(text: string): boolean {
   );
 }
 
-/** Split numbered source sets into individual artifacts and link only matching formulas. */
-export function splitAndLinkExercises(artifacts: TextbookArtifact[]): TextbookArtifact[] {
+/** One artifact per printed "Câu n" when the provider grouped several questions or solutions. */
+export function splitNumberedArtifacts(artifacts: TextbookArtifact[]): TextbookArtifact[] {
   const split = artifacts.flatMap((artifact) => {
     if (artifact.kind !== 'EXERCISE' && artifact.kind !== 'SOLUTION') return [artifact];
     const segments = numberedSegments(artifact.content);
@@ -89,12 +89,19 @@ export function splitAndLinkExercises(artifacts: TextbookArtifact[]): TextbookAr
       id: `${artifact.id}-q${segment.number}`,
       title: `Câu ${segment.number}`,
       content: segment.content,
+      questionNumber: String(segment.number),
       exerciseReference: artifact.kind === 'EXERCISE' ? `Câu ${segment.number}` : undefined,
       solutionReference: artifact.kind === 'SOLUTION' ? `Câu ${segment.number}` : undefined,
     }));
   });
   for (const artifact of split)
     artifact.verificationNotes = [...new Set(artifact.verificationNotes)];
+  return split;
+}
+
+/** Split numbered source sets into individual artifacts and link only matching formulas. */
+export function splitAndLinkExercises(artifacts: TextbookArtifact[]): TextbookArtifact[] {
+  const split = splitNumberedArtifacts(artifacts);
 
   for (const exercise of split.filter((artifact) => artifact.kind === 'EXERCISE')) {
     const number = artifactQuestionNumber(exercise);
