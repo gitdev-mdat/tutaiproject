@@ -18,9 +18,9 @@ import {
   processTextbookQueueAfterResponse,
   resumeStalledQueue,
 } from '@/lib/textbook-reference/inline-runner';
-import { normalizedHeading } from '@/lib/textbook-reference/page-mapping';
+import { loadLessonTextbook } from '@/lib/textbook-reference/lesson-view';
+import { entrySpan, formatSpan, spanFitsEntry } from '@/lib/textbook-reference/lesson-coverage';
 import {
-  approvedArtifactsForNode,
   cancelTextbookJob,
   editTextbookArtifact,
   getTextbookDocument,
@@ -88,6 +88,9 @@ const mutation = z.discriminatedUnion('action', [
     documentId: z.string(),
     entryId: z.string(),
     knowledgeNodeId: z.string(),
+    // Optional: the part of the section this lesson uses; absent means the whole section.
+    printedStartPage: z.number().int().positive().max(5000).nullable().optional(),
+    printedEndPage: z.number().int().positive().max(5000).nullable().optional(),
   }),
   z.object({
     action: z.literal('remove-mapping'),
@@ -148,34 +151,6 @@ function latestSetupJob(jobs: TextbookExtractionJob[], documentId: string) {
   return jobs.find((job) => job.documentId === documentId && job.kind !== 'EXTRACT') ?? null;
 }
 
-/** Section suggestions for a lesson: TOC headings that share words with its title. */
-function suggestionsFor(title: string, documents: TextbookDocumentRecord[]) {
-  const words = (value: string) =>
-    new Set(
-      normalizedHeading(value)
-        .split(/[^\p{L}\p{N}]+/u)
-        .filter((word) => word.length > 2)
-    );
-  const wanted = words(title.replace(/\(P\d+\)/i, ''));
-  if (!wanted.size) return [];
-  return documents
-    .flatMap((document) =>
-      document.tocEntries.map((entry) => {
-        const have = words(entry.originalHeading);
-        const overlap = [...wanted].filter((word) => have.has(word)).length;
-        return {
-          documentId: document.id,
-          documentTitle: document.title,
-          entry,
-          score: overlap / wanted.size,
-        };
-      })
-    )
-    .filter((item) => item.score >= 0.75)
-    .sort((a, b) => b.score - a.score || a.entry.level - b.entry.level)
-    .slice(0, 5);
-}
-
 /**
  * GET                    library: documents, worker liveness, backend readiness
  * GET ?documentId=…      one book: table of contents, mappings, jobs, artifacts
@@ -214,68 +189,10 @@ export async function GET(request: Request) {
       });
     }
     if (nodeId) {
-      const tree = await readKnowledgeTree();
-      const node = tree.nodes.find((item) => item.id === nodeId);
-      if (!node) return NextResponse.json({ error: 'Không tìm thấy bài học.' }, { status: 404 });
-      const [documents, mappings] = await Promise.all([
-        listTextbookDocuments({ withToc: true }),
-        listTextbookMappings({ knowledgeNodeId: nodeId }),
-      ]);
-      const confirmed = mappings.filter((mapping) => mapping.status === 'CONFIRMED');
-      const linkedDocumentIds = new Set(confirmed.map((mapping) => mapping.documentId));
-      const [artifacts, jobs, approved] = await Promise.all([
-        Promise.all(
-          [...linkedDocumentIds].map((id) => listTextbookArtifacts({ documentId: id }))
-        ).then((lists) => lists.flat()),
-        Promise.all(
-          [...linkedDocumentIds].map((id) => listTextbookJobs({ documentId: id, limit: 20 }))
-        ).then((lists) => lists.flat().filter((job) => job.knowledgeNodeId === nodeId)),
-        approvedArtifactsForNode(nodeId),
-      ]);
-      await resumeStalledQueue(jobs);
-      const byDocument = new Map(documents.map((document) => [document.id, document]));
-      const sections = confirmed.flatMap((mapping) => {
-        const document = byDocument.get(mapping.documentId);
-        const entry = document?.tocEntries.find((item) => item.id === mapping.entryId);
-        if (!document || !entry) return [];
-        const covered = new Set([entry.id]);
-        for (const candidate of document.tocEntries)
-          if (candidate.parentId && covered.has(candidate.parentId)) covered.add(candidate.id);
-        return [
-          {
-            mapping,
-            document: summary(document),
-            entry,
-            subsections: document.tocEntries.filter(
-              (item) => item.id !== entry.id && covered.has(item.id)
-            ),
-            artifacts: artifacts.filter(
-              (artifact) => artifact.documentId === document.id && covered.has(artifact.entryId)
-            ),
-          },
-        ];
-      });
-      return NextResponse.json({
-        worker,
-        node: { id: node.id, title: node.title },
-        sections,
-        jobs,
-        approvedCount: approved.length,
-        // Indexed books with their outline, for linking another section to this lesson.
-        documents: documents
-          .filter((document) => document.status === 'INDEXED')
-          .map((document) => ({ ...summary(document), tocEntries: document.tocEntries })),
-        suggestions: suggestionsFor(
-          node.title,
-          documents.filter((document) => document.status === 'INDEXED')
-        ).filter(
-          (item) =>
-            !confirmed.some(
-              (mapping) =>
-                mapping.documentId === item.documentId && mapping.entryId === item.entry.id
-            )
-        ),
-      });
+      const view = await loadLessonTextbook(nodeId);
+      if (!view) return NextResponse.json({ error: 'Không tìm thấy bài học.' }, { status: 404 });
+      await resumeStalledQueue(view.jobs);
+      return NextResponse.json({ worker, ...view });
     }
     const [documents, jobs] = await Promise.all([
       listTextbookDocuments(),
@@ -341,8 +258,24 @@ export async function POST(request: Request) {
       case 'confirm-mapping':
       case 'remove-mapping': {
         const document = await getTextbookDocument(input.documentId);
-        if (!document?.tocEntries.some((entry) => entry.id === input.entryId))
-          throw new TextbookRequestError('Không tìm thấy mục trong mục lục.', 404);
+        const entry = document?.tocEntries.find((item) => item.id === input.entryId);
+        if (!entry) throw new TextbookRequestError('Không tìm thấy mục trong mục lục.', 404);
+        const narrowed =
+          input.action === 'confirm-mapping' && typeof input.printedStartPage === 'number'
+            ? {
+                start: input.printedStartPage,
+                end: input.printedEndPage ?? input.printedStartPage,
+              }
+            : null;
+        if (narrowed && !spanFitsEntry(narrowed, entry))
+          throw new TextbookRequestError(
+            `Trang phải nằm trong ${formatSpan(entrySpan(entry))} của mục này.`
+          );
+        const whole = entrySpan(entry);
+        const span =
+          narrowed && !(whole && narrowed.start === whole.start && narrowed.end === whole.end)
+            ? narrowed
+            : null;
         const tree = await readKnowledgeTree();
         const node = tree.nodes.find((item) => item.id === input.knowledgeNodeId);
         if (!node)
@@ -356,6 +289,7 @@ export async function POST(request: Request) {
           status:
             input.action === 'confirm-mapping' ? ('CONFIRMED' as const) : ('REJECTED' as const),
           confirmationRequired: false,
+          ...(span && { printedStartPage: span.start, printedEndPage: span.end }),
           updatedAt: new Date().toISOString(),
         };
         await saveTextbookMapping(mapping);

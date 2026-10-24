@@ -1,8 +1,10 @@
 import 'server-only';
 
+import { createHash, randomUUID } from 'node:crypto';
 import { GEMINI_MODELS } from '@/lib/config/models';
 import {
   AI_DRAFT_BLOCK_TYPES,
+  LESSON_DRAFT_PROMPT_VERSION,
   LESSON_DRAFT_RESPONSE_SCHEMA,
   LessonDraftError,
   generateLessonDraft,
@@ -13,6 +15,7 @@ import {
   type ContextSource,
   type LearnerLevel,
   type LessonDraftContext,
+  type LessonDraftMode,
   type LessonDraftPlan,
   type LessonDraftProvider,
   type LessonSequence,
@@ -25,6 +28,18 @@ import {
   type LessonReference,
 } from '@/lib/textbook-reference/reference-service';
 import { readKnowledgeTree } from './knowledge-tree-storage';
+import {
+  draftProvenanceAvailable,
+  listDraftGenerations,
+  recordDraftGeneration,
+  type DraftGeneration,
+  type DraftReferenceProvenance,
+} from './draft-provenance';
+import { durableTextbookBackendConfigured } from '@/lib/textbook-reference/repository';
+import {
+  loadLessonTextbook,
+  type LessonTextbookReadiness,
+} from '@/lib/textbook-reference/lesson-view';
 import type { KnowledgeTreeNode } from './knowledge-tree-types';
 
 export type LessonDraftProviderName = 'gemini' | 'mock';
@@ -83,11 +98,18 @@ const mockProvider: LessonDraftProvider = async (prompt) => {
   if (prompt.includes('[mock:quota]')) throw Object.assign(new Error('quota'), { status: 429 });
   if (prompt.includes('[mock:malformed]')) return '{"OBJECTIVE": 42}';
   if (prompt.includes('[mock:error]')) throw new Error('provider down');
+  // Echoes which approved extracts it was given, so a local check can follow input to output.
+  const sources = [...prompt.matchAll(/^\[Tư liệu (\d+): ([^\]]+)\]$/gm)].map((match) => match[2]);
   return JSON.stringify({
     plan: {
       prerequisites: ['Đạo hàm của hàm đa thức (Toán 11)'],
       newNotation: ["$f'(x)$: đạo hàm của $f$ tại $x$"],
-      teacherNotes: ['Bản nháp giả lập, không do AI viết.'],
+      teacherNotes: [
+        'Bản nháp giả lập, không do AI viết.',
+        sources.length
+          ? `Giả lập đã nhận ${sources.length} tư liệu: ${sources.join(' | ')}`
+          : 'Giả lập không nhận tư liệu sách nào.',
+      ],
     },
     INTRO: `${title} là một nội dung quan trọng của chương. (Bản nháp giả lập)`,
     OBJECTIVE: `- Phát biểu được khái niệm ${title}.\n- Vận dụng được ${title} để giải bài tập cơ bản.`,
@@ -156,16 +178,27 @@ export interface LessonDraftContextSummary {
   references: ReferenceSummary;
 }
 
+/** One approved extract as the admin sees it: provenance plus the exact text sent. */
+export type ReferenceItem = Omit<LessonReference, 'contentSha256'>;
+
 export interface ReferenceSummary {
   /** Approved artifacts reachable through confirmed mappings. */
   approved: number;
-  /** The bounded selection that is (or would be) sent, with provenance. */
-  items: Array<Omit<LessonReference, 'content'>>;
-  /** Whether this draft used them (false when the admin turned them off). */
+  /** The bounded selection that is (or would be) sent, with provenance and the sent text. */
+  items: ReferenceItem[];
+  /** Whether this draft used them (false for general drafting). */
   used: boolean;
   /** Set when references could not be read; drafting continues without them. */
   error?: string;
+  /** Where the lesson's textbook links stand, for the "what is missing" message. */
+  readiness?: LessonTextbookReadiness;
 }
+
+const toItem = (reference: LessonReference): ReferenceItem => {
+  const item: Partial<LessonReference> = { ...reference };
+  delete item.contentSha256;
+  return item as ReferenceItem;
+};
 
 const NO_REFERENCES: ReferenceSummary = { approved: 0, items: [], used: false };
 
@@ -178,14 +211,7 @@ async function loadReferences(
       references,
       summary: {
         approved: approvedCount,
-        items: references.map((reference) => ({
-          artifactId: reference.artifactId,
-          kind: reference.kind,
-          title: reference.title,
-          documentTitle: reference.documentTitle,
-          printedPages: reference.printedPages,
-          truncated: reference.truncated,
-        })),
+        items: references.map(toItem),
         used: references.length > 0,
       },
     };
@@ -198,6 +224,16 @@ async function loadReferences(
         error: 'Không đọc được tư liệu sách tham chiếu; bản nháp sẽ không dùng tư liệu.',
       },
     };
+  }
+}
+
+/** Linked / extracted / approved counts; null when the textbook backend is off or unreadable. */
+async function loadReadiness(nodeId: string): Promise<LessonTextbookReadiness | undefined> {
+  if (!durableTextbookBackendConfigured()) return undefined;
+  try {
+    return (await loadLessonTextbook(nodeId))?.readiness;
+  } catch {
+    return undefined;
   }
 }
 
@@ -227,21 +263,35 @@ export interface LessonDraftResponse {
   plan: LessonDraftPlan;
   checks: DraftCheck[];
   context: LessonDraftContextSummary;
+  /** What was really sent, stored for later inspection (null when it could not be stored). */
+  provenance: DraftGeneration & { stored: boolean };
+}
+
+export interface LessonDraftPreview extends LessonDraftContextSummary {
+  /** Recent drafts of this lesson and what they were written from. */
+  history: DraftGeneration[];
 }
 
 /** Context preview for the panel: what would be sent, before anything is generated. */
-export async function previewLessonDraftContext(
-  nodeId: string
-): Promise<LessonDraftContextSummary> {
+export async function previewLessonDraftContext(nodeId: string): Promise<LessonDraftPreview> {
   const context = await buildLessonDraftContext(nodeId);
-  const { summary } = await loadReferences(nodeId);
-  return summarizeLessonDraftContext(context, summary);
+  const [{ summary }, readiness, history] = await Promise.all([
+    loadReferences(nodeId),
+    loadReadiness(nodeId),
+    draftProvenanceAvailable()
+      ? listDraftGenerations(nodeId).catch(() => [] as DraftGeneration[])
+      : Promise.resolve([] as DraftGeneration[]),
+  ]);
+  return { ...summarizeLessonDraftContext(context, { ...summary, readiness }), history };
 }
+
+const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');
 
 export async function requestLessonDraft(
   nodeId: string,
   body: unknown,
-  env: Env = process.env
+  env: Env = process.env,
+  options: { provider?: LessonDraftProvider; actor?: string } = {}
 ): Promise<LessonDraftResponse> {
   const availability = getLessonDraftAvailability(env);
   if (!availability.available) {
@@ -250,7 +300,17 @@ export async function requestLessonDraft(
   const request = parseLessonDraftRequest(body);
   const base = await buildLessonDraftContext(nodeId);
   const loaded = await loadReferences(nodeId);
-  const useReferences = request.useReferences !== false && loaded.references.length > 0;
+  // The admin picks the mode before generating; older clients send useReferences.
+  const mode: LessonDraftMode =
+    request.mode ??
+    (request.useReferences === false || !loaded.references.length ? 'GENERAL' : 'TEXTBOOK');
+  if (mode === 'TEXTBOOK' && !loaded.references.length) {
+    throw new LessonDraftError(
+      'NO_REFERENCES',
+      loaded.summary.error ? `${loaded.summary.error} Chọn soạn chung để tiếp tục.` : undefined
+    );
+  }
+  const useReferences = mode === 'TEXTBOOK';
   const context: LessonDraftContext = {
     ...base,
     ...(useReferences && {
@@ -270,18 +330,68 @@ export async function requestLessonDraft(
       learnerLevelSource: 'admin' as const,
     }),
   };
+  // The exact text handed to the provider, so provenance is checked against it, not assumed.
+  let sentPrompt = '';
+  const provider = options.provider ?? providerFor(env);
+  const recording: LessonDraftProvider = (prompt, signal) => {
+    sentPrompt = prompt;
+    return provider(prompt, signal);
+  };
   const { draft, plan } = await withDraftLock(nodeId, () =>
-    generateLessonDraft(context, providerFor(env))
+    generateLessonDraft(context, recording)
   );
+  const references: DraftReferenceProvenance[] = useReferences
+    ? loaded.references.map((reference) => ({
+        artifactId: reference.artifactId,
+        documentId: reference.documentId,
+        entryId: reference.entryId,
+        kind: reference.kind,
+        title: reference.title,
+        documentTitle: reference.documentTitle,
+        printedPages: reference.printedPages,
+        contentSha256: reference.contentSha256,
+        sentChars: reference.content.length,
+        truncated: reference.truncated,
+        includedInPrompt: sentPrompt.includes(reference.content),
+      }))
+    : [];
+  const generation: DraftGeneration = {
+    id: randomUUID(),
+    knowledgeNodeId: nodeId,
+    mode,
+    status: 'PROPOSED',
+    createdAt: new Date().toISOString(),
+    model: providerName(env) === 'mock' ? 'mock' : GEMINI_MODELS.lessonDrafting,
+    promptVersion: LESSON_DRAFT_PROMPT_VERSION,
+    promptSha256: sha256(sentPrompt),
+    promptChars: sentPrompt.length,
+    references,
+  };
+  let stored = false;
+  if (draftProvenanceAvailable(env)) {
+    try {
+      await recordDraftGeneration(generation, options.actor ?? 'unknown');
+      stored = true;
+    } catch (error) {
+      console.warn('[ai-draft] provenance not stored', (error as Error)?.name);
+    }
+  }
   const summary = summarizeLessonDraftContext(context, {
     ...loaded.summary,
-    used: useReferences,
+    // Only what was really placed in the prompt counts as used.
+    items: useReferences
+      ? loaded.summary.items.filter((item) =>
+          references.some((ref) => ref.artifactId === item.artifactId && ref.includedInPrompt)
+        )
+      : [],
+    used: references.some((reference) => reference.includedInPrompt),
   });
   return {
     draft,
     plan,
     checks: reviewLessonDraft(draft, { stage: summary.stage, subject: context.subject }),
     context: summary,
+    provenance: { ...generation, stored },
   };
 }
 

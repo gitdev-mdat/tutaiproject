@@ -3,6 +3,7 @@ import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
 import { GEMINI_MODELS } from '@/lib/config/models';
 import { findMathIssues, hasMathIssues } from '@/lib/content/math-notation';
+import { entryWithDescendants, mappingSpan } from './lesson-coverage';
 import { mapPrintedPage } from './page-mapping';
 import { splitAndLinkExercises } from './artifact-linking';
 import { renderPrintedPageCrops } from './pdf-pages';
@@ -151,6 +152,27 @@ async function planExtraction(input: ExtractionRequest) {
   const mappings = await listTextbookMappings({ documentId: document.id });
   if (!mappingCoversEntries(document, mappings, document.id, input.knowledgeNodeId, entries))
     throw new TextbookRequestError('Mục này chưa được liên kết với bài học trong Cây kiến thức.');
+  // A link narrowed to part of a section only allows extraction inside that part.
+  const spans = mappings
+    .filter(
+      (mapping) =>
+        mapping.knowledgeNodeId === input.knowledgeNodeId &&
+        mapping.status === 'CONFIRMED' &&
+        entries.some((entry) =>
+          entryWithDescendants(document.tocEntries, mapping.entryId).has(entry.id)
+        )
+    )
+    .map((mapping) =>
+      mappingSpan(
+        mapping,
+        document.tocEntries.find((entry) => entry.id === mapping.entryId)
+      )
+    );
+  if (
+    !spans.some((span) => span === null) &&
+    pages.some((page) => !spans.some((span) => span && page >= span.start && page <= span.end))
+  )
+    throw new TextbookRequestError('Có trang nằm ngoài phạm vi trang đã liên kết với bài này.');
   const model = GEMINI_MODELS.batchExtraction;
   const extractionKey = createHash('sha256')
     .update(

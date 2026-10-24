@@ -3,6 +3,7 @@ import 'server-only';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getSql } from '@/lib/db/postgres';
+import { artifactsCoveredByMappings } from './lesson-coverage';
 import type {
   ArtifactReviewStatus,
   TextbookAnchor,
@@ -408,26 +409,33 @@ export async function listTextbookArtifacts(
 
 /**
  * Approved artifacts reachable from a Knowledge Tree node through a confirmed
- * mapping: the mapped section itself or any section below it.
+ * mapping: the mapped section itself or any section below it, limited to the
+ * pages the mapping covers (`lesson-coverage.ts`).
  */
 export async function approvedArtifactsForNode(
   knowledgeNodeId: string
 ): Promise<TextbookArtifact[]> {
-  const rows = await sql()`
-    with recursive covered as (
-      select m.document_id, m.entry_id as id
-      from tutai.textbook_knowledge_mappings m
-      where m.knowledge_node_id = ${knowledgeNodeId} and m.status = 'CONFIRMED'
-      union
-      select e.document_id, e.id
-      from tutai.textbook_toc_entries e
-      join covered c on c.document_id = e.document_id and e.parent_id = c.id
-    )
-    select a.* from tutai.textbook_artifacts a
-    join covered c on c.document_id = a.document_id and c.id = a.entry_id
-    where a.review_status = 'APPROVED'
-    order by a.created_at, a.id`;
-  return rows.map(toArtifact);
+  const mappings = (await listTextbookMappings({ knowledgeNodeId })).filter(
+    (mapping) => mapping.status === 'CONFIRMED'
+  );
+  if (!mappings.length) return [];
+  const documentIds = [...new Set(mappings.map((mapping) => mapping.documentId))];
+  const [entryRows, artifactRows] = await Promise.all([
+    sql()`
+      select document_id, payload from tutai.textbook_toc_entries
+      where document_id in ${sql()(documentIds)}
+      order by document_id, position`,
+    sql()`
+      select * from tutai.textbook_artifacts
+      where document_id in ${sql()(documentIds)} and review_status = 'APPROVED'
+      order by created_at, id`,
+  ]);
+  const tocByDocument = new Map<string, TextbookTocEntry[]>();
+  for (const row of entryRows) {
+    const id = row.document_id as string;
+    tocByDocument.set(id, [...(tocByDocument.get(id) ?? []), row.payload as TextbookTocEntry]);
+  }
+  return artifactsCoveredByMappings(artifactRows.map(toArtifact), mappings, tocByDocument);
 }
 
 export async function insertTextbookArtifacts(artifacts: TextbookArtifact[]): Promise<void> {

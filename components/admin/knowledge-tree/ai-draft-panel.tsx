@@ -1,7 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, BookMarked, Info, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  BookMarked,
+  BookOpen,
+  ChevronDown,
+  Info,
+  Loader2,
+  RotateCcw,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import type { ApiKnowledgeRepository } from '@/lib/knowledge-tree/api-knowledge-repository';
@@ -15,14 +25,21 @@ import {
   type AiDraftBlockType,
   type AiLessonDraft,
   type LearnerLevel,
+  type LessonDraftMode,
   type LessonDraftPlan,
   type LessonStage,
 } from '@/lib/knowledge-tree/ai-lesson-draft';
 import type { DraftCheck } from '@/lib/knowledge-tree/ai-lesson-quality';
-import type { LessonDraftContextSummary } from '@/lib/knowledge-tree/ai-lesson-draft-service';
+import type {
+  LessonDraftContextSummary,
+  LessonDraftPreview,
+  LessonDraftResponse,
+  ReferenceItem,
+} from '@/lib/knowledge-tree/ai-lesson-draft-service';
+import type { DraftGeneration } from '@/lib/knowledge-tree/draft-provenance';
 import { ARTICLE_BODY_BLOCKS } from '@/lib/knowledge-tree/knowledge-article';
 import type { KnowledgeArticleBlock } from '@/lib/knowledge-tree/knowledge-tree-types';
-import { InlineText } from '@/components/learning/rich-text';
+import { InlineText, RichText } from '@/components/learning/rich-text';
 
 const REFERENCE_KINDS: Record<string, string> = {
   THEORY: 'Lí thuyết',
@@ -32,22 +49,52 @@ const REFERENCE_KINDS: Record<string, string> = {
   SOLUTION: 'Lời giải',
 };
 
-/** Which approved textbook extracts ground the draft, with book and page. */
-function ReferenceList({ items }: { items: LessonDraftContextSummary['references']['items'] }) {
+/** "math_book_3, tr. 13, 16" for each book in a set of extracts. */
+function sourceLine(items: Array<{ documentTitle: string; printedPages: number[] }>) {
+  const books = new Map<string, Set<number>>();
+  for (const item of items) {
+    const pages = books.get(item.documentTitle) ?? new Set<number>();
+    item.printedPages.forEach((page) => pages.add(page));
+    books.set(item.documentTitle, pages);
+  }
+  return [...books]
+    .map(([title, pages]) => `${title}, tr. ${[...pages].sort((a, b) => a - b).join(', ')}`)
+    .join('; ');
+}
+
+/**
+ * The approved extracts with book and page; each opens to the exact text that
+ * is (or was) placed in the model's input.
+ */
+function ReferenceList({ items }: { items: ReferenceItem[] }) {
   return (
     <ul className="mt-1.5 space-y-1 text-xs leading-5 text-slate-600">
       {items.map((item) => (
-        <li key={item.artifactId} className="flex gap-1.5">
-          <span className="shrink-0 font-medium text-slate-700">
-            {REFERENCE_KINDS[item.kind] ?? item.kind}:
-          </span>
-          <span className="min-w-0">
-            <InlineText text={item.title} />{' '}
-            <span className="text-slate-400">
-              · {item.documentTitle}, tr. {item.printedPages.join(', ')}
-              {item.truncated ? ' · đã rút gọn' : ''}
-            </span>
-          </span>
+        <li key={item.artifactId}>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none gap-1.5">
+              <ChevronDown
+                className="mt-0.5 size-3.5 shrink-0 -rotate-90 text-slate-400 transition-transform group-open:rotate-0"
+                aria-hidden="true"
+              />
+              <span className="shrink-0 font-medium text-slate-700">
+                {REFERENCE_KINDS[item.kind] ?? item.kind}:
+              </span>
+              <span className="min-w-0">
+                <InlineText text={item.title} />{' '}
+                <span className="text-slate-400">
+                  · {item.documentTitle}, tr. {item.printedPages.join(', ')}
+                  {item.truncated ? ' · đã rút gọn theo giới hạn độ dài' : ''}
+                </span>
+              </span>
+            </summary>
+            <div className="ml-5 mt-1 rounded-md border border-slate-200 bg-white px-2.5 py-2">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                Nguyên văn gửi cho AI
+              </p>
+              <RichText content={item.content} className="text-xs leading-6 text-slate-700" />
+            </div>
+          </details>
         </li>
       ))}
     </ul>
@@ -58,8 +105,8 @@ type Phase =
   | { kind: 'checking' }
   | { kind: 'unavailable'; reason: string }
   | { kind: 'compose' }
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
+  | { kind: 'loading'; mode: LessonDraftMode }
+  | { kind: 'error'; message: string; code?: string }
   | {
       kind: 'review';
       draft: AiLessonDraft;
@@ -67,6 +114,7 @@ type Phase =
       plan: LessonDraftPlan;
       checks: DraftCheck[];
       context: LessonDraftContextSummary;
+      provenance: LessonDraftResponse['provenance'];
     };
 
 const SOURCE_LABELS: Record<LessonDraftContextSummary['stageSource'], string> = {
@@ -83,23 +131,115 @@ interface Props {
   nodeId: string;
   repo: ApiKnowledgeRepository;
   blocks: KnowledgeArticleBlock[];
-  onApply: (parts: Partial<Record<AiDraftBlockType, string>>) => void;
+  /** Whether students currently see this lesson. */
+  published: boolean;
+  onApply: (parts: Partial<Record<AiDraftBlockType, string>>, generationId: string | null) => void;
   onClose: () => void;
+  /** Switches to the lesson's textbook material (link, extract, review). */
+  onOpenReferences: () => void;
+}
+
+/** Why textbook drafting is not available yet, and the one step that fixes it. */
+function textbookBlocker(context: LessonDraftContextSummary): { text: string; action: string } {
+  const readiness = context.references.readiness;
+  if (context.references.error) return { text: context.references.error, action: 'Mở Tư liệu' };
+  if (!readiness)
+    return {
+      text: 'Kho sách tham chiếu chưa được bật trên máy chủ này.',
+      action: 'Mở Tư liệu',
+    };
+  if (readiness.linkedSections === 0)
+    return {
+      text: 'Bài này chưa liên kết mục sách nào.',
+      action: 'Liên kết mục sách',
+    };
+  if (readiness.needsReview > 0)
+    return {
+      text: `Đã liên kết ${readiness.linkedSections} mục sách và trích được ${readiness.needsReview} trích đoạn, nhưng chưa trích đoạn nào được duyệt. AI chỉ đọc trích đoạn đã duyệt.`,
+      action: `Duyệt ${readiness.needsReview} trích đoạn`,
+    };
+  if (readiness.activeJobs > 0)
+    return {
+      text: `Đã liên kết ${readiness.linkedSections} mục sách; đang trích trang, chưa có gì để duyệt.`,
+      action: 'Xem tiến trình',
+    };
+  if (readiness.failedSections > 0)
+    return {
+      text: `Đã liên kết ${readiness.linkedSections} mục sách nhưng lần trích gần nhất bị lỗi.`,
+      action: 'Xem lỗi và thử lại',
+    };
+  return {
+    text: `Đã liên kết ${readiness.linkedSections} mục sách nhưng chưa trích trang nào. Liên kết thôi chưa cho AI đọc được nội dung sách.`,
+    action: 'Trích trang sách',
+  };
+}
+
+const STATUS_LABELS: Record<DraftGeneration['status'], string> = {
+  PROPOSED: 'chỉ xem, chưa dùng',
+  APPLIED: 'đã đưa vào trình soạn, chưa lưu',
+  SAVED: 'đã lưu vào bài',
+};
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
+/** Recent drafts of the lesson and what each was really written from. */
+function DraftHistory({ history }: { history: DraftGeneration[] }) {
+  if (!history.length) return null;
+  return (
+    <details className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600">
+      <summary className="cursor-pointer font-semibold text-slate-700">
+        Các lần soạn nháp gần đây ({history.length})
+      </summary>
+      <ul className="mt-1.5 space-y-1.5">
+        {history.map((item) => {
+          const used = item.references.filter((reference) => reference.includedInPrompt);
+          return (
+            <li key={item.id} className="leading-5">
+              <span className="tabular-nums text-slate-500">{formatTime(item.createdAt)}</span> ·{' '}
+              {item.mode === 'TEXTBOOK' && used.length
+                ? `theo sách: ${used.length} trích đoạn (${sourceLine(used)})`
+                : 'soạn chung, không dùng sách'}{' '}
+              · {STATUS_LABELS[item.status]}
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
 }
 
 /**
- * Review-first AI drafting. The proposal lives only in this panel until the admin
- * applies chosen parts to the editor; saving and publishing stay separate actions.
+ * Review-first AI drafting. The admin picks the source before generating (the
+ * approved textbook extracts, or general drafting), sees exactly what was sent,
+ * and compares each proposed part with the current lesson. The proposal lives
+ * only in this panel until chosen parts are applied to the editor; saving and
+ * showing to students stay separate, explicit actions.
  */
-export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) {
+export function AiDraftPanel({
+  nodeId,
+  repo,
+  blocks,
+  published,
+  onApply,
+  onClose,
+  onOpenReferences,
+}: Props) {
   const [phase, setPhase] = React.useState<Phase>({ kind: 'checking' });
   const [includeExisting, setIncludeExisting] = React.useState(false);
   const [note, setNote] = React.useState('');
-  const [context, setContext] = React.useState<LessonDraftContextSummary | null>(null);
+  const [context, setContext] = React.useState<LessonDraftPreview | null>(null);
   const [stage, setStage] = React.useState<LessonStage | ''>('');
   const [learnerLevel, setLearnerLevel] = React.useState<LearnerLevel | ''>('');
   const [prerequisites, setPrerequisites] = React.useState('');
-  const [useReferences, setUseReferences] = React.useState(true);
+  const [mode, setMode] = React.useState<LessonDraftMode | null>(null);
+  const [compare, setCompare] = React.useState<Partial<Record<AiDraftBlockType, boolean>>>({});
   const controller = React.useRef<AbortController | null>(null);
 
   const current = React.useMemo(() => {
@@ -110,6 +250,8 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
     return map;
   }, [blocks]);
   const hasContent = AI_DRAFT_BLOCK_TYPES.some((type) => current[type]);
+  const textbookReady = (context?.references.items.length ?? 0) > 0;
+  const chosenMode: LessonDraftMode = mode ?? (textbookReady ? 'TEXTBOOK' : 'GENERAL');
 
   React.useEffect(() => {
     let cancelled = false;
@@ -133,7 +275,7 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
     controller.current?.abort();
     const abort = new AbortController();
     controller.current = abort;
-    setPhase({ kind: 'loading' });
+    setPhase({ kind: 'loading', mode: chosenMode });
     const existing = includeExisting
       ? Object.fromEntries(
           AI_DRAFT_BLOCK_TYPES.filter((t) => current[t]).map((t) => [t, current[t]])
@@ -147,23 +289,24 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
         stage: stage || undefined,
         learnerLevel: learnerLevel || undefined,
         prerequisites: prerequisites.trim() || undefined,
-        useReferences,
+        mode: chosenMode,
       },
       abort.signal
     );
     if (abort.signal.aborted) return;
     controller.current = null;
     if (!result.ok) {
-      setPhase({ kind: 'error', message: result.error.message });
+      setPhase({ kind: 'error', message: result.error.message, code: result.error.code });
       return;
     }
-    const { draft, plan, checks, context: used } = result.data;
+    const { draft, plan, checks, context: used, provenance } = result.data;
     const selected = {} as Record<AiDraftBlockType, boolean>;
     for (const type of AI_DRAFT_BLOCK_TYPES) {
       // Never pre-select a part that would replace what the admin already wrote.
       selected[type] = !!draft[type] && !current[type];
     }
-    setPhase({ kind: 'review', draft, selected, plan, checks, context: used });
+    setCompare({});
+    setPhase({ kind: 'review', draft, selected, plan, checks, context: used, provenance });
   };
 
   const cancel = () => {
@@ -178,13 +321,14 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
     for (const type of AI_DRAFT_BLOCK_TYPES) {
       if (phase.selected[type] && phase.draft[type].trim()) parts[type] = phase.draft[type];
     }
-    onApply(parts);
+    onApply(parts, phase.provenance.stored ? phase.provenance.id : null);
   };
 
-  const selectedCount =
+  const chosen =
     phase.kind === 'review'
-      ? AI_DRAFT_BLOCK_TYPES.filter((t) => phase.selected[t] && phase.draft[t].trim()).length
-      : 0;
+      ? AI_DRAFT_BLOCK_TYPES.filter((t) => phase.selected[t] && phase.draft[t].trim())
+      : [];
+  const replacing = chosen.filter((type) => current[type]);
 
   return (
     <section
@@ -223,113 +367,175 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
         {(phase.kind === 'compose' || phase.kind === 'error') && (
           <div className="space-y-3">
             <p className="leading-6 text-slate-600">
-              AI soạn bản nháp theo bối cảnh dưới đây. Bạn chọn phần nào dùng; không có gì được lưu
-              hay hiển thị cho học sinh tự động.
+              AI viết một <strong className="font-semibold text-slate-800">bản đề xuất</strong> ở
+              khung này. Bài học {published ? 'học sinh đang học ' : ''}không đổi cho đến khi bạn
+              chọn phần nào đưa vào trình soạn và tự bấm lưu.
             </p>
             {context && (
-              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
-                <p className="text-xs leading-5 text-slate-600">
-                  <span className="font-medium text-slate-800">{context.path}</span>
-                  {context.sequence && context.sequence.total > 0 && (
-                    <>
-                      {' '}
-                      · bài {context.sequence.position}/{context.sequence.total} của chương
-                    </>
-                  )}
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block text-xs font-medium text-slate-600">
-                    Giai đoạn học
-                    <select
-                      value={stage}
-                      onChange={(event) => setStage(event.target.value as LessonStage | '')}
-                      className="mt-1 block h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900"
-                    >
-                      <option value="">
-                        {STAGE_LABELS[context.stage]} ({SOURCE_LABELS[context.stageSource]})
-                      </option>
-                      {LESSON_STAGES.map((value) => (
-                        <option key={value} value={value}>
-                          {STAGE_LABELS[value]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block text-xs font-medium text-slate-600">
-                    Học sinh
-                    <select
-                      value={learnerLevel}
-                      onChange={(event) => setLearnerLevel(event.target.value as LearnerLevel | '')}
-                      className="mt-1 block h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900"
-                    >
-                      <option value="">
-                        {LEARNER_LEVEL_LABELS[context.learnerLevel]} (
-                        {SOURCE_LABELS[context.learnerLevelSource]})
-                      </option>
-                      {LEARNER_LEVELS.map((value) => (
-                        <option key={value} value={value}>
-                          {LEARNER_LEVEL_LABELS[value]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <div>
+              <fieldset className="space-y-2">
+                <legend className="text-xs font-semibold text-slate-700">
+                  AI soạn dựa trên gì?
+                </legend>
+                <div
+                  className={`rounded-lg border px-3 py-2.5 ${
+                    chosenMode === 'TEXTBOOK'
+                      ? 'border-emerald-300 bg-emerald-50/50'
+                      : textbookReady
+                        ? 'border-slate-200'
+                        : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
                   <label
-                    htmlFor="ai-draft-prerequisites"
-                    className="text-xs font-medium text-slate-600"
+                    className={`flex gap-2.5 ${textbookReady ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                   >
-                    Kiến thức nền học sinh cần (không bắt buộc)
-                  </label>
-                  <Textarea
-                    id="ai-draft-prerequisites"
-                    value={prerequisites}
-                    maxLength={AI_DRAFT_LIMITS.prerequisitesChars}
-                    onChange={(event) => setPrerequisites(event.target.value)}
-                    placeholder="Ví dụ: đạo hàm của hàm đa thức; xét dấu tam thức bậc hai"
-                    className="mt-1 min-h-[52px] bg-white text-sm"
-                  />
-                </div>
-                {context.references.approved > 0 ? (
-                  <div className="rounded-md border border-emerald-200 bg-white px-3 py-2">
-                    <label className="flex items-start gap-2 text-sm text-slate-800">
-                      <input
-                        type="checkbox"
-                        className="mt-1 size-4 accent-violet-600"
-                        checked={useReferences}
-                        onChange={(event) => setUseReferences(event.target.checked)}
-                      />
-                      <span>
-                        <BookMarked
-                          className="mr-1 inline size-3.5 text-emerald-700"
-                          aria-hidden="true"
-                        />
-                        Dựa trên {context.references.items.length} trích đoạn sách đã duyệt
-                        {context.references.approved > context.references.items.length &&
-                          ` (trong ${context.references.approved}, giới hạn để bản nháp tập trung)`}
+                    <input
+                      type="radio"
+                      name="ai-draft-mode"
+                      className="mt-1 size-4 accent-emerald-600"
+                      checked={chosenMode === 'TEXTBOOK'}
+                      disabled={!textbookReady}
+                      onChange={() => setMode('TEXTBOOK')}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5 font-medium text-slate-900">
+                        <BookMarked className="size-4 text-emerald-700" aria-hidden="true" />
+                        Theo sách đã duyệt
                       </span>
-                    </label>
-                    <ReferenceList items={context.references.items} />
+                      <span className="mt-0.5 block text-xs leading-5 text-slate-600">
+                        {textbookReady
+                          ? `AI nhận nguyên văn ${context.references.items.length} trích đoạn đã duyệt (${sourceLine(context.references.items)})${
+                              context.references.approved > context.references.items.length
+                                ? `; ${context.references.approved - context.references.items.length} trích đoạn khác không gửi vì giới hạn độ dài`
+                                : ''
+                            }.`
+                          : `Chưa dùng được. ${textbookBlocker(context).text}`}
+                      </span>
+                    </span>
+                  </label>
+                  <div className="pl-6.5">
+                    {textbookReady ? (
+                      <ReferenceList items={context.references.items} />
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="mt-1.5 h-7 border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50"
+                        onClick={onOpenReferences}
+                      >
+                        <BookOpen /> {textbookBlocker(context).action}
+                      </Button>
+                    )}
                   </div>
-                ) : (
-                  <p className="flex gap-1.5 text-xs leading-5 text-slate-500">
-                    <BookMarked className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                    <span>
-                      {context.references.error ??
-                        'Bài này chưa có trích đoạn sách đã duyệt. Có thể thêm ở tab “Tư liệu”.'}
+                </div>
+                <label
+                  className={`flex cursor-pointer gap-2.5 rounded-lg border px-3 py-2.5 ${
+                    chosenMode === 'GENERAL'
+                      ? 'border-violet-300 bg-violet-50/40'
+                      : 'border-slate-200'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="ai-draft-mode"
+                    className="mt-1 size-4 accent-violet-600"
+                    checked={chosenMode === 'GENERAL'}
+                    onChange={() => setMode('GENERAL')}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium text-slate-900">
+                      Soạn chung, không dùng sách
                     </span>
-                  </p>
-                )}
-                {context.missing.length > 0 && (
-                  <p className="flex gap-1.5 text-xs leading-5 text-slate-500">
-                    <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                    <span>
-                      Cây kiến thức chưa có {context.missing.join(', ')}. AI sẽ dùng mặc định ở trên
-                      và tự nêu kiến thức nền nó giả định để bạn kiểm tra.
+                    <span className="mt-0.5 block text-xs leading-5 text-slate-600">
+                      AI chỉ dựa vào vị trí bài trong chương trình và yêu cầu của bạn. Không đọc
+                      sách nào.
                     </span>
+                  </span>
+                </label>
+              </fieldset>
+            )}
+            {context && (
+              <details className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+                  Bối cảnh chương trình: {STAGE_LABELS[stage || context.stage]} ·{' '}
+                  {LEARNER_LEVEL_LABELS[learnerLevel || context.learnerLevel]}
+                </summary>
+                <div className="mt-2 space-y-3">
+                  <p className="text-xs leading-5 text-slate-600">
+                    <span className="font-medium text-slate-800">{context.path}</span>
+                    {context.sequence && context.sequence.total > 0 && (
+                      <>
+                        {' '}
+                        · bài {context.sequence.position}/{context.sequence.total} của chương
+                      </>
+                    )}
                   </p>
-                )}
-              </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-xs font-medium text-slate-600">
+                      Giai đoạn học
+                      <select
+                        value={stage}
+                        onChange={(event) => setStage(event.target.value as LessonStage | '')}
+                        className="mt-1 block h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900"
+                      >
+                        <option value="">
+                          {STAGE_LABELS[context.stage]} ({SOURCE_LABELS[context.stageSource]})
+                        </option>
+                        {LESSON_STAGES.map((value) => (
+                          <option key={value} value={value}>
+                            {STAGE_LABELS[value]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block text-xs font-medium text-slate-600">
+                      Học sinh
+                      <select
+                        value={learnerLevel}
+                        onChange={(event) =>
+                          setLearnerLevel(event.target.value as LearnerLevel | '')
+                        }
+                        className="mt-1 block h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900"
+                      >
+                        <option value="">
+                          {LEARNER_LEVEL_LABELS[context.learnerLevel]} (
+                          {SOURCE_LABELS[context.learnerLevelSource]})
+                        </option>
+                        {LEARNER_LEVELS.map((value) => (
+                          <option key={value} value={value}>
+                            {LEARNER_LEVEL_LABELS[value]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="ai-draft-prerequisites"
+                      className="text-xs font-medium text-slate-600"
+                    >
+                      Kiến thức nền học sinh cần (không bắt buộc)
+                    </label>
+                    <Textarea
+                      id="ai-draft-prerequisites"
+                      value={prerequisites}
+                      maxLength={AI_DRAFT_LIMITS.prerequisitesChars}
+                      onChange={(event) => setPrerequisites(event.target.value)}
+                      placeholder="Ví dụ: đạo hàm của hàm đa thức; xét dấu tam thức bậc hai"
+                      className="mt-1 min-h-[52px] bg-white text-sm"
+                    />
+                  </div>
+                  {context.missing.length > 0 && (
+                    <p className="flex gap-1.5 text-xs leading-5 text-slate-500">
+                      <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                      <span>
+                        Cây kiến thức chưa có {context.missing.join(', ')}. AI sẽ dùng mặc định ở
+                        trên và tự nêu kiến thức nền nó giả định để bạn kiểm tra.
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </details>
             )}
             <label
               className={`flex items-start gap-2 ${hasContent ? 'text-slate-700' : 'text-slate-400'}`}
@@ -362,13 +568,19 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
                 <span>{phase.message} Nội dung đang soạn vẫn giữ nguyên.</span>
               </p>
             )}
+            {context && <DraftHistory history={context.history} />}
             <div className="flex justify-end">
               <Button
                 size="sm"
                 className="bg-violet-600 text-white hover:bg-violet-700"
                 onClick={() => void generate()}
               >
-                <Sparkles /> {phase.kind === 'error' ? 'Thử lại' : 'Tạo bản nháp'}
+                <Sparkles />{' '}
+                {phase.kind === 'error'
+                  ? 'Thử lại'
+                  : chosenMode === 'TEXTBOOK'
+                    ? 'Tạo bản nháp theo sách'
+                    : 'Tạo bản nháp chung'}
               </Button>
             </div>
           </div>
@@ -377,7 +589,11 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
         {phase.kind === 'loading' && (
           <div className="flex items-center gap-3" role="status">
             <Loader2 className="size-4 animate-spin text-violet-600" aria-hidden="true" />
-            <span className="flex-1 text-slate-600">AI đang soạn nháp…</span>
+            <span className="flex-1 text-slate-600">
+              {phase.mode === 'TEXTBOOK'
+                ? 'AI đang soạn nháp từ trích đoạn sách đã duyệt…'
+                : 'AI đang soạn nháp (không dùng sách)…'}
+            </span>
             <Button size="sm" variant="ghost" onClick={cancel}>
               Hủy
             </Button>
@@ -386,25 +602,44 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
 
         {phase.kind === 'review' && (
           <div className="space-y-3">
+            <div
+              className={`rounded-lg border px-3 py-2 text-xs leading-5 ${
+                phase.context.references.used
+                  ? 'border-emerald-200 bg-emerald-50/50 text-emerald-900'
+                  : 'border-slate-200 bg-slate-50 text-slate-700'
+              }`}
+              role="status"
+            >
+              <p className="font-semibold">
+                {phase.context.references.used
+                  ? `Soạn theo sách: AI đã nhận nguyên văn ${phase.context.references.items.length} trích đoạn đã duyệt (${sourceLine(phase.context.references.items)}).`
+                  : 'Soạn chung: AI không nhận nội dung sách nào cho bản nháp này.'}
+              </p>
+              <p className="mt-0.5 text-slate-600">
+                Soạn cho {STAGE_LABELS[phase.context.stage]} ·{' '}
+                {LEARNER_LEVEL_LABELS[phase.context.learnerLevel]}. Hệ thống chỉ ghi nhận tư liệu đã
+                gửi, không kiểm chứng từng câu AI viết có đúng theo sách hay không.
+              </p>
+              {phase.context.references.used && (
+                <ReferenceList items={phase.context.references.items} />
+              )}
+              <details className="mt-1 text-slate-500">
+                <summary className="cursor-pointer">Chi tiết kỹ thuật</summary>
+                <p className="mt-1 break-all">
+                  Mã bản nháp {phase.provenance.id} · mô hình {phase.provenance.model} · phiên bản
+                  lời nhắc {phase.provenance.promptVersion} · {phase.provenance.promptChars} ký tự
+                  gửi đi · {formatTime(phase.provenance.createdAt)}
+                  {phase.provenance.stored
+                    ? ' · đã lưu nhật ký nguồn'
+                    : ' · chưa lưu nhật ký nguồn'}
+                </p>
+              </details>
+            </div>
             <p className="flex gap-2 text-xs leading-5 text-amber-800">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-              AI có thể sai. Đọc và sửa lại trước khi lưu; hiển thị cho học sinh vẫn là bước riêng.
+              AI có thể sai. Đây vẫn là đề xuất: bài {published ? 'học sinh đang học ' : ''}chưa
+              thay đổi.
             </p>
-            <p className="text-xs text-slate-500">
-              Soạn cho: {STAGE_LABELS[phase.context.stage]} ·{' '}
-              {LEARNER_LEVEL_LABELS[phase.context.learnerLevel]}
-              {phase.context.references.used
-                ? ` · dựa trên ${phase.context.references.items.length} trích đoạn sách đã duyệt`
-                : ' · không dùng tư liệu sách'}
-            </p>
-            {phase.context.references.used && (
-              <details className="rounded-lg border border-emerald-200 px-3 py-2 text-xs">
-                <summary className="cursor-pointer font-semibold text-slate-700">
-                  Nguồn tư liệu đã dùng (để đối chiếu)
-                </summary>
-                <ReferenceList items={phase.context.references.items} />
-              </details>
-            )}
             <section
               aria-label="Kiểm tra tự động"
               className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2.5"
@@ -438,13 +673,13 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
               phase.plan.teacherNotes.length > 0) && (
               <details className="rounded-lg border border-slate-200 px-3 py-2 text-xs leading-5 text-slate-600">
                 <summary className="cursor-pointer font-semibold text-slate-700">
-                  AI giả định gì về học sinh
+                  Ghi chú của AI cho giáo viên
                 </summary>
                 {(
                   [
                     ['Kiến thức nền bài nhắc lại', phase.plan.prerequisites],
                     ['Ký hiệu, thuật ngữ mới đã giải thích', phase.plan.newNotation],
-                    ['Gợi ý cho giáo viên', phase.plan.teacherNotes],
+                    ['AI nói đã dùng tư liệu thế nào, cần kiểm tra gì', phase.plan.teacherNotes],
                   ] as const
                 )
                   .filter(([, items]) => items.length)
@@ -463,6 +698,7 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
             <ul className="space-y-2.5">
               {AI_DRAFT_BLOCK_TYPES.filter((type) => phase.draft[type].trim()).map((type) => {
                 const id = `ai-draft-${type}`;
+                const existing = current[type];
                 return (
                   <li
                     key={type}
@@ -483,12 +719,34 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
                         />
                         Dùng phần {LABELS[type]}
                       </label>
-                      {current[type] && (
-                        <span className="text-xs text-amber-700">
-                          {phase.selected[type] ? 'Sẽ thay phần đang có' : 'Đã có nội dung'}
-                        </span>
+                      <span
+                        className={`text-xs ${existing ? 'text-amber-700' : 'text-emerald-700'}`}
+                      >
+                        {existing
+                          ? phase.selected[type]
+                            ? 'Sẽ thay phần đang có'
+                            : 'Bài đã có phần này'
+                          : 'Phần mới, bài chưa có'}
+                      </span>
+                      {existing && (
+                        <button
+                          type="button"
+                          className="ml-auto text-xs font-medium text-slate-600 underline-offset-2 hover:underline"
+                          aria-expanded={!!compare[type]}
+                          onClick={() => setCompare({ ...compare, [type]: !compare[type] })}
+                        >
+                          {compare[type] ? 'Ẩn bản hiện tại' : 'So với bản hiện tại'}
+                        </button>
                       )}
                     </div>
+                    {existing && compare[type] && (
+                      <div className="mx-3 mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                          Bản hiện tại{published ? ' (học sinh đang thấy)' : ''}
+                        </p>
+                        <RichText content={existing} className="text-sm leading-6 text-slate-600" />
+                      </div>
+                    )}
                     <Textarea
                       id={id}
                       aria-label={`Đề xuất cho ${LABELS[type]}`}
@@ -505,6 +763,15 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
                 );
               })}
             </ul>
+            <p className="text-xs leading-5 text-slate-600" role="status">
+              {chosen.length === 0
+                ? 'Chưa chọn phần nào.'
+                : `Sẽ đưa ${chosen.length} phần vào trình soạn${
+                    replacing.length
+                      ? `, trong đó thay ${replacing.length} phần đang có (${replacing.map((t) => LABELS[t]).join(', ')})`
+                      : ', không thay phần nào đang có'
+                  }. Chưa lưu; có thể hoàn tác.`}
+            </p>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Button size="sm" variant="ghost" onClick={onClose}>
                 Bỏ bản nháp
@@ -515,10 +782,10 @@ export function AiDraftPanel({ nodeId, repo, blocks, onApply, onClose }: Props) 
               <Button
                 size="sm"
                 className="bg-violet-600 text-white hover:bg-violet-700"
-                disabled={selectedCount === 0}
+                disabled={chosen.length === 0}
                 onClick={apply}
               >
-                Áp dụng {selectedCount} phần vào bài
+                Đưa {chosen.length} phần vào trình soạn
               </Button>
             </div>
           </div>
