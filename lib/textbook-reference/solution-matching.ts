@@ -100,10 +100,9 @@ export function statementMatches(
   if (!fn) return { ok: false };
   const restated = definedFunction(solution);
   if (restated && restated === fn) return { ok: true, how: `cùng hàm số y = ${fn}` };
-  if (
-    solution.replace(/\\left|\\right/g, '').includes(`(${fn})'`) ||
-    normalizeExpression(solution).includes(`(${fn})'`)
-  )
+  // "(P)'" or "[P]'": the book writes the derivative of the exercise's function.
+  const bracketed = solution.replace(/\\left|\\right/g, '').replace(/\[([^[\]]+)\]'/g, "($1)'");
+  if (bracketed.includes(`(${fn})'`) || normalizeExpression(bracketed).includes(`(${fn})'`))
     return { ok: true, how: `lời giải lấy đạo hàm của y = ${fn}` };
   const polynomial = polynomialOf(fn);
   if (!polynomial) return { ok: false };
