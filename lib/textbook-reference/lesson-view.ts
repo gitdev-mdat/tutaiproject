@@ -45,7 +45,8 @@ export interface LessonTextbookReadiness {
 export function readinessOf(sections: Pick<LessonTextbookSection, 'state'>[]) {
   return {
     linkedSections: sections.length,
-    approved: sections.reduce((sum, section) => sum + section.state.approved, 0),
+    // What AI drafting really reads: approved, and for questions, with an approved solution.
+    approved: sections.reduce((sum, section) => sum + section.state.aiUsable, 0),
     needsReview: sections.reduce((sum, section) => sum + section.state.needsReview, 0),
     activeJobs: sections.filter((section) => section.state.activeJob).length,
     failedSections: sections.filter((section) => section.state.key === 'FAILED').length,
@@ -57,6 +58,23 @@ const summary = ({ tocEntries, ...document }: TextbookDocumentRecord) => ({
   ...document,
   tocEntryCount: tocEntries.length,
 });
+
+/**
+ * Failures stored before extraction errors were classified carry the provider's
+ * wording in their message. They are shown with a plain explanation instead;
+ * the original text stays in the technical detail.
+ */
+export function withLegacyMessage(job: TextbookExtractionJob): TextbookExtractionJob {
+  if (job.status !== 'FAILED' || job.errorCode !== 'UNKNOWN' || !job.error?.includes(' Chi tiết: '))
+    return job;
+  if (/no extractable educational items/i.test(job.errorDetail ?? job.error))
+    return {
+      ...job,
+      error:
+        'Gemini không trả về mục nào: cách đọc cũ bỏ qua câu hỏi không có lời giải in cùng trang, nên trang chỉ có bài tập bị coi là rỗng.',
+    };
+  return { ...job, error: job.error.slice(0, job.error.indexOf(' Chi tiết: ')) };
+}
 
 export async function loadLessonTextbook(nodeId: string) {
   const tree = await readKnowledgeTree();
@@ -85,6 +103,14 @@ export async function loadLessonTextbook(nodeId: string) {
   ]);
   const byDocument = new Map(documents.map((document) => [document.id, document]));
   const tocByDocument = new Map(documents.map((document) => [document.id, document.tocEntries]));
+  // What AI drafting can reach for this lesson: approved artifacts under any of its links.
+  const lessonApprovedIds = new Set(
+    artifactsCoveredByMappings(
+      artifacts.filter((artifact) => artifact.reviewStatus === 'APPROVED'),
+      confirmed,
+      tocByDocument
+    ).map((artifact) => artifact.id)
+  );
   const sections: LessonTextbookSection[] = confirmed.flatMap((mapping) => {
     const document = byDocument.get(mapping.documentId);
     const entry = document?.tocEntries.find((item) => item.id === mapping.entryId);
@@ -95,12 +121,14 @@ export async function loadLessonTextbook(nodeId: string) {
       [mapping],
       tocByDocument
     );
-    const sectionJobs = jobs.filter(
-      (job) =>
-        job.documentId === document.id &&
-        job.kind === 'EXTRACT' &&
-        job.entryIds.some((id) => covered.has(id))
-    );
+    const sectionJobs = jobs
+      .filter(
+        (job) =>
+          job.documentId === document.id &&
+          job.kind === 'EXTRACT' &&
+          job.entryIds.some((id) => covered.has(id))
+      )
+      .map(withLegacyMessage);
     return [
       {
         mapping,
@@ -118,6 +146,7 @@ export async function loadLessonTextbook(nodeId: string) {
           tocEntries: document.tocEntries,
           artifacts: sectionArtifacts,
           jobs: sectionJobs,
+          lessonApprovedIds,
         }),
       },
     ];

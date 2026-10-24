@@ -5,59 +5,43 @@ import { GEMINI_MODELS } from '@/lib/config/models';
 import { findMathIssues, hasMathIssues } from '@/lib/content/math-notation';
 import { entryWithDescendants, mappingSpan } from './lesson-coverage';
 import { mapPrintedPage } from './page-mapping';
-import { splitAndLinkExercises } from './artifact-linking';
+import { splitNumberedArtifacts } from './artifact-linking';
+import {
+  buildExtractionPrompt,
+  classifyOutcome,
+  exerciseSetFor,
+  parseExtractionResponse,
+  PREVIOUS_PROMPT_VERSIONS,
+  PROMPT_VERSION,
+  TEXTBOOK_RESPONSE_SCHEMA,
+  validateItem,
+} from './extraction-response';
+import { applySolutionMatch, matchSolutions } from './solution-matching';
 import { renderPrintedPageCrops } from './pdf-pages';
 import {
   enqueueTextbookJob,
   getTextbookDocument,
   insertTextbookArtifacts,
   listTextbookArtifacts,
+  listTextbookJobs,
   listTextbookMappings,
+  pairTextbookArtifacts,
   recordFinishedTextbookJob,
 } from './repository';
 import { visionProviderFor, type VisionProvider } from './vision-provider';
-import type { TextbookArtifact, TextbookDocumentRecord, TextbookExtractionJob } from './types';
+import type {
+  ExtractionDiagnostics,
+  TextbookArtifact,
+  TextbookDocumentRecord,
+  TextbookExtractionJob,
+} from './types';
 
-// v5: formulas come back as $...$ LaTeX; v7: only LaTeX the lesson renderer supports (no \text, no environments). v8: keeps the book's line breaks.
-export const PROMPT_VERSION = 'textbook-knowledge-v8';
+export { PROMPT_VERSION };
 export const MAX_PAGES_PER_REQUEST = 6;
-
-const TEXTBOOK_RESPONSE_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['items'],
-  properties: {
-    items: {
-      type: 'array',
-      maxItems: 5,
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: [
-          'kind',
-          'title',
-          'content',
-          'mathematicalNotation',
-          'printedPages',
-          'verificationNotes',
-        ],
-        properties: {
-          kind: {
-            type: 'string',
-            enum: ['THEORY', 'METHOD', 'WORKED_EXAMPLE', 'EXERCISE', 'SOLUTION'],
-          },
-          title: { type: 'string' },
-          content: { type: 'string' },
-          mathematicalNotation: { type: 'array', items: { type: 'string' } },
-          printedPages: { type: 'array', items: { type: 'integer' } },
-          exerciseReference: { type: 'string' },
-          solutionReference: { type: 'string' },
-          verificationNotes: { type: 'array', items: { type: 'string' } },
-        },
-      },
-    },
-  },
-} as const;
+/** The same pages (same prompt and model) are not sent again after this many failures. */
+export const MAX_FAILED_ATTEMPTS = 3;
+const CONTENT_FAILURES = new Set(['INVALID_RESPONSE', 'UNREADABLE', 'OUTPUT_LIMIT', 'UNKNOWN']);
+const SAME_INPUT_FAILS_AGAIN = new Set(['UNREADABLE', 'OUTPUT_LIMIT']);
 
 /** Errors the Admin can act on; the API returns their message with a 4xx status. */
 export class TextbookRequestError extends Error {
@@ -98,14 +82,6 @@ export function mappingCoversEntries(
       return false;
     })
   );
-}
-
-function parseJson(text: string): unknown {
-  const cleaned = text
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '');
-  return JSON.parse(cleaned);
 }
 
 export interface ExtractionRequest {
@@ -174,18 +150,56 @@ async function planExtraction(input: ExtractionRequest) {
   )
     throw new TextbookRequestError('Có trang nằm ngoài phạm vi trang đã liên kết với bài này.');
   const model = GEMINI_MODELS.batchExtraction;
-  const extractionKey = createHash('sha256')
-    .update(
-      JSON.stringify({
-        source: document.sha256,
-        pages,
-        entries: [...entryIds].sort(),
-        prompt: PROMPT_VERSION,
-        model,
-      })
-    )
-    .digest('hex');
-  return { document, entries, pages, locations, model, extractionKey };
+  const keyFor = (prompt: string) =>
+    createHash('sha256')
+      .update(
+        JSON.stringify({
+          source: document.sha256,
+          pages,
+          entries: [...entryIds].sort(),
+          prompt,
+          model,
+        })
+      )
+      .digest('hex');
+  // The section that holds the pages most tightly names the exercise set.
+  const target = [...entries].sort((a, b) => b.level - a.level)[0];
+  return {
+    document,
+    entries,
+    target,
+    exerciseSet: exerciseSetFor(target, document.tocEntries),
+    pages,
+    locations,
+    model,
+    extractionKey: keyFor(PROMPT_VERSION),
+    /** Results of earlier prompt versions for exactly these pages: reused, never duplicated. */
+    previousKeys: PREVIOUS_PROMPT_VERSIONS.map(keyFor),
+  };
+}
+
+/** Stored artifacts for this request under the current or an earlier prompt version. */
+async function storedResult(plan: { extractionKey: string; previousKeys: string[] }) {
+  for (const key of [plan.extractionKey, ...plan.previousKeys]) {
+    const artifacts = await listTextbookArtifacts({ extractionKey: key });
+    if (artifacts.length) return artifacts;
+  }
+  return [];
+}
+
+/**
+ * A failure that already knows its class, with what the provider round trip
+ * cost and showed, so the job keeps usage and diagnostics even when it fails.
+ */
+export class ExtractionFailure extends Error {
+  constructor(
+    message: string,
+    readonly code: 'INVALID_RESPONSE' | 'UNREADABLE',
+    readonly jobFields: Partial<TextbookExtractionJob>
+  ) {
+    super(message);
+    this.name = 'ExtractionFailure';
+  }
 }
 
 function newJob(
@@ -222,7 +236,7 @@ export async function queueTextbookExtraction(input: ExtractionRequest): Promise
   existing: boolean;
 }> {
   const plan = await planExtraction(input);
-  const cached = await listTextbookArtifacts({ extractionKey: plan.extractionKey });
+  const cached = await storedResult(plan);
   const fields = {
     documentId: plan.document.id,
     knowledgeNodeId: input.knowledgeNodeId,
@@ -230,6 +244,7 @@ export async function queueTextbookExtraction(input: ExtractionRequest): Promise
     printedPages: plan.pages,
     extractionKey: plan.extractionKey,
     model: plan.model,
+    promptVersion: PROMPT_VERSION,
   };
   if (cached.length) {
     const job = newJob('EXTRACT', {
@@ -243,6 +258,23 @@ export async function queueTextbookExtraction(input: ExtractionRequest): Promise
     await recordFinishedTextbookJob(job);
     return { job, artifacts: cached, cacheHit: true, existing: false };
   }
+  // Bounded retries. Only failures caused by these pages themselves count: an
+  // unreadable scan or an over-long answer will fail the same way again, and
+  // repeated unusable answers stop after a few attempts. Outages, quotas and
+  // configuration problems (fixed elsewhere) never block the pages.
+  const failures = (await listTextbookJobs({ jobKey: plan.extractionKey })).filter(
+    (job) => job.status === 'FAILED' && CONTENT_FAILURES.has(job.errorCode ?? 'UNKNOWN')
+  );
+  if (failures[0] && SAME_INPUT_FAILS_AGAIN.has(failures[0].errorCode!))
+    throw new TextbookRequestError(
+      `Lần trước các trang này không trích được: ${failures[0].error ?? 'lỗi không thử lại được.'} Gửi lại y nguyên sẽ không giúp; hãy chọn ít trang hơn hoặc kiểm tra mốc trang.`,
+      409
+    );
+  if (failures.length >= MAX_FAILED_ATTEMPTS)
+    throw new TextbookRequestError(
+      `Các trang này đã thử ${failures.length} lần đều lỗi, nên hệ thống dừng gọi AI để tránh tốn phí. Thử trích từng trang một, hoặc kiểm tra mốc trang và bản quét.`,
+      409
+    );
   const { job, existing } = await enqueueTextbookJob(newJob('EXTRACT', fields));
   return { job, artifacts: [], cacheHit: false, existing };
 }
@@ -255,7 +287,7 @@ export function verifyJob(documentId: string, sha256: string) {
   });
 }
 
-/** Runs an EXTRACT job: renders the requested pages, calls the provider once, stores artifacts. */
+/** Runs an EXTRACT job: renders the requested pages, calls the provider once, stores what validates. */
 export async function runExtractionJob(
   job: TextbookExtractionJob,
   options: {
@@ -267,7 +299,7 @@ export async function runExtractionJob(
   const plan = await planExtraction(job);
   if (plan.extractionKey !== job.extractionKey)
     throw new Error('The book, prompt or model changed since this job was queued; queue it again.');
-  const cached = await listTextbookArtifacts({ extractionKey: job.extractionKey });
+  const cached = await storedResult(plan);
   if (cached.length) {
     // Another job stored these first (or this job was interrupted after storing).
     return {
@@ -283,58 +315,44 @@ export async function runExtractionJob(
   }
   const provider = options.provider ?? visionProviderFor();
   const images = await renderPrintedPageCrops(await options.readPdf(plan.document), plan.locations);
-  const prompt = `Trích xuất kiến thức giáo dục bằng tiếng Việt từ đúng ${plan.pages.length} ảnh trang sách đính kèm. Không bổ sung điều không đọc được. Giữ nguyên nội dung công thức; viết MỌI công thức, ký hiệu toán trong content và title bằng LaTeX đặt trong $...$ (ví dụ $f'(x) \\ge 0$, $x \\in I$, $y = \\frac{ax+b}{cx+d}$, $D = \\mathbb{R} \\setminus \\{-3\\}$); ký hiệu không đọc chắc thì viết [?] và nêu trong verificationNotes. Trong $...$ chỉ dùng lệnh LaTeX thông dụng (\\frac, \\sqrt, \\le, \\ge, \\ne, \\in, \\infty, \\mathbb{R}, \\setminus, \\Leftrightarrow, \\Rightarrow, \\forall, chữ Hy Lạp); lời văn để ngoài $...$, không dùng \\text; không dùng môi trường \\begin{...}: hệ hoặc tuyển nghiệm viết bằng lời, ví dụ "$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$". Trong content giữ bố cục của sách bằng ký tự xuống dòng: mỗi ý, mỗi mệnh đề a./b./c., mỗi phương án A./B./C./D., dòng "Lời giải", mỗi bước biến đổi nằm trên một dòng riêng; giữa các đoạn để một dòng trống. Chỉ trả tối đa 5 item: một THEORY, một METHOD, một WORKED_EXAMPLE, một EXERCISE và một SOLUTION. Với EXERCISE/SOLUTION, chỉ chọn một cặp có cùng số Câu và công thức khớp trên các trang được gửi; nếu không đối chiếu được thì bỏ cả hai. Mỗi câu hỏi và lời giải là một item riêng. Trả JSON {"items":[{"kind":"THEORY|METHOD|WORKED_EXAMPLE|EXERCISE|SOLUTION","title":"...","content":"...","mathematicalNotation":["..."],"printedPages":[number],"exerciseReference":"...","solutionReference":"...","verificationNotes":["..."]}]}. Mục lục liên quan: ${plan.entries.map((entry) => entry.originalHeading).join(' / ')}. Mỗi item phải ghi số trang in nhìn thấy trong ảnh.`;
+  const chapter = plan.document.tocEntries.find(
+    (entry) => entry.id === plan.exerciseSet.chapterEntryId
+  );
   const response = await provider({
     model: plan.model,
-    prompt,
+    prompt: buildExtractionPrompt({
+      pages: plan.pages,
+      headings: plan.entries.map((entry) => entry.originalHeading),
+      chapterHeading: chapter?.originalHeading ?? null,
+      problemType: plan.exerciseSet.problemType,
+    }),
     images: images.map((image) => image.bytes),
     schema: TEXTBOOK_RESPONSE_SCHEMA,
-    // Room for the model's own reasoning plus five items; a cut-off answer fails the job.
-    maxOutputTokens: 24576,
+    // Room for the model's own reasoning plus a page pair of questions; a cut-off
+    // answer keeps the items that finished.
+    maxOutputTokens: 32768,
+    allowTruncated: true,
   });
-  const parsed = parseJson(response.text) as { items?: unknown };
-  if (!Array.isArray(parsed.items)) throw new Error('Gemini response is missing the items array.');
-  if (parsed.items.length === 0)
-    throw new Error('Gemini returned no extractable educational items for this page batch.');
-  const extracted = parsed.items.map((raw): TextbookArtifact => {
-    if (!raw || typeof raw !== 'object') throw new Error('Invalid extracted item.');
-    const item = raw as Record<string, unknown>;
-    if (!['THEORY', 'METHOD', 'WORKED_EXAMPLE', 'EXERCISE', 'SOLUTION'].includes(String(item.kind)))
-      throw new Error('Invalid extracted item kind.');
-    const itemPages = Array.isArray(item.printedPages) ? item.printedPages.map(Number) : [];
-    if (!itemPages.length || itemPages.some((page) => !plan.pages.includes(page)))
-      throw new Error('Extracted item cites a page outside this batch.');
-    return {
-      id: randomUUID(),
+  const truncated = response.finishReason === 'MAX_TOKENS';
+  const parsed = parseExtractionResponse(response.text, { truncated, pages: plan.pages });
+  const createdAt = new Date().toISOString();
+  const results = (parsed.items ?? []).map((raw, index) =>
+    validateItem(raw, index, {
       documentId: plan.document.id,
-      entryId: plan.entries[0].id,
-      kind: item.kind as TextbookArtifact['kind'],
-      title: String(item.title ?? ''),
-      content: String(item.content ?? ''),
-      mathematicalNotation: Array.isArray(item.mathematicalNotation)
-        ? item.mathematicalNotation.map(String)
-        : [],
-      printedPages: itemPages,
-      pdfPages: [
-        ...new Set(
-          itemPages.map(
-            (page) => mapPrintedPage(page, plan.document.anchors, plan.document.pageLayout).pdfPage
-          )
-        ),
-      ],
-      exerciseReference:
-        typeof item.exerciseReference === 'string' ? item.exerciseReference : undefined,
-      solutionReference:
-        typeof item.solutionReference === 'string' ? item.solutionReference : undefined,
-      reviewStatus: 'NEEDS_REVIEW',
-      verificationNotes: Array.isArray(item.verificationNotes)
-        ? item.verificationNotes.map(String)
-        : ['AI extraction; human review required.'],
+      entryId: plan.target.id,
       extractionKey: job.extractionKey,
-      createdAt: new Date().toISOString(),
-    };
-  });
-  const artifacts = splitAndLinkExercises(extracted).map((artifact) => {
+      pages: plan.pages,
+      pdfPageOf: (page) =>
+        mapPrintedPage(page, plan.document.anchors, plan.document.pageLayout).pdfPage,
+      exerciseSet: plan.exerciseSet,
+      createdAt,
+    })
+  );
+  const accepted = results.flatMap((result) => (result.ok ? [result.artifact] : []));
+  const rejectedItems = results.flatMap((result) =>
+    result.ok ? [] : [{ reference: result.reference, reason: result.reason }]
+  );
+  const extracted = splitNumberedArtifacts(accepted).map((artifact) => {
     const issues = findMathIssues(`${artifact.title}\n${artifact.content}`);
     if (!hasMathIssues(issues)) return artifact;
     const raw = [...issues.unsupported, ...issues.outsideMath];
@@ -346,17 +364,78 @@ export async function runExtractionJob(
       ],
     };
   });
-  await insertTextbookArtifacts(artifacts);
-  return {
-    job: {
-      ...job,
-      status: 'COMPLETED',
-      provider: 'gemini',
-      providerCalls: (job.providerCalls ?? 0) + 1,
-      tokenUsage: response.usage,
-      pagesProcessed: plan.pages,
-      durationMs: Date.now() - start,
-    },
-    artifacts,
+  const diagnostics: ExtractionDiagnostics = {
+    promptVersion: PROMPT_VERSION,
+    images: images.map((image) => ({
+      printedPage: image.printedPage,
+      pdfPage: image.pdfPage,
+      position: image.position,
+      width: image.width,
+      height: image.height,
+    })),
+    finishReason: response.finishReason,
+    responseChars: response.text.length,
+    itemsReturned: parsed.items?.length ?? 0,
+    itemsAccepted: extracted.length,
+    rejectedItems,
+    unreadable: parsed.unreadable,
+    pageReports: parsed.pages,
+    truncated: parsed.truncated,
+    questions: extracted.filter((artifact) => artifact.kind === 'EXERCISE').length,
+    solutionsMatched: 0,
   };
+  const spent = {
+    provider: 'gemini' as const,
+    providerCalls: (job.providerCalls ?? 0) + 1,
+    tokenUsage: response.usage,
+    pagesProcessed: plan.pages,
+    diagnostics,
+    durationMs: Date.now() - start,
+  };
+  const outcome = classifyOutcome({
+    accepted: extracted.length,
+    rejected: rejectedItems.length,
+    partialItems: results.filter((result) => result.ok && result.partial).length,
+    truncated: parsed.truncated,
+    pages: parsed.pages,
+    unreadable: parsed.unreadable.length,
+  });
+  if (outcome === 'UNREADABLE')
+    throw new ExtractionFailure(
+      `The scanned pages could not be read: ${parsed.pages.map((page) => `p.${page.printedPage} ${page.status}`).join(', ') || parsed.unreadable.map((item) => item.reference).join(', ')}`,
+      'UNREADABLE',
+      spent
+    );
+  if (outcome === 'INVALID_RESPONSE')
+    throw new ExtractionFailure(
+      parsed.items === null
+        ? `Gemini response is not the expected JSON (${response.text.length} characters${truncated ? ', cut off' : ''}).`
+        : `Gemini returned ${parsed.items.length} items, none valid${rejectedItems.length ? `: ${rejectedItems.map((item) => item.reason).join('; ')}` : ''}; pages reported ${parsed.pages.map((page) => page.status).join(', ') || 'nothing'}.`,
+      'INVALID_RESPONSE',
+      spent
+    );
+  await insertTextbookArtifacts(extracted);
+  diagnostics.solutionsMatched = await matchStoredSolutions(plan.document.id);
+  return {
+    job: { ...job, ...spent, status: 'COMPLETED', outcome, diagnostics },
+    artifacts: await listTextbookArtifacts({ extractionKey: job.extractionKey }),
+  };
+}
+
+/**
+ * Pairs the book's unresolved questions with solutions extracted in any batch.
+ * Only pairing metadata changes; no artifact's text or review decision does.
+ * Returns how many pairs were made now.
+ */
+export async function matchStoredSolutions(documentId: string): Promise<number> {
+  const artifacts = await listTextbookArtifacts({ documentId });
+  const { matches } = matchSolutions(artifacts);
+  let paired = 0;
+  for (const match of matches) {
+    const exercise = artifacts.find((item) => item.id === match.exerciseId)!;
+    const solution = artifacts.find((item) => item.id === match.solutionId)!;
+    applySolutionMatch(exercise, solution, match);
+    if (await pairTextbookArtifacts(exercise, solution)) paired += 1;
+  }
+  return paired;
 }

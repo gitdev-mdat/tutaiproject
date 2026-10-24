@@ -304,11 +304,12 @@ export async function getTextbookJob(id: string): Promise<TextbookExtractionJob 
 }
 
 export async function listTextbookJobs(
-  filter: { documentId?: string; limit?: number } = {}
+  filter: { documentId?: string; jobKey?: string; limit?: number } = {}
 ): Promise<TextbookExtractionJob[]> {
   const rows = await sql()`
     select * from tutai.textbook_jobs
     where (${filter.documentId ?? null}::text is null or document_id = ${filter.documentId ?? null})
+      and (${filter.jobKey ?? null}::text is null or job_key = ${filter.jobKey ?? null})
     order by created_at desc
     limit ${filter.limit ?? 50}`;
   return rows.map(toJob);
@@ -448,6 +449,37 @@ export async function insertTextbookArtifacts(artifacts: TextbookArtifact[]): Pr
           ${artifact.reviewStatus}, ${tx.json(artifact as never)}, ${artifact.createdAt})
         on conflict (id) do nothing`;
     }
+  });
+}
+
+/**
+ * Records a question/solution pair on both artifacts, only if neither was paired
+ * meanwhile. Writes pairing fields only: text and review decisions stay as they are.
+ */
+export async function pairTextbookArtifacts(
+  exercise: TextbookArtifact,
+  solution: TextbookArtifact
+): Promise<boolean> {
+  const fields = (artifact: TextbookArtifact) => ({
+    pairedArtifactId: artifact.pairedArtifactId,
+    exerciseReference: artifact.exerciseReference,
+    solutionReference: artifact.solutionReference,
+    solutionStatus: artifact.solutionStatus,
+    answer: artifact.answer,
+    verificationNotes: artifact.verificationNotes,
+  });
+  return sql().begin(async (tx) => {
+    const rows = await tx`
+      select id from tutai.textbook_artifacts
+      where id in ${tx([exercise.id, solution.id])} and payload->>'pairedArtifactId' is null
+      for update`;
+    if (rows.length !== 2) return false;
+    for (const artifact of [exercise, solution])
+      await tx`
+        update tutai.textbook_artifacts
+        set payload = payload || ${tx.json(JSON.parse(JSON.stringify(fields(artifact))) as never)}
+        where id = ${artifact.id}`;
+    return true;
   });
 }
 

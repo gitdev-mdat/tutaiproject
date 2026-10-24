@@ -34,11 +34,19 @@ Jobs run in two places that share one queue: the Admin route itself and the opti
 
 Jobs are leased with `FOR UPDATE SKIP LOCKED` for 6 minutes; a job whose worker died is resumed by the next worker, a worker that lost its lease cannot overwrite the result, and a job interrupted 3 times fails with `INTERRUPTED` instead of looping. Repeated requests for the same work return the queued or running job (`job_key`). Rendering uses pdf.js with its wasm decoders (JBIG2/JPEG 2000), so no Poppler install is needed.
 
-The book's status changes when a worker *starts* (`INDEXING`), not when a job is queued. Failures are classified in `job-errors.ts` (`BILLING` for Gemini HTTP 402, `QUOTA` for 429, `AUTH`, `MODEL`, `UNAVAILABLE`, `TIMEOUT`, `OUTPUT_LIMIT`, `INTERRUPTED`, `FILE`, `UNKNOWN`); the job stores a plain message, the class, a short technical detail and whether retrying can help. A re-read of an existing outline needs `replace: true`, and a failed re-read keeps the old outline.
+The book's status changes when a worker _starts_ (`INDEXING`), not when a job is queued. Failures are classified in `job-errors.ts` (`BILLING` for Gemini HTTP 402, `QUOTA` for 429, `AUTH`, `MODEL`, `UNAVAILABLE`, `TIMEOUT`, `OUTPUT_LIMIT`, `INTERRUPTED`, `FILE`, `UNKNOWN`); the job stores a plain message, the class, a short technical detail and whether retrying can help. A re-read of an existing outline needs `replace: true`, and a failed re-read keeps the old outline.
 
 The Admin UI derives one status per book from the book row and its newest setup job (`processing-state.ts`): waiting, running (with real elapsed time; the single Gemini call has no measurable percentage), interrupted, failed with its reason, or ready. Technical facts are under "Chi tiết kỹ thuật"; earlier attempts under "Lịch sử xử lý".
 
-Extraction is cached by `sha256(file, pages, sections, prompt version, model)`: a repeated request returns the stored artifacts without calling Gemini.
+Extraction is cached by `sha256(file, pages, sections, prompt version, model)`: a repeated request returns the stored artifacts without calling Gemini, and so does a request whose pages already have artifacts from an earlier prompt version (no duplicates of reviewed material).
+
+## Exercise pages and solutions
+
+Exercise-only pages are first-class (`extraction-response.ts`, prompt `textbook-knowledge-v9`): every printed question is its own `EXERCISE` artifact with its number, statement, A–D choices, diagram flag, printed/PDF pages and exercise set (chapter + "Dạng n" from the outline). No solution is required and no answer is ever produced by the model: `answer` is `UNRESOLVED` until a solution printed in the book is matched.
+
+Each returned item is validated on its own; valid items are stored even when others are rejected, cut off (`MAX_TOKENS` answers keep their finished items) or reported unreadable. A finished job records `outcome` (`COMPLETE` | `PARTIAL` | `EMPTY`) and `diagnostics` (images sent, per-page readability, rejected/unreadable items, finish reason, token usage). Failures are `INVALID_RESPONSE` (answered, nothing usable) or `UNREADABLE` (scan not readable), with usage kept. The same pages are not sent again after an `UNREADABLE`/`OUTPUT_LIMIT` failure or after 3 content failures; outages and quota limits never block them.
+
+Solutions (`solution-matching.ts`) are matched across batches: same book, same chapter, same problem type (from the printed heading above the solution), same question number, and a mathematical check (same function restated, or the stated derivative is that function's). Only an unambiguous candidate pairs; a number alone never does. Lifecycle on the artifact: `solutionStatus` `UNRESOLVED` → `MATCHED`; "verified" is matched with both sides approved. Questions are reviewable at once, but AI drafting reads an exercise only with its approved solution, and nothing is published to students or the Question Bank.
 
 ## Admin API (`app/api/admin/textbooks/route.ts`)
 

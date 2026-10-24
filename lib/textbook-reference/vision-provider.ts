@@ -10,7 +10,9 @@ export type VisionProvider = (request: {
   schema: object;
   /** Output budget; a long table of contents needs more than an extraction batch. */
   maxOutputTokens?: number;
-}) => Promise<{ text: string; usage?: { input?: number; output?: number } }>;
+  /** Return a cut-off answer (finishReason MAX_TOKENS) instead of failing, so complete items can be kept. */
+  allowTruncated?: boolean;
+}) => Promise<{ text: string; usage?: { input?: number; output?: number }; finishReason?: string }>;
 
 export const geminiVisionProvider: VisionProvider = async ({
   model,
@@ -18,6 +20,7 @@ export const geminiVisionProvider: VisionProvider = async ({
   images,
   schema,
   maxOutputTokens = 8192,
+  allowTruncated = false,
 }) => {
   const { gemini } = await import('@/lib/ai/gemini-client');
   const response = await executeWithAbortableProviderTimeout(
@@ -50,13 +53,14 @@ export const geminiVisionProvider: VisionProvider = async ({
   ).usageMetadata;
   const finishReason = (response as { candidates?: Array<{ finishReason?: string }> })
     .candidates?.[0]?.finishReason;
-  if (finishReason === 'MAX_TOKENS')
+  if (finishReason === 'MAX_TOKENS' && !allowTruncated)
     throw new Error('Gemini response was cut off before it finished (output limit reached).');
   return {
     text: (response as { text?: string }).text ?? '',
     usage: usage
       ? { input: usage.promptTokenCount, output: usage.candidatesTokenCount }
       : undefined,
+    finishReason,
   };
 };
 

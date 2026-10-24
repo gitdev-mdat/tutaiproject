@@ -47,7 +47,25 @@ const MESSAGES: Record<TextbookJobErrorCode, { message: string; retryable: boole
     message: 'Không đọc được tệp PDF đã lưu. Tải tệp lên lại.',
     retryable: false,
   },
-  UNKNOWN: { message: 'Xử lý thất bại vì một lỗi không xác định.', retryable: true },
+  REQUEST: {
+    message:
+      'Gemini từ chối yêu cầu vì yêu cầu do hệ thống tạo ra không hợp lệ, không phải do sách hay bản quét. Thử lại sẽ không giúp cho đến khi lỗi phía hệ thống được sửa.',
+    retryable: false,
+  },
+  INVALID_RESPONSE: {
+    message:
+      'Gemini đã trả lời nhưng không có câu hỏi hay nội dung nào dùng được. Có thể thử lại một lần; nếu vẫn lỗi, trích từng trang một.',
+    retryable: true,
+  },
+  UNREADABLE: {
+    message:
+      'Gemini không đọc được bản quét của các trang này. Kiểm tra mốc trang (đúng trang, đúng nửa trái/phải) và chất lượng bản quét; gửi lại y nguyên sẽ không giúp.',
+    retryable: false,
+  },
+  UNKNOWN: {
+    message: 'Xử lý thất bại vì một lỗi chưa phân loại. Xem “Chi tiết kỹ thuật”, rồi thử lại.',
+    retryable: true,
+  },
 };
 
 function fromHttp(code: number, status: string, text: string): TextbookJobErrorCode {
@@ -57,6 +75,7 @@ function fromHttp(code: number, status: string, text: string): TextbookJobErrorC
   if (code === 401 || code === 403 || status === 'PERMISSION_DENIED') return 'AUTH';
   if (code === 404 || status === 'NOT_FOUND') return 'MODEL';
   if (code === 400 && /api key/.test(lower)) return 'AUTH';
+  if (code === 400 || status === 'INVALID_ARGUMENT') return 'REQUEST';
   if (code >= 500) return 'UNAVAILABLE';
   return 'UNKNOWN';
 }
@@ -83,6 +102,8 @@ export function describeJobError(error: unknown): JobErrorDescription {
   if (code === 'UNKNOWN') {
     const known = (error as { code?: string; status?: number; name?: string } | null) ?? {};
     if (known.code === 'TIMEOUT') code = 'TIMEOUT';
+    else if (known.code === 'INVALID_RESPONSE') code = 'INVALID_RESPONSE';
+    else if (known.code === 'UNREADABLE') code = 'UNREADABLE';
     else if (known.code === 'INTERRUPTED') code = 'INTERRUPTED';
     else if (known.name === 'TextbookChecksumError') code = 'FILE';
     else if (typeof known.status === 'number') code = fromHttp(known.status, '', raw);
@@ -91,7 +112,8 @@ export function describeJobError(error: unknown): JobErrorDescription {
   const { message, retryable } = MESSAGES[code];
   return {
     code,
-    message: code === 'UNKNOWN' ? `${message} Chi tiết: ${raw.slice(0, 200)}` : message,
+    // Provider internals stay in `detail` (the diagnostics view), never in the message.
+    message,
     detail,
     retryable,
   };
