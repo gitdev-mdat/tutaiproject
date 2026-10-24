@@ -53,9 +53,11 @@ export const TEXTBOOK_RESPONSE_SCHEMA = {
         },
       },
     },
+    // No maxItems here or below: Gemini answers 400 INVALID_ARGUMENT for this
+    // schema with them (seen on the real pages 19–20 request). The cap is applied
+    // when parsing.
     items: {
       type: 'array',
-      maxItems: MAX_ITEMS_PER_BATCH,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -67,7 +69,6 @@ export const TEXTBOOK_RESPONSE_SCHEMA = {
           content: { type: 'string' },
           choices: {
             type: 'array',
-            maxItems: 4,
             items: {
               type: 'object',
               additionalProperties: false,
@@ -255,7 +256,7 @@ export function parseExtractionResponse(
       : [];
   if (parsed && Array.isArray(parsed.items))
     return {
-      items: parsed.items,
+      items: parsed.items.slice(0, MAX_ITEMS_PER_BATCH),
       pages: asPages(parsed.pages),
       unreadable: asUnreadable(parsed.unreadable),
       truncated: options.truncated,
@@ -270,7 +271,7 @@ export function parseExtractionResponse(
     pages = pagesMatch ? asPages(JSON.parse(pagesMatch[1])) : [];
   } catch {}
   return {
-    items: salvaged.length || options.truncated ? salvaged : null,
+    items: salvaged.length || options.truncated ? salvaged.slice(0, MAX_ITEMS_PER_BATCH) : null,
     pages,
     unreadable: [],
     truncated: true,

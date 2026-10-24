@@ -47,6 +47,11 @@ const MESSAGES: Record<TextbookJobErrorCode, { message: string; retryable: boole
     message: 'Không đọc được tệp PDF đã lưu. Tải tệp lên lại.',
     retryable: false,
   },
+  REQUEST: {
+    message:
+      'Gemini từ chối yêu cầu vì yêu cầu do hệ thống tạo ra không hợp lệ, không phải do sách hay bản quét. Thử lại sẽ không giúp cho đến khi lỗi phía hệ thống được sửa.',
+    retryable: false,
+  },
   INVALID_RESPONSE: {
     message:
       'Gemini đã trả lời nhưng không có câu hỏi hay nội dung nào dùng được. Có thể thử lại một lần; nếu vẫn lỗi, trích từng trang một.',
@@ -70,6 +75,7 @@ function fromHttp(code: number, status: string, text: string): TextbookJobErrorC
   if (code === 401 || code === 403 || status === 'PERMISSION_DENIED') return 'AUTH';
   if (code === 404 || status === 'NOT_FOUND') return 'MODEL';
   if (code === 400 && /api key/.test(lower)) return 'AUTH';
+  if (code === 400 || status === 'INVALID_ARGUMENT') return 'REQUEST';
   if (code >= 500) return 'UNAVAILABLE';
   return 'UNKNOWN';
 }

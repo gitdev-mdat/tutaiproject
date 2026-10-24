@@ -5,7 +5,9 @@ import {
   exerciseSetFor,
   parseExtractionResponse,
   problemTypeOf,
+  MAX_ITEMS_PER_BATCH,
   salvageItems,
+  TEXTBOOK_RESPONSE_SCHEMA,
   validateItem,
   type ItemValidationContext,
 } from './extraction-response';
@@ -231,6 +233,20 @@ describe('response parsing and outcome', () => {
     expect(parsed).toMatchObject({ truncated: true });
     expect(parsed.items).toHaveLength(1);
     expect(parsed.pages).toEqual([{ printedPage: 19, status: 'READ' }]);
+  });
+
+  it('sends a schema Gemini accepts (no maxItems) and caps the items when parsing', () => {
+    // gemini-3.5-flash answered 400 INVALID_ARGUMENT for the real pages 19–20
+    // request while the schema carried maxItems.
+    expect(JSON.stringify(TEXTBOOK_RESPONSE_SCHEMA)).not.toMatch(/maxItems/);
+    const items = Array.from({ length: MAX_ITEMS_PER_BATCH + 5 }, (_, i) => ({
+      title: `Câu ${i}`,
+    }));
+    const parsed = parseExtractionResponse(JSON.stringify({ pages: [], items, unreadable: [] }), {
+      truncated: false,
+      pages: [19, 20],
+    });
+    expect(parsed.items).toHaveLength(MAX_ITEMS_PER_BATCH);
   });
 
   it('reports non-JSON as unusable', () => {
