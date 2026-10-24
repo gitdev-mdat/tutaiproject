@@ -92,14 +92,37 @@ export async function GET(request: Request) {
     chapterHeading: chapter?.originalHeading ?? null,
     problemType: exerciseSet.problemType,
   });
-  const response = await geminiVisionProvider({
-    model: GEMINI_MODELS.batchExtraction,
-    prompt,
-    images: images.map((item) => item.bytes),
-    schema: TEXTBOOK_RESPONSE_SCHEMA,
-    maxOutputTokens: 32768,
-    allowTruncated: true,
-  });
+  const variant = url.searchParams.get('schema') ?? 'full';
+  const schema = JSON.parse(JSON.stringify(TEXTBOOK_RESPONSE_SCHEMA));
+  const itemProps = schema.properties.items.items.properties;
+  if (variant === 'nochoices') delete itemProps.choices;
+  if (variant === 'nomax') {
+    delete schema.properties.items.maxItems;
+    delete itemProps.choices.maxItems;
+  }
+  if (variant === 'noenum') {
+    delete schema.properties.pages.items.properties.status.enum;
+    delete itemProps.choices.items.properties.label.enum;
+  }
+  let response;
+  try {
+    response = await geminiVisionProvider({
+      model: url.searchParams.get('model') ?? GEMINI_MODELS.batchExtraction,
+      prompt,
+      images: url.searchParams.get('noimages') ? [] : images.map((item) => item.bytes),
+      schema,
+      maxOutputTokens: Number(url.searchParams.get('tokens') ?? 32768),
+      allowTruncated: true,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      providerError: String((error as Error).message),
+      variant,
+      images: images.map(({ bytes, ...rest }) => ({ ...rest, pngBytes: bytes.length })),
+      promptChars: prompt.length,
+      durationMs: Date.now() - start,
+    });
+  }
   const truncated = response.finishReason === 'MAX_TOKENS';
   const parsed = parseExtractionResponse(response.text, { truncated, pages });
   const createdAt = new Date().toISOString();
