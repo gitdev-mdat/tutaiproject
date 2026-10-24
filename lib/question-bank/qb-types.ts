@@ -293,6 +293,8 @@ export interface TextbookQuestionSource {
   solutionPages: number[];
   /** TEXTBOOK_SOLUTION: the book's printed solution, confirmed by an Admin. ADMIN_SOLVED: an Admin's own solution. */
   verification: 'TEXTBOOK_SOLUTION' | 'ADMIN_SOLVED';
+  /** Evidence against the pairing that the Admin checked and accepted. */
+  acknowledgedConflicts?: string[];
   verifiedBy: string;
   verifiedAt: string;
   /** Deterministic check of the answer, when one applies. */

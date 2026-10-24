@@ -26,6 +26,7 @@ const mutation = z.discriminatedUnion('action', [
     action: z.literal('confirm-solution'),
     exerciseId: z.string(),
     solutionId: z.string(),
+    acknowledgedConflicts: z.array(z.string().max(500)).max(20).optional(),
   }),
   z.object({
     action: z.literal('reject-solution'),
@@ -61,7 +62,10 @@ const mutation = z.discriminatedUnion('action', [
 
 function failure(error: unknown) {
   if (error instanceof PracticeRequestError)
-    return NextResponse.json({ error: error.message }, { status: error.status });
+    return NextResponse.json(
+      { error: error.message, ...(error.conflicts ? { conflicts: error.conflicts } : {}) },
+      { status: error.status }
+    );
   if (error instanceof TextbookBackendUnavailableError)
     return NextResponse.json({ error: 'Kho sách chưa được cấu hình.' }, { status: 503 });
   console.error('[textbooks] practice operation failed', (error as Error)?.message);
@@ -100,7 +104,12 @@ export async function POST(request: Request) {
     switch (input.action) {
       case 'confirm-solution':
         return NextResponse.json({
-          artifact: await confirmSolution(input.exerciseId, input.solutionId, actor),
+          artifact: await confirmSolution(
+            input.exerciseId,
+            input.solutionId,
+            actor,
+            input.acknowledgedConflicts
+          ),
         });
       case 'reject-solution':
         return NextResponse.json({

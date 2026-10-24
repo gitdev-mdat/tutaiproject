@@ -130,7 +130,7 @@ export interface SolutionProposal {
   candidates: SolutionCandidate[];
 }
 
-type TypeInfo = { problemType: string | null; inferred: boolean };
+export type TypeInfo = { problemType: string | null; inferred: boolean };
 
 /**
  * The problem type of each solution. A solution whose own heading was not on
@@ -192,6 +192,87 @@ export function solutionProblemTypes(solutions: TextbookArtifact[]): Map<string,
 const LETTERS = /(?:đáp án|chọn)\s*:?\s*([A-D])\b/giu;
 
 /**
+ * The evidence for and against one exercise–solution pair, whoever proposed it:
+ * the matcher, or an Admin choosing another solution by hand.
+ */
+export function assessSolution(
+  exercise: TextbookArtifact,
+  solution: TextbookArtifact,
+  type: TypeInfo
+): {
+  candidate: SolutionCandidate;
+  sameNumber: boolean;
+  statementMatches: boolean;
+  relation: 'SAME' | 'SAME_INFERRED' | 'UNKNOWN' | 'DIFFERENT';
+} {
+  const ownType = exercise.exerciseSet?.problemType ?? null;
+  const sameNumber =
+    !!exercise.questionNumber && exercise.questionNumber === solution.questionNumber;
+  const statement = statementMatches(exercise.content, solution.content);
+  const relation =
+    !ownType || !type.problemType
+      ? 'UNKNOWN'
+      : ownType !== type.problemType
+        ? 'DIFFERENT'
+        : type.inferred
+          ? 'SAME_INFERRED'
+          : 'SAME';
+  const evidence = [`Cùng sách và cùng chương (lời giải tr. ${solution.printedPages.join(', ')})`];
+  const conflicts: string[] = [];
+  if (sameNumber) evidence.push(`Cùng số Câu ${exercise.questionNumber}`);
+  else
+    conflicts.push(
+      `Khác số câu: đề Câu ${exercise.questionNumber ?? '?'}, lời giải Câu ${solution.questionNumber ?? '?'}`
+    );
+  if (relation === 'SAME') evidence.push(`Cùng ${ownType} (theo tiêu đề in trên trang lời giải)`);
+  else if (relation === 'SAME_INFERRED')
+    evidence.push(`Cùng ${ownType} (suy ra từ thứ tự đánh số trong phần lời giải)`);
+  else if (relation === 'DIFFERENT')
+    conflicts.push(`Lời giải thuộc ${type.problemType}, đề thuộc ${ownType}`);
+  else conflicts.push('Chưa xác định được lời giải thuộc dạng nào');
+  if (statement.ok) evidence.push(`Khớp nội dung toán: ${statement.how}`);
+  else {
+    const own = definedFunction(exercise.content);
+    const other = definedFunction(solution.content);
+    if (own && other && own !== other) conflicts.push(`Lời giải nói về hàm số khác: y = ${other}`);
+    else
+      conflicts.push(
+        'Chưa đối chiếu được nội dung toán: lời giải không nhắc lại hàm số hay đạo hàm của đề'
+      );
+  }
+  const answer = solution.answerChoice ?? null;
+  const labels = new Set((exercise.choices ?? []).map((choice) => choice.label));
+  if (!answer) conflicts.push('Lời giải không ghi phương án đúng');
+  else if (labels.size && !labels.has(answer as never))
+    conflicts.push(`Phương án ${answer} không có trong đề`);
+  const letters = new Set([...solution.content.matchAll(LETTERS)].map((m) => m[1].toUpperCase()));
+  if (answer && [...letters].some((letter) => letter !== answer))
+    conflicts.push(`Lời giải ghi nhiều phương án: ${[...letters].join(', ')}`);
+  const check = checkMonotonicityAnswer(exercise.content, exercise.choices, answer);
+  if (check.status === 'CONFIRMED') evidence.push(check.note);
+  else if (check.status === 'CONFLICT') conflicts.push(check.note);
+  else if (check.status === 'AMBIGUOUS') evidence.push(check.note);
+  return {
+    sameNumber,
+    statementMatches: statement.ok,
+    relation,
+    candidate: {
+      solutionId: solution.id,
+      strength:
+        sameNumber &&
+        (relation === 'SAME' || relation === 'SAME_INFERRED') &&
+        statement.ok &&
+        !conflicts.length
+          ? 'STRONG'
+          : 'WEAK',
+      evidence,
+      conflicts,
+      answerChoice: answer,
+    },
+  };
+}
+
+/**
  * Candidate solutions for every open exercise of a book, with the evidence for
  * and against each. Scope is the same book and chapter; a candidate needs the
  * same printed number or a solution about the same statement, and a number alone
@@ -225,70 +306,11 @@ export function proposeSolutions(artifacts: TextbookArtifact[]): Map<string, Sol
         (confirmedFor.has(solution.id) && confirmedFor.get(solution.id) !== exercise.id)
       )
         continue;
-      const sameNumber =
-        !!exercise.questionNumber && exercise.questionNumber === solution.questionNumber;
-      const statement = statementMatches(exercise.content, solution.content);
-      if (!sameNumber && !statement.ok) continue;
       const type = types.get(solution.id) ?? { problemType: null, inferred: false };
-      const relation =
-        !set.problemType || !type.problemType
-          ? 'UNKNOWN'
-          : set.problemType !== type.problemType
-            ? 'DIFFERENT'
-            : type.inferred
-              ? 'SAME_INFERRED'
-              : 'SAME';
-      if (relation === 'DIFFERENT' && !statement.ok) continue;
-      const evidence = [
-        `Cùng sách và cùng chương (lời giải tr. ${solution.printedPages.join(', ')})`,
-      ];
-      const conflicts: string[] = [];
-      if (sameNumber) evidence.push(`Cùng số Câu ${exercise.questionNumber}`);
-      else
-        conflicts.push(
-          `Khác số câu: đề Câu ${exercise.questionNumber ?? '?'}, lời giải Câu ${solution.questionNumber ?? '?'}`
-        );
-      if (relation === 'SAME')
-        evidence.push(`Cùng ${set.problemType} (theo tiêu đề in trên trang lời giải)`);
-      else if (relation === 'SAME_INFERRED')
-        evidence.push(`Cùng ${set.problemType} (suy ra từ thứ tự đánh số trong phần lời giải)`);
-      else if (relation === 'DIFFERENT')
-        conflicts.push(`Lời giải thuộc ${type.problemType}, đề thuộc ${set.problemType}`);
-      else conflicts.push('Chưa xác định được lời giải thuộc dạng nào');
-      if (statement.ok) evidence.push(`Khớp nội dung toán: ${statement.how}`);
-      else {
-        const own = definedFunction(exercise.content);
-        const other = definedFunction(solution.content);
-        if (own && other && own !== other)
-          conflicts.push(`Lời giải nói về hàm số khác: y = ${other}`);
-      }
-      const answer = solution.answerChoice ?? null;
-      const labels = new Set((exercise.choices ?? []).map((choice) => choice.label));
-      if (!answer) conflicts.push('Lời giải không ghi phương án đúng');
-      else if (labels.size && !labels.has(answer as never))
-        conflicts.push(`Phương án ${answer} không có trong đề`);
-      const letters = new Set(
-        [...solution.content.matchAll(LETTERS)].map((m) => m[1].toUpperCase())
-      );
-      if (answer && [...letters].some((letter) => letter !== answer))
-        conflicts.push(`Lời giải ghi nhiều phương án: ${[...letters].join(', ')}`);
-      const check = checkMonotonicityAnswer(exercise.content, exercise.choices, answer);
-      if (check.status === 'CONFIRMED') evidence.push(check.note);
-      else if (check.status === 'CONFLICT') conflicts.push(check.note);
-      else if (check.status === 'AMBIGUOUS') evidence.push(check.note);
-      candidates.push({
-        solutionId: solution.id,
-        strength:
-          sameNumber &&
-          (relation === 'SAME' || relation === 'SAME_INFERRED') &&
-          statement.ok &&
-          !conflicts.length
-            ? 'STRONG'
-            : 'WEAK',
-        evidence,
-        conflicts,
-        answerChoice: answer,
-      });
+      const assessment = assessSolution(exercise, solution, type);
+      if (!assessment.sameNumber && !assessment.statementMatches) continue;
+      if (assessment.relation === 'DIFFERENT' && !assessment.statementMatches) continue;
+      candidates.push(assessment.candidate);
     }
     candidates.sort(
       (a, b) =>

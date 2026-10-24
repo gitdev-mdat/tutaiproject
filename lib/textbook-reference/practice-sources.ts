@@ -19,6 +19,8 @@ import type {
 
 /** Solutions are this many pages per extraction: dense pages, long answers. */
 export const SOLUTION_PAGES_PER_REQUEST = 3;
+/** Exercise pages per extraction: a page holds a dozen questions with four choices each. */
+export const EXERCISE_PAGES_PER_REQUEST = 2;
 
 const SOLUTION_HEADING = /hướng dẫn giải|lời giải|đáp án|giải chi tiết/iu;
 const EXERCISE_HEADING = /bài tập|luyện tập|rèn luyện|tự luyện|câu hỏi trắc nghiệm/iu;
@@ -60,6 +62,8 @@ export interface PracticeSet {
   problemType: string | null;
   span: PageSpan | null;
   exerciseIds: string[];
+  /** The set's own pages, in bounded groups to extract. */
+  chunks: number[][];
   /** Null: the outline and links do not say which lesson; the Admin chooses. */
   lesson: LessonSuggestion | null;
   /** Lessons the links make plausible but cannot decide between. */
@@ -252,6 +256,10 @@ export function practiceSetsForLesson(input: {
         chapter,
         problemType: exerciseSetFor(entry, entries).problemType,
         span: entrySpan(entry),
+        chunks: (() => {
+          const span = entrySpan(entry);
+          return span ? chunk(span, EXERCISE_PAGES_PER_REQUEST) : [];
+        })(),
         exerciseIds: artifacts
           .filter((artifact) => artifact.kind === 'EXERCISE' && artifact.entryId === entry.id)
           .map((artifact) => artifact.id),

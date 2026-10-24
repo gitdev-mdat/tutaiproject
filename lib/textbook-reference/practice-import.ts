@@ -67,6 +67,9 @@ function questionFields(item: TextbookImportItem, rights: RightsStatus, now: str
     exercisePages: view.printedPages,
     solutionPages: item.solutionPages,
     verification: view.verification!.method,
+    ...(view.verification!.acknowledgedConflicts?.length
+      ? { acknowledgedConflicts: view.verification!.acknowledgedConflicts }
+      : {}),
     verifiedBy: view.verification!.by,
     verifiedAt: view.verification!.at,
     ...(view.check.status === 'CONFIRMED' || view.check.status === 'AMBIGUOUS'

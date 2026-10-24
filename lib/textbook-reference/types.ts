@@ -122,6 +122,8 @@ export interface ExercisePracticeRecord {
     method: PracticeVerificationMethod;
     answer: string;
     solutionArtifactId: string | null;
+    /** Evidence against the pairing that the Admin checked and accepted. */
+    acknowledgedConflicts?: string[];
     by: string;
     at: string;
   };

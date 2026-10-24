@@ -242,7 +242,14 @@ describe.skipIf(!READY)('textbook exercises into the Question Bank (isolated Pos
   it('imports a confirmed question once, even when two imports race', async () => {
     await confirmSolution(ex('3').id, sol('3').id, 'admin-1');
     // Câu 7 has only "Đáp án C.": it is refused until the Admin writes an explanation.
-    await confirmSolution(ex('7').id, sol('7').id, 'admin-1');
+    // Câu 7's printed solution is only "Đáp án C.": the Admin acknowledges that nothing else can be compared.
+    await expect(confirmSolution(ex('7').id, sol('7').id, 'admin-1')).rejects.toMatchObject({
+      status: 409,
+      conflicts: [expect.stringMatching(/^Chưa đối chiếu được nội dung toán/)],
+    });
+    await confirmSolution(ex('7').id, sol('7').id, 'admin-1', [
+      'Chưa đối chiếu được nội dung toán: lời giải không nhắc lại hàm số hay đạo hàm của đề',
+    ]);
     const [first, second] = await Promise.all([
       importExercises(P1, [ex('3').id, ex('7').id, ex('8').id], 'LICENSED', 'admin-1'),
       importExercises(P1, [ex('3').id], 'LICENSED', 'admin-1'),
@@ -320,5 +327,30 @@ describe.skipIf(!READY)('textbook exercises into the Question Bank (isolated Pos
     expect(question.primaryKnowledgeNodeId).toBe(P2);
     const workspace = (await loadLessonPractice(P1))!;
     expect(workspace.counts).toMatchObject({ imported: 2, assignedHere: 1 });
+  });
+
+  it('refuses a hand-picked solution with evidence against it until the Admin acknowledges each point', async () => {
+    // Câu 8 has no printed solution among the recorded pages; Câu 6's is about another question.
+    const error = await confirmSolution(ex('8').id, sol('6').id, 'admin-1').catch((e) => e);
+    expect(error).toMatchObject({ status: 409 });
+    expect(error.conflicts).toEqual(
+      expect.arrayContaining([
+        'Khác số câu: đề Câu 8, lời giải Câu 6',
+        expect.stringMatching(/^Chưa đối chiếu được nội dung toán/),
+      ])
+    );
+    const untouched = (await listTextbookArtifacts({ documentId: DOC })).find(
+      (a) => a.id === ex('8').id
+    )!;
+    expect(untouched.practice?.verification).toBeUndefined();
+    // A partial acknowledgement is not enough.
+    await expect(
+      confirmSolution(ex('8').id, sol('6').id, 'admin-1', error.conflicts.slice(0, 1))
+    ).rejects.toMatchObject({ status: 409 });
+    const confirmed = await confirmSolution(ex('8').id, sol('6').id, 'admin-1', error.conflicts);
+    expect(confirmed.practice?.verification).toMatchObject({
+      method: 'TEXTBOOK_SOLUTION',
+      acknowledgedConflicts: error.conflicts,
+    });
   });
 });

@@ -11,7 +11,10 @@ import type { ExerciseChoice, SolutionStatus, TextbookArtifact } from './types';
  */
 
 export interface PracticeCandidateView extends SolutionCandidate {
-  solution: Pick<TextbookArtifact, 'id' | 'title' | 'content' | 'printedPages' | 'questionNumber'>;
+  solution: Pick<
+    TextbookArtifact,
+    'id' | 'title' | 'content' | 'printedPages' | 'questionNumber' | 'answerChoice'
+  >;
 }
 
 export interface ExercisePracticeView {
@@ -78,6 +81,7 @@ const solutionView = (solution: TextbookArtifact): PracticeCandidateView['soluti
   content: solution.content,
   printedPages: solution.printedPages,
   questionNumber: solution.questionNumber,
+  answerChoice: solution.answerChoice,
 });
 
 export function exercisePracticeView(input: {

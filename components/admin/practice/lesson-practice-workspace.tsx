@@ -108,6 +108,16 @@ function QuestionCard({
             AI gợi ý
           </Chip>
         )}
+        {question.textbookSource && (
+          <Chip tone="bg-slate-50 text-slate-700 ring-slate-200">
+            <BookOpen className="mr-1 size-3" />
+            Sách {question.textbookSource.documentTitle} · Câu{' '}
+            {question.textbookSource.questionNumber ?? '?'} · đáp án{' '}
+            {question.textbookSource.verification === 'ADMIN_SOLVED'
+              ? 'Admin tự giải'
+              : 'theo lời giải in trong sách'}
+          </Chip>
+        )}
         {pinned && state === 'IN_PRACTICE' && (
           <Chip tone="bg-sky-50 text-sky-700 ring-sky-200">Hỏi nhanh trong bài</Chip>
         )}

@@ -29,6 +29,9 @@ import { Chip, QUESTION_STATE } from './practice-labels';
 type Exercise = PracticeSetView['exercises'][number];
 type Candidate = Exercise['candidates'][number];
 
+/** "dạng 1" → "Dạng 1". */
+const typeLabel = (type: string) => type.charAt(0).toLocaleUpperCase('vi') + type.slice(1);
+
 const STATUS: Record<SolutionStatus, { label: string; tone: string }> = {
   UNRESOLVED: { label: 'Chưa có lời giải', tone: 'bg-slate-100 text-slate-600 ring-slate-200' },
   SUGGESTED: { label: 'Gợi ý ghép', tone: 'bg-sky-50 text-sky-700 ring-sky-200' },
@@ -69,9 +72,10 @@ const matchesFilter = (exercise: Exercise, filter: Filter) =>
 const button =
   'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors disabled:opacity-50';
 
-async function practiceApi(
-  body: Record<string, unknown>
-): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; error: string }> {
+type ApiResult =
+  { ok: true; data: Record<string, unknown> } | { ok: false; error: string; conflicts?: string[] };
+
+async function practiceApi(body: Record<string, unknown>): Promise<ApiResult> {
   const response = await fetch('/api/admin/textbooks/practice', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -81,7 +85,11 @@ async function practiceApi(
   const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
   return response.ok
     ? { ok: true, data }
-    : { ok: false, error: String(data.error ?? 'Không thực hiện được.') };
+    : {
+        ok: false,
+        error: String(data.error ?? 'Không thực hiện được.'),
+        ...(Array.isArray(data.conflicts) ? { conflicts: data.conflicts.map(String) } : {}),
+      };
 }
 
 const pageImage = (documentId: string, page: number) =>
@@ -421,15 +429,47 @@ function ExerciseDetail({
   set: PracticeSetView;
   workspace: LessonPracticeWorkspace;
   allSolutions: Candidate['solution'][];
-  onAction: (body: Record<string, unknown>, message: string) => Promise<boolean>;
+  onAction: (body: Record<string, unknown>, message: string) => Promise<ApiResult>;
   busy: boolean;
 }) {
   const [mode, setMode] = React.useState<'none' | 'edit' | 'solve'>('none');
   const [other, setOther] = React.useState('');
+  const [pending, setPending] = React.useState<{
+    solutionId: string;
+    title: string;
+    conflicts: string[];
+  } | null>(null);
+  const [acknowledged, setAcknowledged] = React.useState(false);
+  const confirm = async (solutionId: string, title: string, acknowledgedConflicts?: string[]) => {
+    const result = await onAction(
+      { action: 'confirm-solution', exerciseId: exercise.id, solutionId, acknowledgedConflicts },
+      `Đã xác nhận ${title} là lời giải của câu này.`
+    );
+    if (!result.ok && result.conflicts) {
+      setAcknowledged(false);
+      setPending({ solutionId, title, conflicts: result.conflicts });
+    } else if (result.ok) {
+      setPending(null);
+      setOther('');
+    }
+  };
+  const chosen = allSolutions.find((solution) => solution.id === other) ?? null;
   const layouts = workspace.pageLayouts[set.documentId] ?? {};
   const locked = !!exercise.question && exercise.question.editorialStatus !== 'DRAFT';
   const candidateIds = new Set(exercise.candidates.map((candidate) => candidate.solution.id));
-  const others = allSolutions.filter((solution) => !candidateIds.has(solution.id));
+  // A printed solution belongs to one question: those confirmed for another are not offered.
+  const taken = new Set(
+    workspace.sets.flatMap((item) =>
+      item.exercises.flatMap((other) =>
+        other.id !== exercise.id && other.verification?.solutionArtifactId
+          ? [other.verification.solutionArtifactId]
+          : []
+      )
+    )
+  );
+  const others = allSolutions.filter(
+    (solution) => !candidateIds.has(solution.id) && !taken.has(solution.id)
+  );
   const lessonTitle = (id: string | undefined) =>
     workspace.lessons.find((lesson) => lesson.id === id)?.title ?? 'bài khác';
 
@@ -440,7 +480,8 @@ function ExerciseDetail({
         <Chip tone={STATUS[exercise.status].tone}>{STATUS[exercise.status].label}</Chip>
         <span className="text-xs text-slate-500">
           {set.heading}
-          {set.problemType ? ` · ${set.problemType}` : ''} · tr. {exercise.printedPages.join(', ')}
+          {set.problemType ? ` · ${typeLabel(set.problemType)}` : ''} · tr.{' '}
+          {exercise.printedPages.join(', ')}
         </span>
       </header>
 
@@ -485,10 +526,12 @@ function ExerciseDetail({
               onCancel={() => setMode('none')}
               onSave={async (draft) => {
                 if (
-                  await onAction(
-                    { action: 'save-draft', exerciseId: exercise.id, ...draft },
-                    'Đã lưu bản sửa. Chưa có gì được xuất bản.'
-                  )
+                  (
+                    await onAction(
+                      { action: 'save-draft', exerciseId: exercise.id, ...draft },
+                      'Đã lưu bản sửa. Chưa có gì được xuất bản.'
+                    )
+                  ).ok
                 )
                   setMode('none');
               }}
@@ -562,16 +605,7 @@ function ExerciseDetail({
                       documentId={set.documentId}
                       layouts={layouts}
                       busy={busy}
-                      onConfirm={() =>
-                        onAction(
-                          {
-                            action: 'confirm-solution',
-                            exerciseId: exercise.id,
-                            solutionId: candidate.solution.id,
-                          },
-                          `Đã xác nhận ${candidate.solution.title} là lời giải của câu này.`
-                        )
-                      }
+                      onConfirm={() => confirm(candidate.solution.id, candidate.solution.title)}
                       onReject={() =>
                         onAction(
                           {
@@ -613,17 +647,78 @@ function ExerciseDetail({
                 </label>
                 <button
                   type="button"
-                  disabled={busy || !other}
-                  onClick={() =>
-                    onAction(
-                      { action: 'confirm-solution', exerciseId: exercise.id, solutionId: other },
-                      'Đã xác nhận lời giải bạn chọn.'
-                    )
-                  }
+                  disabled={busy || !chosen}
+                  onClick={() => chosen && confirm(chosen.id, chosen.title)}
                   className={`${button} h-9 border border-emerald-300 text-emerald-800`}
+                  data-testid="use-other-solution"
                 >
                   Dùng lời giải này
                 </button>
+              </div>
+            )}
+            {chosen && (
+              <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+                <p className="text-xs font-semibold text-slate-800">
+                  {chosen.title} · tr. {chosen.printedPages.join(', ')} · Sách chọn:{' '}
+                  {chosen.answerChoice ?? 'không ghi'}
+                </p>
+                <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-slate-800">
+                  <QuestionMath text={chosen.content} />
+                </div>
+                {chosen.printedPages.map((page) => (
+                  <ScanPage
+                    key={page}
+                    documentId={set.documentId}
+                    page={page}
+                    layout={layouts[page]}
+                  />
+                ))}
+              </div>
+            )}
+            {pending && (
+              <div
+                className="space-y-2 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200"
+                role="alertdialog"
+                aria-label="Xác nhận lời giải chưa khớp"
+                data-testid="acknowledge-conflicts"
+              >
+                <p className="text-xs font-semibold text-amber-900">
+                  {pending.title} chưa khớp hoàn toàn với đề này:
+                </p>
+                <ul className="space-y-0.5 text-xs text-amber-900">
+                  {pending.conflicts.map((conflict) => (
+                    <li key={conflict} className="flex gap-1.5">
+                      <AlertTriangle className="mt-0.5 size-3 shrink-0" /> {conflict}
+                    </li>
+                  ))}
+                </ul>
+                <label className="flex items-start gap-2 text-xs text-amber-900">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={acknowledged}
+                    onChange={(e) => setAcknowledged(e.target.checked)}
+                  />
+                  Tôi đã đối chiếu đề và lời giải trên trang sách: đây đúng là lời giải của câu này.
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={busy || !acknowledged}
+                    onClick={() => confirm(pending.solutionId, pending.title, pending.conflicts)}
+                    className={`${button} bg-amber-600 text-white`}
+                    data-testid="acknowledge-confirm"
+                  >
+                    Vẫn xác nhận
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPending(null)}
+                    className={`${button} text-amber-900`}
+                  >
+                    Hủy
+                  </button>
+                </div>
               </div>
             )}
             {mode === 'solve' ? (
@@ -633,10 +728,12 @@ function ExerciseDetail({
                 onCancel={() => setMode('none')}
                 onSubmit={async (answer, explanation) => {
                   if (
-                    await onAction(
-                      { action: 'admin-verify', exerciseId: exercise.id, answer, explanation },
-                      'Đã ghi nhận đáp án do Admin tự giải.'
-                    )
+                    (
+                      await onAction(
+                        { action: 'admin-verify', exerciseId: exercise.id, answer, explanation },
+                        'Đã ghi nhận đáp án do Admin tự giải.'
+                      )
+                    ).ok
                   )
                     setMode('none');
                 }}
@@ -723,87 +820,154 @@ function ExerciseDetail({
   );
 }
 
-function SolutionSources({
-  set,
+type Chunk = PracticeSetView['chunks'][number];
+
+/** One button per bounded page group; a finished group shows as done. */
+function ExtractButtons({
+  documentId,
+  entryId,
+  chunks,
   lessonId,
+  what,
   onQueued,
 }: {
-  set: PracticeSetView;
+  documentId: string;
+  entryId: string;
+  chunks: Chunk[];
   lessonId: string;
+  what: 'đề' | 'lời giải';
   onQueued: (message: string) => void;
 }) {
   const [busy, setBusy] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-  if (!set.solutionSources.length)
-    return (
-      <p className="text-xs text-slate-500">
-        Mục lục không có phần “Hướng dẫn giải” cho chương này. Có thể tự giải từng câu.
-      </p>
-    );
   return (
-    <div className="space-y-2">
-      {set.solutionSources.map((source) => (
-        <div key={source.entryId} className="text-xs">
-          <p className="text-slate-700">
-            <FileSearch className="mr-1 inline size-3.5 text-slate-400" />
-            Lời giải: <strong>{source.heading}</strong> ({source.pages}).{' '}
-            <span className="text-slate-500">{source.reason}.</span>
-          </p>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {source.chunks.map((chunk) => {
-              const label =
-                chunk.pages.length > 1
-                  ? `tr. ${chunk.pages[0]}–${chunk.pages.at(-1)}`
-                  : `tr. ${chunk.pages[0]}`;
-              const running = chunk.job?.status === 'QUEUED' || chunk.job?.status === 'RUNNING';
-              const key = chunk.pages.join();
-              return chunk.extracted ? (
-                <Chip key={key} tone="bg-emerald-50 text-emerald-700 ring-emerald-200">
-                  Đã trích {label}
-                </Chip>
-              ) : (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={!!busy || running}
-                  onClick={async () => {
-                    setBusy(key);
-                    setError(null);
-                    const result = await textbookApi.extract({
-                      documentId: set.documentId,
-                      entryIds: [source.entryId],
-                      knowledgeNodeId: lessonId,
-                      printedPages: chunk.pages,
-                    });
-                    setBusy(null);
-                    if (!result.ok) return setError(result.error);
-                    onQueued(
-                      result.data.cacheHit
-                        ? `Các trang ${label} đã trích trước đây; dùng lại kết quả.`
-                        : `Đang trích lời giải ${label}. Kết quả hiện ở đây khi xong.`
-                    );
-                  }}
-                  className={`${button} border border-slate-300 bg-white text-slate-800 hover:bg-slate-50`}
-                  data-testid="extract-solutions"
-                >
-                  {busy === key || running ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                  {running
-                    ? `Đang trích ${label}`
-                    : chunk.job?.status === 'FAILED'
-                      ? `Thử lại ${label}`
-                      : `Trích lời giải ${label}`}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+    <>
+      <div className="flex flex-wrap gap-2">
+        {chunks.map((chunk) => {
+          const label =
+            chunk.pages.length > 1
+              ? `tr. ${chunk.pages[0]}–${chunk.pages.at(-1)}`
+              : `tr. ${chunk.pages[0]}`;
+          const running = chunk.job?.status === 'QUEUED' || chunk.job?.status === 'RUNNING';
+          const key = chunk.pages.join();
+          return chunk.extracted ? (
+            <Chip key={key} tone="bg-emerald-50 text-emerald-700 ring-emerald-200">
+              <Check className="mr-0.5 inline size-3" />
+              Đã trích {label}
+            </Chip>
+          ) : (
+            <button
+              key={key}
+              type="button"
+              disabled={!!busy || running}
+              onClick={async () => {
+                setBusy(key);
+                setError(null);
+                const result = await textbookApi.extract({
+                  documentId,
+                  entryIds: [entryId],
+                  knowledgeNodeId: lessonId,
+                  printedPages: chunk.pages,
+                });
+                setBusy(null);
+                if (!result.ok) return setError(result.error);
+                onQueued(
+                  result.data.cacheHit
+                    ? `Các trang ${label} đã trích trước đây; dùng lại kết quả.`
+                    : `Đang trích ${what} ${label}. Kết quả hiện ở đây khi xong.`
+                );
+              }}
+              className={`${button} border border-slate-300 bg-white text-slate-800 hover:bg-slate-50`}
+              data-testid={what === 'đề' ? 'extract-exercises' : 'extract-solutions'}
+            >
+              {busy === key || running ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              {running
+                ? `Đang trích ${label}`
+                : chunk.job?.status === 'FAILED'
+                  ? `Thử lại ${label}`
+                  : `Trích ${what} ${label}`}
+            </button>
+          );
+        })}
+      </div>
       {error && (
-        <p className="text-xs font-medium text-rose-700" role="alert">
+        <p className="mt-1 text-xs font-medium text-rose-700" role="alert">
           {error}
         </p>
       )}
-    </div>
+    </>
+  );
+}
+
+/**
+ * The chapter's "Hướng dẫn giải" sections, once each: several exercise sets
+ * share them, and each page group is extracted at most once.
+ */
+function SolutionSources({
+  sets,
+  lessonId,
+  onQueued,
+}: {
+  sets: PracticeSetView[];
+  lessonId: string;
+  onQueued: (message: string) => void;
+}) {
+  const sources = new Map<
+    string,
+    {
+      documentId: string;
+      documentTitle: string;
+      source: PracticeSetView['solutionSources'][number];
+    }
+  >();
+  for (const set of sets)
+    for (const source of set.solutionSources)
+      sources.set(`${set.documentId}:${source.entryId}`, {
+        documentId: set.documentId,
+        documentTitle: set.documentTitle,
+        source,
+      });
+  if (!sources.size)
+    return (
+      <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+        Mục lục không có phần “Hướng dẫn giải” cho chương này. Admin có thể tự giải và ghi đáp án
+        cho từng câu.
+      </p>
+    );
+  return (
+    <section
+      className="space-y-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+      aria-label="Lời giải trong sách"
+      data-testid="solution-sources"
+    >
+      {[...sources.values()].map(({ documentId, documentTitle, source }) => {
+        const done = source.chunks.filter((chunk) => chunk.extracted).length;
+        return (
+          <div key={`${documentId}:${source.entryId}`} className="space-y-1.5 text-xs">
+            <p className="text-slate-700">
+              <FileSearch className="mr-1 inline size-3.5 text-slate-400" />
+              Lời giải: <strong>{source.heading}</strong> · {documentTitle} · {source.pages}
+              <span className="text-slate-500">
+                {' '}
+                · đã trích {done}/{source.chunks.length} nhóm trang
+              </span>
+            </p>
+            <p className="text-slate-500">
+              {source.reason}. Mỗi lần trích tối đa {source.chunks[0]?.pages.length ?? 3} trang;
+              không quét cả sách.
+            </p>
+            <ExtractButtons
+              documentId={documentId}
+              entryId={source.entryId}
+              chunks={source.chunks}
+              lessonId={lessonId}
+              what="lời giải"
+              onQueued={onQueued}
+            />
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
@@ -838,10 +1002,14 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
   }, [load]);
 
   const extracting = workspace?.sets.some((set) =>
-    set.solutionSources.some((s) =>
-      s.chunks.some((c) => c.job?.status === 'QUEUED' || c.job?.status === 'RUNNING')
+    [...set.chunks, ...set.solutionSources.flatMap((s) => s.chunks)].some(
+      (c) => c.job?.status === 'QUEUED' || c.job?.status === 'RUNNING'
     )
   );
+  const queued = (text: string) => {
+    setNotice({ text, tone: 'ok' });
+    void load();
+  };
   React.useEffect(() => {
     if (!extracting) return;
     const timer = window.setInterval(() => void load(), 4000);
@@ -852,9 +1020,11 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
     setBusy(true);
     const result = await practiceApi(body);
     setBusy(false);
-    setNotice(result.ok ? { text: message, tone: 'ok' } : { text: result.error, tone: 'error' });
+    // Conflicts to acknowledge are shown next to the solution, not as a page error.
+    if (result.ok) setNotice({ text: message, tone: 'ok' });
+    else if (!result.conflicts) setNotice({ text: result.error, tone: 'error' });
     if (result.ok) await load();
-    return result.ok;
+    return result;
   };
 
   if (loadError && !workspace)
@@ -968,6 +1138,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                 </button>
               ))}
             </div>
+            <SolutionSources sets={workspace.sets} lessonId={lessonId} onQueued={queued} />
             {workspace.sets.map((set) => {
               const items = set.exercises.filter((exercise) => matchesFilter(exercise, filter));
               const suggested = set.lesson
@@ -985,7 +1156,10 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                       <h2 className="text-sm font-semibold text-slate-900">
                         {set.heading}
                         {set.problemType && (
-                          <span className="font-normal text-slate-500"> · {set.problemType}</span>
+                          <span className="font-normal text-slate-500">
+                            {' '}
+                            · {typeLabel(set.problemType)}
+                          </span>
                         )}
                       </h2>
                       <p className="text-xs text-slate-500">
@@ -1004,19 +1178,20 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                         )}
                       </p>
                     </div>
-                    <SolutionSources
-                      set={set}
-                      lessonId={lessonId}
-                      onQueued={(text) => {
-                        setNotice({ text, tone: 'ok' });
-                        void load();
-                      }}
-                    />
+                    {set.chunks.some((chunk) => !chunk.extracted) && (
+                      <ExtractButtons
+                        documentId={set.documentId}
+                        entryId={set.entryId}
+                        chunks={set.chunks}
+                        lessonId={lessonId}
+                        what="đề"
+                        onQueued={queued}
+                      />
+                    )}
                   </header>
                   {set.exercises.length === 0 ? (
                     <p className="px-4 py-4 text-xs text-slate-500">
-                      Chưa trích câu nào của mục này. Trích trang {set.pages} ở mục sách trong Cây
-                      kiến thức.
+                      Chưa trích câu nào của mục này.
                     </p>
                   ) : items.length === 0 ? (
                     <p className="px-4 py-3 text-xs text-slate-500">
@@ -1065,7 +1240,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                                 Câu {exercise.questionNumber ?? '?'}
                               </span>
                               <span className="min-w-0 flex-1 truncate text-xs text-slate-600">
-                                {exercise.stem.replace(/\$/g, '')}
+                                <QuestionMath text={exercise.stem.split('\n')[0]} />
                               </span>
                               {exercise.question ? (
                                 <Chip tone={QUESTION_STATE[exercise.question.practiceState].tone}>

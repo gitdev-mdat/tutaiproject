@@ -32,7 +32,7 @@ import {
   listTextbookMappings,
   updateExercisePractice,
 } from './repository';
-import { proposeSolutions } from './solution-matching';
+import { assessSolution, proposeSolutions, solutionProblemTypes } from './solution-matching';
 import type { ExerciseChoice, TextbookArtifact, TextbookExtractionJob } from './types';
 
 /**
@@ -56,18 +56,22 @@ export interface PracticeSetView {
   pages: string;
   lesson: PracticeSet['lesson'];
   ambiguousLessonIds: string[];
+  /** The set's own pages, for extracting its questions here. */
+  chunks: ExtractionChunk[];
   solutionSources: Array<{
     entryId: string;
     heading: string;
     pages: string;
     reason: string;
-    chunks: Array<{
-      pages: number[];
-      extracted: boolean;
-      job: Pick<TextbookExtractionJob, 'id' | 'status' | 'error'> | null;
-    }>;
+    chunks: ExtractionChunk[];
   }>;
   exercises: Array<ExercisePracticeView & { question: ImportedQuestion | null }>;
+}
+
+export interface ExtractionChunk {
+  pages: number[];
+  extracted: boolean;
+  job: Pick<TextbookExtractionJob, 'id' | 'status' | 'error'> | null;
 }
 
 export interface ImportedQuestion {
@@ -95,7 +99,12 @@ export interface LessonPracticeWorkspace {
   /** Every extracted solution of the sets' chapters, for "choose another solution". */
   solutions: Record<
     string,
-    Array<Pick<TextbookArtifact, 'id' | 'title' | 'content' | 'printedPages' | 'questionNumber'>>
+    Array<
+      Pick<
+        TextbookArtifact,
+        'id' | 'title' | 'content' | 'printedPages' | 'questionNumber' | 'answerChoice'
+      >
+    >
   >;
 }
 
@@ -143,6 +152,26 @@ export async function loadLessonPractice(
     ])
   );
 
+  // A page group is done once its job finished (even with nothing on it) or items exist there.
+  const chunkView = (
+    entryId: string,
+    pages: number[],
+    extractedPages: Set<number>
+  ): ExtractionChunk => {
+    const job =
+      jobs.find(
+        (item) =>
+          item.kind === 'EXTRACT' &&
+          item.entryIds.includes(entryId) &&
+          item.printedPages.join() === pages.join()
+      ) ?? null;
+    return {
+      pages,
+      extracted: job?.status === 'COMPLETED' || pages.some((page) => extractedPages.has(page)),
+      job: job ? { id: job.id, status: job.status, error: job.error } : null,
+    };
+  };
+
   const setViews: PracticeSetView[] = sets.map((set) => {
     const book = books.find((item) => item.id === set.documentId)!;
     const solutionsOf = (entryId: string) =>
@@ -159,31 +188,30 @@ export async function loadLessonPractice(
       pages: formatSpan(set.span),
       lesson: set.lesson,
       ambiguousLessonIds: set.ambiguousLessonIds,
-      solutionSources: set.solutionSources.map((source) => {
-        const extractedPages = new Set(solutionsOf(source.entry.id).flatMap((a) => a.printedPages));
-        return {
-          entryId: source.entry.id,
-          heading: source.entry.originalHeading,
-          pages: formatSpan(source.span),
-          reason: source.reason,
-          chunks: source.chunks.map((pages) => {
-            const job =
-              jobs.find(
-                (item) =>
-                  item.kind === 'EXTRACT' &&
-                  item.entryIds.includes(source.entry.id) &&
-                  item.printedPages.join() === pages.join()
-              ) ?? null;
-            return {
-              pages,
-              extracted:
-                pages.some((page) => extractedPages.has(page)) ||
-                (job?.status === 'COMPLETED' && job.outcome === 'EMPTY'),
-              job: job ? { id: job.id, status: job.status, error: job.error } : null,
-            };
-          }),
-        };
-      }),
+      chunks: set.chunks.map((pages) =>
+        chunkView(
+          set.entry.id,
+          pages,
+          new Set(
+            artifacts
+              .filter((a) => a.entryId === set.entry.id && a.documentId === book.id)
+              .flatMap((a) => a.printedPages)
+          )
+        )
+      ),
+      solutionSources: set.solutionSources.map((source) => ({
+        entryId: source.entry.id,
+        heading: source.entry.originalHeading,
+        pages: formatSpan(source.span),
+        reason: source.reason,
+        chunks: source.chunks.map((pages) =>
+          chunkView(
+            source.entry.id,
+            pages,
+            new Set(solutionsOf(source.entry.id).flatMap((a) => a.printedPages))
+          )
+        ),
+      })),
       exercises: set.exerciseIds
         .map((id) => byId.get(id)!)
         .filter((exercise) => exercise.reviewStatus !== 'REJECTED')
@@ -300,6 +328,7 @@ export async function loadLessonPractice(
               content: a.content,
               printedPages: a.printedPages,
               questionNumber: a.questionNumber,
+              answerChoice: a.answerChoice,
             })),
         ];
       })
@@ -312,7 +341,9 @@ export async function loadLessonPractice(
 export class PracticeRequestError extends Error {
   constructor(
     message: string,
-    readonly status: 404 | 409 | 422 = 422
+    readonly status: 404 | 409 | 422 = 422,
+    /** Evidence against a pairing the Admin has to acknowledge before confirming it. */
+    readonly conflicts?: string[]
   ) {
     super(message);
     this.name = 'PracticeRequestError';
@@ -328,14 +359,54 @@ async function decide(
   return result.artifact;
 }
 
-/** The Admin confirms that this printed solution belongs to this question; its answer becomes the book's. */
-export async function confirmSolution(exerciseId: string, solutionId: string, actor: string) {
-  const solution = await getTextbookArtifact(solutionId);
+/**
+ * The Admin confirms that this printed solution belongs to this question; its
+ * answer becomes the book's. A pairing with evidence against it (another number,
+ * another problem type, another function, a failed check) is refused until the
+ * Admin acknowledges each point, whether the matcher proposed it or not.
+ */
+export async function confirmSolution(
+  exerciseId: string,
+  solutionId: string,
+  actor: string,
+  acknowledged: string[] = []
+) {
+  const [solution, current] = await Promise.all([
+    getTextbookArtifact(solutionId),
+    getTextbookArtifact(exerciseId),
+  ]);
   if (!solution || solution.kind !== 'SOLUTION')
     throw new PracticeRequestError('Không tìm thấy lời giải.', 404);
+  if (!current || current.kind !== 'EXERCISE')
+    throw new PracticeRequestError('Không tìm thấy câu hỏi.', 404);
   if (!solution.answerChoice)
     throw new PracticeRequestError(
       'Lời giải này không ghi phương án đúng. Nếu bạn đã tự giải, dùng “Tự giải và ghi nhận đáp án”.'
+    );
+  const artifacts = await listTextbookArtifacts({ documentId: solution.documentId });
+  // Checked again under the row lock below; here so this refusal comes first.
+  if (
+    artifacts.some(
+      (artifact) =>
+        artifact.id !== exerciseId &&
+        artifact.practice?.verification?.solutionArtifactId === solutionId
+    )
+  )
+    throw new PracticeRequestError('Lời giải này đã được xác nhận cho một câu khác.', 409);
+  const solutions = artifacts.filter(
+    (artifact) => artifact.kind === 'SOLUTION' && artifact.reviewStatus !== 'REJECTED'
+  );
+  const type = solutionProblemTypes(solutions).get(solution.id) ?? {
+    problemType: null,
+    inferred: false,
+  };
+  const { conflicts } = assessSolution(current, solution, type).candidate;
+  const open = conflicts.filter((conflict) => !acknowledged.includes(conflict));
+  if (open.length)
+    throw new PracticeRequestError(
+      'Lời giải này chưa khớp hoàn toàn với đề. Đối chiếu trang sách rồi xác nhận từng điểm.',
+      409,
+      open
     );
   return decide(exerciseId, async (exercise, confirmedElsewhere) => {
     if (solution.documentId !== exercise.documentId) return { error: 'Lời giải thuộc sách khác.' };
@@ -354,6 +425,7 @@ export async function confirmSolution(exerciseId: string, solutionId: string, ac
         method: 'TEXTBOOK_SOLUTION' as const,
         answer: solution.answerChoice!,
         solutionArtifactId: solutionId,
+        ...(conflicts.length ? { acknowledgedConflicts: conflicts } : {}),
         by: actor,
         at: new Date().toISOString(),
       },
