@@ -21,6 +21,7 @@ import fixture from './fixtures/math-book-3-real.json';
 import { exerciseSetFor, validateItem } from './extraction-response';
 import {
   assignLesson,
+  clearVerification,
   confirmSolution,
   importExercises,
   loadLessonPractice,
@@ -294,16 +295,22 @@ describe.skipIf(!READY)('textbook exercises into the Question Bank (isolated Pos
     const [live] = (await listQuestions({ pageSize: 100 })).questions;
     expect(pickLessonSession([live], P1).map((q) => q.id)).toEqual([question.id]);
 
-    // A later correction in the workspace does not touch the published question.
-    await saveExerciseDraft(
-      ex('3').id,
-      {
-        stem: 'Đề đã sửa $y = x^3 + 3x^2 - 4$?',
-        choices: ex('3').choices!,
-        explanation: 'Lời giải đã sửa, đủ dài để giải thích.',
-      },
-      'admin-1'
-    );
+    // Once published, the workspace no longer edits the question's answer, wording or lesson.
+    await expect(
+      saveExerciseDraft(
+        ex('3').id,
+        {
+          stem: 'Đề đã sửa $y = x^3 + 3x^2 - 4$?',
+          choices: ex('3').choices!,
+          explanation: 'Lời giải đã sửa, đủ dài để giải thích.',
+        },
+        'admin-1'
+      )
+    ).rejects.toMatchObject({ status: 409 });
+    await expect(clearVerification(ex('3').id)).rejects.toMatchObject({ status: 409 });
+    await expect(assignLesson([ex('3').id], P2, 'admin-1')).rejects.toMatchObject({
+      status: 409,
+    });
     const again = await importExercises(P1, [ex('3').id], 'LICENSED', 'admin-1');
     expect(again[0]).toMatchObject({ result: 'UNCHANGED', questionId: question.id });
     const [after] = (await listQuestions({ pageSize: 100 })).questions;

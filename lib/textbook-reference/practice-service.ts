@@ -360,6 +360,23 @@ async function decide(
 }
 
 /**
+ * Once its question has left draft in the Question Bank (in review, published,
+ * archived), an exercise's answer, wording and lesson are the bank's to change:
+ * editing them here would no longer match what students see.
+ */
+async function assertNotPublished(exerciseIds: string[]) {
+  const { questions } = await listQuestions({ pageSize: 100_000 });
+  for (const id of exerciseIds) {
+    const question = questions.find((q) => q.externalId === textbookExternalId(id));
+    if (question && question.editorialStatus !== 'DRAFT')
+      throw new PracticeRequestError(
+        `Câu đã vào Ngân hàng câu hỏi (${question.code}) và không còn là bản nháp: sửa trực tiếp trong Ngân hàng câu hỏi.`,
+        409
+      );
+  }
+}
+
+/**
  * The Admin confirms that this printed solution belongs to this question; its
  * answer becomes the book's. A pairing with evidence against it (another number,
  * another problem type, another function, a failed check) is refused until the
@@ -371,6 +388,7 @@ export async function confirmSolution(
   actor: string,
   acknowledged: string[] = []
 ) {
+  await assertNotPublished([exerciseId]);
   const [solution, current] = await Promise.all([
     getTextbookArtifact(solutionId),
     getTextbookArtifact(exerciseId),
@@ -465,6 +483,7 @@ export async function rejectSolution(exerciseId: string, solutionId: string) {
 
 /** Withdraws a confirmation or an Admin answer; the suggestions come back. */
 export async function clearVerification(exerciseId: string) {
+  await assertNotPublished([exerciseId]);
   return decide(exerciseId, (exercise) => {
     const verification = exercise.practice?.verification;
     if (!verification) return { practice: exercise.practice ?? {} };
@@ -491,6 +510,7 @@ export async function verifyByAdmin(
   input: { answer: string; explanation: string },
   actor: string
 ) {
+  await assertNotPublished([exerciseId]);
   return decide(exerciseId, (exercise) => {
     const choices = exercise.practice?.draft?.choices ?? exercise.choices ?? [];
     if (!choices.some((choice) => choice.label === input.answer))
@@ -541,6 +561,7 @@ export async function saveExerciseDraft(
   input: { stem: string; choices: ExerciseChoice[]; explanation: string },
   actor: string
 ) {
+  await assertNotPublished([exerciseId]);
   for (const text of [input.stem, ...input.choices.map((choice) => choice.text)])
     if (!text.trim()) throw new PracticeRequestError('Đề và các phương án không được để trống.');
   return decide(exerciseId, (exercise) => {
@@ -567,6 +588,7 @@ export async function saveExerciseDraft(
 
 /** Assigns exercises to a lesson (overriding the suggestion). The lesson must be a real Knowledge Tree lesson. */
 export async function assignLesson(exerciseIds: string[], lessonId: string, actor: string) {
+  await assertNotPublished(exerciseIds);
   const tree = await readKnowledgeTree();
   if (!isAttachableKnowledgeNode(tree.nodes.find((node) => node.id === lessonId)))
     throw new PracticeRequestError('Bài học không tồn tại hoặc đã lưu trữ.', 404);

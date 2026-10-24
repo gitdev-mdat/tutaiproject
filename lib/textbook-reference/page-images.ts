@@ -53,7 +53,8 @@ export async function printedPageImage(
     (document.pdfPageCount !== null && location.pdfPage > document.pdfPageCount)
   )
     throw new PageImageError('Trang này chưa xác định được vị trí trong PDF.', 422);
-  const key = `${document.sha256}:${printedPage}`;
+  // Keyed by where the page sits, so a corrected page anchor shows the right half at once.
+  const key = `${document.sha256}:${location.pdfPage}:${location.position}`;
   let png = images.get(key);
   if (!png) {
     const [image] = await renderPrintedPageCrops(

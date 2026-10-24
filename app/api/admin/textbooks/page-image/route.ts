@@ -4,7 +4,7 @@ import { PageImageError, printedPageImage } from '@/lib/textbook-reference/page-
 import { TextbookBackendUnavailableError } from '@/lib/textbook-reference/repository';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /** Admin-only: one printed page of a private textbook as PNG. Students never reach this. */
 export async function GET(request: Request) {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     return new NextResponse(new Uint8Array(image.png), {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'private, max-age=86400',
+        'Cache-Control': 'private, max-age=3600',
         'X-PDF-Page': String(image.pdfPage),
         'X-PDF-Position': image.position,
         'X-Robots-Tag': 'noindex',
