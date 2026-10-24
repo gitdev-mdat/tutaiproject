@@ -36,6 +36,14 @@ describe('describeJobError', () => {
     });
   });
 
+  it('treats any other HTTP 400 as a rejected request that a retry cannot fix', () => {
+    const described = describeJobError(
+      gemini(400, 'INVALID_ARGUMENT', 'Request contains an invalid argument.')
+    );
+    expect(described).toMatchObject({ code: 'REQUEST', retryable: false });
+    expect(described.message).not.toMatch(/HTTP|INVALID_ARGUMENT/);
+  });
+
   it('recognises timeouts, interruptions, checksum and output-limit errors', () => {
     expect(describeJobError(Object.assign(new Error('t'), { code: 'TIMEOUT' })).code).toBe(
       'TIMEOUT'

@@ -150,6 +150,7 @@ export type TextbookJobErrorCode =
   | 'OUTPUT_LIMIT'
   | 'INTERRUPTED'
   | 'FILE'
+  | 'REQUEST' // the provider rejected the request itself (HTTP 400): a defect on our side
   | 'INVALID_RESPONSE' // the provider answered, but not with usable structured data
   | 'UNREADABLE' // the provider could not read the scanned pages
   | 'UNKNOWN';
