@@ -298,6 +298,12 @@ describe('question/solution matching', () => {
     expect(statementMatches(exercise, 'Xét hàm số $y = x^3 - 3x^2 + 2$ có ...').ok).toBe(true);
     expect(statementMatches(exercise, "Ta có $y' = 4x^3 - 4x$.").ok).toBe(false);
     expect(statementMatches(exercise, 'Chọn B.').ok).toBe(false);
+    // Câu 2 and Câu 7 as Gemini read them from printed pages 19 and 29.
+    const real = 'Cho hàm số $y = x - \\ln(x + 1)$. Khẳng định nào dưới đây là đúng?';
+    expect(
+      statementMatches(real, "Câu 2: Đáp án D.\n$y' = [x - \\ln(x + 1)]' = \\frac{x}{x + 1}$.").ok
+    ).toBe(true);
+    expect(statementMatches(real, 'Câu 7: Đáp án C.').ok).toBe(false);
   });
 
   it('pairs only within the same chapter, problem type and number, with a verified statement', () => {
