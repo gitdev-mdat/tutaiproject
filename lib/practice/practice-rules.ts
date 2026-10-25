@@ -1,4 +1,5 @@
 import { DIFFICULTY_VALUES, type Question } from '@/lib/question-bank/qb-types';
+import { validateForPublishing } from '@/lib/question-bank/qb-validation';
 import { practiceExclusionReason } from './grading';
 
 /** At most this many questions in one practice session. */
@@ -41,12 +42,38 @@ export function practiceQuestionState(question: Question): {
   return { state: 'IN_PRACTICE', reason: null };
 }
 
+/**
+ * Why a question in review cannot be published to open practice yet, in the
+ * words the server would use; empty when it can. The same checks run on the
+ * server, so a button disabled here would only fail there.
+ */
+export function publishBlockers(question: Question): string[] {
+  const candidate: Question = {
+    ...question,
+    editorialStatus: 'PUBLISHED',
+    usageContexts: [...new Set([...question.usageContexts, 'OPEN_PRACTICE' as const])],
+  };
+  const exclusion = practiceExclusionReason(candidate);
+  return [
+    ...new Set([
+      ...validateForPublishing(candidate).errors.map((error) => error.message),
+      ...(exclusion ? [exclusion] : []),
+    ]),
+  ];
+}
+
 export function isInLessonPractice(question: Question, lessonId: string): boolean {
   return (
     question.primaryKnowledgeNodeId === lessonId &&
     practiceQuestionState(question).state === 'IN_PRACTICE'
   );
 }
+
+/**
+ * The same rule for a question placed on the chapter itself rather than on one
+ * of its lessons: it reaches students only through the chapter's "Ôn chương".
+ */
+export const isInChapterPractice = isInLessonPractice;
 
 /** Easier questions first, then the order the admin created them in. */
 export function orderPracticeQuestions(questions: Question[]): Question[] {

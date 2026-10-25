@@ -1,0 +1,16 @@
+1. Trích lời giải tr. 29–31
+2. Mở Câu 1
+3. Đúng lời giải của câu này
+4. Đưa 4 câu vào Ngân hàng
+5. Nhập 4 câu dạng nháp
+6. Duyệt và xuất bản (link)
+7. Chọn tất cả câu cần duyệt
+8. Gửi duyệt 4 câu
+9. Duyệt và xuất bản (một câu)
+   per-question publish button enabled=true; result: Câu hỏi có trạng thái bản quyền "Cần xem xét" không thể xuất bản. Hãy giải quyết trước.
+10. Chọn tất cả câu cần duyệt
+11. Chọn trạng thái quyền "Có giấy phép"
+12. Tick xác nhận quyền
+13. Lưu trạng thái quyền
+14. Xuất bản 4 câu
+Published: 4. Admin actions: 14. Pages: textbook workspace -> lesson practice.

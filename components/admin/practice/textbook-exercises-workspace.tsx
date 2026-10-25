@@ -10,6 +10,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  Eye,
   FileSearch,
   Image as ImageIcon,
   Loader2,
@@ -25,11 +26,18 @@ import {
 import { textbookApi } from '@/components/admin/textbooks/textbook-client';
 import type {
   LessonPracticeWorkspace,
+  PracticeLessonOption,
   PracticeSetView,
 } from '@/lib/textbook-reference/practice-service';
-import type { TextbookImportOutcome } from '@/lib/textbook-reference/practice-import';
+import type {
+  TextbookImportOutcome,
+  TextbookPublishOutcome,
+} from '@/lib/textbook-reference/practice-import';
+import { exercisePreviewQuestion } from '@/lib/textbook-reference/exercise-preview';
 import type { ExerciseChoice, SolutionStatus } from '@/lib/textbook-reference/types';
+import { RIGHTS_STATUS_LABELS, type RightsStatus } from '@/lib/question-bank/qb-types';
 import { Chip, QUESTION_STATE } from './practice-labels';
+import { StudentPreview } from './student-preview';
 
 type Exercise = PracticeSetView['exercises'][number];
 type Candidate = Exercise['candidates'][number];
@@ -55,24 +63,45 @@ const RIGHTS = [
   { value: 'REVIEW_REQUIRED', label: 'Chưa rõ: chỉ lưu nháp, chưa xuất bản được' },
 ] as const;
 
-type Filter = 'ALL' | 'REVIEW' | 'READY' | 'IMPORTED' | 'MISSING';
+/**
+ * Where an exercise stands on its way to students, in the order the Admin
+ * works: it needs an answer, then attention to what blocks it, then it is
+ * ready to publish, then published.
+ */
+type Stage = 'MISSING' | 'ATTENTION' | 'READY' | 'PUBLISHED';
+type Filter = Stage | 'ALL';
 const FILTERS: Record<Filter, string> = {
   ALL: 'Tất cả',
-  REVIEW: 'Cần xem',
-  READY: 'Sẵn sàng nhập',
-  IMPORTED: 'Đã vào Ngân hàng',
-  MISSING: 'Chưa có lời giải',
+  READY: 'Sẵn sàng xuất bản',
+  ATTENTION: 'Cần xử lý',
+  MISSING: 'Chưa có đáp án',
+  PUBLISHED: 'Đã xuất bản',
 };
+
+/** No blocker, and not yet past review in the Question Bank: one step from students. */
+const canPublish = (exercise: Exercise) =>
+  exercise.blockers.length === 0 &&
+  (!exercise.question ||
+    exercise.question.editorialStatus === 'DRAFT' ||
+    exercise.question.editorialStatus === 'IN_REVIEW');
+
+function stageOf(exercise: Exercise): Stage {
+  if (exercise.question?.editorialStatus === 'PUBLISHED') return 'PUBLISHED';
+  if (canPublish(exercise)) return 'READY';
+  if (!exercise.verification && exercise.candidates.length === 0 && !exercise.question)
+    return 'MISSING';
+  return 'ATTENTION';
+}
 const matchesFilter = (exercise: Exercise, filter: Filter) =>
-  filter === 'ALL' ||
-  (filter === 'REVIEW' &&
-    !exercise.question &&
-    (exercise.status === 'SUGGESTED' ||
-      exercise.status === 'NEEDS_CONFIRMATION' ||
-      (exercise.verification && exercise.blockers.length > 0))) ||
-  (filter === 'READY' && !exercise.question && exercise.blockers.length === 0) ||
-  (filter === 'IMPORTED' && !!exercise.question) ||
-  (filter === 'MISSING' && exercise.status === 'UNRESOLVED');
+  filter === 'ALL' || stageOf(exercise) === filter;
+
+/** Where students meet a question placed on this lesson or chapter. */
+function destinationText(option: PracticeLessonOption | undefined) {
+  if (!option) return null;
+  return option.kind === 'CHAPTER'
+    ? `Ôn chương “${option.title}” (không thuộc riêng bài nào)`
+    : `Luyện tập sau bài “${option.title}” (và Ôn chương khi chương đủ câu)`;
+}
 
 const button =
   'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors disabled:opacity-50';
@@ -477,6 +506,8 @@ function ExerciseDetail({
   );
   const lessonTitle = (id: string | undefined) =>
     workspace.lessons.find((lesson) => lesson.id === id)?.title ?? 'bài khác';
+  const destination = workspace.lessons.find((lesson) => lesson.id === exercise.lesson?.lessonId);
+  const [previewing, setPreviewing] = React.useState(false);
 
   return (
     <article className="space-y-4" data-testid="exercise-detail" data-exercise={exercise.id}>
@@ -789,11 +820,13 @@ function ExerciseDetail({
 
       <section
         className="rounded-xl border border-slate-200 bg-white p-4"
-        aria-label="Bài học và Ngân hàng câu hỏi"
+        aria-label="Nơi xuất bản"
       >
-        <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Luyện tập</h3>
+        <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          Nơi xuất bản
+        </h3>
         <label className="mt-2 block text-xs font-semibold text-slate-700">
-          Bài học
+          Bài học hoặc chương
           <select
             value={exercise.lesson?.lessonId ?? ''}
             disabled={busy || locked}
@@ -801,54 +834,106 @@ function ExerciseDetail({
               e.target.value &&
               onAction(
                 { action: 'assign-lesson', exerciseIds: [exercise.id], lessonId: e.target.value },
-                `Đã gán cho “${lessonTitle(e.target.value)}”.`
+                `Đã chuyển câu ${exercise.questionNumber ?? ''} sang “${lessonTitle(e.target.value)}”.`
               )
             }
-            className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm"
+            className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm"
             data-testid="exercise-lesson"
           >
-            <option value="">— Chọn bài —</option>
-            {workspace.lessons.map((lesson) => (
-              <option key={lesson.id} value={lesson.id}>
-                {lesson.title}
-              </option>
-            ))}
+            <option value="">— Chọn nơi xuất bản —</option>
+            <optgroup label="Bài học">
+              {workspace.lessons
+                .filter((lesson) => lesson.kind === 'LESSON')
+                .map((lesson) => (
+                  <option key={lesson.id} value={lesson.id}>
+                    {lesson.title}
+                  </option>
+                ))}
+            </optgroup>
+            {workspace.lessons.some((lesson) => lesson.kind === 'CHAPTER') && (
+              <optgroup label="Cả chương (chỉ dùng trong Ôn chương)">
+                {workspace.lessons
+                  .filter((lesson) => lesson.kind === 'CHAPTER')
+                  .map((lesson) => (
+                    <option key={lesson.id} value={lesson.id}>
+                      Cả chương: {lesson.title}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
           </select>
         </label>
         {exercise.lesson && (
-          <p className="mt-1 text-[11px] text-slate-500">
-            {exercise.lesson.source === 'ADMIN'
-              ? 'Admin đã chọn.'
-              : `Gợi ý: ${exercise.lesson.reason}.`}
-          </p>
+          <div className="mt-1.5 space-y-0.5 text-[11px] text-slate-600" data-testid="destination">
+            <p>
+              {exercise.lesson.source === 'ADMIN'
+                ? 'Admin đã chọn.'
+                : `Gợi ý từ mục lục: ${exercise.lesson.reason}.`}
+            </p>
+            <p>
+              Học sinh gặp câu này ở:{' '}
+              <strong className="text-slate-800">{destinationText(destination)}</strong>
+            </p>
+            {destination && !destination.visible && (
+              <p className="font-semibold text-amber-800">
+                Bài này chưa mở cho học sinh: câu chỉ đến tay học sinh khi bài được mở.
+              </p>
+            )}
+          </div>
         )}
         {exercise.question ? (
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs" data-testid="imported">
-            <span className="font-semibold text-slate-800">{exercise.question.code}</span>
             <Chip tone={QUESTION_STATE[exercise.question.practiceState].tone}>
               {QUESTION_STATE[exercise.question.practiceState].label}
             </Chip>
+            <span className="text-slate-500">Ngân hàng: {exercise.question.code}</span>
             {exercise.question.lessonId && (
               <Link
                 href={`/admin/practice/${exercise.question.lessonId}`}
                 className="font-semibold text-primary"
               >
-                Duyệt trong “Câu luyện tập của bài”
+                Mở trong “Câu luyện tập của bài”
               </Link>
             )}
           </div>
-        ) : exercise.blockers.length ? (
-          <ul className="mt-3 space-y-1 text-xs text-slate-700" data-testid="blockers">
-            {exercise.blockers.map((blocker) => (
-              <li key={blocker} className="flex gap-1.5">
-                <AlertTriangle className="mt-0.5 size-3 shrink-0 text-amber-600" /> {blocker}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-            <CheckCircle2 className="size-3.5" /> Sẵn sàng nhập vào Ngân hàng câu hỏi.
+        ) : null}
+        {exercise.blockers.length > 0 && exercise.question?.editorialStatus !== 'PUBLISHED' ? (
+          <div
+            className="mt-3 rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200"
+            data-testid="blockers"
+          >
+            <p className="text-xs font-bold text-amber-950">Chưa xuất bản được vì:</p>
+            <ul className="mt-1 space-y-1 text-xs text-amber-950">
+              {exercise.blockers.map((blocker) => (
+                <li key={blocker} className="flex gap-1.5">
+                  <AlertTriangle className="mt-0.5 size-3 shrink-0 text-amber-600" /> {blocker}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : canPublish(exercise) ? (
+          <p
+            className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-700"
+            data-testid="ready"
+          >
+            <CheckCircle2 className="size-3.5" /> Sẵn sàng xuất bản: chọn câu rồi bấm “Xuất bản”.
           </p>
+        ) : null}
+        {exercise.answer && exercise.choices.length >= 2 && (
+          <button
+            type="button"
+            onClick={() => setPreviewing(true)}
+            className={`${button} mt-3 h-9 border border-blue-300 bg-blue-50 text-blue-800`}
+            data-testid="exercise-student-preview"
+          >
+            <Eye className="size-3.5" /> Xem như học sinh
+          </button>
+        )}
+        {previewing && (
+          <StudentPreview
+            questions={[exercisePreviewQuestion(exercise)]}
+            onClose={() => setPreviewing(false)}
+          />
         )}
       </section>
     </article>
@@ -1006,6 +1091,448 @@ function SolutionSources({
   );
 }
 
+type Selected = { set: PracticeSetView; exercise: Exercise };
+
+/** Where "Xem như học sinh" opens for a published destination. */
+const studentHref = (option: PracticeLessonOption) =>
+  option.kind === 'CHAPTER'
+    ? `/student/practice/chapter/${option.id}`
+    : `/student/lessons/${option.id}/practice`;
+
+/**
+ * One confirmation for the whole batch: what goes where, what is held back and
+ * why, the book's rights decision, then one action. The preview is the
+ * server's own dry run of the publish, so what it lists is what happens.
+ */
+function PublishDialog({
+  lessonId,
+  workspace,
+  items,
+  onClose,
+  onDone,
+}: {
+  lessonId: string;
+  workspace: LessonPracticeWorkspace;
+  items: Selected[];
+  onClose: () => void;
+  onDone: () => Promise<void>;
+}) {
+  const documents = [...new Set(items.map(({ exercise }) => exercise.documentId))];
+  const known = documents.map((id) => workspace.bookRights[id] ?? null);
+  const knownRights = known.every((value) => value && value === known[0]) ? known[0] : null;
+  const [rights, setRights] = React.useState<RightsStatus | ''>(knownRights ?? '');
+  const [changingRights, setChangingRights] = React.useState(!knownRights);
+  const [attested, setAttested] = React.useState(false);
+  const [preview, setPreview] = React.useState<TextbookPublishOutcome[] | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [done, setDone] = React.useState<{
+    kind: 'published' | 'saved';
+    outcomes: Array<TextbookPublishOutcome | TextbookImportOutcome>;
+  } | null>(null);
+  const [showQuestions, setShowQuestions] = React.useState(false);
+  const ids = items.map(({ exercise }) => exercise.id);
+  const numberOf = (id: string) =>
+    items.find(({ exercise }) => exercise.id === id)?.exercise.questionNumber ?? '?';
+  const option = (id: string | undefined) => workspace.lessons.find((item) => item.id === id);
+
+  React.useEffect(() => {
+    let live = true;
+    void practiceApi({
+      action: 'publish',
+      lessonId,
+      exerciseIds: ids,
+      rightsStatus: 'REVIEW_REQUIRED',
+      attested: false,
+      dryRun: true,
+    }).then((result) => {
+      if (!live) return;
+      if (result.ok) setPreview(result.data.outcomes as TextbookPublishOutcome[]);
+      else setError(result.error);
+    });
+    return () => {
+      live = false;
+    };
+    // The selection is fixed while the dialog is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const eligible = preview?.filter((outcome) => outcome.result === 'PUBLISHED') ?? [];
+  const blocked = preview?.filter((outcome) => outcome.result === 'BLOCKED') ?? [];
+  const already = preview?.filter((outcome) => outcome.result === 'ALREADY_PUBLISHED') ?? [];
+  const groups = [...new Set(eligible.map((outcome) => outcome.destinationId))].map((id) => ({
+    option: option(id),
+    count: eligible.filter((outcome) => outcome.destinationId === id).length,
+  }));
+  const target = groups.length === 1 ? groups[0].option : undefined;
+  const rightsReady =
+    !!rights && rights !== 'REVIEW_REQUIRED' && (attested || rights === knownRights);
+  const primaryLabel = `Xuất bản ${eligible.length} câu${target ? ` vào ${target.kind === 'CHAPTER' ? 'Ôn chương' : `“${target.title}”`}` : ''}`;
+
+  async function publish() {
+    setBusy(true);
+    setError(null);
+    const result = await practiceApi({
+      action: 'publish',
+      lessonId,
+      exerciseIds: eligible.map((outcome) => outcome.exerciseId),
+      rightsStatus: rights,
+      attested,
+    });
+    setBusy(false);
+    if (!result.ok) return setError(result.error);
+    setDone({ kind: 'published', outcomes: result.data.outcomes as TextbookPublishOutcome[] });
+    await onDone();
+  }
+
+  async function saveDrafts() {
+    setBusy(true);
+    setError(null);
+    const result = await practiceApi({
+      action: 'import',
+      lessonId,
+      exerciseIds: ids,
+      rightsStatus: 'REVIEW_REQUIRED',
+    });
+    setBusy(false);
+    if (!result.ok) return setError(result.error);
+    setDone({ kind: 'saved', outcomes: result.data.outcomes as TextbookImportOutcome[] });
+    await onDone();
+  }
+
+  const published = (done?.outcomes ?? []).filter(
+    (outcome): outcome is TextbookPublishOutcome => outcome.result === 'PUBLISHED'
+  );
+  const publishedGroups = [...new Set(published.map((outcome) => outcome.destinationId))].map(
+    (id) => ({ option: option(id), count: published.filter((o) => o.destinationId === id).length })
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-3 sm:p-6"
+      data-testid="publish-dialog"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="publish-title"
+        className="mx-auto my-4 w-full max-w-2xl rounded-2xl bg-white shadow-2xl sm:my-10"
+      >
+        <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div>
+            <h2 id="publish-title" className="text-base font-bold text-slate-900">
+              {done
+                ? done.kind === 'published'
+                  ? 'Đã xuất bản'
+                  : 'Đã lưu nháp'
+                : `Xuất bản ${items.length} câu cho học sinh`}
+            </h2>
+            {!done && (
+              <p className="mt-0.5 text-xs text-slate-600">
+                Kiểm tra nơi xuất bản và quyền sử dụng sách. Câu chưa đủ điều kiện được giữ lại,
+                không chặn các câu còn lại.
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+          >
+            <X className="size-5" />
+          </button>
+        </header>
+
+        {done ? (
+          <div className="space-y-4 px-5 py-5" data-testid="publish-result">
+            {done.kind === 'published' ? (
+              publishedGroups.length ? (
+                publishedGroups.map(({ option: dest, count }) => (
+                  <div
+                    key={dest?.id ?? 'none'}
+                    className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200 motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95"
+                  >
+                    <p className="flex items-start gap-2 text-sm font-bold text-emerald-900">
+                      <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+                      {count} câu hỏi đã được xuất bản vào{' '}
+                      {dest?.kind === 'CHAPTER'
+                        ? `Ôn chương “${dest.title}”`
+                        : `bài “${dest?.title}”`}
+                      .
+                    </p>
+                    <p className="mt-1 pl-6 text-xs text-emerald-900">
+                      {dest?.visible === false
+                        ? 'Bài chưa mở: học sinh nhận các câu này khi bài được mở.'
+                        : `Học sinh gặp ở: ${destinationText(dest)}. Lượt luyện tập tiếp theo đã có các câu này.`}
+                    </p>
+                    {dest && (
+                      <div className="mt-3 flex flex-wrap gap-2 pl-6">
+                        <a
+                          href={studentHref(dest)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`${button} h-9 bg-emerald-700 text-white`}
+                          data-testid="view-as-student"
+                        >
+                          <Eye className="size-3.5" /> Xem như học sinh
+                        </a>
+                        {dest.kind === 'LESSON' && (
+                          <Link
+                            href={`/admin/practice/${dest.id}`}
+                            className={`${button} h-9 border border-emerald-300 bg-white text-emerald-900`}
+                            data-testid="view-published"
+                          >
+                            Xem các câu đã xuất bản
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-700">Không có câu nào được xuất bản.</p>
+              )
+            ) : (
+              <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-800 ring-1 ring-slate-200">
+                Đã lưu các câu dạng nháp trong Ngân hàng câu hỏi. Học sinh chưa nhận được: cần xác
+                nhận quyền sử dụng sách trước khi xuất bản.
+              </p>
+            )}
+            {done.outcomes.some((outcome) => outcome.result !== 'PUBLISHED') && (
+              <ul className="space-y-1 text-xs text-slate-700" data-testid="publish-held">
+                {done.outcomes
+                  .filter((outcome) => outcome.result !== 'PUBLISHED')
+                  .map((outcome) => (
+                    <li key={outcome.exerciseId}>
+                      <strong>Câu {outcome.questionNumber ?? numberOf(outcome.exerciseId)}</strong>:{' '}
+                      {'reasons' in outcome
+                        ? outcome.result === 'ALREADY_PUBLISHED'
+                          ? 'đã xuất bản từ trước.'
+                          : outcome.reasons.join(' ')
+                        : outcome.result === 'CREATED' || outcome.result === 'UPDATED'
+                          ? `đã lưu nháp ${outcome.questionCode}.`
+                          : outcome.reason}
+                    </li>
+                  ))}
+              </ul>
+            )}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className={`${button} h-10 bg-slate-900 px-5 text-white`}
+                data-testid="publish-close"
+              >
+                Xong
+              </button>
+            </div>
+          </div>
+        ) : !preview ? (
+          <div
+            className="flex items-center gap-2 px-5 py-8 text-sm text-slate-600"
+            aria-busy="true"
+          >
+            {error ? (
+              <span className="text-rose-700" role="alert">
+                {error}
+              </span>
+            ) : (
+              <>
+                <Loader2 className="size-4 animate-spin" /> Đang kiểm tra các câu đã chọn…
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4 px-5 py-5">
+            <section aria-label="Nơi xuất bản" data-testid="publish-destinations">
+              <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Sẽ xuất bản
+              </h3>
+              {groups.length === 0 ? (
+                <p className="mt-1 text-sm text-slate-700">Không có câu nào đủ điều kiện.</p>
+              ) : (
+                <ul className="mt-1.5 space-y-1.5">
+                  {groups.map(({ option: dest, count }) => (
+                    <li key={dest?.id ?? 'none'} className="rounded-lg bg-slate-50 px-3 py-2">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {count} câu → {dest?.kind === 'CHAPTER' ? 'Cả chương' : 'Bài'} “
+                        {dest?.title ?? '?'}”
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        Học sinh gặp ở: {destinationText(dest)}
+                      </p>
+                      {dest?.visible === false && (
+                        <p className="text-xs font-semibold text-amber-800">
+                          Bài chưa mở cho học sinh: câu được xuất bản nhưng chỉ đến tay học sinh khi
+                          bài được mở.
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {eligible.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowQuestions((v) => !v)}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary"
+                  aria-expanded={showQuestions}
+                  data-testid="publish-show-questions"
+                >
+                  {showQuestions ? 'Ẩn' : 'Xem'} {eligible.length} câu, đáp án và lời giải
+                  <ChevronRight
+                    className={`size-3.5 transition ${showQuestions ? 'rotate-90' : ''}`}
+                  />
+                </button>
+              )}
+              {showQuestions && (
+                <ol className="mt-2 max-h-80 space-y-2 overflow-auto pr-1">
+                  {eligible.map((outcome) => (
+                    <li
+                      key={outcome.exerciseId}
+                      className="rounded-lg border border-slate-200 p-3 text-xs leading-relaxed"
+                    >
+                      <p className="font-semibold text-slate-900">
+                        Câu {outcome.questionNumber ?? '?'} · đáp án{' '}
+                        <span className="text-emerald-700">{outcome.question?.correctAnswer}</span>
+                      </p>
+                      <div className="mt-1 text-slate-800">
+                        <QuestionMath text={outcome.question?.stem ?? ''} />
+                      </div>
+                      {outcome.question?.explanation && (
+                        <div className="mt-1 rounded bg-slate-50 px-2 py-1 whitespace-pre-line text-slate-600">
+                          <QuestionMath text={outcome.question.explanation} />
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+
+            {(blocked.length > 0 || already.length > 0) && (
+              <section
+                className="rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200"
+                aria-label="Câu chưa xuất bản"
+                data-testid="publish-blocked"
+              >
+                <p className="text-xs font-bold text-amber-950">
+                  {blocked.length + already.length} câu không xuất bản lần này
+                </p>
+                <ul className="mt-1 space-y-1 text-xs text-amber-950">
+                  {[...blocked, ...already].map((outcome) => (
+                    <li key={outcome.exerciseId}>
+                      <strong>Câu {outcome.questionNumber ?? numberOf(outcome.exerciseId)}</strong>:{' '}
+                      {outcome.result === 'ALREADY_PUBLISHED'
+                        ? 'đã xuất bản từ trước, không tạo bản trùng.'
+                        : outcome.reasons.join(' ')}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <section
+              className="rounded-lg border border-slate-200 p-3"
+              aria-label="Quyền sử dụng sách"
+              data-testid="publish-rights"
+            >
+              <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Quyền sử dụng câu hỏi của sách
+              </h3>
+              {!changingRights && knownRights ? (
+                <p className="mt-1 text-sm text-slate-800">
+                  <strong>{RIGHTS_STATUS_LABELS[knownRights]}</strong>: đã xác nhận khi xuất bản các
+                  câu trước của sách này.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setChangingRights(true)}
+                    className="text-xs font-semibold text-primary"
+                  >
+                    Đổi
+                  </button>
+                </p>
+              ) : (
+                <>
+                  <select
+                    value={rights}
+                    onChange={(e) => {
+                      setRights(e.target.value as RightsStatus);
+                      setAttested(false);
+                    }}
+                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm"
+                    data-testid="publish-rights-status"
+                    aria-label="Quyền sử dụng câu hỏi của sách"
+                  >
+                    <option value="">— Chọn theo giấy phép thực tế —</option>
+                    {RIGHTS.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                  {rights === 'REVIEW_REQUIRED' ? (
+                    <p className="mt-2 text-xs text-amber-900" data-testid="rights-hold">
+                      Chưa có giấy phép hoặc sự cho phép thì chưa xuất bản được. Có thể lưu nháp để
+                      xuất bản sau, khi đã xác nhận được quyền.
+                    </p>
+                  ) : rights && rights !== knownRights ? (
+                    <label className="mt-2 flex items-start gap-2 text-xs text-slate-800">
+                      <input
+                        type="checkbox"
+                        checked={attested}
+                        onChange={(e) => setAttested(e.target.checked)}
+                        className="mt-0.5 size-4"
+                        data-testid="publish-rights-attest"
+                      />
+                      Tôi xác nhận Tú Tài có quyền này với sách “{items[0]?.set.documentTitle ?? ''}
+                      ” (giấy phép hoặc sự cho phép có thật).
+                    </label>
+                  ) : null}
+                </>
+              )}
+            </section>
+
+            {error && (
+              <p className="text-sm font-medium text-rose-700" role="alert">
+                {error}
+              </p>
+            )}
+
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+              <button type="button" onClick={onClose} className={`${button} h-10 text-slate-600`}>
+                Hủy
+              </button>
+              {rights === 'REVIEW_REQUIRED' && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void saveDrafts()}
+                  className={`${button} h-10 border border-slate-300 text-slate-800`}
+                  data-testid="publish-save-drafts"
+                >
+                  Chỉ lưu nháp {items.length} câu
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={busy || eligible.length === 0 || !rightsReady}
+                onClick={() => void publish()}
+                className={`${button} h-10 bg-emerald-600 px-5 text-sm text-white hover:bg-emerald-700`}
+                data-testid="publish-confirm"
+              >
+                {busy && <Loader2 className="size-4 animate-spin" />}
+                {primaryLabel}
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
   const [workspace, setWorkspace] = React.useState<LessonPracticeWorkspace | null>(null);
   const [loadError, setLoadError] = React.useState<string | null>(null);
@@ -1014,9 +1541,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
   const [filter, setFilter] = React.useState<Filter>('ALL');
   const [busy, setBusy] = React.useState(false);
   const [notice, setNotice] = React.useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
-  const [importing, setImporting] = React.useState(false);
-  const [rights, setRights] = React.useState('REVIEW_REQUIRED');
-  const [outcomes, setOutcomes] = React.useState<TextbookImportOutcome[] | null>(null);
+  const [publishing, setPublishing] = React.useState<Selected[] | null>(null);
   const detailRef = React.useRef<HTMLDivElement>(null);
 
   const load = React.useCallback(async () => {
@@ -1079,28 +1604,50 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
       </div>
     );
 
-  const exercises = workspace.sets.flatMap((set) =>
+  const exercises: Selected[] = workspace.sets.flatMap((set) =>
     set.exercises.map((exercise) => ({ set, exercise }))
   );
   const current = exercises.find((item) => item.exercise.id === selected) ?? null;
-  const eligible = exercises.filter(
-    ({ exercise }) => !exercise.question && exercise.blockers.length === 0
-  );
-  const ready = exercises.filter(({ exercise }) => checked.has(exercise.id));
+  const ready = exercises.filter(({ exercise }) => canPublish(exercise));
+  const picked = ready.filter(({ exercise }) => checked.has(exercise.id));
   const solutionsBySet = (set: PracticeSetView) => workspace.solutions[set.documentId] ?? [];
-  const counts = workspace.counts;
-  const tiles = [
-    { label: 'Câu trích từ sách', value: counts.extracted },
-    { label: 'Tự đối chiếu được', value: counts.autoVerified },
-    { label: 'Đã xác nhận đáp án', value: counts.solutionsConfirmed },
-    { label: 'Cần Admin xem', value: counts.needsReview },
-    { label: 'Đã vào Ngân hàng', value: counts.imported },
-    { label: 'Gán cho bài này', value: counts.assignedHere },
-    { label: 'Học sinh đang nhận', value: counts.availableToStudents },
-  ];
+  const count = (stage: Stage) =>
+    exercises.filter(({ exercise }) => stageOf(exercise) === stage).length;
+  const withAnswer = exercises.filter(({ exercise }) => exercise.verification).length;
+  const inPractice = exercises.filter(
+    ({ exercise }) => exercise.question?.practiceState === 'IN_PRACTICE'
+  ).length;
+  const books = [...new Set(workspace.sets.map((set) => set.documentTitle))];
+  const lessonTarget = workspace.lessons.find((item) => item.id === lessonId);
+  const stages: Array<{ stage: Stage; step: number; title: string; value: string; hint: string }> =
+    [
+      {
+        stage: 'MISSING',
+        step: 1,
+        title: 'Trích và ghép đáp án',
+        value: `${withAnswer}/${exercises.length} câu có đáp án`,
+        hint: extracting
+          ? 'Đang trích trang sách…'
+          : `${count('MISSING')} câu chưa có lời giải trong các trang đã trích`,
+      },
+      {
+        stage: 'ATTENTION',
+        step: 2,
+        title: 'Kiểm tra và phân loại',
+        value: `${count('ATTENTION')} câu cần xử lý`,
+        hint: 'Ghép đáp án chưa chắc, ký hiệu cần sửa, thiếu lời giải hoặc chưa chọn bài',
+      },
+      {
+        stage: 'READY',
+        step: 3,
+        title: 'Xuất bản',
+        value: `${ready.length} câu sẵn sàng`,
+        hint: `${count('PUBLISHED')} đã xuất bản · ${inPractice} học sinh đang nhận`,
+      },
+    ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 p-4 pb-28 sm:p-6 sm:pb-28">
+    <div className="mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6">
       <div>
         <Link
           href={`/admin/practice/${lessonId}`}
@@ -1113,22 +1660,35 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
           Bài tập từ sách · {workspace.lesson.title}
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-600">
-          Ghép mỗi câu với lời giải in trong sách, kiểm tra rồi nhập vào Ngân hàng câu hỏi. Học sinh
-          chỉ nhận câu sau khi câu được duyệt và xuất bản ở “Câu luyện tập của bài”. Tư liệu lý
-          thuyết cho AI soạn bài nằm riêng ở Cây kiến thức.
+          Chọn câu đã có đáp án, kiểm tra rồi xuất bản thẳng cho học sinh. Câu chưa đủ điều kiện
+          được giữ lại kèm lý do.
+          {books.length > 0 && <span className="text-slate-500"> Sách: {books.join(', ')}.</span>}
         </p>
       </div>
 
       <section
-        className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"
-        aria-label="Tiến độ"
-        data-testid="practice-counts"
+        className="grid gap-2 sm:grid-cols-3"
+        aria-label="Ba bước từ sách tới học sinh"
+        data-testid="practice-stages"
       >
-        {tiles.map((tile) => (
-          <div key={tile.label} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-            <p className="text-[11px] text-slate-500">{tile.label}</p>
-            <p className="text-lg font-bold tabular-nums text-slate-900">{tile.value}</p>
-          </div>
+        {stages.map((item) => (
+          <button
+            key={item.stage}
+            type="button"
+            onClick={() => setFilter(filter === item.stage ? 'ALL' : item.stage)}
+            aria-pressed={filter === item.stage}
+            className={`rounded-xl border bg-white px-4 py-3 text-left transition-colors ${filter === item.stage ? 'border-primary ring-2 ring-primary/15' : 'border-slate-200 hover:border-slate-300'}`}
+            data-testid={`stage-${item.stage}`}
+          >
+            <p className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+              <span className="grid size-5 place-items-center rounded-full bg-slate-900 text-[10px] text-white">
+                {item.step}
+              </span>
+              {item.title}
+            </p>
+            <p className="mt-1 text-base font-bold text-slate-900 tabular-nums">{item.value}</p>
+            <p className="text-xs text-slate-500">{item.hint}</p>
+          </button>
         ))}
       </section>
 
@@ -1170,7 +1730,8 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                   role="tab"
                   aria-selected={filter === key}
                   onClick={() => setFilter(key)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${filter === key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-200'}`}
+                  className={`min-h-8 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${filter === key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-200'}`}
+                  data-testid={`filter-${key}`}
                 >
                   {FILTERS[key]} (
                   {exercises.filter(({ exercise }) => matchesFilter(exercise, key)).length})
@@ -1207,13 +1768,13 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                       <p className="mt-1 text-xs text-slate-700" data-testid="set-lesson">
                         {suggested ? (
                           <>
-                            Gợi ý bài: <strong>{suggested}</strong>{' '}
+                            Xuất bản vào: <strong>{suggested}</strong>{' '}
                             <span className="text-slate-500">({set.lesson!.reason})</span>
                           </>
                         ) : set.ambiguousLessonIds.length ? (
-                          'Nhiều bài cùng liên kết với dạng này: chọn bài cho từng câu.'
+                          'Nhiều bài cùng liên kết với dạng này: chọn nơi xuất bản cho từng câu.'
                         ) : (
-                          'Chưa xác định bài: chọn bài cho các câu.'
+                          'Chưa xác định bài: chọn nơi xuất bản cho các câu.'
                         )}
                       </p>
                     </div>
@@ -1239,29 +1800,48 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                   ) : (
                     <ul className="divide-y divide-slate-100">
                       {items.map((exercise) => {
-                        const canImport = !exercise.question && exercise.blockers.length === 0;
+                        const stage = stageOf(exercise);
+                        const chip =
+                          stage === 'PUBLISHED' && exercise.question
+                            ? QUESTION_STATE[exercise.question.practiceState]
+                            : stage === 'READY'
+                              ? {
+                                  label: 'Sẵn sàng',
+                                  tone: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                                }
+                              : stage === 'MISSING'
+                                ? STATUS.UNRESOLVED
+                                : exercise.verification || exercise.question
+                                  ? {
+                                      label: 'Cần sửa',
+                                      tone: 'bg-amber-50 text-amber-800 ring-amber-200',
+                                    }
+                                  : STATUS[exercise.status];
                         return (
                           <li
                             key={exercise.id}
-                            className={`flex items-center gap-2 px-3 py-2 ${selected === exercise.id ? 'bg-primary/5' : ''}`}
+                            className={`flex items-center gap-2 px-3 py-1.5 ${selected === exercise.id ? 'bg-primary/5' : ''}`}
                             data-testid="exercise-row"
                             data-number={exercise.questionNumber ?? ''}
+                            data-stage={stage}
                           >
-                            <input
-                              type="checkbox"
-                              aria-label={`Chọn Câu ${exercise.questionNumber}`}
-                              disabled={!canImport}
-                              checked={checked.has(exercise.id)}
-                              onChange={(e) =>
-                                setChecked((set) => {
-                                  const next = new Set(set);
-                                  if (e.target.checked) next.add(exercise.id);
-                                  else next.delete(exercise.id);
-                                  return next;
-                                })
-                              }
-                              className="size-4 shrink-0"
-                            />
+                            <label className="grid size-9 shrink-0 place-items-center">
+                              <input
+                                type="checkbox"
+                                aria-label={`Chọn Câu ${exercise.questionNumber}`}
+                                disabled={stage !== 'READY'}
+                                checked={checked.has(exercise.id)}
+                                onChange={(e) =>
+                                  setChecked((set) => {
+                                    const next = new Set(set);
+                                    if (e.target.checked) next.add(exercise.id);
+                                    else next.delete(exercise.id);
+                                    return next;
+                                  })
+                                }
+                                className="size-4 disabled:opacity-30"
+                              />
+                            </label>
                             <button
                               type="button"
                               onClick={() => {
@@ -1273,7 +1853,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                                   })
                                 );
                               }}
-                              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                              className="flex min-h-10 min-w-0 flex-1 items-center gap-2 text-left"
                             >
                               <span className="w-12 shrink-0 text-xs font-semibold text-slate-900">
                                 Câu {exercise.questionNumber ?? '?'}
@@ -1281,21 +1861,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                               <span className="min-w-0 flex-1 truncate text-xs text-slate-600">
                                 <QuestionMath text={exercise.stem.split('\n')[0]} />
                               </span>
-                              {exercise.question ? (
-                                <Chip tone={QUESTION_STATE[exercise.question.practiceState].tone}>
-                                  {QUESTION_STATE[exercise.question.practiceState].label}
-                                </Chip>
-                              ) : (
-                                <Chip
-                                  tone={
-                                    canImport
-                                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                                      : STATUS[exercise.status].tone
-                                  }
-                                >
-                                  {canImport ? 'Sẵn sàng' : STATUS[exercise.status].label}
-                                </Chip>
-                              )}
+                              <Chip tone={chip.tone}>{chip.label}</Chip>
                               <ChevronRight className="size-3.5 shrink-0 text-slate-400" />
                             </button>
                           </li>
@@ -1314,7 +1880,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 lg:hidden"
+                  className="inline-flex min-h-10 items-center gap-1 text-xs font-semibold text-slate-500 lg:hidden"
                 >
                   <ArrowLeft className="size-3.5" /> Danh sách câu
                 </button>
@@ -1334,176 +1900,91 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-                Chọn một câu để xem đề, trang sách và lời giải gợi ý.
+                Chọn một câu để xem đề, trang sách, đáp án và nơi xuất bản.
               </div>
             )}
           </div>
         </div>
       )}
 
-      {(eligible.length > 0 ||
-        ready.length > 0 ||
-        importing ||
-        outcomes ||
-        counts.imported > 0) && (
+      {/* Pinned to the bottom of the admin page: the negative offset cancels AdminMain's padding. */}
+      {(ready.length > 0 || count('PUBLISHED') > 0) && (
         <div
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur"
-          data-testid="import-bar"
+          className="sticky -bottom-6 z-30 -mx-4 -mb-4 border-t border-slate-200 bg-white/95 py-3 pr-4 pl-[4.5rem] shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur sm:-bottom-8 sm:-mx-6 sm:-mb-6 lg:px-6"
+          data-testid="publish-bar"
         >
-          <div className="mx-auto max-w-7xl">
-            {outcomes ? (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <ul className="space-y-0.5 text-xs text-slate-700" data-testid="import-outcomes">
-                  {outcomes.map((outcome) => (
-                    <li key={outcome.exerciseId}>
-                      <strong>Câu {outcome.questionNumber ?? '?'}</strong>:{' '}
-                      {outcome.result === 'CREATED'
-                        ? `đã tạo bản nháp ${outcome.questionCode}`
-                        : outcome.result === 'UPDATED'
-                          ? `đã cập nhật bản nháp ${outcome.questionCode}`
-                          : outcome.result === 'UNCHANGED'
-                            ? outcome.reason
-                            : `bỏ qua: ${outcome.reason}`}
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex gap-2">
-                  <Link
-                    href={`/admin/practice/${lessonId}`}
-                    className={`${button} bg-primary text-primary-foreground`}
-                  >
-                    Duyệt và xuất bản
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setOutcomes(null)}
-                    className={`${button} text-slate-600`}
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            ) : importing ? (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <label className="block min-w-0 flex-1 text-xs font-semibold text-slate-700">
-                  Quyền sử dụng câu hỏi của sách
-                  <select
-                    value={rights}
-                    onChange={(e) => setRights(e.target.value)}
-                    className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm"
-                    data-testid="import-rights"
-                  >
-                    <option value="">— Chọn —</option>
-                    {RIGHTS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={busy || !rights}
-                    onClick={async () => {
-                      setBusy(true);
-                      const result = await practiceApi({
-                        action: 'import',
-                        lessonId,
-                        exerciseIds: ready.map(({ exercise }) => exercise.id),
-                        rightsStatus: rights,
-                      });
-                      setBusy(false);
-                      if (!result.ok) return setNotice({ text: result.error, tone: 'error' });
-                      setOutcomes(result.data.outcomes as TextbookImportOutcome[]);
-                      setImporting(false);
-                      setChecked(new Set());
-                      await load();
-                    }}
-                    className={`${button} h-9 bg-emerald-600 text-white hover:bg-emerald-700`}
-                    data-testid="import-confirm"
-                  >
-                    {busy && <Loader2 className="size-3.5 animate-spin" />} Nhập {ready.length} câu
-                    dạng nháp
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImporting(false)}
-                    className={`${button} h-9 text-slate-600`}
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-slate-700">
-                  {eligible.length ? (
-                    <>
-                      <strong>{eligible.length} câu sẵn sàng</strong> đang lưu trong Tư liệu sách;
-                      câu đã nhập sẽ thành bản nháp, chưa xuất bản cho học sinh.
-                    </>
-                  ) : (
-                    <>
-                      Đã nhập <strong>{counts.imported} câu</strong> vào Ngân hàng. Xuất bản ở Câu
-                      luyện tập của bài để học sinh nhận câu; câu vẫn là bản nháp cho đến khi được
-                      duyệt và có quyền sử dụng phù hợp.
-                    </>
-                  )}
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  {eligible.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setChecked((selectedIds) => {
-                          const next = new Set(selectedIds);
-                          const allSelected = eligible.every(({ exercise }) =>
-                            next.has(exercise.id)
-                          );
-                          for (const { exercise } of eligible) {
-                            if (allSelected) next.delete(exercise.id);
-                            else next.add(exercise.id);
-                          }
-                          return next;
-                        })
-                      }
-                      className={`${button} h-9 border border-slate-200 text-slate-700`}
-                      data-testid="select-all-eligible"
-                    >
-                      {eligible.every(({ exercise }) => checked.has(exercise.id))
-                        ? 'Bỏ chọn các câu sẵn sàng'
-                        : `Chọn cả ${eligible.length} câu`}
-                    </button>
-                  )}
-                  {eligible.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (ready.length === 0)
-                          setChecked(new Set(eligible.map(({ exercise }) => exercise.id)));
-                        setImporting(true);
-                      }}
-                      className={`${button} h-9 bg-primary text-primary-foreground`}
-                      data-testid="import-open"
-                    >
-                      Đưa {ready.length || eligible.length} câu vào Ngân hàng
-                    </button>
-                  )}
-                  {counts.imported > 0 && (
-                    <Link
-                      href={`/admin/practice/${lessonId}`}
-                      className={`${button} h-10 bg-primary text-primary-foreground`}
-                      data-testid="review-imported-questions"
-                    >
-                      Duyệt {counts.imported} câu đã nhập
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-700" data-testid="publish-bar-summary">
+              {ready.length ? (
+                <>
+                  <strong>
+                    {picked.length
+                      ? `${picked.length} câu đã chọn`
+                      : `${ready.length} câu sẵn sàng`}
+                  </strong>{' '}
+                  xuất bản thẳng cho học sinh
+                  {lessonTarget ? ` (mặc định vào “${lessonTarget.title}”)` : ''}.
+                </>
+              ) : (
+                <>
+                  Đã xuất bản <strong>{count('PUBLISHED')} câu</strong>, {inPractice} câu học sinh
+                  đang nhận.
+                </>
+              )}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {ready.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setChecked(
+                      picked.length === ready.length
+                        ? new Set()
+                        : new Set(ready.map(({ exercise }) => exercise.id))
+                    )
+                  }
+                  className={`${button} h-10 border border-slate-200 text-slate-700`}
+                  data-testid="select-all-ready"
+                >
+                  {picked.length === ready.length ? 'Bỏ chọn' : `Chọn cả ${ready.length} câu`}
+                </button>
+              )}
+              {ready.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPublishing(picked.length ? picked : ready)}
+                  className={`${button} h-10 bg-emerald-600 px-4 text-sm text-white hover:bg-emerald-700`}
+                  data-testid="publish-open"
+                >
+                  Xuất bản {picked.length || ready.length} câu
+                </button>
+              )}
+              {count('PUBLISHED') > 0 && lessonTarget && (
+                <a
+                  href={studentHref(lessonTarget)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`${button} h-10 border border-blue-200 bg-blue-50 text-blue-800`}
+                >
+                  <Eye className="size-3.5" /> Xem như học sinh
+                </a>
+              )}
+            </div>
           </div>
         </div>
+      )}
+
+      {publishing && (
+        <PublishDialog
+          lessonId={lessonId}
+          workspace={workspace}
+          items={publishing}
+          onClose={() => setPublishing(null)}
+          onDone={async () => {
+            setChecked(new Set());
+            await load();
+          }}
+        />
       )}
     </div>
   );

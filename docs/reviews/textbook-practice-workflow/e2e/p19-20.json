@@ -1,0 +1,1222 @@
+{
+ "model": "gemini-3.5-flash",
+ "pages": [
+  19,
+  20
+ ],
+ "entry": "toc-6",
+ "exerciseSet": {
+  "entryId": "toc-6",
+  "heading": "Bài tập rèn luyện kỹ năng",
+  "chapterEntryId": "toc-2",
+  "problemType": "dạng 1"
+ },
+ "images": [
+  {
+   "printedPage": 19,
+   "pdfPage": 10,
+   "position": "RIGHT",
+   "width": 1100,
+   "height": 1556,
+   "pngBytes": 724079
+  },
+  {
+   "printedPage": 20,
+   "pdfPage": 11,
+   "position": "LEFT",
+   "width": 1100,
+   "height": 1556,
+   "pngBytes": 643538
+  }
+ ],
+ "finishReason": "STOP",
+ "usage": {
+  "input": 2926,
+  "output": 6953
+ },
+ "responseChars": 19517,
+ "outcome": "COMPLETE",
+ "pageReports": [
+  {
+   "printedPage": 19,
+   "status": "READ"
+  },
+  {
+   "printedPage": 20,
+   "status": "READ"
+  }
+ ],
+ "unreadable": [],
+ "rejected": [],
+ "accepted": [
+  {
+   "id": "art-443218cac16afbcf2e7580d02cbb181f",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 1",
+   "content": "Cho hàm số $y = \\frac{x}{\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?\nA. Hàm số luôn đồng biến trên $(0; +\\infty)$\nB. Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$\nC. Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$\nD. Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "1",
+   "exerciseReference": "Câu 1",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số luôn đồng biến trên $(0; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-edeb71f546cb9c6f285752b9fae463c5",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 2",
+   "content": "Cho hàm số $y = x - \\ln(x + 1)$. Khẳng định nào dưới đây là đúng?\nA. Hàm số có tập xác định là $\\mathbb{R} \\setminus \\{-1\\}$\nB. Hàm số đồng biến trên $(-1; +\\infty)$\nC. Hàm số đồng biến trên $(-\\infty; 0)$\nD. Hàm số nghịch biến trên $(-1; 0)$\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "2",
+   "exerciseReference": "Câu 2",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số có tập xác định là $\\mathbb{R} \\setminus \\{-1\\}$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số đồng biến trên $(-1; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đồng biến trên $(-\\infty; 0)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến trên $(-1; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-5b9d7f1481a3d12de0afb581e98fff1b",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 3",
+   "content": "Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?\nA. $(-2; 0)$\nB. $(-\\infty; -2)$\nC. $(0; +\\infty)$\nD. $\\mathbb{R}$\n(Trích đề thi thử lần I – THPT Kim Liên Hà Nội)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "3",
+   "exerciseReference": "Câu 3",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-2; 0)$"
+    },
+    {
+     "label": "B",
+     "text": "$(-\\infty; -2)$"
+    },
+    {
+     "label": "C",
+     "text": "$(0; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "$\\mathbb{R}$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-d31a115af38d24621e91679a61375874",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 4",
+   "content": "Cho hàm số $y = \\frac{-x + 2}{x - 1}$. Khẳng định nào dưới đây là đúng?\nA. Hàm số đồng biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$\nB. Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$\nC. Hàm số nghịch biến trên tập $\\mathbb{R} \\setminus \\{1\\}$\nD. Hàm số nghịch biến với mọi $x \\ne 1$.\n(Trích đề thi thử lần I – THPT chuyên KHTN)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "4",
+   "exerciseReference": "Câu 4",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đồng biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số nghịch biến trên tập $\\mathbb{R} \\setminus \\{1\\}$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến với mọi $x \\ne 1$."
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-06327f16a92ca633ac492d406d33937b",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 5",
+   "content": "Hàm số $y = -x^3 + 3x^2 + 9x$ đồng biến trên khoảng nào sau đây?\nA. $(-2; 3)$\nB. $(-2; -1)$\nC. $\\mathbb{R}$\nD. $(2; 3)$\n(Trích đề thi thử lần I – THPT chuyên Lam Sơn)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "5",
+   "exerciseReference": "Câu 5",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-2; 3)$"
+    },
+    {
+     "label": "B",
+     "text": "$(-2; -1)$"
+    },
+    {
+     "label": "C",
+     "text": "$\\mathbb{R}$"
+    },
+    {
+     "label": "D",
+     "text": "$(2; 3)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-07e5f0c1eae112f1ad7a73a4ee528589",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 6",
+   "content": "Cho hàm số $y = -x^3 - 6x^2 + 10$. Chọn khẳng định đúng trong các khẳng định sau :\nA. Hàm số đã cho đồng biến trên khoảng $(-\\infty; 0)$\nB. Hàm số đã cho đồng biến trên khoảng $(-\\infty; -4)$\nC. Hàm số đã cho đồng biến trên khoảng $(0; +\\infty)$\nD. Hàm số đã cho đồng biến trên khoảng $(-4; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "6",
+   "exerciseReference": "Câu 6",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; 0)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; -4)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(0; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-4; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-67673fa40e695df99f561d9139c225dc",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 7",
+   "content": "Cho hàm số $y = x^4 - 2x^2 - 1$. Khẳng định nào sau đây là đúng?\nA. Hàm số đã cho đồng biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$\nB. Hàm số đã cho nghịch biến trên khoảng $(0; +\\infty)$\nC. Hàm số đã cho nghịch biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$\nD. Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "7",
+   "exerciseReference": "Câu 7",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(0; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-7b32f430baa8fa9142335bd587a99558",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 8",
+   "content": "Hàm số $f(x)$ có đạo hàm $f'(x) = x^2(x + 2)$. Phát biểu nào sau đây là đúng?\nA. Hàm số đồng biến trên khoảng $(-2; +\\infty)$\nB. Hàm số nghịch biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$\nC. Hàm số đồng biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$\nD. Hàm số nghịch biến trên khoảng $(-2; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "8",
+   "exerciseReference": "Câu 8",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đồng biến trên khoảng $(-2; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số nghịch biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đồng biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến trên khoảng $(-2; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-a09c36fbc318931368671ec614270fbf",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 9",
+   "content": "Hàm số $y = 2x^4 + 1$ đồng biến trên khoảng nào?\nA. $\\left(-\\infty; -\\frac{1}{2}\\right)$\nB. $(0; +\\infty)$\nC. $\\left(-\\frac{1}{2}; +\\infty\\right)$\nD. $(-\\infty; 0)$\n(Trích đề minh họa lần I của BGD – 2017)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "9",
+   "exerciseReference": "Câu 9",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$\\left(-\\infty; -\\frac{1}{2}\\right)$"
+    },
+    {
+     "label": "B",
+     "text": "$(0; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "$\\left(-\\frac{1}{2}; +\\infty\\right)$"
+    },
+    {
+     "label": "D",
+     "text": "$(-\\infty; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-e8402dd9541376db49b6bb5b93b74b2c",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 10",
+   "content": "Biết rằng hàm số $y = ax^4 + bx^2 + c$ ($a \\ne 0$) đồng biến trên $(0; +\\infty)$, khẳng định nào sau đây đúng?\nA. $a < 0; b \\le 0$\nB. $ab \\le 0$\nC. $ab \\ge 0$\nD. $a > 0; b \\ge 0$\n(Trích đề thi thử trường THPT Lương Thế Vinh – Hà Nội)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    19
+   ],
+   "pdfPages": [
+    10
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "10",
+   "exerciseReference": "Câu 10",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$a < 0; b \\le 0$"
+    },
+    {
+     "label": "B",
+     "text": "$ab \\le 0$"
+    },
+    {
+     "label": "C",
+     "text": "$ab \\ge 0$"
+    },
+    {
+     "label": "D",
+     "text": "$a > 0; b \\ge 0$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-57147337f5b63045bb0d2e9b8aa0d723",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 11",
+   "content": "Hàm số $y = -\\frac{1}{4}x^4 - 2x^2 + 3$ nghịch biến trong khoảng nào sau đây:\nA. $(-\\infty; 0)$\nB. $(0; 2)$\nC. $(2; +\\infty)$\nD. $(0; +\\infty)$",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "11",
+   "exerciseReference": "Câu 11",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-\\infty; 0)$"
+    },
+    {
+     "label": "B",
+     "text": "$(0; 2)$"
+    },
+    {
+     "label": "C",
+     "text": "$(2; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "$(0; +\\infty)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-6a7fd3be2054aaa143b5abe60bf4e6f1",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 12",
+   "content": "Hàm số nào sau đây đồng biến trên tập xác định của nó:\nA. $y = x^3 - x + 1$\nB. $y = \\frac{x + 1}{x - 1}$\nC. $y = x^3 + 2x - 3$\nD. $y = x^4 + 2x^2 + 3$\n(Trích đề thi thử lần I – Sở GD & ĐT Hà Tĩnh)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "12",
+   "exerciseReference": "Câu 12",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$y = x^3 - x + 1$"
+    },
+    {
+     "label": "B",
+     "text": "$y = \\frac{x + 1}{x - 1}$"
+    },
+    {
+     "label": "C",
+     "text": "$y = x^3 + 2x - 3$"
+    },
+    {
+     "label": "D",
+     "text": "$y = x^4 + 2x^2 + 3$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-42da84aad04417a91500eefc73ea75db",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 13",
+   "content": "Hỏi hàm số $y = \\sqrt{2x - x^2}$ đồng biến trên khoảng nào?\nA. $(-\\infty; 2)$\nB. $(0; 1)$\nC. $(1; 2)$\nD. $(1; +\\infty)$\n(Trích đề thi thử lần I – Sở GD & ĐT Nam Định)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "13",
+   "exerciseReference": "Câu 13",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-\\infty; 2)$"
+    },
+    {
+     "label": "B",
+     "text": "$(0; 1)$"
+    },
+    {
+     "label": "C",
+     "text": "$(1; 2)$"
+    },
+    {
+     "label": "D",
+     "text": "$(1; +\\infty)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-c838d51641ff5204c5f0d77a38458bb1",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 14",
+   "content": "Cho hàm số $y = \\sin x - \\cos x + \\sqrt{3}x$. Tìm khẳng định đúng trong các khẳng định sau:\nA. Hàm số nghịch biến trên $(-\\infty; 0)$\nB. Hàm số nghịch biến trên $(1; 2)$\nC. Hàm số là hàm lẻ.\nD. Hàm số đồng biến trên $(-\\infty; +\\infty)$\n(Trích đề thi thử lần I – THPT chuyên Thái Bình)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "14",
+   "exerciseReference": "Câu 14",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số nghịch biến trên $(-\\infty; 0)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số nghịch biến trên $(1; 2)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số là hàm lẻ."
+    },
+    {
+     "label": "D",
+     "text": "Hàm số đồng biến trên $(-\\infty; +\\infty)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-43d67a8da5bfdbcca9592695bd88b282",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 15",
+   "content": "Hàm số $y = x^4 - 2x^2 - 7$ nghịch biến trên khoảng nào?\nA. $(0; 1)$\nB. $(0; +\\infty)$\nC. $(-1; 0)$\nD. $(-\\infty; 0)$\n(Trích đề thi thử lần I – THPT chuyên Thái Bình)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "15",
+   "exerciseReference": "Câu 15",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(0; 1)$"
+    },
+    {
+     "label": "B",
+     "text": "$(0; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "$(-1; 0)$"
+    },
+    {
+     "label": "D",
+     "text": "$(-\\infty; 0)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-c82b62b361772cb51a315d8a59ad7ecb",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 16",
+   "content": "Hỏi hàm số $y = \\sqrt{x^2 - 4x + 3}$ nghịch biến trên khoảng nào?\nA. $(2; +\\infty)$\nB. $(3; +\\infty)$\nC. $(-\\infty; 1)$\nD. $(-\\infty; 2)$\n(Trích đề thi thử lần I – THPT Nguyễn Thị Minh Khai)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "16",
+   "exerciseReference": "Câu 16",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(2; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "$(3; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "$(-\\infty; 1)$"
+    },
+    {
+     "label": "D",
+     "text": "$(-\\infty; 2)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-86477fb2fa7ed60a545b5839bfb527ea",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 17",
+   "content": "Xét tính đơn điệu của hàm số $y = x^3 - 3x + 2$.\nA. Hàm số đã cho nghịch biến trên khoảng $(-1; 1)$, đồng biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$\nB. Hàm số đã cho đồng biến trên khoảng $(-1; 1)$, nghịch biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$\nC. Hàm số đã cho đồng biến trên $(-\\infty; +\\infty)$\nD. Hàm số đã cho nghịch biến trên khoảng $(0; 3)$, đồng biến trên các khoảng $(-\\infty; 0)$ và $(3; +\\infty)$\n(Trích đề thi thử lần I – THPT Nguyễn Thị Minh Khai)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "17",
+   "exerciseReference": "Câu 17",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(-1; 1)$, đồng biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số đã cho đồng biến trên khoảng $(-1; 1)$, nghịch biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số đã cho đồng biến trên $(-\\infty; +\\infty)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số đã cho nghịch biến trên khoảng $(0; 3)$, đồng biến trên các khoảng $(-\\infty; 0)$ và $(3; +\\infty)$"
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-e2d7bd27291756ae4cce35fd5aac54f5",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 18",
+   "content": "Hàm số $y = \\ln(x + 2) + \\frac{3}{x + 2}$ đồng biến trên khoảng nào ?\nA. $(-\\infty; 1)$.\nB. $(1; +\\infty)$.\nC. $\\left(\\frac{1}{2}; 1\\right)$.\nD. $\\left(-\\frac{1}{2}; +\\infty\\right)$.\n(Trích đề thi thử THPT chuyên Lê Hồng Phong – Nam Định)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "18",
+   "exerciseReference": "Câu 18",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-\\infty; 1)$."
+    },
+    {
+     "label": "B",
+     "text": "$(1; +\\infty)$."
+    },
+    {
+     "label": "C",
+     "text": "$\\left(\\frac{1}{2}; 1\\right)$."
+    },
+    {
+     "label": "D",
+     "text": "$\\left(-\\frac{1}{2}; +\\infty\\right)$."
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-fd27008e92e6a6ea0513ad5b89bdcf46",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 19",
+   "content": "Hàm số $y = 2x^2 - x^4$ nghịch biến trên những khoảng nào ? Tìm đáp án đúng nhất.\nA. $(-1; 0); (1; +\\infty)$.\nB. $(-\\infty; -1); (0; 1)$.\nC. $(-1; 0)$.\nD. $(-1; 1)$.\n(Trích đề thi thử THPT Công Nghiệp - Hòa Bình)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "19",
+   "exerciseReference": "Câu 19",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-1; 0); (1; +\\infty)$."
+    },
+    {
+     "label": "B",
+     "text": "$(-\\infty; -1); (0; 1)$."
+    },
+    {
+     "label": "C",
+     "text": "$(-1; 0)$."
+    },
+    {
+     "label": "D",
+     "text": "$(-1; 1)$."
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-8ebbbd444a8bcde864a02b4b031057a2",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 20",
+   "content": "Hàm số $y = \\frac{2x - 3}{\\sqrt{x^2 - 1}}$ nghịch biến trên khoảng nào trong các khoảng dưới đây?\nA. $(-\\infty; -1)$ và $\\left(1; \\frac{3}{2}\\right)$.\nB. $\\left(\\frac{3}{2}; +\\infty\\right)$.\nC. $\\left(1; \\frac{3}{2}\\right)$.\nD. $(-\\infty; -1)$.\n(Trích đề thi thử THPT Phan Đình Phùng – Hà Nội)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "20",
+   "exerciseReference": "Câu 20",
+   "choices": [
+    {
+     "label": "A",
+     "text": "$(-\\infty; -1)$ và $\\left(1; \\frac{3}{2}\\right)$."
+    },
+    {
+     "label": "B",
+     "text": "$\\left(\\frac{3}{2}; +\\infty\\right)$."
+    },
+    {
+     "label": "C",
+     "text": "$\\left(1; \\frac{3}{2}\\right)$."
+    },
+    {
+     "label": "D",
+     "text": "$(-\\infty; -1)$."
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-e571f2edd9a5a1dde2e458fbc0e99d30",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 21",
+   "content": "Cho hàm số $y = x^3 - 3x^2 + 1$. Mệnh đề nào sau đây là mệnh đề đúng?\nA. Hàm số đồng biến trên khoảng $(0; 2)$.\nB. Hàm số nghịch biến trên khoảng $(-\\infty; 0)$.\nC. Hàm số nghịch biến trên khoảng $(0; 2)$.\nD. Hàm số nghịch biến trên khoảng $(2; +\\infty)$.\n(Trích đề thi thử THPT Phan Đình Phùng – Hà Nội)",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "21",
+   "exerciseReference": "Câu 21",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số đồng biến trên khoảng $(0; 2)$."
+    },
+    {
+     "label": "B",
+     "text": "Hàm số nghịch biến trên khoảng $(-\\infty; 0)$."
+    },
+    {
+     "label": "C",
+     "text": "Hàm số nghịch biến trên khoảng $(0; 2)$."
+    },
+    {
+     "label": "D",
+     "text": "Hàm số nghịch biến trên khoảng $(2; +\\infty)$."
+    }
+   ],
+   "hasDiagram": false,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  },
+  {
+   "id": "art-0b1355686a3600e0806816bcb24e2ac1",
+   "documentId": "textbook-28823755f9b0448a",
+   "entryId": "toc-6",
+   "kind": "EXERCISE",
+   "title": "Câu 22",
+   "content": "Cho hàm số $f(x)$ xác định trên $\\mathbb{R}$ và có đồ thị hàm số $y = f'(x)$ là đường cong trong hình bên. Mệnh đề nào dưới đây đúng?\nA. Hàm số $f(x)$ đồng biến trên khoảng $(1; 2)$\nB. Hàm số $f(x)$ nghịch biến trên khoảng $(0; 2)$\nC. Hàm số $f(x)$ đồng biến trên khoảng $(-2; 1)$\nD. Hàm số $f(x)$ nghịch biến trên khoảng $(-1; 1)$",
+   "mathematicalNotation": [],
+   "printedPages": [
+    20
+   ],
+   "pdfPages": [
+    11
+   ],
+   "reviewStatus": "NEEDS_REVIEW",
+   "verificationNotes": [
+    "AI extraction; human review required.",
+    "Câu này dùng hình, đồ thị hoặc bảng: xem trên bản quét, hình không được chép lại."
+   ],
+   "extractionKey": "diag-toc-6-19-20",
+   "createdAt": "2026-10-24T11:00:13.778Z",
+   "promptVersion": "textbook-knowledge-v9",
+   "questionNumber": "22",
+   "exerciseReference": "Câu 22",
+   "choices": [
+    {
+     "label": "A",
+     "text": "Hàm số $f(x)$ đồng biến trên khoảng $(1; 2)$"
+    },
+    {
+     "label": "B",
+     "text": "Hàm số $f(x)$ nghịch biến trên khoảng $(0; 2)$"
+    },
+    {
+     "label": "C",
+     "text": "Hàm số $f(x)$ đồng biến trên khoảng $(-2; 1)$"
+    },
+    {
+     "label": "D",
+     "text": "Hàm số $f(x)$ nghịch biến trên khoảng $(-1; 1)$"
+    }
+   ],
+   "hasDiagram": true,
+   "exerciseSet": {
+    "entryId": "toc-6",
+    "heading": "Bài tập rèn luyện kỹ năng",
+    "chapterEntryId": "toc-2",
+    "problemType": "dạng 1"
+   },
+   "solutionStatus": "UNRESOLVED",
+   "answer": {
+    "status": "UNRESOLVED"
+   }
+  }
+ ],
+ "rawText": "{\n  \"pages\": [\n    {\n      \"printedPage\": 19,\n      \"status\": \"READ\"\n    },\n    {\n      \"printedPage\": 20,\n      \"status\": \"READ\"\n    }\n  ],\n  \"items\": [\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"1\",\n      \"title\": \"Câu 1\",\n      \"content\": \"Cho hàm số $y = \\\\frac{x}{\\\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?\\nA. Hàm số luôn đồng biến trên $(0; +\\\\infty)$\\nB. Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\\\infty)$\\nC. Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\\\infty)$\\nD. Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\\\infty)$\\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số luôn đồng biến trên $(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\\\infty)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"2\",\n      \"title\": \"Câu 2\",\n      \"content\": \"Cho hàm số $y = x - \\\\ln(x + 1)$. Khẳng định nào dưới đây là đúng?\\nA. Hàm số có tập xác định là $\\\\mathbb{R} \\\\setminus \\\\{-1\\\\}$\\nB. Hàm số đồng biến trên $(-1; +\\\\infty)$\\nC. Hàm số đồng biến trên $(-\\\\infty; 0)$\\nD. Hàm số nghịch biến trên $(-1; 0)$\\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số có tập xác định là $\\\\mathbb{R} \\\\setminus \\\\{-1\\\\}$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số đồng biến trên $(-1; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số đồng biến trên $(-\\\\infty; 0)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số nghịch biến trên $(-1; 0)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"3\",\n      \"title\": \"Câu 3\",\n      \"content\": \"Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?\\nA. $(-2; 0)$\\nB. $(-\\\\infty; -2)$\\nC. $(0; +\\\\infty)$\\nD. $\\\\mathbb{R}$\\n(Trích đề thi thử lần I – THPT Kim Liên Hà Nội)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(-2; 0)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(-\\\\infty; -2)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$\\\\mathbb{R}$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"4\",\n      \"title\": \"Câu 4\",\n      \"content\": \"Cho hàm số $y = \\\\frac{-x + 2}{x - 1}$. Khẳng định nào dưới đây là đúng?\\nA. Hàm số đồng biến trên mỗi (từng) khoảng $(-\\\\infty; 1)$ và $(1; +\\\\infty)$\\nB. Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\\\infty; 1)$ và $(1; +\\\\infty)$\\nC. Hàm số nghịch biến trên tập $\\\\mathbb{R} \\\\setminus \\\\{1\\\\}$\\nD. Hàm số nghịch biến với mọi $x \\\\ne 1$.\\n(Trích đề thi thử lần I – THPT chuyên KHTN)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số đồng biến trên mỗi (từng) khoảng $(-\\\\infty; 1)$ và $(1; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\\\infty; 1)$ và $(1; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số nghịch biến trên tập $\\\\mathbb{R} \\\\setminus \\\\{1\\\\}$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số nghịch biến với mọi $x \\\\ne 1$.\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"5\",\n      \"title\": \"Câu 5\",\n      \"content\": \"Hàm số $y = -x^3 + 3x^2 + 9x$ đồng biến trên khoảng nào sau đây?\\nA. $(-2; 3)$\\nB. $(-2; -1)$\\nC. $\\\\mathbb{R}$\\nD. $(2; 3)$\\n(Trích đề thi thử lần I – THPT chuyên Lam Sơn)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(-2; 3)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(-2; -1)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$\\\\mathbb{R}$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(2; 3)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"6\",\n      \"title\": \"Câu 6\",\n      \"content\": \"Cho hàm số $y = -x^3 - 6x^2 + 10$. Chọn khẳng định đúng trong các khẳng định sau :\\nA. Hàm số đã cho đồng biến trên khoảng $(-\\\\infty; 0)$\\nB. Hàm số đã cho đồng biến trên khoảng $(-\\\\infty; -4)$\\nC. Hàm số đã cho đồng biến trên khoảng $(0; +\\\\infty)$\\nD. Hàm số đã cho đồng biến trên khoảng $(-4; 0)$\\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số đã cho đồng biến trên khoảng $(-\\\\infty; 0)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số đã cho đồng biến trên khoảng $(-\\\\infty; -4)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số đã cho đồng biến trên khoảng $(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số đã cho đồng biến trên khoảng $(-4; 0)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"7\",\n      \"title\": \"Câu 7\",\n      \"content\": \"Cho hàm số $y = x^4 - 2x^2 - 1$. Khẳng định nào sau đây là đúng?\\nA. Hàm số đã cho đồng biến trên khoảng $(-\\\\infty; -1)$ và khoảng $(0; 1)$\\nB. Hàm số đã cho nghịch biến trên khoảng $(0; +\\\\infty)$\\nC. Hàm số đã cho nghịch biến trên khoảng $(-\\\\infty; -1)$ và khoảng $(0; 1)$\\nD. Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$\\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số đã cho đồng biến trên khoảng $(-\\\\infty; -1)$ và khoảng $(0; 1)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số đã cho nghịch biến trên khoảng $(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số đã cho nghịch biến trên khoảng $(-\\\\infty; -1)$ và khoảng $(0; 1)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"8\",\n      \"title\": \"Câu 8\",\n      \"content\": \"Hàm số $f(x)$ có đạo hàm $f'(x) = x^2(x + 2)$. Phát biểu nào sau đây là đúng?\\nA. Hàm số đồng biến trên khoảng $(-2; +\\\\infty)$\\nB. Hàm số nghịch biến trên các khoảng $(-\\\\infty; -2)$ và $(0; +\\\\infty)$\\nC. Hàm số đồng biến trên các khoảng $(-\\\\infty; -2)$ và $(0; +\\\\infty)$\\nD. Hàm số nghịch biến trên khoảng $(-2; 0)$\\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số đồng biến trên khoảng $(-2; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số nghịch biến trên các khoảng $(-\\\\infty; -2)$ và $(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số đồng biến trên các khoảng $(-\\\\infty; -2)$ và $(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số nghịch biến trên khoảng $(-2; 0)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"9\",\n      \"title\": \"Câu 9\",\n      \"content\": \"Hàm số $y = 2x^4 + 1$ đồng biến trên khoảng nào?\\nA. $\\\\left(-\\\\infty; -\\\\frac{1}{2}\\\\right)$\\nB. $(0; +\\\\infty)$\\nC. $\\\\left(-\\\\frac{1}{2}; +\\\\infty\\\\right)$\\nD. $(-\\\\infty; 0)$\\n(Trích đề minh họa lần I của BGD – 2017)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$\\\\left(-\\\\infty; -\\\\frac{1}{2}\\\\right)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$\\\\left(-\\\\frac{1}{2}; +\\\\infty\\\\right)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(-\\\\infty; 0)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"10\",\n      \"title\": \"Câu 10\",\n      \"content\": \"Biết rằng hàm số $y = ax^4 + bx^2 + c$ ($a \\\\ne 0$) đồng biến trên $(0; +\\\\infty)$, khẳng định nào sau đây đúng?\\nA. $a < 0; b \\\\le 0$\\nB. $ab \\\\le 0$\\nC. $ab \\\\ge 0$\\nD. $a > 0; b \\\\ge 0$\\n(Trích đề thi thử trường THPT Lương Thế Vinh – Hà Nội)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$a < 0; b \\\\le 0$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$ab \\\\le 0$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$ab \\\\ge 0$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$a > 0; b \\\\ge 0$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [19]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"11\",\n      \"title\": \"Câu 11\",\n      \"content\": \"Hàm số $y = -\\\\frac{1}{4}x^4 - 2x^2 + 3$ nghịch biến trong khoảng nào sau đây:\\nA. $(-\\\\infty; 0)$\\nB. $(0; 2)$\\nC. $(2; +\\\\infty)$\\nD. $(0; +\\\\infty)$\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(-\\\\infty; 0)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(0; 2)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$(2; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(0; +\\\\infty)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"12\",\n      \"title\": \"Câu 12\",\n      \"content\": \"Hàm số nào sau đây đồng biến trên tập xác định của nó:\\nA. $y = x^3 - x + 1$\\nB. $y = \\\\frac{x + 1}{x - 1}$\\nC. $y = x^3 + 2x - 3$\\nD. $y = x^4 + 2x^2 + 3$\\n(Trích đề thi thử lần I – Sở GD & ĐT Hà Tĩnh)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$y = x^3 - x + 1$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$y = \\\\frac{x + 1}{x - 1}$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$y = x^3 + 2x - 3$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$y = x^4 + 2x^2 + 3$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"13\",\n      \"title\": \"Câu 13\",\n      \"content\": \"Hỏi hàm số $y = \\\\sqrt{2x - x^2}$ đồng biến trên khoảng nào?\\nA. $(-\\\\infty; 2)$\\nB. $(0; 1)$\\nC. $(1; 2)$\\nD. $(1; +\\\\infty)$\\n(Trích đề thi thử lần I – Sở GD & ĐT Nam Định)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(-\\\\infty; 2)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(0; 1)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$(1; 2)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(1; +\\\\infty)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"14\",\n      \"title\": \"Câu 14\",\n      \"content\": \"Cho hàm số $y = \\\\sin x - \\\\cos x + \\\\sqrt{3}x$. Tìm khẳng định đúng trong các khẳng định sau:\\nA. Hàm số nghịch biến trên $(-\\\\infty; 0)$\\nB. Hàm số nghịch biến trên $(1; 2)$\\nC. Hàm số là hàm lẻ.\\nD. Hàm số đồng biến trên $(-\\\\infty; +\\\\infty)$\\n(Trích đề thi thử lần I – THPT chuyên Thái Bình)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số nghịch biến trên $(-\\\\infty; 0)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số nghịch biến trên $(1; 2)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số là hàm lẻ.\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số đồng biến trên $(-\\\\infty; +\\\\infty)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"15\",\n      \"title\": \"Câu 15\",\n      \"content\": \"Hàm số $y = x^4 - 2x^2 - 7$ nghịch biến trên khoảng nào?\\nA. $(0; 1)$\\nB. $(0; +\\\\infty)$\\nC. $(-1; 0)$\\nD. $(-\\\\infty; 0)$\\n(Trích đề thi thử lần I – THPT chuyên Thái Bình)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(0; 1)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(0; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$(-1; 0)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(-\\\\infty; 0)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"16\",\n      \"title\": \"Câu 16\",\n      \"content\": \"Hỏi hàm số $y = \\\\sqrt{x^2 - 4x + 3}$ nghịch biến trên khoảng nào?\\nA. $(2; +\\\\infty)$\\nB. $(3; +\\\\infty)$\\nC. $(-\\\\infty; 1)$\\nD. $(-\\\\infty; 2)$\\n(Trích đề thi thử lần I – THPT Nguyễn Thị Minh Khai)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(2; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(3; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$(-\\\\infty; 1)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(-\\\\infty; 2)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"17\",\n      \"title\": \"Câu 17\",\n      \"content\": \"Xét tính đơn điệu của hàm số $y = x^3 - 3x + 2$.\\nA. Hàm số đã cho nghịch biến trên khoảng $(-1; 1)$, đồng biến trên các khoảng $(-\\\\infty; -1)$ và $(1; +\\\\infty)$\\nB. Hàm số đã cho đồng biến trên khoảng $(-1; 1)$, nghịch biến trên các khoảng $(-\\\\infty; -1)$ và $(1; +\\\\infty)$\\nC. Hàm số đã cho đồng biến trên $(-\\\\infty; +\\\\infty)$\\nD. Hàm số đã cho nghịch biến trên khoảng $(0; 3)$, đồng biến trên các khoảng $(-\\\\infty; 0)$ và $(3; +\\\\infty)$\\n(Trích đề thi thử lần I – THPT Nguyễn Thị Minh Khai)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số đã cho nghịch biến trên khoảng $(-1; 1)$, đồng biến trên các khoảng $(-\\\\infty; -1)$ và $(1; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số đã cho đồng biến trên khoảng $(-1; 1)$, nghịch biến trên các khoảng $(-\\\\infty; -1)$ và $(1; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số đã cho đồng biến trên $(-\\\\infty; +\\\\infty)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số đã cho nghịch biến trên khoảng $(0; 3)$, đồng biến trên các khoảng $(-\\\\infty; 0)$ và $(3; +\\\\infty)$\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"18\",\n      \"title\": \"Câu 18\",\n      \"content\": \"Hàm số $y = \\\\ln(x + 2) + \\\\frac{3}{x + 2}$ đồng biến trên khoảng nào ?\\nA. $(-\\\\infty; 1)$.\\nB. $(1; +\\\\infty)$.\\nC. $\\\\left(\\\\frac{1}{2}; 1\\\\right)$.\\nD. $\\\\left(-\\\\frac{1}{2}; +\\\\infty\\\\right)$.\\n(Trích đề thi thử THPT chuyên Lê Hồng Phong – Nam Định)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(-\\\\infty; 1)$.\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(1; +\\\\infty)$.\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$\\\\left(\\\\frac{1}{2}; 1\\\\right)$.\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$\\\\left(-\\\\frac{1}{2}; +\\\\infty\\\\right)$.\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"19\",\n      \"title\": \"Câu 19\",\n      \"content\": \"Hàm số $y = 2x^2 - x^4$ nghịch biến trên những khoảng nào ? Tìm đáp án đúng nhất.\\nA. $(-1; 0); (1; +\\\\infty)$.\\nB. $(-\\\\infty; -1); (0; 1)$.\\nC. $(-1; 0)$.\\nD. $(-1; 1)$.\\n(Trích đề thi thử THPT Công Nghiệp - Hòa Bình)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(-1; 0); (1; +\\\\infty)$.\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$(-\\\\infty; -1); (0; 1)$.\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$(-1; 0)$.\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(-1; 1)$.\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"20\",\n      \"title\": \"Câu 20\",\n      \"content\": \"Hàm số $y = \\\\frac{2x - 3}{\\\\sqrt{x^2 - 1}}$ nghịch biến trên khoảng nào trong các khoảng dưới đây?\\nA. $(-\\\\infty; -1)$ và $\\\\left(1; \\\\frac{3}{2}\\\\right)$.\\nB. $\\\\left(\\\\frac{3}{2}; +\\\\infty\\\\right)$.\\nC. $\\\\left(1; \\\\frac{3}{2}\\\\right)$.\\nD. $(-\\\\infty; -1)$.\\n(Trích đề thi thử THPT Phan Đình Phùng – Hà Nội)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"$(-\\\\infty; -1)$ và $\\\\left(1; \\\\frac{3}{2}\\\\right)$.\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"$\\\\left(\\\\frac{3}{2}; +\\\\infty\\\\right)$.\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"$\\\\left(1; \\\\frac{3}{2}\\\\right)$.\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"$(-\\\\infty; -1)$.\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"21\",\n      \"title\": \"Câu 21\",\n      \"content\": \"Cho hàm số $y = x^3 - 3x^2 + 1$. Mệnh đề nào sau đây là mệnh đề đúng?\\nA. Hàm số đồng biến trên khoảng $(0; 2)$.\\nB. Hàm số nghịch biến trên khoảng $(-\\\\infty; 0)$.\\nC. Hàm số nghịch biến trên khoảng $(0; 2)$.\\nD. Hàm số nghịch biến trên khoảng $(2; +\\\\infty)$.\\n(Trích đề thi thử THPT Phan Đình Phùng – Hà Nội)\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số đồng biến trên khoảng $(0; 2)$.\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số nghịch biến trên khoảng $(-\\\\infty; 0)$.\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số nghịch biến trên khoảng $(0; 2)$.\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số nghịch biến trên khoảng $(2; +\\\\infty)$.\"\n        }\n      ],\n      \"hasDiagram\": false,\n      \"printedPages\": [20]\n    },\n    {\n      \"kind\": \"EXERCISE\",\n      \"questionNumber\": \"22\",\n      \"title\": \"Câu 22\",\n      \"content\": \"Cho hàm số $f(x)$ xác định trên $\\\\mathbb{R}$ và có đồ thị hàm số $y = f'(x)$ là đường cong trong hình bên. Mệnh đề nào dưới đây đúng?\\nA. Hàm số $f(x)$ đồng biến trên khoảng $(1; 2)$\\nB. Hàm số $f(x)$ nghịch biến trên khoảng $(0; 2)$\\nC. Hàm số $f(x)$ đồng biến trên khoảng $(-2; 1)$\\nD. Hàm số $f(x)$ nghịch biến trên khoảng $(-1; 1)$\",\n      \"choices\": [\n        {\n          \"label\": \"A\",\n          \"text\": \"Hàm số $f(x)$ đồng biến trên khoảng $(1; 2)$\"\n        },\n        {\n          \"label\": \"B\",\n          \"text\": \"Hàm số $f(x)$ nghịch biến trên khoảng $(0; 2)$\"\n        },\n        {\n          \"label\": \"C\",\n          \"text\": \"Hàm số $f(x)$ đồng biến trên khoảng $(-2; 1)$\"\n        },\n        {\n          \"label\": \"D\",\n          \"text\": \"Hàm số $f(x)$ nghịch biến trên khoảng $(-1; 1)$\"\n        }\n      ],\n      \"hasDiagram\": true,\n      \"printedPages\": [20]\n    }\n  ],\n  \"unreadable\": []\n}",
+ "durationMs": 43299
+}

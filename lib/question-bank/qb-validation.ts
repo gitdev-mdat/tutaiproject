@@ -485,7 +485,7 @@ export function validateForPublishing(question: Partial<Question>): ValidationRe
     errors.push({
       code: 'RIGHTS_REVIEW_REQUIRED',
       message:
-        'Câu hỏi có trạng thái bản quyền "Cần xem xét" không thể xuất bản. Hãy giải quyết trước.',
+        'Chưa xác nhận quyền sử dụng nguồn (trạng thái "Cần xem xét") nên chưa xuất bản được. Khi có giấy phép hoặc sự cho phép, chọn trạng thái quyền tương ứng.',
       field: 'source.rightsStatus',
     });
   }

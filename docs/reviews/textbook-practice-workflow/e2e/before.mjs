@@ -1,0 +1,55 @@
+// BEFORE (master d62a50f): publish Câu 1, 3, 5, 6 of the real book to P1, counting Admin actions.
+import fs from 'node:fs';
+import { chromium, BASE, P1, adminContext, worker, reset, qb, S } from './lib.mjs';
+reset();
+const browser = await chromium.launch();
+const admin = await adminContext(browser, 1440);
+const page = await admin.newPage();
+const log = [];
+let actions = 0;
+const act = async (what, fn) => { actions += 1; log.push(`${actions}. ${what}`); await fn(); await page.waitForTimeout(700); };
+const shot = (n, full = true) => page.screenshot({ path: `${S}/shots/${n}.png`, fullPage: full });
+await page.goto(`${BASE}/admin/practice/${P1}/textbook`); await page.getByTestId('practice-counts').waitFor();
+await act('Trích lời giải tr. 29–31', () => page.getByTestId('solution-sources').getByTestId('extract-solutions').first().click());
+worker(); await page.reload(); await page.getByTestId('practice-counts').waitFor(); await page.waitForTimeout(800);
+const row = (n) => page.locator(`[data-testid="exercise-row"][data-number="${n}"]`);
+await act('Mở Câu 1', () => row('1').getByRole('button').click());
+await act('Đúng lời giải của câu này', () => page.getByTestId('exercise-detail').getByTestId('confirm-candidate').first().click());
+await page.getByTestId('verified').waitFor();
+await shot('before-1440-textbook-ready');
+await act('Đưa 4 câu vào Ngân hàng', () => page.getByTestId('import-open').click());
+await shot('before-1440-import-rights', false);
+// The rights select starts on "Chưa rõ" (REVIEW_REQUIRED): an Admin who has no reason to change it keeps it.
+await act('Nhập 4 câu dạng nháp', () => page.getByTestId('import-confirm').click());
+await page.getByTestId('import-outcomes').waitFor();
+await shot('before-1440-import-outcomes', false);
+await act('Duyệt và xuất bản (link)', () => page.getByTestId('import-bar').getByRole('link', { name: 'Duyệt và xuất bản' }).click());
+await page.getByTestId('bulk-review').waitFor();
+await shot('before-1440-lesson-drafts');
+await act('Chọn tất cả câu cần duyệt', () => page.getByTestId('select-all-reviewable').click());
+await act('Gửi duyệt 4 câu', () => page.getByTestId('bulk-send-review').click());
+await page.getByTestId('bulk-results').waitFor(); await page.waitForTimeout(1500);
+await shot('before-1440-sent-review');
+// The per-question "Duyệt và xuất bản" button is enabled although the rights are "Cần xem xét".
+const card = page.locator('[data-testid="practice-question"][data-state="IN_REVIEW"]').first();
+const enabled = await card.getByTestId('action-publish').isEnabled();
+await act('Duyệt và xuất bản (một câu)', () => card.getByTestId('action-publish').click());
+await page.waitForTimeout(1200);
+const err = await card.getByRole('alert').innerText().catch(() => '(no error shown)');
+await card.scrollIntoViewIfNeeded();
+await shot('before-1440-publish-refused', false);
+log.push(`   per-question publish button enabled=${enabled}; result: ${err}`);
+await act('Chọn tất cả câu cần duyệt', () => page.getByTestId('select-all-reviewable').click());
+await act('Chọn trạng thái quyền "Có giấy phép"', () => page.getByTestId('bulk-rights-status').selectOption('LICENSED'));
+await act('Tick xác nhận quyền', () => page.getByTestId('rights-attestation').check());
+await act('Lưu trạng thái quyền', () => page.getByTestId('save-bulk-rights').click());
+await page.waitForTimeout(1500);
+// The selection survives "Lưu trạng thái quyền", so no reselect is needed here.
+await act('Xuất bản 4 câu', () => page.getByTestId('bulk-publish').click());
+await page.getByTestId('bulk-results').waitFor(); await page.waitForTimeout(1500);
+await shot('before-1440-published');
+const published = qb().filter((q) => q.editorialStatus === 'PUBLISHED').length;
+log.push(`Published: ${published}. Admin actions: ${actions}. Pages: textbook workspace -> lesson practice.`);
+fs.writeFileSync(`${S}/before-log.txt`, log.join('\n'));
+console.log(log.join('\n'));
+await browser.close();

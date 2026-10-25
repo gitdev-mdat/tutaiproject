@@ -30,7 +30,7 @@ export const QUESTION_STATE: Record<PracticeQuestionState, { label: string; tone
     tone: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   },
   DRAFT: { label: 'Bản nháp', tone: 'bg-slate-100 text-slate-600 ring-slate-200' },
-  IN_REVIEW: { label: 'Chờ duyệt', tone: 'bg-amber-50 text-amber-700 ring-amber-200' },
+  IN_REVIEW: { label: 'Chờ xuất bản', tone: 'bg-amber-50 text-amber-700 ring-amber-200' },
   ARCHIVED: { label: 'Đã gỡ', tone: 'bg-slate-100 text-slate-500 ring-slate-200' },
   PUBLISHED_ELSEWHERE: {
     label: 'Đã xuất bản, chưa vào luyện tập',

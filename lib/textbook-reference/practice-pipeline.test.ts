@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fixture from './fixtures/math-book-3-real.json';
 import { exerciseSetFor, validateItem } from './extraction-response';
-import { applyTextbookImport, textbookExternalId } from './practice-import';
+import { applyTextbookImport, applyTextbookPublish, textbookExternalId } from './practice-import';
 import {
   isPracticeSourceForLesson,
   practiceSetsForLesson,
@@ -471,6 +471,93 @@ describe('practice state and the Question Bank import', () => {
     expect(applyTextbookImport(editedInBank, [item(corrected)], options).outcomes[0].result).toBe(
       'UNCHANGED'
     );
+  });
+
+  it('publishes a verified exercise in one step, through the review and publishing checks', () => {
+    const result = applyTextbookPublish(
+      [],
+      [item(confirm('3')), item(number(exercises, '8'))],
+      options
+    );
+    expect(result.outcomes.map((o) => o.result)).toEqual(['PUBLISHED', 'BLOCKED']);
+    expect(result.outcomes[1].reasons[0]).toMatch(/Chưa xác nhận đáp án/);
+    expect(result.questions).toHaveLength(1);
+    expect(result.questions[0]).toMatchObject({
+      editorialStatus: 'PUBLISHED',
+      accessTier: 'OPEN',
+      usageContexts: ['OPEN_PRACTICE'],
+      primaryKnowledgeNodeId: P1,
+      correctAnswer: 'A',
+      source: { rightsStatus: 'LICENSED' },
+    });
+    expect(result.audits.map((a) => a.action)).toEqual([
+      'IMPORTED',
+      'SUBMITTED_FOR_REVIEW',
+      'PUBLISHED',
+    ]);
+    expect(result.outcomes[0].question?.correctAnswer).toBe('A');
+
+    const again = applyTextbookPublish(result.questions, [item(confirm('3'))], options);
+    expect(again.outcomes[0].result).toBe('ALREADY_PUBLISHED');
+    expect(again.questions).toHaveLength(1);
+    expect(again.audits).toEqual([]);
+  });
+
+  it('publishes a question waiting in review once its rights are resolved, and records the change', () => {
+    const drafted = applyTextbookImport([], [item(confirm('3'))], {
+      ...options,
+      rights: 'REVIEW_REQUIRED',
+    }).questions;
+    const inReview: Question[] = [{ ...drafted[0], editorialStatus: 'IN_REVIEW' }];
+    const result = applyTextbookPublish(inReview, [item(confirm('3'))], options);
+    expect(result.outcomes[0]).toMatchObject({ result: 'PUBLISHED', questionId: drafted[0].id });
+    expect(result.questions[0].source.rightsStatus).toBe('LICENSED');
+    expect(result.audits.map((a) => a.action)).toEqual(['SOURCE_RIGHTS_CHANGED', 'PUBLISHED']);
+  });
+
+  it('never publishes with unresolved rights, an archived question or a duplicate', () => {
+    expect(() =>
+      applyTextbookPublish([], [item(confirm('3'))], { ...options, rights: 'REVIEW_REQUIRED' })
+    ).toThrow();
+    const own = applyTextbookImport([], [item(confirm('3'))], options).questions[0];
+    const archived = applyTextbookPublish(
+      [{ ...own, editorialStatus: 'ARCHIVED' }],
+      [item(confirm('3'))],
+      options
+    );
+    expect(archived.outcomes[0]).toMatchObject({ result: 'BLOCKED' });
+    expect(archived.questions[0].editorialStatus).toBe('ARCHIVED');
+    const manual = { ...own, id: 'q-manual', externalId: undefined, code: 'Q-MAT-MANUAL' };
+    const duplicate = applyTextbookPublish([manual], [item(confirm('3'))], options);
+    expect(duplicate.outcomes[0]).toMatchObject({
+      result: 'BLOCKED',
+      questionCode: 'Q-MAT-MANUAL',
+    });
+    expect(duplicate.questions).toEqual([manual]);
+  });
+
+  it('places a chapter-level question on the chapter, with the chapter as its hierarchy', () => {
+    const exercise = confirm('3');
+    const chapterView = {
+      ...view(exercise),
+      lesson: { lessonId: 'chapter-1', source: 'ADMIN' as const, reason: 'Admin' },
+    };
+    const result = applyTextbookPublish(
+      [],
+      [
+        {
+          ...item(exercise),
+          view: chapterView,
+          hierarchy: { subjectId: 'MATH', grade: 12, chapterId: 'chapter-1' },
+        },
+      ],
+      options
+    );
+    expect(result.outcomes[0]).toMatchObject({ result: 'PUBLISHED', destinationId: 'chapter-1' });
+    expect(result.questions[0]).toMatchObject({
+      primaryKnowledgeNodeId: 'chapter-1',
+      chapterId: 'chapter-1',
+    });
   });
 
   it('skips a question already in the bank by another route', () => {

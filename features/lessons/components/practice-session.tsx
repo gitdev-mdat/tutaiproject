@@ -19,7 +19,7 @@ import {
 import { LessonAssist } from '@/components/learning/lesson-assist';
 import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import type { PracticeFeedback, PracticeQuestion } from '@/lib/practice/grading';
-import type { AttemptView } from '@/lib/practice/practice-service';
+import type { AttemptView, LessonPracticeOverview } from '@/lib/practice/practice-service';
 import { useStudentShell } from '@/components/student/student-shell';
 import { JourneyCheckpoint } from '@/features/roadmap/components/journey-checkpoint';
 import { useLessonProgress } from '../lib/lesson-progress';
@@ -171,7 +171,7 @@ function ChoiceButton({
       aria-checked={selected}
       disabled={disabled}
       onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:p-4 ${tone} disabled:cursor-default`}
+      className={`flex min-h-14 w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 enabled:active:scale-[0.99] motion-reduce:transition-none motion-reduce:enabled:active:scale-100 sm:p-4 ${tone} disabled:cursor-default`}
       data-testid={`choice-${label}`}
     >
       <span
@@ -363,6 +363,71 @@ export function QuestionBody({
   );
 }
 
+/** "Em chọn B · Đáp án đúng: A" for a missed choice question, so the gap is stated, not hunted for. */
+function AnswerComparison({ feedback }: { feedback: PracticeFeedback }) {
+  const given = feedback.response as Answer;
+  const right = (feedback.answer as Answer)?.choices;
+  const chosen = given?.choice ? [given.choice] : given?.choices;
+  if (!chosen?.length || !right?.length) return null;
+  return (
+    <p className="mt-1.5 pl-7 text-sm text-amber-950" data-testid="answer-comparison">
+      Em chọn <strong>{chosen.join(', ')}</strong> · Đáp án đúng:{' '}
+      <strong className="text-emerald-700">{right.join(', ')}</strong>
+    </p>
+  );
+}
+
+/**
+ * One step per line, except that a line inside an unclosed `$…$` or `$$…$$` formula
+ * belongs to the step it started in, so the formula still renders.
+ */
+function solutionLines(text: string): string[] {
+  const steps: string[] = [];
+  let open = false;
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (open) steps[steps.length - 1] += ` ${line}`;
+    else if (line) steps.push(line);
+    if ((line.replace(/\\\$/g, '').match(/\$\$|\$/g)?.length ?? 0) % 2 === 1) open = !open;
+  }
+  return steps.filter(Boolean);
+}
+
+/**
+ * The worked solution, one line per step, appearing in order so the eye
+ * follows the reasoning. Without motion, every step is simply there.
+ */
+function SolutionSteps({ text }: { text: string }) {
+  const steps = solutionLines(text);
+  if (steps.length < 2)
+    return (
+      <div className="mt-1.5 text-[15px] leading-7 whitespace-pre-line text-slate-800">
+        <QuestionMath text={text} />
+      </div>
+    );
+  return (
+    <ol className="mt-2 space-y-1.5" data-testid="solution-steps">
+      {steps.map((step, index) => (
+        <li
+          key={`${index}-${step}`}
+          className="flex gap-2.5 text-[15px] leading-7 text-slate-800 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-1 motion-safe:fill-mode-both motion-safe:duration-300"
+          style={{ animationDelay: `${120 + index * 140}ms` }}
+        >
+          <span
+            className="mt-1.5 grid size-5 shrink-0 place-items-center rounded-full bg-white text-[11px] font-bold text-slate-500 ring-1 ring-black/10"
+            aria-hidden="true"
+          >
+            {index + 1}
+          </span>
+          <span className="min-w-0 flex-1">
+            <QuestionMath text={step} />
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function FeedbackPanel({
   feedback,
   id = 'practice-feedback',
@@ -377,7 +442,7 @@ export function FeedbackPanel({
     <div
       id={id}
       tabIndex={-1}
-      className={`mt-5 rounded-2xl border p-4 outline-none sm:p-5 ${feedback.correct ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
+      className={`mt-5 rounded-2xl border p-4 outline-none sm:p-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 ${feedback.correct ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
       role="status"
       data-testid="feedback"
       data-correct={feedback.correct}
@@ -388,12 +453,11 @@ export function FeedbackPanel({
         {feedback.correct ? <CheckCircle2 className="size-5" /> : <XCircle className="size-5" />}
         {feedback.correct ? 'Chính xác!' : 'Chưa đúng, xem lời giải nhé'}
       </p>
+      {!feedback.correct && <AnswerComparison feedback={feedback} />}
       {feedback.explanation && (
         <div className="mt-3 border-t border-black/5 pt-3">
           <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">Lời giải</p>
-          <div className="mt-1.5 text-[15px] leading-7 whitespace-pre-line text-slate-800">
-            <QuestionMath text={feedback.explanation} />
-          </div>
+          <SolutionSteps text={feedback.explanation} />
         </div>
       )}
       {children && <div className="mt-3 border-t border-black/5 pt-3">{children}</div>}
@@ -625,7 +689,7 @@ function PracticeFlow({
   const [view, setView] = React.useState<AttemptView | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [overview, setOverview] = React.useState<{ questionCount: number } | null>(null);
+  const [overview, setOverview] = React.useState<LessonPracticeOverview | null>(null);
   const [index, setIndex] = React.useState(0);
   const [answers, setAnswers] = React.useState<Record<string, Answer>>({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -647,7 +711,7 @@ function PracticeFlow({
         setIndex(firstOpen === -1 ? 0 : firstOpen);
         setShowResults(loaded.attempt.status === 'COMPLETED');
       } else {
-        const lessonOverview = await api<{ questionCount: number }>(
+        const lessonOverview = await api<LessonPracticeOverview>(
           `/api/student/practice/lessons/${encodeURIComponent(lesson.id)}`
         );
         setView(null);
@@ -672,6 +736,26 @@ function PracticeFlow({
     setError(null);
     void fetchState();
   };
+
+  /** Back to the session the student left: the answers given so far are kept on the server. */
+  async function resume(attemptId: string) {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const loaded = await api<AttemptView>(`/api/student/practice/attempts/${attemptId}`);
+      shownAttemptId.current = loaded.attempt.id;
+      setAnswers({});
+      setView(loaded);
+      const firstOpen = loaded.questions.findIndex((q) => !loaded.feedback[q.id]);
+      setIndex(firstOpen === -1 ? 0 : firstOpen);
+      setShowResults(loaded.attempt.status === 'COMPLETED');
+      router.replace(practiceHref(lesson.id, loaded.attempt.id, origin), { scroll: true });
+    } catch (cause) {
+      setSubmitError((cause as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function start(mode: 'LESSON' | 'MISTAKES') {
     setSubmitting(true);
@@ -788,6 +872,8 @@ function PracticeFlow({
 
   if (!view) {
     const count = overview?.questionCount ?? 0;
+    const open = overview?.inProgress ?? null;
+    const best = overview?.best ?? null;
     return (
       <Shell lesson={lesson}>
         <section
@@ -816,16 +902,45 @@ function PracticeFlow({
                   </li>
                 ))}
               </ul>
-              <button
-                type="button"
-                onClick={() => void start('LESSON')}
-                disabled={submitting}
-                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:opacity-60 sm:w-auto"
-                data-testid="practice-begin"
-              >
-                {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
-                Bắt đầu
-              </button>
+              {(best || open) && (
+                <p className="mt-4 text-sm text-slate-600" data-testid="practice-history">
+                  {best
+                    ? `Kết quả tốt nhất của em: ${best.correctCount ?? 0}/${best.totalCount}${best.passed ? ' · đã hoàn thành' : ''}. `
+                    : ''}
+                  {open
+                    ? `Em đang làm dở: đã trả lời ${open.answeredCount}/${open.totalCount} câu.`
+                    : `Đã làm ${overview?.completedCount ?? 0} lượt.`}
+                </p>
+              )}
+              <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+                {open && (
+                  <button
+                    type="button"
+                    onClick={() => void resume(open.id)}
+                    disabled={submitting}
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:opacity-60 sm:w-auto"
+                    data-testid="practice-resume"
+                  >
+                    {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
+                    Làm tiếp ({open.answeredCount}/{open.totalCount})
+                    <ArrowRight className="size-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void start('LESSON')}
+                  disabled={submitting}
+                  className={
+                    open
+                      ? 'inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D5DEEA] bg-white px-5 text-[15px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 sm:w-auto'
+                      : 'inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:opacity-60 sm:w-auto'
+                  }
+                  data-testid="practice-begin"
+                >
+                  {submitting && !open ? <Loader2 className="size-4 animate-spin" /> : null}
+                  {open ? 'Làm lượt mới' : best ? 'Luyện lại' : 'Bắt đầu'}
+                </button>
+              </div>
             </>
           )}
           {submitError && (
@@ -875,7 +990,7 @@ function PracticeFlow({
           aria-label="Tiến độ"
         >
           <div
-            className="h-full rounded-full bg-[#0052FF] transition-all"
+            className="h-full rounded-full bg-[#0052FF] transition-[width] duration-500 ease-out motion-reduce:transition-none"
             style={{ width: `${progress}%` }}
           />
         </div>
