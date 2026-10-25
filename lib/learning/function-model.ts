@@ -467,3 +467,108 @@ export function formatNumber(value: number): string {
 export function formatInterval(from: number, to: number): string {
   return `(${formatNumber(from)}; ${formatNumber(to)})`;
 }
+
+// ─── Guided practice helpers ─────────────────────────────────────────────────
+// Everything a step-by-step exercise asks or checks is derived from the parsed
+// function, so a hint or a wrong option can never disagree with the graph.
+
+export function isPolynomial(fn: RationalFunction): boolean {
+  return degree(fn.den) === 0;
+}
+
+/** The polynomial itself when the function is one (denominator a constant). */
+function polynomialOf(fn: RationalFunction): Poly | null {
+  if (!isPolynomial(fn)) return null;
+  return scale(fn.num, 1 / trim(fn.den)[0]);
+}
+
+/** A polynomial as lesson LaTeX, highest degree first: "3x^{2} - 6x", "-3x^{2} + 3". */
+export function formatPolynomial(p: Poly): string {
+  const terms = trim(p)
+    .map((c, k) => ({ c: snap(c), k }))
+    .filter(({ c }) => c !== 0)
+    .reverse();
+  if (!terms.length) return '0';
+  return terms
+    .map(({ c, k }, index) => {
+      const abs = Math.abs(c);
+      const coefficient =
+        k > 0 && abs === 1 ? '' : formatNumber(abs).replace('≈ ', '').replace(',', '.');
+      const variable = k === 0 ? '' : k === 1 ? 'x' : `x^{${k}}`;
+      const body = `${coefficient}${variable}`;
+      if (index === 0) return c < 0 ? `-${body}` : body;
+      return c < 0 ? ` - ${body}` : ` + ${body}`;
+    })
+    .join('');
+}
+
+export interface DerivativeChoice {
+  latex: string;
+  correct: boolean;
+  /** Why a wrong option is wrong, written for the student. */
+  mistake: string | null;
+}
+
+/**
+ * f′ for a polynomial, with wrong options built from the slips students make
+ * most: forgetting to multiply by the exponent, keeping the constant term, or
+ * keeping the exponent. Options equal to the right one are dropped. Null for
+ * rational functions, where the quotient rule needs its own exercise.
+ */
+export function derivativeChoices(fn: RationalFunction): DerivativeChoice[] | null {
+  const p = polynomialOf(fn);
+  if (!p) return null;
+  const right = derive(p);
+  const slips: Array<[Poly, string]> = [
+    [trim(p.slice(1)), 'Em hạ bậc nhưng quên nhân với số mũ: đạo hàm của axⁿ là n·a·xⁿ⁻¹.'],
+    [add(right, [p[0] ?? 0]), 'Đạo hàm của hằng số bằng 0, nên số hạng tự do phải mất đi.'],
+    [
+      trim(p.map((c, k) => c * k)),
+      'Em nhân với số mũ nhưng chưa hạ bậc: đạo hàm của xⁿ là n·xⁿ⁻¹.',
+    ],
+  ];
+  const same = (a: Poly, b: Poly) => {
+    const x = trim(a);
+    const y = trim(b);
+    return x.length === y.length && x.every((c, i) => Math.abs(c - y[i]) < 1e-9);
+  };
+  const options: DerivativeChoice[] = [
+    { latex: formatPolynomial(right), correct: true, mistake: null },
+  ];
+  for (const [poly, mistake] of slips) {
+    if (same(poly, right)) continue;
+    const latex = formatPolynomial(poly);
+    if (options.some((option) => option.latex === latex)) continue;
+    options.push({ latex, correct: false, mistake });
+  }
+  return options;
+}
+
+/** A simple value to test the sign of f′ on an interval: an integer inside it when there is one. */
+export function testValue(from: number, to: number): number {
+  if (from === -Infinity && to === Infinity) return 0;
+  if (from === -Infinity) return Math.ceil(to) - 1;
+  if (to === Infinity) return Math.floor(from) + 1;
+  const lo = Math.floor(from) + 1;
+  if (lo < to) {
+    // The integer closest to the middle, to keep the arithmetic easy.
+    const middle = Math.round((from + to) / 2);
+    return middle > from && middle < to ? middle : lo;
+  }
+  return snap((from + to) / 2);
+}
+
+/** Critical points where f′ keeps its sign, as for y = x³ at 0: the function does not turn there. */
+export function nonTurningPoints(analysis: FunctionAnalysis): number[] {
+  return analysis.criticalPoints.filter((x) => {
+    const before = analysis.intervals.find((interval) => interval.to === x);
+    const after = analysis.intervals.find((interval) => interval.from === x);
+    return !!before && !!after && before.sign === after.sign;
+  });
+}
+
+/** The domain as a lesson writes it: "\mathbb{R}" or "\mathbb{R} \setminus \{-2\}". */
+export function domainLatex(analysis: FunctionAnalysis): string {
+  if (!analysis.breaks.length) return '\\mathbb{R}';
+  return `\\mathbb{R} \\setminus \\{${analysis.breaks.map((b) => formatNumber(b).replace('−', '-')).join('; ')}\\}`;
+}

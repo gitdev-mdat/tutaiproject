@@ -26,11 +26,11 @@ import { InlineText } from './rich-text';
  */
 
 const STRIP_H = 64;
-const PAD = 18;
+export const PAD = 18;
 
-type View = { xMin: number; xMax: number; yMin: number; yMax: number };
+export type View = { xMin: number; xMax: number; yMin: number; yMax: number };
 
-function computeView(a: FunctionAnalysis): View {
+export function computeView(a: FunctionAnalysis): View {
   const marks = [...a.criticalPoints, ...a.breaks];
   let xMin = -3;
   let xMax = 3;
@@ -68,14 +68,14 @@ function computeView(a: FunctionAnalysis): View {
   return { xMin, xMax, yMin, yMax };
 }
 
-function useAnalysis(source: string) {
+export function useAnalysis(source: string) {
   return React.useMemo(() => {
     const result = analyzeFunction(source);
     return result.ok ? { analysis: result.analysis, view: computeView(result.analysis) } : null;
   }, [source]);
 }
 
-const decimal = (value: number) =>
+export const decimal = (value: number) =>
   Math.abs(value) >= 100
     ? formatNumber(Math.round(value))
     : value.toFixed(2).replace('.', ',').replace('-', '−');
@@ -85,7 +85,7 @@ function pieceOf(a: FunctionAnalysis, x: number): MonotonePiece | undefined {
 }
 
 /** Width of a container in CSS pixels, so SVGs can be drawn 1:1 instead of scaled down. */
-function useMeasuredWidth(initial = 560) {
+export function useMeasuredWidth(initial = 560) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(initial);
   React.useEffect(() => {
@@ -101,7 +101,19 @@ function useMeasuredWidth(initial = 560) {
   return [ref, width] as const;
 }
 
-function Plot({
+export interface PlotScale {
+  sx: (x: number) => number;
+  sy: (y: number) => number;
+  /** Screen x back to a value of x, for pointer input. */
+  invX: (px: number) => number;
+  bottom: number;
+  width: number;
+  plotHeight: number;
+}
+
+export type PieceTone = 'up' | 'down' | null;
+
+export function Plot({
   analysis: a,
   view,
   colored,
@@ -109,59 +121,93 @@ function Plot({
   children,
   strip,
   label,
+  height,
+  marks,
+  paint,
+  bands,
+  drawIn = false,
+  below,
 }: {
   analysis: FunctionAnalysis;
   view: View;
   colored: boolean;
   highlight?: number | null;
-  children?: (scale: {
-    sx: (x: number) => number;
-    sy: (y: number) => number;
-    bottom: number;
-  }) => React.ReactNode;
+  children?: (scale: PlotScale) => React.ReactNode;
   strip?: boolean;
   label: string;
+  /** Plot height in pixels; by default it follows the width. */
+  height?: number;
+  /** The critical points and breaks to mark; all of them by default. */
+  marks?: number[];
+  /** Colour of each monotone piece (green up, red down, null neutral); overrides `colored`. */
+  paint?: PieceTone[];
+  /** Shaded vertical bands over the plot, e.g. where f′ > 0. */
+  bands?: Array<{ from: number; to: number; tone: 'up' | 'down' | 'focus' }>;
+  /** Draw the curve in from left to right once. */
+  drawIn?: boolean;
+  /** Extra drawing under the plot, aligned with its x axis. */
+  below?: { height: number; render: (scale: PlotScale) => React.ReactNode };
 }) {
   const clipId = React.useId().replace(/:/g, '');
   // Drawn at the container's real width so labels keep a readable size on phones.
   const [boxRef, W] = useMeasuredWidth();
-  const PLOT_H = Math.round(Math.min(330, Math.max(210, W * 0.6)));
+  const PLOT_H = height ?? Math.round(Math.min(330, Math.max(210, W * 0.6)));
   const sx = (x: number) => PAD + ((x - view.xMin) / (view.xMax - view.xMin)) * (W - 2 * PAD);
   const sy = (y: number) => PAD + ((view.yMax - y) / (view.yMax - view.yMin)) * (PLOT_H - 2 * PAD);
+  const invX = (px: number) => view.xMin + ((px - PAD) / (W - 2 * PAD)) * (view.xMax - view.xMin);
   const span = view.yMax - view.yMin;
-  const clampY = (y: number) => Math.max(view.yMin - 2 * span, Math.min(view.yMax + 2 * span, y));
 
-  const pathFor = (from: number, to: number) => {
-    const lo = Math.max(from, view.xMin);
-    const hi = Math.min(to, view.xMax);
-    if (!(hi > lo)) return '';
-    const n = 240;
-    let d = '';
-    let pen = false;
-    for (let i = 0; i <= n; i += 1) {
-      const x = lo + ((hi - lo) * i) / n;
-      const nearBreak = a.breaks.some((b) => Math.abs(x - b) < 1e-6 * (view.xMax - view.xMin));
-      const y = nearBreak ? NaN : evaluate(a.fn, x);
-      if (!Number.isFinite(y)) {
-        pen = false;
-        continue;
+  // The curve only changes with its size, not with what is drawn over it.
+  const paths = React.useMemo(() => {
+    const scaleX = (x: number) => PAD + ((x - view.xMin) / (view.xMax - view.xMin)) * (W - 2 * PAD);
+    const scaleY = (y: number) =>
+      PAD + ((view.yMax - y) / (view.yMax - view.yMin)) * (PLOT_H - 2 * PAD);
+    const limit = (y: number) => Math.max(view.yMin - 2 * span, Math.min(view.yMax + 2 * span, y));
+    return a.pieces.map((piece) => {
+      const lo = Math.max(piece.from, view.xMin);
+      const hi = Math.min(piece.to, view.xMax);
+      if (!(hi > lo)) return '';
+      const n = 240;
+      let d = '';
+      let pen = false;
+      for (let i = 0; i <= n; i += 1) {
+        const x = lo + ((hi - lo) * i) / n;
+        const nearBreak = a.breaks.some((b) => Math.abs(x - b) < 1e-6 * (view.xMax - view.xMin));
+        const y = nearBreak ? NaN : evaluate(a.fn, x);
+        if (!Number.isFinite(y)) {
+          pen = false;
+          continue;
+        }
+        d += `${pen ? 'L' : 'M'}${scaleX(x).toFixed(2)} ${scaleY(limit(y)).toFixed(2)} `;
+        pen = true;
       }
-      d += `${pen ? 'L' : 'M'}${sx(x).toFixed(2)} ${sy(clampY(y)).toFixed(2)} `;
-      pen = true;
-    }
-    return d;
-  };
+      return d;
+    });
+  }, [a, view, W, PLOT_H, span]);
 
   const xAxisY = view.yMin < 0 && view.yMax > 0 ? sy(0) : null;
   const yAxisX = view.xMin < 0 && view.xMax > 0 ? sx(0) : null;
-  const height = PLOT_H + (strip ? STRIP_H : 0);
+  const belowH = below?.height ?? 0;
+  const svgHeight = PLOT_H + (strip ? STRIP_H : 0) + belowH;
+  const shown = marks ?? [...a.criticalPoints, ...a.breaks];
+  const shownCritical = a.criticalPoints.filter((x) => shown.includes(x));
+  const tone = (index: number): string => {
+    const piece = a.pieces[index];
+    const value: PieceTone = paint ? (paint[index] ?? null) : colored ? piece.direction : null;
+    return value === 'up'
+      ? 'stroke-emerald-500'
+      : value === 'down'
+        ? 'stroke-rose-500'
+        : 'stroke-[#1E3A8A]';
+  };
+  const scale: PlotScale = { sx, sy, invX, bottom: PLOT_H - PAD, width: W, plotHeight: PLOT_H };
 
   return (
     <div ref={boxRef} className="w-full">
       <svg
-        viewBox={`0 0 ${W} ${height}`}
+        viewBox={`0 0 ${W} ${svgHeight}`}
         width={W}
-        height={height}
+        height={svgHeight}
         className="block h-auto w-full touch-pan-y select-none font-sans"
         role="img"
         aria-label={label}
@@ -194,6 +240,27 @@ function Plot({
             />
           );
         })}
+        {bands?.map((band, index) => {
+          const x0 = sx(Math.max(band.from, view.xMin));
+          const x1 = sx(Math.min(band.to, view.xMax));
+          if (!(x1 > x0)) return null;
+          return (
+            <rect
+              key={`band-${index}`}
+              x={x0}
+              y={PAD}
+              width={x1 - x0}
+              height={PLOT_H - 2 * PAD}
+              className={`tt-fade-in ${
+                band.tone === 'up'
+                  ? 'fill-emerald-100/80'
+                  : band.tone === 'down'
+                    ? 'fill-rose-100/80'
+                    : 'fill-amber-100/80'
+              }`}
+            />
+          );
+        })}
         <g clipPath={`url(#${clipId})`}>
           {xAxisY !== null && (
             <line
@@ -215,7 +282,7 @@ function Plot({
               strokeWidth="1.2"
             />
           )}
-          {[...a.criticalPoints, ...a.breaks].map((x) => (
+          {shown.map((x) => (
             <line
               key={x}
               x1={sx(x)}
@@ -226,28 +293,19 @@ function Plot({
               strokeDasharray="4 4"
             />
           ))}
-          {colored
-            ? a.pieces.map((piece, index) => (
-                <path
-                  key={index}
-                  d={pathFor(piece.from, piece.to)}
-                  fill="none"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  className={piece.direction === 'up' ? 'stroke-emerald-500' : 'stroke-rose-500'}
-                />
-              ))
-            : a.pieces.map((piece, index) => (
-                <path
-                  key={index}
-                  d={pathFor(piece.from, piece.to)}
-                  fill="none"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  className="stroke-[#1E3A8A]"
-                />
-              ))}
-          {children?.({ sx, sy, bottom: PLOT_H - PAD })}
+          {a.pieces.map((_, index) => (
+            <path
+              key={index}
+              d={paths[index]}
+              fill="none"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              pathLength={drawIn ? 1 : undefined}
+              style={drawIn ? { animationDelay: `${index * 0.32}s` } : undefined}
+              className={`transition-colors duration-500 ${tone(index)} ${drawIn ? 'tt-draw' : ''}`}
+            />
+          ))}
+          {children?.(scale)}
         </g>
         {xAxisY !== null && (
           <text
@@ -259,7 +317,7 @@ function Plot({
             x
           </text>
         )}
-        {a.criticalPoints.map((x) => {
+        {shownCritical.map((x) => {
           const y = evaluate(a.fn, x);
           if (y < view.yMin || y > view.yMax) return null;
           return (
@@ -273,7 +331,7 @@ function Plot({
             />
           );
         })}
-        {[...a.criticalPoints, ...a.breaks].map((x) => (
+        {shown.map((x) => (
           <text
             key={x}
             x={sx(x)}
@@ -285,6 +343,7 @@ function Plot({
           </text>
         ))}
         {strip && <SignStrip analysis={a} sx={sx} view={view} width={W} plotHeight={PLOT_H} />}
+        {below && <g transform={`translate(0 ${PLOT_H})`}>{below.render(scale)}</g>}
       </svg>
     </div>
   );
@@ -860,7 +919,14 @@ export function FunctionGraph({
 type Level = 'top' | 'mid' | 'bottom';
 
 /** Bảng biến thiên computed from the function: x, the sign of y′, and the arrows of y. */
-export function VariationTable({ source }: { source: string }) {
+export function VariationTable({
+  source,
+  animate = false,
+}: {
+  source: string;
+  /** Draw the arrows one after another, as when the student has just filled the signs. */
+  animate?: boolean;
+}) {
   const result = React.useMemo(() => analyzeFunction(source), [source]);
   const [boxRef, measured] = useMeasuredWidth();
   const arrowId = `vt-arrow-${React.useId().replace(/:/g, '')}`;
@@ -1036,8 +1102,10 @@ export function VariationTable({ source }: { source: string }) {
                 y1={y0}
                 x2={x1}
                 y2={y1}
-                className={interval.sign > 0 ? 'stroke-emerald-600' : 'stroke-rose-600'}
+                className={`${interval.sign > 0 ? 'stroke-emerald-600' : 'stroke-rose-600'} ${animate ? 'tt-draw' : ''}`}
                 strokeWidth="2"
+                pathLength={animate ? 1 : undefined}
+                style={animate ? { animationDelay: `${0.15 + index * 0.3}s` } : undefined}
                 markerEnd={`url(#${arrowId})`}
               />
             );

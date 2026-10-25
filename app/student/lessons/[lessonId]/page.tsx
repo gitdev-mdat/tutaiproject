@@ -7,6 +7,8 @@ import { getDemoStudentSession } from '@/lib/auth/demo-session';
 import { getAssistAvailability } from '@/lib/learning/lesson-assist-service';
 import { findLessonInCatalog } from '@/lib/knowledge-tree/learning-visibility';
 import { buildLessonJourney } from '@/lib/knowledge-tree/lesson-journey';
+import { buildInteractivePlan } from '@/lib/learning/interactive-lesson';
+import { interactiveLessonConfig } from '@/config/interactive-lessons';
 import {
   getLessonChecks,
   getLessonPracticeOverview,
@@ -22,7 +24,10 @@ export const dynamic = 'force-dynamic';
 
 // `?from=roadmap` in older links is accepted and no longer needed: every
 // lesson leads back to its program on the Roadmap.
-type Props = { params: Promise<{ lessonId: string }> };
+type Props = {
+  params: Promise<{ lessonId: string }>;
+  searchParams?: Promise<{ view?: string }>;
+};
 
 async function loadLesson(lessonId: string) {
   const catalog = await getLearningCatalog();
@@ -38,8 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: data ? `${data.article.title} | Tú Tài` : 'Bài học | Tú Tài' };
 }
 
-export default async function StudentLessonPage({ params }: Props) {
+export default async function StudentLessonPage({ params, searchParams }: Props) {
   const { lessonId: rawId } = await params;
+  const { view } = (await searchParams) ?? {};
   const lessonId = decodeURIComponent(rawId);
   const data = await loadLesson(lessonId);
 
@@ -91,6 +97,15 @@ export default async function StudentLessonPage({ params }: Props) {
       : {},
   ]);
   const journey = buildLessonJourney(article.blocks, { checks: checks.length });
+  // The interactive prototype is on only for the lessons listed in its config;
+  // `?view=classic` keeps the text journey, for side-by-side review.
+  const interactiveConfig = view === 'classic' ? null : interactiveLessonConfig(lesson.id);
+  const interactive = interactiveConfig
+    ? buildInteractivePlan(article.blocks, {
+        classic: journey,
+        defaultPractice: interactiveConfig.practice,
+      })
+    : null;
   const next = scope[scope.findIndex((item) => item.id === lesson.id) + 1];
   const chapterIndex = program ? program.chapters.findIndex((c) => c.id === lesson.chapterId) : -1;
   const position = scope.findIndex((item) => item.id === lesson.id) + 1;
@@ -109,6 +124,7 @@ export default async function StudentLessonPage({ params }: Props) {
           : undefined
       }
       journey={journey}
+      interactive={interactive}
       checks={checks}
       practice={practice}
       practiceHref={`/student/lessons/${encodeURIComponent(lesson.id)}/practice`}

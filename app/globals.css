@@ -1405,3 +1405,119 @@ body {
 .lesson-card__bullet {
   background: var(--lesson-card-accent);
 }
+
+/* ── Interactive lessons ──
+   Short, purposeful motion: a curve drawn left to right, layers fading in,
+   cards sliding up. Everything stops for reduced-motion users. */
+@keyframes tt-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.tt-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tt-draw 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes tt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tt-fade-in {
+  animation: tt-fade-in 0.25s ease-out both;
+}
+
+@keyframes tt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tt-rise {
+  animation: tt-rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes tt-ping {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+.tt-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tt-ping 1.1s ease-out 2;
+}
+
+@keyframes tt-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tt-pop {
+  animation: tt-pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes tt-burst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tt-dx), var(--tt-dy)) scale(1);
+  }
+}
+
+.tt-burst {
+  animation: tt-burst 0.9s ease-out 0.35s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-draw,
+  .tt-fade-in,
+  .tt-rise,
+  .tt-pop {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transform: none;
+  }
+  .tt-ping,
+  .tt-burst {
+    animation: none;
+    opacity: 0;
+  }
+}

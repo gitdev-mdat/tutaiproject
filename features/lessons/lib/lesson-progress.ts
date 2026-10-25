@@ -31,7 +31,15 @@ export interface LessonProgressState {
   viewed: Record<string, string>;
   lastLessonId: string | null;
   stages: Record<string, LessonStageProgress>;
+  /**
+   * Interactive lessons only: how each activity went, by lesson then activity
+   * id ("kham-pha/quy-tac"). Absent in older saves; never needed to resume.
+   */
+  outcomes?: Record<string, Record<string, ActivityOutcome>>;
 }
+
+/** How a student got an activity right: alone, after a hint, or by being shown. */
+export type ActivityOutcome = 'first-try' | 'with-help' | 'revealed';
 
 const EMPTY: LessonProgressState = { version: VERSION, viewed: {}, lastLessonId: null, stages: {} };
 
@@ -48,6 +56,9 @@ export function readLessonProgress(studentId: string): LessonProgressState {
       viewed: parsed.viewed,
       lastLessonId: parsed.lastLessonId ?? null,
       stages: typeof parsed.stages === 'object' && parsed.stages ? parsed.stages : {},
+      ...(typeof parsed.outcomes === 'object' && parsed.outcomes
+        ? { outcomes: parsed.outcomes }
+        : {}),
     };
   } catch {
     return EMPTY;
@@ -105,6 +116,29 @@ export function recordLessonStage(
         completedAt: previous?.completedAt ?? (done ? new Date().toISOString() : null),
       },
     },
+  });
+}
+
+const OUTCOME_RANK: Record<ActivityOutcome, number> = {
+  revealed: 0,
+  'with-help': 1,
+  'first-try': 2,
+};
+
+/** Records how an activity went, keeping the student's best result for it. */
+export function recordActivityOutcome(
+  studentId: string,
+  lessonId: string,
+  activityId: string,
+  outcome: ActivityOutcome
+) {
+  const current = readLessonProgress(studentId);
+  const lesson = current.outcomes?.[lessonId] ?? {};
+  const previous = lesson[activityId];
+  if (previous && OUTCOME_RANK[previous] >= OUTCOME_RANK[outcome]) return;
+  write(studentId, {
+    ...current,
+    outcomes: { ...current.outcomes, [lessonId]: { ...lesson, [activityId]: outcome } },
   });
 }
 

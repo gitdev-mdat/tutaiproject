@@ -108,6 +108,14 @@ export const ARTICLE_BODY_BLOCKS: Array<{
     required: false,
   },
   {
+    type: 'GRAPH_PRACTICE',
+    editorLabel: 'Hàm cho học sinh tự làm (bài tương tác)',
+    editorHint:
+      'Tuỳ chọn, mỗi dòng một hàm đa thức, khác hàm minh hoạ. Ví dụ: y = -x^3 + 3x cho phần "Đến lượt em" (học sinh tự xét dấu rồi mới thấy đồ thị), y = x^3 để minh hoạ f′ = 0 tại một điểm mà hàm vẫn đơn điệu. Chỉ dùng cho bài đã bật giao diện tương tác.',
+    readerHeading: 'Tự làm',
+    required: false,
+  },
+  {
     type: 'REFERENCES',
     editorLabel: 'Nguồn tham khảo',
     editorHint: 'Sách giáo khoa, trang, tài liệu.',
