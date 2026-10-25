@@ -200,6 +200,10 @@ function answerSummary(question: Question) {
   return question.correctAnswer;
 }
 
+function practiceUsageContexts(question: Question): Question['usageContexts'] {
+  return [...new Set([...question.usageContexts, 'OPEN_PRACTICE' as const])];
+}
+
 async function patchQuestion(id: string, body: Record<string, unknown>) {
   const response = await fetch(`/api/question-bank/${id}`, {
     method: 'PATCH',
@@ -245,7 +249,7 @@ function QuestionCard({
     else onChanged(message);
   }
 
-  const withPractice = [...new Set([...question.usageContexts, 'OPEN_PRACTICE'])];
+  const withPractice = practiceUsageContexts(question);
   const pinned = question.usageContexts.includes('LESSON_CHECK');
   const togglePinned = pinned
     ? question.usageContexts.filter((context) => context !== 'LESSON_CHECK')
@@ -726,7 +730,15 @@ export function LessonPracticeWorkspace({
     setBulkResult([]);
     const results: string[] = [];
     for (const item of items) {
-      const failure = await patchQuestion(item.question.id, { editorialStatus: status });
+      const failure = await patchQuestion(
+        item.question.id,
+        status === 'PUBLISHED'
+          ? {
+              editorialStatus: status,
+              usageContexts: practiceUsageContexts(item.question),
+            }
+          : { editorialStatus: status }
+      );
       results.push(
         failure
           ? `Câu ${item.question.textbookSource?.questionNumber ?? item.question.code}: ${failure}`
