@@ -14,13 +14,33 @@ import {
   Plus,
   Sparkles,
   Users,
+  X,
 } from 'lucide-react';
 import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import { LESSON_PUBLICATION_LABELS } from '@/lib/knowledge-tree/learning-visibility';
 import type { CoverageQuestion, LessonCoverage } from '@/lib/practice/practice-admin';
 import type { QuestionSuggestion } from '@/lib/practice/ai-question-suggest';
 import { PRACTICE_SESSION_SIZE } from '@/lib/practice/practice-rules';
-import { isAiAssisted, type Question } from '@/lib/question-bank/qb-types';
+import {
+  gradePracticeResponse,
+  parsePracticeResponse,
+  toPracticeFeedback,
+  toPracticeQuestion,
+} from '@/lib/practice/grading';
+import {
+  isComplete,
+  QuestionBody,
+  FeedbackPanel,
+  TYPE_HINT,
+  type Answer,
+} from '@/features/lessons/components/practice-session';
+import {
+  RIGHTS_STATUS_LABELS,
+  RIGHTS_STATUS_VALUES,
+  isAiAssisted,
+  type Question,
+  type RightsStatus,
+} from '@/lib/question-bank/qb-types';
 import {
   Chip,
   DIFFICULTY_LABEL,
@@ -31,6 +51,145 @@ import {
 import { QuestionEditor, draftFromQuestion, emptyDraft, type EditorDraft } from './question-editor';
 
 type EditorState = { question: Question | null; draft: EditorDraft; key: number } | null;
+
+function StudentPreview({
+  questions,
+  onClose,
+}: {
+  questions: CoverageQuestion[];
+  onClose: () => void;
+}) {
+  const [index, setIndex] = React.useState(0);
+  const [answer, setAnswer] = React.useState<Answer>();
+  const [feedback, setFeedback] = React.useState<ReturnType<typeof toPracticeFeedback>>();
+  const item = questions[index];
+  const practiceQuestion = toPracticeQuestion(item.question);
+
+  function checkAnswer() {
+    try {
+      const response = parsePracticeResponse(item.question, answer);
+      setFeedback(
+        toPracticeFeedback(item.question, response, gradePracticeResponse(item.question, response))
+      );
+    } catch {
+      setFeedback(undefined);
+    }
+  }
+
+  function move(next: number) {
+    setIndex(next);
+    setAnswer(undefined);
+    setFeedback(undefined);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-3 sm:p-6"
+      data-testid="student-preview"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Xem trước như học sinh"
+        className="mx-auto my-4 w-full max-w-3xl rounded-2xl bg-slate-50 shadow-2xl sm:my-8"
+      >
+        <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
+          <div>
+            <p className="text-xs font-semibold text-blue-700">Xem trước như học sinh</p>
+            <p className="text-xs text-slate-500">
+              Bản xem thử không tạo lượt làm hay lưu tiến độ.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng xem trước"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+          >
+            <X className="size-5" />
+          </button>
+        </header>
+        <div className="p-4 sm:p-6">
+          {questions.length > 1 && (
+            <label className="mb-4 block text-xs font-semibold text-slate-600">
+              Câu hỏi
+              <select
+                value={index}
+                onChange={(event) => move(Number(event.target.value))}
+                className="ml-2 h-9 max-w-[75%] rounded-lg border border-slate-300 bg-white px-2 text-sm"
+                data-testid="preview-question-select"
+              >
+                {questions.map((entry, i) => (
+                  <option key={entry.question.id} value={i}>
+                    {entry.question.textbookSource?.questionNumber
+                      ? `Câu ${entry.question.textbookSource.questionNumber}`
+                      : entry.question.code}{' '}
+                    · {entry.question.code}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div
+            className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7"
+            data-testid="preview-practice-question"
+          >
+            <p className="text-[13px] font-semibold text-blue-700">
+              {TYPE_HINT[practiceQuestion.type]}
+            </p>
+            <div className="mt-2 text-[17px] font-semibold leading-8 text-slate-900 sm:text-lg">
+              <QuestionPrompt
+                questionId={practiceQuestion.id}
+                stem={practiceQuestion.stem}
+                content={practiceQuestion.content}
+              />
+            </div>
+            <div className="mt-5">
+              <QuestionBody
+                question={practiceQuestion}
+                answer={answer}
+                feedback={feedback}
+                setAnswer={setAnswer}
+              />
+            </div>
+            {feedback && <FeedbackPanel feedback={feedback} />}
+          </div>
+          <div className="mt-4 flex flex-col-reverse justify-between gap-2 sm:flex-row">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={index === 0}
+                onClick={() => move(index - 1)}
+                className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold disabled:opacity-40"
+              >
+                Câu trước
+              </button>
+              <button
+                type="button"
+                disabled={index === questions.length - 1}
+                onClick={() => move(index + 1)}
+                className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold disabled:opacity-40"
+              >
+                Câu tiếp
+              </button>
+            </div>
+            {!feedback && (
+              <button
+                type="button"
+                disabled={!isComplete(practiceQuestion, answer)}
+                onClick={checkAnswer}
+                className="h-11 rounded-xl bg-blue-700 px-5 text-sm font-bold text-white disabled:bg-slate-300"
+                data-testid="preview-submit"
+              >
+                Kiểm tra câu trả lời
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function answerSummary(question: Question) {
   if (question.questionType === 'TRUE_FALSE') {
@@ -60,10 +219,14 @@ function QuestionCard({
   item,
   onEdit,
   onChanged,
+  selected,
+  onToggle,
 }: {
   item: CoverageQuestion;
   onEdit: (question: Question) => void;
   onChanged: (message: string) => void;
+  selected: boolean;
+  onToggle: (id: string) => void;
 }) {
   const { question, state, reason, stats } = item;
   const [busy, setBusy] = React.useState(false);
@@ -97,6 +260,16 @@ function QuestionCard({
       data-state={state}
     >
       <div className="flex flex-wrap items-center gap-1.5">
+        {state !== 'ARCHIVED' && (
+          <input
+            type="checkbox"
+            aria-label={`Chọn câu ${question.textbookSource?.questionNumber ?? question.code}`}
+            checked={selected}
+            onChange={() => onToggle(question.id)}
+            className="mr-1 size-4 accent-blue-700"
+            data-testid={`select-question-${question.id}`}
+          />
+        )}
         <Chip tone={QUESTION_STATE[state].tone}>{QUESTION_STATE[state].label}</Chip>
         <span className="text-[11px] text-slate-500">
           {QUESTION_TYPE_LABEL[question.questionType]} · {DIFFICULTY_LABEL[question.difficulty]} ·{' '}
@@ -517,11 +690,71 @@ export function LessonPracticeWorkspace({
   const [editor, setEditor] = React.useState<EditorState>(null);
   const [suggesting, setSuggesting] = React.useState(false);
   const [notice, setNotice] = React.useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const [bulkBusy, setBulkBusy] = React.useState(false);
+  const [bulkResult, setBulkResult] = React.useState<string[]>([]);
+  const [rightsStatus, setRightsStatus] = React.useState<RightsStatus>('REVIEW_REQUIRED');
+  const [rightsConfirmed, setRightsConfirmed] = React.useState(false);
   const readiness = READINESS[coverage.readiness];
   const editorRef = React.useRef<HTMLDivElement>(null);
+  const selected = questions.filter((item) => selectedIds.has(item.question.id));
+  const selectedDrafts = selected.filter((item) => item.state === 'DRAFT');
+  const selectedInReview = selected.filter((item) => item.state === 'IN_REVIEW');
+  const previewQuestions = selected.filter(
+    (item) =>
+      item.state !== 'ARCHIVED' &&
+      ['MULTIPLE_CHOICE_SINGLE', 'MULTIPLE_CHOICE_MULTIPLE', 'TRUE_FALSE', 'NUMERIC'].includes(
+        item.question.questionType
+      )
+  );
 
   const changed = (message: string) => {
     setNotice(message);
+    router.refresh();
+  };
+  const toggleSelected = (id: string) =>
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const runBulkStatus = async (items: CoverageQuestion[], status: 'IN_REVIEW' | 'PUBLISHED') => {
+    if (items.length === 0) return;
+    setBulkBusy(true);
+    setBulkResult([]);
+    const results: string[] = [];
+    for (const item of items) {
+      const failure = await patchQuestion(item.question.id, { editorialStatus: status });
+      results.push(
+        failure
+          ? `Câu ${item.question.textbookSource?.questionNumber ?? item.question.code}: ${failure}`
+          : `Câu ${item.question.textbookSource?.questionNumber ?? item.question.code}: ${status === 'IN_REVIEW' ? 'đã gửi duyệt' : 'đã xuất bản'}`
+      );
+    }
+    setBulkBusy(false);
+    setBulkResult(results);
+    setSelectedIds(new Set());
+    router.refresh();
+  };
+  const saveBulkRights = async () => {
+    if (!selected.length || (rightsStatus !== 'REVIEW_REQUIRED' && !rightsConfirmed)) return;
+    setBulkBusy(true);
+    const results: string[] = [];
+    for (const item of selected) {
+      const failure = await patchQuestion(item.question.id, {
+        source: { ...item.question.source, rightsStatus },
+      });
+      results.push(
+        failure
+          ? `Câu ${item.question.textbookSource?.questionNumber ?? item.question.code}: ${failure}`
+          : `Câu ${item.question.textbookSource?.questionNumber ?? item.question.code}: đã lưu quyền “${RIGHTS_STATUS_LABELS[rightsStatus]}”`
+      );
+    }
+    setBulkBusy(false);
+    setRightsConfirmed(false);
+    setBulkResult(results);
     router.refresh();
   };
   const openEditor = (question: Question | null, draft: EditorDraft) => {
@@ -632,6 +865,153 @@ export function LessonPracticeWorkspace({
         </Link>
       </div>
 
+      <section
+        className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4"
+        aria-label="Duyệt câu hỏi theo nhóm"
+        data-testid="bulk-review"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-bold text-slate-900">Duyệt theo nhóm</p>
+            <p className="text-xs text-slate-600">
+              {selected.length} câu đã chọn · Bản nháp: {selectedDrafts.length} · Đang duyệt:{' '}
+              {selectedInReview.length}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const selectable = questions.filter(
+                (item) => item.state === 'DRAFT' || item.state === 'IN_REVIEW'
+              );
+              setSelectedIds((current) =>
+                current.size === selectable.length
+                  ? new Set()
+                  : new Set(selectable.map((item) => item.question.id))
+              );
+            }}
+            className="min-h-10 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700"
+            data-testid="select-all-reviewable"
+          >
+            {selected.length > 0 &&
+            selected.length ===
+              questions.filter((item) => item.state === 'DRAFT' || item.state === 'IN_REVIEW')
+                .length
+              ? 'Bỏ chọn'
+              : 'Chọn tất cả câu cần duyệt'}
+          </button>
+        </div>
+        {selected.length > 0 && (
+          <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3">
+            <div className="flex flex-wrap gap-2">
+              {selectedDrafts.length > 0 && (
+                <button
+                  type="button"
+                  disabled={bulkBusy}
+                  onClick={() => void runBulkStatus(selectedDrafts, 'IN_REVIEW')}
+                  className="min-h-10 rounded-lg bg-violet-700 px-4 text-xs font-bold text-white disabled:opacity-50"
+                  data-testid="bulk-send-review"
+                >
+                  {bulkBusy ? 'Đang xử lý…' : `Gửi duyệt ${selectedDrafts.length} câu`}
+                </button>
+              )}
+              {selectedInReview.length > 0 && (
+                <button
+                  type="button"
+                  disabled={bulkBusy}
+                  onClick={() => void runBulkStatus(selectedInReview, 'PUBLISHED')}
+                  className="min-h-10 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white disabled:opacity-50"
+                  data-testid="bulk-publish"
+                >
+                  {bulkBusy ? 'Đang xử lý…' : `Xuất bản ${selectedInReview.length} câu`}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={bulkBusy || previewQuestions.length === 0}
+                onClick={() => setPreviewOpen(true)}
+                className="min-h-10 rounded-lg border border-blue-300 bg-blue-50 px-4 text-xs font-bold text-blue-800"
+                data-testid="open-student-preview"
+              >
+                {previewQuestions.length
+                  ? `Xem trước như học sinh (${previewQuestions.length})`
+                  : 'Không có câu xem trước được'}
+              </button>
+            </div>
+            {selected.some((item) => item.question.source.rightsStatus === 'REVIEW_REQUIRED') && (
+              <div
+                className="rounded-lg bg-amber-50 p-3 text-xs text-amber-950"
+                data-testid="rights-blocker"
+              >
+                <p className="font-bold">
+                  Chưa xác nhận quyền sử dụng — câu vẫn là bản nháp và không thể xuất bản.
+                </p>
+                <p className="mt-1">
+                  Chọn trạng thái đúng với giấy phép hoặc sự cho phép thực tế. Nếu chưa có quyền,
+                  giữ “Cần xem xét”; câu hỏi vẫn ở chế độ riêng tư.
+                </p>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <select
+                    aria-label="Trạng thái quyền sử dụng"
+                    value={rightsStatus}
+                    onChange={(event) => setRightsStatus(event.target.value as RightsStatus)}
+                    className="h-10 rounded-lg border border-amber-300 bg-white px-2 text-sm"
+                    data-testid="bulk-rights-status"
+                  >
+                    {RIGHTS_STATUS_VALUES.map((status) => (
+                      <option key={status} value={status}>
+                        {RIGHTS_STATUS_LABELS[status]}
+                      </option>
+                    ))}
+                  </select>
+                  {rightsStatus !== 'REVIEW_REQUIRED' && (
+                    <label className="flex min-h-10 items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={rightsConfirmed}
+                        onChange={(event) => setRightsConfirmed(event.target.checked)}
+                        className="size-4 accent-amber-700"
+                        data-testid="rights-attestation"
+                      />
+                      Tôi xác nhận trạng thái này phản ánh quyền sử dụng có thật.
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    disabled={bulkBusy || (rightsStatus !== 'REVIEW_REQUIRED' && !rightsConfirmed)}
+                    onClick={() => void saveBulkRights()}
+                    className="min-h-10 rounded-lg border border-amber-400 bg-white px-3 font-bold text-amber-900 disabled:opacity-50"
+                    data-testid="save-bulk-rights"
+                  >
+                    Lưu trạng thái quyền
+                  </button>
+                </div>
+                <p className="mt-1 text-[11px] text-amber-900">
+                  Không có giấy phép? Hãy giữ câu ở bản nháp hoặc tạo câu hỏi mới do mình biên soạn.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+        {bulkResult.length > 0 && (
+          <div className="mt-3 rounded-lg bg-slate-50 p-3" role="status" data-testid="bulk-results">
+            <p className="text-xs font-bold text-slate-800">
+              Kết quả ({bulkResult.filter((line) => line.includes('đã ')).length} thành công ·{' '}
+              {bulkResult.filter((line) => !line.includes('đã ')).length} bị chặn)
+            </p>
+            <ul className="mt-1 max-h-40 space-y-1 overflow-auto text-xs text-slate-700">
+              {bulkResult.map((line, i) => (
+                <li key={`${i}-${line}`}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {previewOpen && previewQuestions.length > 0 && (
+        <StudentPreview questions={previewQuestions} onClose={() => setPreviewOpen(false)} />
+      )}
+
       <div ref={editorRef} className="scroll-mt-4">
         {editor && (
           <QuestionEditor
@@ -675,6 +1055,8 @@ export function LessonPracticeWorkspace({
                   item={item}
                   onEdit={(question) => openEditor(question, draftFromQuestion(question))}
                   onChanged={changed}
+                  selected={selectedIds.has(item.question.id)}
+                  onToggle={toggleSelected}
                 />
               ))
             )}
