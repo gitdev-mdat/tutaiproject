@@ -1,4 +1,5 @@
 import type { Question, QuestionType } from '@/lib/question-bank/qb-types';
+import { Q22_DERIVATIVE_GRAPH } from '@/lib/textbook-reference/student-diagram';
 
 /**
  * Grading for lesson practice. Every rule is derived from the answer the
@@ -71,12 +72,15 @@ export function trueFalseStatements(
 
 /** Why a question cannot be used in practice, or null when it can. */
 export function practiceExclusionReason(question: Question): string | null {
+  const unsupportedQuestionImage = question.content?.some(
+    (block) => block.type === 'IMAGE' && block.media.assetId !== Q22_DERIVATIVE_GRAPH
+  );
   if (!(PRACTICE_QUESTION_TYPES as readonly string[]).includes(question.questionType)) {
     return 'Câu tự luận ngắn chưa chấm tự động được.';
   }
   if (
     question.hasMedia ||
-    question.content?.some((block) => block.type === 'IMAGE') ||
+    unsupportedQuestionImage ||
     question.options.some((option) => option.hasMedia)
   ) {
     return 'Câu có hình ảnh chưa hiển thị được trong luyện tập.';

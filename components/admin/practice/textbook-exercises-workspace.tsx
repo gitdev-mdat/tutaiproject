@@ -1446,7 +1446,8 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                   ) : (
                     <>
                       Đã nhập <strong>{counts.imported} câu</strong> vào Ngân hàng. Xuất bản ở Câu
-                      luyện tập của bài để học sinh nhận câu.
+                      luyện tập của bài để học sinh nhận câu; câu vẫn là bản nháp cho đến khi được
+                      duyệt và có quyền sử dụng phù hợp.
                     </>
                   )}
                 </p>
@@ -1475,24 +1476,27 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                         : `Chọn cả ${eligible.length} câu`}
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (ready.length === 0 && eligible.length > 0)
-                        setChecked(new Set(eligible.map(({ exercise }) => exercise.id)));
-                      setImporting(true);
-                    }}
-                    className={`${button} h-9 bg-primary text-primary-foreground`}
-                    data-testid="import-open"
-                  >
-                    Đưa {ready.length || eligible.length} câu vào Ngân hàng
-                  </button>
+                  {eligible.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (ready.length === 0)
+                          setChecked(new Set(eligible.map(({ exercise }) => exercise.id)));
+                        setImporting(true);
+                      }}
+                      className={`${button} h-9 bg-primary text-primary-foreground`}
+                      data-testid="import-open"
+                    >
+                      Đưa {ready.length || eligible.length} câu vào Ngân hàng
+                    </button>
+                  )}
                   {counts.imported > 0 && (
                     <Link
                       href={`/admin/practice/${lessonId}`}
-                      className={`${button} h-9 border border-slate-200 text-slate-700`}
+                      className={`${button} h-10 bg-primary text-primary-foreground`}
+                      data-testid="review-imported-questions"
                     >
-                      Xem, duyệt và xuất bản
+                      Duyệt {counts.imported} câu đã nhập
                     </Link>
                   )}
                 </div>
