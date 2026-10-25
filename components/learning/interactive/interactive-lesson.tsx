@@ -14,13 +14,14 @@ import {
 import { LESSON_SUMMARY_HASH } from '@/features/lessons/lib/study-plan';
 import { InlineText } from '../rich-text';
 import { RuntimeContext } from './beats';
-import { playChime, readSoundSetting, writeSoundSetting } from './sound';
+import { preloadRewards, readSoundSetting, writeSoundSetting } from './sound';
 import { FlatStage } from './stage-flat';
 import { FinishStage } from './stage-finish';
 import { useGraphHeight } from './stage-layout';
 import { ShapeStage } from './stage-shape';
 import { SlopeStage } from './stage-slope';
 import { ChallengeStage, SolveStage } from './stage-solve';
+import { useLessonCompletion } from './streak';
 
 /**
  * The interactive version of a function lesson (see lib/learning/interactive-lesson.ts):
@@ -72,6 +73,8 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
   // Parts the student chose to do again: shown fresh instead of answered.
   const [redo, setRedo] = React.useState<Record<string, number>>({});
   const [celebrate, setCelebrate] = React.useState(false);
+  // Each play of the completion celebration (the first finish, or a replay).
+  const [celebration, setCelebration] = React.useState({ run: 0, at: 0 });
   const [sound, setSound] = React.useState(
     () => typeof window !== 'undefined' && readSoundSetting()
   );
@@ -123,7 +126,7 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
       if (studentKey) recordLessonStage(studentKey, lessonId, next, stageIds);
       if (next === last && !learned) {
         setCelebrate(true);
-        if (sound) playChime('complete');
+        setCelebration({ run: 1, at: Date.now() });
       }
     }
     show(next, Math.max(next, reachable));
@@ -135,6 +138,14 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
     const index = stageIds.indexOf(id);
     if (index >= 0) show(index);
   };
+
+  // The server counts the lesson towards the streak once it is complete (on
+  // the first finish, or on a later visit if that request never landed).
+  const streak = useLessonCompletion(lessonId, !!studentKey && learned);
+  const nearEnd = current >= last - 1;
+  React.useEffect(() => {
+    if (sound && nearEnd) preloadRewards();
+  }, [sound, nearEnd]);
 
   const toggleSound = () => {
     setSound((value) => {
@@ -184,6 +195,9 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
           outcomes={outcomes}
           practiceCard={props.practiceCard}
           celebrate={celebrate}
+          celebration={celebration}
+          onReplay={() => setCelebration((value) => ({ run: value.run + 1, at: Date.now() }))}
+          streak={streak}
           onRestart={() => show(0)}
           onRetryChallenge={stageIds.includes('thu-suc') ? () => again('thu-suc') : null}
           sound={sound}

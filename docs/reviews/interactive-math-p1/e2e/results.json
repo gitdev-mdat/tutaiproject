@@ -23,9 +23,9 @@
   "challengeHiddenBefore": 1,
   "challengeHiddenAfter": 0,
   "stats": "17/17 câu đúng ngay lần đầu",
-  "ms": 30803,
+  "ms": 32160,
   "storage": {
-   "tutai:lesson-progress:0d23b71f-959c-4c13-85c2-c8f31aabb35b": "{\"version\":1,\"viewed\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":\"2026-10-25T05:47:10.148Z\"},\"lastLessonId\":\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\",\"stages\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"reached\":5,\"total\":6,\"stageId\":\"tong-ket\",\"completedAt\":\"2026-10-25T05:47:37.964Z\"}},\"outcomes\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"bat-dau/doi-chieu\":\"first-try\",\"bat-dau/len-xuong\":\"first-try\",\"kham-pha/tiep-tuyen\":\"first-try\",\"kham-pha/keo-tiep-tuyen\":\"first-try\",\"kham-pha/dao-ham-duong\":\"first-try\",\"kham-pha/dao-ham-am\":\"first-try\",\"mo-rong/du-doan\":\"first-try\",\"mo-rong/keo-qua-diem\":\"first-try\",\"mo-rong/ket-luan\":\"first-try\",\"vi-du/tap-xac-dinh\":\"first-try\",\"vi-du/dao-ham\":\"first-try\",\"vi-du/nghiem\":\"first-try\",\"vi-du/xet-dau\":\"first-try\",\"vi-du/ket-luan\":\"first-try\",\"thu-suc/tap-xac-dinh\":\"first-try\",\"thu-suc/dao-ham\":\"first-try\",\"thu-suc/nghiem\":\"first-try\",\"thu-suc/xet-dau\":\"first-try\",\"thu-suc/ket-luan\":\"first-try\"}}}"
+   "tutai:lesson-progress:48019fe3-1070-42e2-aebf-1cc27329c4dc": "{\"version\":1,\"viewed\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":\"2026-10-25T07:24:18.559Z\"},\"lastLessonId\":\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\",\"stages\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"reached\":5,\"total\":6,\"stageId\":\"tong-ket\",\"completedAt\":\"2026-10-25T07:24:47.374Z\"}},\"outcomes\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"bat-dau/doi-chieu\":\"first-try\",\"bat-dau/len-xuong\":\"first-try\",\"kham-pha/tiep-tuyen\":\"first-try\",\"kham-pha/keo-tiep-tuyen\":\"first-try\",\"kham-pha/dao-ham-duong\":\"first-try\",\"kham-pha/dao-ham-am\":\"first-try\",\"mo-rong/du-doan\":\"first-try\",\"mo-rong/keo-qua-diem\":\"first-try\",\"mo-rong/ket-luan\":\"first-try\",\"vi-du/tap-xac-dinh\":\"first-try\",\"vi-du/dao-ham\":\"first-try\",\"vi-du/nghiem\":\"first-try\",\"vi-du/xet-dau\":\"first-try\",\"vi-du/ket-luan\":\"first-try\",\"thu-suc/tap-xac-dinh\":\"first-try\",\"thu-suc/dao-ham\":\"first-try\",\"thu-suc/nghiem\":\"first-try\",\"thu-suc/xet-dau\":\"first-try\",\"thu-suc/ket-luan\":\"first-try\"}}}"
   },
   "revisit": {
    "stage": "tong-ket",
@@ -59,9 +59,9 @@
   "challengeHiddenBefore": 1,
   "challengeHiddenAfter": 0,
   "stats": "17/17 câu đúng ngay lần đầu",
-  "ms": 32846,
+  "ms": 33727,
   "storage": {
-   "tutai:lesson-progress:ad97ad3f-ac4c-45c8-b61b-e9c054b10526": "{\"version\":1,\"viewed\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":\"2026-10-25T05:47:43.928Z\"},\"lastLessonId\":\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\",\"stages\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"reached\":5,\"total\":6,\"stageId\":\"tong-ket\",\"completedAt\":\"2026-10-25T05:48:13.684Z\"}},\"outcomes\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"bat-dau/doi-chieu\":\"first-try\",\"bat-dau/len-xuong\":\"first-try\",\"kham-pha/tiep-tuyen\":\"first-try\",\"kham-pha/keo-tiep-tuyen\":\"first-try\",\"kham-pha/dao-ham-duong\":\"first-try\",\"kham-pha/dao-ham-am\":\"first-try\",\"mo-rong/du-doan\":\"first-try\",\"mo-rong/keo-qua-diem\":\"first-try\",\"mo-rong/ket-luan\":\"first-try\",\"vi-du/tap-xac-dinh\":\"first-try\",\"vi-du/dao-ham\":\"first-try\",\"vi-du/nghiem\":\"first-try\",\"vi-du/xet-dau\":\"first-try\",\"vi-du/ket-luan\":\"first-try\",\"thu-suc/tap-xac-dinh\":\"first-try\",\"thu-suc/dao-ham\":\"first-try\",\"thu-suc/nghiem\":\"first-try\",\"thu-suc/xet-dau\":\"first-try\",\"thu-suc/ket-luan\":\"first-try\"}}}"
+   "tutai:lesson-progress:95d744c7-7679-48d4-8d8f-0db4ceaf570c": "{\"version\":1,\"viewed\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":\"2026-10-25T07:24:53.438Z\"},\"lastLessonId\":\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\",\"stages\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"reached\":5,\"total\":6,\"stageId\":\"tong-ket\",\"completedAt\":\"2026-10-25T07:25:23.771Z\"}},\"outcomes\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"bat-dau/doi-chieu\":\"first-try\",\"bat-dau/len-xuong\":\"first-try\",\"kham-pha/tiep-tuyen\":\"first-try\",\"kham-pha/keo-tiep-tuyen\":\"first-try\",\"kham-pha/dao-ham-duong\":\"first-try\",\"kham-pha/dao-ham-am\":\"first-try\",\"mo-rong/du-doan\":\"first-try\",\"mo-rong/keo-qua-diem\":\"first-try\",\"mo-rong/ket-luan\":\"first-try\",\"vi-du/tap-xac-dinh\":\"first-try\",\"vi-du/dao-ham\":\"first-try\",\"vi-du/nghiem\":\"first-try\",\"vi-du/xet-dau\":\"first-try\",\"vi-du/ket-luan\":\"first-try\",\"thu-suc/tap-xac-dinh\":\"first-try\",\"thu-suc/dao-ham\":\"first-try\",\"thu-suc/nghiem\":\"first-try\",\"thu-suc/xet-dau\":\"first-try\",\"thu-suc/ket-luan\":\"first-try\"}}}"
   },
   "revisit": {
    "stage": "tong-ket",
@@ -95,9 +95,9 @@
   "challengeHiddenBefore": 1,
   "challengeHiddenAfter": 0,
   "stats": "17/17 câu đúng ngay lần đầu",
-  "ms": 30434,
+  "ms": 30866,
   "storage": {
-   "tutai:lesson-progress:26d12279-0284-49c8-9b81-b728e7d5d694": "{\"version\":1,\"viewed\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":\"2026-10-25T05:48:18.867Z\"},\"lastLessonId\":\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\",\"stages\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"reached\":5,\"total\":6,\"stageId\":\"tong-ket\",\"completedAt\":\"2026-10-25T05:48:45.813Z\"}},\"outcomes\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"bat-dau/doi-chieu\":\"first-try\",\"bat-dau/len-xuong\":\"first-try\",\"kham-pha/tiep-tuyen\":\"first-try\",\"kham-pha/keo-tiep-tuyen\":\"first-try\",\"kham-pha/dao-ham-duong\":\"first-try\",\"kham-pha/dao-ham-am\":\"first-try\",\"mo-rong/du-doan\":\"first-try\",\"mo-rong/keo-qua-diem\":\"first-try\",\"mo-rong/ket-luan\":\"first-try\",\"vi-du/tap-xac-dinh\":\"first-try\",\"vi-du/dao-ham\":\"first-try\",\"vi-du/nghiem\":\"first-try\",\"vi-du/xet-dau\":\"first-try\",\"vi-du/ket-luan\":\"first-try\",\"thu-suc/tap-xac-dinh\":\"first-try\",\"thu-suc/dao-ham\":\"first-try\",\"thu-suc/nghiem\":\"first-try\",\"thu-suc/xet-dau\":\"first-try\",\"thu-suc/ket-luan\":\"first-try\"}}}"
+   "tutai:lesson-progress:73e5fd2d-398d-4fd6-a640-02bb33417149": "{\"version\":1,\"viewed\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":\"2026-10-25T07:28:46.469Z\"},\"lastLessonId\":\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\",\"stages\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"reached\":5,\"total\":6,\"stageId\":\"tong-ket\",\"completedAt\":\"2026-10-25T07:29:13.578Z\"}},\"outcomes\":{\"knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9\":{\"bat-dau/doi-chieu\":\"first-try\",\"bat-dau/len-xuong\":\"first-try\",\"kham-pha/tiep-tuyen\":\"first-try\",\"kham-pha/keo-tiep-tuyen\":\"first-try\",\"kham-pha/dao-ham-duong\":\"first-try\",\"kham-pha/dao-ham-am\":\"first-try\",\"mo-rong/du-doan\":\"first-try\",\"mo-rong/keo-qua-diem\":\"first-try\",\"mo-rong/ket-luan\":\"first-try\",\"vi-du/tap-xac-dinh\":\"first-try\",\"vi-du/dao-ham\":\"first-try\",\"vi-du/nghiem\":\"first-try\",\"vi-du/xet-dau\":\"first-try\",\"vi-du/ket-luan\":\"first-try\",\"thu-suc/tap-xac-dinh\":\"first-try\",\"thu-suc/dao-ham\":\"first-try\",\"thu-suc/nghiem\":\"first-try\",\"thu-suc/xet-dau\":\"first-try\",\"thu-suc/ket-luan\":\"first-try\"}}}"
   },
   "revisit": {
    "stage": "tong-ket",
@@ -182,9 +182,9 @@
  "perf": {
   "cpu4xUpdateToPaintMs": {
    "median": 33.3,
-   "p95": 39.9,
-   "max": 71.2
+   "p95": 39,
+   "max": 99.7
   },
-  "jsKB": 223
+  "jsKB": 227
  }
 }

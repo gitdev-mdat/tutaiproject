@@ -229,3 +229,136 @@ Re-run the browser journeys against a running build:
 BASE=http://localhost:3000 node docs/reviews/interactive-math-p1/e2e/journeys.mjs
 # (if Playwright is installed elsewhere: PLAYWRIGHT_FROM=/path/to/dir/with/node_modules/)
 ```
+
+---
+
+## I. Round 2: completion celebration, daily learning streak, sound
+
+The completion screen worked but felt flat. This round keeps every element of it (100 % banner, results line, "Em đã tự tìm ra", "Điều cần nhớ", next step) and adds the celebration, a real daily streak and optional sound.
+
+### Audit findings
+
+| Question | What the code says |
+|---|---|
+| What triggers completion? | `advance()` in `components/learning/interactive/interactive-lesson.tsx`, when the student opens the last part for the first time. It calls `recordLessonStage`, which stamps `completedAt` in localStorage (`features/lessons/lib/lesson-progress.ts`). Nothing reached the server. |
+| Why was it underwhelming? | The only effect was 8 CSS dots (`BURST`, 2 px each) flying 40 px around the check icon, plus a 4-note synthesised beep. No full-screen moment, nothing tied to the banner, no reward beyond the lesson. |
+| Can completing twice award progress twice? | No progress was awarded at all. `completedAt` is kept from the first time (`previous?.completedAt ?? …`), so a repeat never changed it. |
+| Existing streak? | None real. `StudentProgress.streakDays` in `lib/student/student-service.ts` is a demo localStorage field that is always 0 and never incremented; the string `dashboardStreak` in `messages/vi/student.ts` is unused. `app/exam-sets/[slug]/results/page.tsx` shows a **hard-coded "12 ngày streak"** (not changed here, outside P1: worth removing or wiring to this streak later). |
+| Backend, cross-device? | No table or API for learning activity per day. Practice attempts (`tutai.practice_attempts`) exist but only for question practice, which P1 does not have. |
+| XP, achievements, rewards pattern? | None. The arena page has decorative achievement chips from mock data. |
+| Sound? | `components/learning/interactive/sound.ts`: off by default, saved in localStorage, Web Audio synthesis, no files. |
+| Database for the Preview | The `DATABASE_URL` used by this branch's Vercel Preview is the **Production** one (target production + preview + development). So the streak cannot be turned on in that Preview without writing to Production (see "Preview" below). |
+
+### What was built
+
+**Fireworks** (`components/learning/interactive/fireworks.tsx`, ~230 lines, no dependency). One canvas over the page that never takes a click (`pointer-events: none`), removed after 3.2 s. At 0.3 s, confetti (rectangles and dots in the Tú Tài palette) fires from both lower corners, slows in the air and flutters down; at 0.5, 0.8 and 1.15 s three firework bursts open high on the screen with a soft glow and twinkling tails. Fewer particles on phones. A library (canvas-confetti) was considered; the hand-written version is the same size, needs no package, and lets the bursts and colours be tuned to the banner. Nothing runs under `prefers-reduced-motion`.
+
+**Banner emphasis.** The check ring draws in and the check pops (as before), then at 0.7 s the banner lifts slightly, a light sweeps across it and the check glows twice. Static faint stars sit in the banner corner.
+
+**Streak.** A row inside the banner, connected to the completion moment: flame, number, one line of encouragement. With a new day confirmed, the number rolls from the old streak to the new one (2 → 3) as the flame flares and four embers rise; the row itself opens at 0.9 s so the banner never shows an empty gap. Copy:
+
+| Case | Shown |
+|---|---|
+| New day, streak ≥ 2 | **3** ngày học liên tiếp! · Đều đặn mỗi ngày, kiến thức sẽ thành phản xạ. (7+ and 30+ days have their own line) |
+| New day, streak 1 | **1** ngày học, chuỗi mới bắt đầu! · Mai quay lại học tiếp để giữ lửa nhé. |
+| Today already counted (another lesson, or a revisit) | **n** ngày học liên tiếp · Hôm nay em đã giữ vững chuỗi học tập! (no animation) |
+| Repeat on a day not yet counted | **n** ngày học liên tiếp đang chờ em · Ôn lại bài cũ không tính thêm ngày. Học một bài mới hôm nay để giữ lửa. (dimmed flame) |
+| Server failed / unreachable | "Chưa lưu được chuỗi ngày học lúc này. Bài học của em vẫn được ghi nhận." (no number) |
+| Streak off on this server, or signed out | nothing |
+
+**Streak rules** (`lib/learning/learning-streak.ts`, `lib/learning/learning-streak-service.ts`, `db/migrations/0008_learning_streak.sql`):
+
+- A learning day is a calendar day in **Asia/Ho_Chi_Minh** (the time zone the app already uses for dates) on which the student completed a lesson **for the first time**.
+- Several lessons on one day count once. Repeating or reopening a completed lesson never counts.
+- The streak is the run of consecutive learning days ending today (or yesterday, until today is over). A missed day starts it again at 1.
+- Two new tables, both keyed for idempotency: `tutai.lesson_completions (student_id, lesson_id)` and `tutai.learning_days (student_id, day)`. One transaction inserts with `on conflict do nothing`; only an insert that actually happened can award a day. Repeated requests, refreshes, two tabs and concurrent requests therefore award at most one day.
+- `POST /api/student/lessons/[lessonId]/complete` (signed-in student, same-origin, lesson must be published) returns what the database now holds: `awarded {previous, current}`, `kept`, `repeat`, `disabled` or `error`. The browser never counts up by itself; "Xem lại hiệu ứng" replays the visuals only and sends no request.
+- The client sends it when the lesson is complete (first finish, or the next visit if the first request never landed), at most once per page load.
+- **Off unless `TUTAI_LEARNING_STREAK=on`.** Without it the API answers `disabled` and no streak is shown.
+
+**Sound** (`components/learning/interactive/sound.ts`, `public/sounds/`). Off by default; the toggle moved into the banner ("Âm thanh: tắt/bật"), the choice is remembered (localStorage, as before). Turning it on plays a short preview (a click, so browsers allow it). With sound on, a bell arpeggio plays with the fireworks and, only for a confirmed new day, a brighter accent as the number rolls. Each sound restarts rather than overlapping itself; a blocked `play()` is ignored silently. Sounds do not depend on the streak request.
+
+**Sound asset and licence.** Mixkit and Pixabay could not be reached from the build machine (the network policy refused `mixkit.co`, `assets.mixkit.co` and `pixabay.com`), so no file could be downloaded or its licence checked file by file. Instead the two sounds were **made for this project** with `scripts/sounds/make-lesson-sounds.py` (additive bell synthesis, numpy → WAV → MP3 96 kbps): `lesson-complete.mp3` (1.6 s, 22 KB) and `streak-up.mp3` (1.0 s, 14 KB). They are original, so there is no third-party licence or attribution. Swapping in another file is a file replacement. Candidates seen on Mixkit's "Win" page, if the owner prefers one: "Achievement bell" (0:02), "Winning chimes" (0:02); Mixkit's site states its free sound effects can be used in commercial projects without attribution (https://mixkit.co/license/), which should be confirmed on the specific file before use.
+
+### Videos (real Chromium recordings, no sound track)
+
+- Desktop 1440 × 900: [videos/celebration-desktop.mp4](videos/celebration-desktop.mp4) ([webm](videos/celebration-desktop.webm)), 11.5 s
+- Mobile 390 × 844: [videos/celebration-mobile.mp4](videos/celebration-mobile.mp4) ([webm](videos/celebration-mobile.webm)), 11.4 s
+
+Each shows: the solved challenge, the click on "Hoàn thành", the fireworks, the streak rolling 2 → 3 on a third consecutive day, the settled screen, then "Xem lại hiệu ứng". Playwright records video without audio; the sound can be tried in the Preview (sound works there; only the streak is off).
+
+### Screenshots (`e2e/celebration.mjs`, results in `e2e/celebration-results.json`)
+
+| | Desktop 1440 × 900 | Mobile 390 × 844 |
+|---|---|---|
+| Before the celebration (challenge solved) | ![](screenshots/celebration/desktop-0-before.png) | ![](screenshots/celebration/mobile-0-before.png) |
+| Banner entering (60 ms) | ![](screenshots/celebration/desktop-a-banner.png) | ![](screenshots/celebration/mobile-a-banner.png) |
+| Fireworks at their peak (0.75 s) | ![](screenshots/celebration/desktop-b-fireworks-peak.png) | ![](screenshots/celebration/mobile-b-fireworks-peak.png) |
+| Streak rolling 2 → 3 (1.25 s) | ![](screenshots/celebration/desktop-c-streak-rolling.png) | ![](screenshots/celebration/mobile-c-streak-rolling.png) |
+| Settled (4 s) | ![](screenshots/celebration/desktop-d-final.png) | ![](screenshots/celebration/mobile-d-final.png) |
+
+| Tablet 768 × 1024 | |
+|---|---|
+| Fireworks | ![](screenshots/celebration/tablet-b-fireworks-peak.png) |
+| Settled | ![](screenshots/celebration/tablet-d-final.png) |
+| After a refresh mid-completion | ![](screenshots/celebration/tablet-after-refresh.png) |
+
+| State | Screenshot |
+|---|---|
+| First streak day ever (0 → 1) | ![](screenshots/celebration/desktop-first-day.png) |
+| Reopening the completed lesson (no fireworks, nothing awarded) | ![](screenshots/celebration/desktop-reopen.png) |
+| "Xem lại hiệu ứng" (visual only) | ![](screenshots/celebration/desktop-replay.png) |
+| Second lesson the same day: "Hôm nay em đã giữ vững chuỗi học tập!" | ![](screenshots/celebration/mobile-same-day.png) |
+| Sound off (default) | ![](screenshots/celebration/desktop-sound-off.png) |
+| Sound on | ![](screenshots/celebration/desktop-sound-on.png) |
+| Reduced motion (final state at once) | ![](screenshots/celebration/mobile-reduced-motion.png) |
+| Streak request failed | ![](screenshots/celebration/mobile-streak-error.png) |
+| Full page after the celebration | ![](screenshots/celebration/desktop-e-final-full.png) |
+
+### Verification
+
+Local production build (`next build`), local PostgreSQL with migration 0008 applied, `TUTAI_LEARNING_STREAK=on`, fresh QA students. Earlier learning days are inserted as controlled test data in the local database (shifting a student's days back is equivalent to moving the clock forward); the day boundary itself is tested with an injected clock in the unit tests.
+
+| # | Scenario | Result |
+|---|---|---|
+| 1 | First completion of P1 | celebration plays once; `completedAt` saved; one POST, 200 |
+| 2 | Fireworks | canvas covers 4–5 % of the screen at the peak (sampled), gone after 3.2 s; controls clickable after; no overflow at 1440 / 768 / 390 |
+| 3 | First streak day | `awarded 0 → 1`, row in `learning_days` for today |
+| 4 | Consecutive day | days before: yesterday and the day before → `awarded 2 → 3` at all three sizes |
+| 5 | Another lesson the same day | first lesson `awarded 0 → 1`; P1 then `kept 1`; still one learning day |
+| 6 | Reopen the completed lesson | opens on "Hoàn thành", no fireworks, `repeat` (today counted), database unchanged; "Xem lại hiệu ứng" replays the fireworks with **0 requests**, database unchanged |
+| 7 | Refresh 150 ms after finishing, and again later | lands on "Hoàn thành", `repeat 2`; one day added in total |
+| 8 | 8 identical requests at once, then two lessons in two "tabs" at once | `1 × awarded, 7 × repeat`; then `repeat` + `kept`; one learning day |
+| 9 | Sound off | 0 `play()` calls |
+| 10 | Sound turned on by a click | preview plays (`played`), saved as `on`, still on after reload; with sound on at the finish: bells at 0.3 s, streak accent ~0.95 s later, each once |
+| 11 | Browser blocks playback | both `play()` calls rejected, no error, screen and streak unchanged |
+| 12 | Reduced motion | no canvas, no running CSS animation in the screen, the new number shown directly |
+| 13 | Persistence | rows checked in `tutai.learning_days` / `tutai.lesson_completions` after every scenario (in `celebration-results.json`) |
+| 14 | Existing behaviour | journeys 1–5 of round 1 re-run: all pass, no console errors, no overflow, stats unchanged (17/17; 8/17 · 8 · 1), other lessons still classic, `?view=classic` works, old progress resumes |
+| + | Server error, disabled, network failure | lesson still completed (`completedAt` set); error line for the failures, nothing for disabled; no streak number shown |
+
+Unit tests: `lib/learning/learning-streak.test.ts` (11: Vietnam day boundary, month/year/leap days, consecutive, broken, gaps, awarded/kept/repeat, flag). PostgreSQL tests: `lib/learning/learning-streak-service.test.ts` (3, real database via `TEST_DATABASE_URL`): one day per day, kept for a second lesson, never for a repeat, reset after a missed day, 6 concurrent identical completions → 1 award, 2 concurrent lessons → awarded + kept. Whole suite: 747 passed, the same 4 roadmap/adaptive failures as on `master`.
+
+Performance (390 × 844, CPU 4× slower, during the celebration): median frame 16.7 ms, p95 33.4 ms, 2 frames over 50 ms (mount). JS for the lesson page: 227 KB (was 223 KB). Sounds: 36 KB, fetched only when sound is on and the student is near the end.
+
+### Preview and Production
+
+- **Fireworks, banner and sound can be reviewed in the Preview now.** The streak is off there, because that Preview uses the Production database and `TUTAI_LEARNING_STREAK` is not set.
+- Turning the streak on anywhere needs migration `0008_learning_streak.sql` applied to that database (`pnpm db:migrate`) and `TUTAI_LEARNING_STREAK=on`. It has been applied only to the local test databases. **Nothing was applied to Production.**
+- To try the streak in a Preview without touching Production: set a branch-scoped `DATABASE_URL` for this branch to an isolated database (as was done for PR #9), run the migration there, and set `TUTAI_LEARNING_STREAK=on` for the branch.
+
+### Known limitations of this round
+
+- The server trusts the browser that the lesson was finished (the interactive parts run in the browser); it checks the student is signed in and the lesson is published. Same trust level as the existing progress, which is browser-only.
+- Students who finished P1 before the streak was switched on get their day when they next open it (first server record). Only P1 calls the API today.
+- The streak is shown only on the completion screen; the dashboard does not show it yet (no existing place showed a real one).
+- Sounds are original but simple; a designer may want to replace them.
+
+Re-run:
+
+```bash
+pnpm db:migrate                                   # local database only
+TUTAI_LEARNING_STREAK=on pnpm build && TUTAI_LEARNING_STREAK=on pnpm start
+PGURL=$DATABASE_URL BASE=http://localhost:3000 node docs/reviews/interactive-math-p1/e2e/celebration.mjs
+TEST_DATABASE_URL=postgres://…/something_test pnpm vitest run lib/learning/learning-streak
+```
