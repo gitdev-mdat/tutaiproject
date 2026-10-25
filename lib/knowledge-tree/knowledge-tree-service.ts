@@ -185,6 +185,7 @@ const ARTICLE_BLOCK_TYPES: ReadonlySet<KnowledgeArticleBlock['type']> = new Set(
   'RECAP',
   'COMMON_MISTAKE',
   'GRAPH',
+  'GRAPH_PRACTICE',
   'REFERENCES',
 ]);
 

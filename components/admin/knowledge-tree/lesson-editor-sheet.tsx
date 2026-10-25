@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { LessonJourney } from '@/components/learning/lesson-journey';
-import { GraphFieldStatus } from './graph-field-status';
+import { GraphFieldStatus, PracticeGraphStatus } from './graph-field-status';
 import { buildLessonJourney } from '@/lib/knowledge-tree/lesson-journey';
 import { programTitle } from '@/features/lessons/lib/study-plan';
 import {
@@ -493,9 +493,17 @@ function LessonEditor({
                     onChange={(event) => updateBlock(meta.type, event.target.value)}
                     placeholder={meta.editorHint}
                     aria-required={meta.required}
-                    className={`${meta.type === 'GRAPH' ? 'min-h-[56px] font-mono' : 'min-h-[96px]'} resize-y rounded-none border-0 bg-transparent px-4 py-3 text-[15px] leading-7 shadow-none focus-visible:ring-0`}
+                    className={`${meta.type === 'GRAPH' || meta.type === 'GRAPH_PRACTICE' ? 'min-h-[56px] font-mono' : 'min-h-[96px]'} resize-y rounded-none border-0 bg-transparent px-4 py-3 text-[15px] leading-7 shadow-none focus-visible:ring-0`}
                   />
-                  {meta.type !== 'GRAPH' && <MathFieldStatus value={block.content} />}
+                  {meta.type !== 'GRAPH' && meta.type !== 'GRAPH_PRACTICE' && (
+                    <MathFieldStatus value={block.content} />
+                  )}
+                  {meta.type === 'GRAPH_PRACTICE' && (
+                    <PracticeGraphStatus
+                      value={block.content}
+                      main={blocks.find((item) => item.type === 'GRAPH')?.content ?? ''}
+                    />
+                  )}
                   {meta.type === 'GRAPH' && (
                     <GraphFieldStatus
                       value={block.content}

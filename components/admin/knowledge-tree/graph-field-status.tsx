@@ -2,8 +2,14 @@
 
 import * as React from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { analyzeFunction, formatInterval } from '@/lib/learning/function-model';
-import { parseExamples } from '@/lib/knowledge-tree/lesson-journey';
+import {
+  analyzeFunction,
+  formatInterval,
+  formatNumber,
+  nonTurningPoints,
+} from '@/lib/learning/function-model';
+import { practiceRole } from '@/lib/learning/interactive-lesson';
+import { listItems, parseExamples } from '@/lib/knowledge-tree/lesson-journey';
 
 /**
  * Feedback under the "Hàm số minh hoạ" field: what the student's graph will
@@ -76,5 +82,50 @@ export function GraphFieldStatus({
         .join('; ')}
       . Hãy kiểm tra lại với lời giải của bài.
     </p>
+  );
+}
+
+/**
+ * Feedback under "Hàm cho học sinh tự làm": each line, what the interactive
+ * lesson will use it for, or why it cannot. Only lessons with the interactive
+ * pilot turned on use these functions.
+ */
+export function PracticeGraphStatus({ value, main }: { value: string; main: string }) {
+  const lines = listItems(value);
+  if (!lines.length) return null;
+  return (
+    <ul
+      className="space-y-1 border-t border-slate-100 px-4 py-2.5 text-xs"
+      data-testid="practice-graph-status"
+    >
+      {lines.map((line, index) => {
+        const role = practiceRole(line, main.trim() || null);
+        return (
+          <li
+            key={index}
+            className={`flex items-start gap-1.5 ${role.ok ? 'text-emerald-700' : 'text-rose-700'}`}
+          >
+            {role.ok ? (
+              <CheckCircle2 className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+            ) : (
+              <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+            )}
+            <span>
+              <code className="rounded bg-slate-100 px-1 text-slate-700">{line}</code>{' '}
+              {role.ok
+                ? role.role === 'flat'
+                  ? `dùng cho phần "f′ = 0 thì sao?": y′ = 0 tại x = ${nonTurningPoints(role.analysis).map(formatNumber).join(', ')} nhưng không đổi dấu.`
+                  : `dùng cho "Đến lượt em": ${role.analysis.pieces
+                      .map(
+                        (piece) =>
+                          `${piece.direction === 'up' ? 'đồng biến' : 'nghịch biến'} trên ${formatInterval(piece.from, piece.to)}`
+                      )
+                      .join('; ')}.`
+                : role.error}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

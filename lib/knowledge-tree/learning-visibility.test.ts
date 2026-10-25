@@ -95,6 +95,8 @@ describe('article blocks and server import', () => {
       'RECAP',
       'COMMON_MISTAKE',
       'GRAPH',
+      // Functions for students to work on in an interactive lesson; empty unless the admin fills it.
+      'GRAPH_PRACTICE',
       'REFERENCES',
     ]);
     expect(blocks.find((block) => block.type === 'MAIN_CONTENT')).toMatchObject({

@@ -1,0 +1,320 @@
+{
+ "consecutive-desktop": {
+  "size": "desktop",
+  "before": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1",
+   "completions": "seed-1,seed-2"
+  },
+  "ink": {
+   "a-banner": null,
+   "b-fireworks-peak": 4.5,
+   "c-streak-rolling": 5,
+   "d-final": null
+  },
+  "canvasGone": true,
+  "streak": {
+   "status": "awarded",
+   "current": "3",
+   "text": "2 3 ngày học liên tiếp! Đều đặn mỗi ngày, kiến thức sẽ thành phản xạ."
+  },
+  "after": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1,2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,seed-1,seed-2"
+  },
+  "overflow": false,
+  "posts": [
+   200
+  ],
+  "controlsClickable": true,
+  "sounds": [],
+  "errors": []
+ },
+ "consecutive-mobile": {
+  "size": "mobile",
+  "before": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1",
+   "completions": "seed-1,seed-2"
+  },
+  "ink": {
+   "a-banner": null,
+   "b-fireworks-peak": 4.5,
+   "c-streak-rolling": 4.7,
+   "d-final": null
+  },
+  "canvasGone": true,
+  "streak": {
+   "status": "awarded",
+   "current": "3",
+   "text": "2 3 ngày học liên tiếp! Đều đặn mỗi ngày, kiến thức sẽ thành phản xạ."
+  },
+  "after": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1,2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,seed-1,seed-2"
+  },
+  "overflow": false,
+  "posts": [
+   200
+  ],
+  "controlsClickable": true,
+  "sounds": [],
+  "errors": []
+ },
+ "consecutive-tablet": {
+  "size": "tablet",
+  "before": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1",
+   "completions": "seed-1,seed-2"
+  },
+  "ink": {
+   "a-banner": 0,
+   "b-fireworks-peak": 5.1,
+   "c-streak-rolling": 5.4,
+   "d-final": null
+  },
+  "canvasGone": true,
+  "streak": {
+   "status": "awarded",
+   "current": "3",
+   "text": "2 3 ngày học liên tiếp! Đều đặn mỗi ngày, kiến thức sẽ thành phản xạ."
+  },
+  "after": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1,2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,seed-1,seed-2"
+  },
+  "overflow": false,
+  "posts": [
+   200
+  ],
+  "controlsClickable": true,
+  "sounds": [],
+  "errors": []
+ },
+ "firstDayAndReopen": {
+  "first": {
+   "status": "awarded",
+   "current": "1",
+   "text": "0 1 ngày học, chuỗi mới bắt đầu! Mai quay lại học tiếp để giữ lửa nhé."
+  },
+  "afterFirst": {
+   "days": "2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9"
+  },
+  "reopen": {
+   "stage": "tong-ket",
+   "fireworks": 0,
+   "streak": {
+    "status": "repeat",
+    "current": "1",
+    "text": "1 ngày học liên tiếp Hôm nay em đã giữ vững chuỗi học tập! Mai học tiếp để chuỗi dài thêm nhé."
+   },
+   "db": {
+    "days": "2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+    "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9"
+   }
+  },
+  "replay": {
+   "fireworks": 1,
+   "ink": 4.1,
+   "newRequests": 0,
+   "db": {
+    "days": "2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+    "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9"
+   },
+   "streak": {
+    "status": "repeat",
+    "current": "1",
+    "text": "1 ngày học liên tiếp Hôm nay em đã giữ vững chuỗi học tập! Mai học tiếp để chuỗi dài thêm nhé."
+   }
+  },
+  "posts": [
+   200,
+   200
+  ],
+  "errors": []
+ },
+ "sameDay": {
+  "earlier": {
+   "status": 200,
+   "body": {
+    "status": "awarded",
+    "previous": 0,
+    "current": 1,
+    "today": true
+   }
+  },
+  "streak": {
+   "status": "kept",
+   "current": "1",
+   "text": "1 ngày học liên tiếp Hôm nay em đã giữ vững chuỗi học tập! Mai học tiếp để chuỗi dài thêm nhé."
+  },
+  "db": {
+   "days": "2026-10-25:knowledge-c5e8afbc-1daf-44e2-9a27-ee73f05b33e6",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,knowledge-c5e8afbc-1daf-44e2-9a27-ee73f05b33e6"
+  },
+  "errors": []
+ },
+ "refresh": {
+  "stage": "tong-ket",
+  "streak": {
+   "status": "repeat",
+   "current": "2",
+   "text": "2 ngày học liên tiếp Hôm nay em đã giữ vững chuỗi học tập! Mai học tiếp để chuỗi dài thêm nhé."
+  },
+  "db": {
+   "days": "2026-10-24:seed-1,2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,seed-1"
+  },
+  "posts": [
+   200,
+   200,
+   200
+  ],
+  "overflow": false,
+  "again": {
+   "streak": {
+    "status": "repeat",
+    "current": "2",
+    "text": "2 ngày học liên tiếp Hôm nay em đã giữ vững chuỗi học tập! Mai học tiếp để chuỗi dài thêm nhé."
+   },
+   "db": {
+    "days": "2026-10-24:seed-1,2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+    "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,seed-1"
+   }
+  },
+  "errors": []
+ },
+ "concurrent": {
+  "statuses": [
+   "awarded",
+   "repeat",
+   "repeat",
+   "repeat",
+   "repeat",
+   "repeat",
+   "repeat",
+   "repeat"
+  ],
+  "tabs": [
+   "repeat",
+   "kept"
+  ],
+  "db": {
+   "days": "2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,knowledge-c5e8afbc-1daf-44e2-9a27-ee73f05b33e6"
+  }
+ },
+ "sound": {
+  "off": {
+   "sounds": [],
+   "toggle": "Âm thanh: tắt"
+  },
+  "turnedOn": {
+   "sounds": [
+    {
+     "src": "/sounds/lesson-complete.mp3",
+     "at": 5853.600000000093,
+     "result": "played"
+    }
+   ],
+   "toggle": "Âm thanh: bật",
+   "stored": "on",
+   "pressed": "true"
+  },
+  "afterReload": "Âm thanh: bật",
+  "onAtFinish": {
+   "sounds": [
+    {
+     "src": "/sounds/lesson-complete.mp3",
+     "at": 3289.6999999999534,
+     "result": "played"
+    },
+    {
+     "src": "/sounds/streak-up.mp3",
+     "at": 4240.299999999814,
+     "result": "played"
+    }
+   ],
+   "streak": {
+    "status": "awarded",
+    "current": "2",
+    "text": "1 2 ngày học liên tiếp! Đều đặn mỗi ngày, kiến thức sẽ thành phản xạ."
+   }
+  },
+  "blocked": {
+   "sounds": [
+    {
+     "src": "/sounds/lesson-complete.mp3",
+     "at": 3377.600000000093,
+     "result": "blocked"
+    },
+    {
+     "src": "/sounds/streak-up.mp3",
+     "at": 4322.600000000093,
+     "result": "blocked"
+    }
+   ],
+   "streak": {
+    "status": "awarded",
+    "current": "1",
+    "text": "0 1 ngày học, chuỗi mới bắt đầu! Mai quay lại học tiếp để giữ lửa nhé."
+   },
+   "finishShown": true,
+   "errors": []
+  }
+ },
+ "reducedMotion": {
+  "fireworks": 0,
+  "streak": {
+   "status": "awarded",
+   "current": "2",
+   "text": "2 ngày học liên tiếp! Đều đặn mỗi ngày, kiến thức sẽ thành phản xạ."
+  },
+  "numberShown": "2",
+  "animations": [],
+  "errors": []
+ },
+ "failures": {
+  "error": {
+   "finished": true,
+   "completedAt": "2026-10-25T07:21:10.570Z",
+   "streak": null,
+   "error": "Chưa lưu được chuỗi ngày học lúc này. Bài học của em vẫn được ghi nhận."
+  },
+  "disabled": {
+   "finished": true,
+   "completedAt": "2026-10-25T07:21:17.130Z",
+   "streak": null,
+   "error": null
+  },
+  "network": {
+   "finished": true,
+   "completedAt": "2026-10-25T07:21:53.696Z",
+   "streak": null,
+   "error": "Chưa lưu được chuỗi ngày học lúc này. Bài học của em vẫn được ghi nhận."
+  }
+ },
+ "perf": {
+  "cpu": "4x slower, 390×844 @2x",
+  "frames": 208,
+  "medianMs": 16.7,
+  "p95Ms": 33.4,
+  "maxMs": 100,
+  "over50ms": 2
+ },
+ "video-desktop": {
+  "raw": "../videos/raw/page@29dd8706470a2d74190e1ba006e9e13f.webm",
+  "trimFrom": 4.255,
+  "streak": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1,2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,seed-1,seed-2"
+  }
+ },
+ "video-mobile": {
+  "raw": "../videos/raw/page@e8ea1660061fad7229bd8b6382c27440.webm",
+  "trimFrom": 3.939,
+  "streak": {
+   "days": "2026-10-23:seed-2,2026-10-24:seed-1,2026-10-25:knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+   "completions": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9,seed-1,seed-2"
+  }
+ }
+}

@@ -221,7 +221,7 @@ export function parseExamples(content: string): WorkedExample[] {
 /** About 130 words a minute for maths text, plus time for each example step and interaction. */
 export function estimateReadingMinutes(blocks: KnowledgeArticleBlock[], interactions = 0): number {
   const total = blocks
-    .filter((block) => !['TITLE', 'REFERENCES', 'GRAPH'].includes(block.type))
+    .filter((block) => !['TITLE', 'REFERENCES', 'GRAPH', 'GRAPH_PRACTICE'].includes(block.type))
     .reduce((sum, block) => sum + words(block.content), 0);
   const steps = parseExamples(blockText(blocks, 'EXAMPLE')).reduce(
     (sum, example) => sum + example.steps.length,
