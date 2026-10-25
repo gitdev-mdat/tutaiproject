@@ -27,3 +27,27 @@ export function hasStudentVisibleDiagram(exercise: {
     /\(0\s*;\s*2\)/u.test(exercise.explanation);
   return asksAboutDerivativeGraph && pairedSolutionSupportsAnswer;
 }
+
+/** The question's content blocks for students: the stem and, for Q22, its redrawn graph. */
+export function studentQuestionContent(view: {
+  id: string;
+  hasDiagram: boolean;
+  stem: string;
+  choices: ExerciseChoice[];
+  explanation: string;
+  printedPages: number[];
+}) {
+  if (!view.hasDiagram || !hasStudentVisibleDiagram(view)) return undefined;
+  return [
+    { id: `${view.id}-text`, type: 'TEXT' as const, text: view.stem },
+    {
+      id: `${view.id}-diagram`,
+      type: 'IMAGE' as const,
+      media: {
+        assetId: Q22_DERIVATIVE_GRAPH,
+        alt: 'Đồ thị y = f′(x), cắt trục hoành tại −1, 0 và 2',
+        sourcePage: view.printedPages[0],
+      },
+    },
+  ];
+}

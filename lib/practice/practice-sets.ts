@@ -3,6 +3,7 @@ import { practiceExclusionReason } from './grading';
 import {
   PRACTICE_READY_THRESHOLD,
   PRACTICE_SESSION_SIZE,
+  isInChapterPractice,
   isInLessonPractice,
   orderPracticeQuestions,
 } from './practice-rules';
@@ -11,9 +12,11 @@ import {
  * Practice sets that span a chapter, built only from what the question bank
  * stores (no text matching, no AI):
  *
- * - CHAPTER ("Ôn chương", free): the lessons' own free practice questions,
- *   mixed across the chapter. Offered once at least two lessons have practice;
- *   with one lesson it would only repeat that lesson's practice.
+ * - CHAPTER ("Ôn chương", free): the lessons' own free practice questions and
+ *   the free questions placed on the chapter itself, mixed across the chapter.
+ *   Offered once it draws on at least two of these (two lessons, or a lesson
+ *   and the chapter's own questions); with one lesson alone it would only
+ *   repeat that lesson's practice.
  * - SYNTHESIS ("Tổng hợp", Tú Tài Plus): questions the admin published with
  *   access tier PLUS and the usage context PLUS_SPECIAL ("Plus đặc biệt"),
  *   placed on the chapter or one of its lessons. Free questions never become
@@ -81,13 +84,17 @@ export function synthesisPool(questions: Question[], chapter: ChapterScope): Que
   );
 }
 
-/** The chapter's free practice questions, by lesson; only lessons that have some. */
+/**
+ * The chapter's free practice questions, by lesson, then the chapter's own
+ * questions as one more pool; only pools that have some.
+ */
 function reviewByLesson(questions: Question[], chapter: ChapterScope): Question[][] {
-  return chapter.lessonIds
-    .map((lessonId) =>
+  return [
+    ...chapter.lessonIds.map((lessonId) =>
       orderPracticeQuestions(questions.filter((q) => isInLessonPractice(q, lessonId)))
-    )
-    .filter((pool) => pool.length > 0);
+    ),
+    orderPracticeQuestions(questions.filter((q) => isInChapterPractice(q, chapter.id))),
+  ].filter((pool) => pool.length > 0);
 }
 
 export function chapterReviewPool(questions: Question[], chapter: ChapterScope): Question[] {

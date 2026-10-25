@@ -14,26 +14,12 @@ import {
   Plus,
   Sparkles,
   Users,
-  X,
 } from 'lucide-react';
 import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import { LESSON_PUBLICATION_LABELS } from '@/lib/knowledge-tree/learning-visibility';
 import type { CoverageQuestion, LessonCoverage } from '@/lib/practice/practice-admin';
 import type { QuestionSuggestion } from '@/lib/practice/ai-question-suggest';
-import { PRACTICE_SESSION_SIZE } from '@/lib/practice/practice-rules';
-import {
-  gradePracticeResponse,
-  parsePracticeResponse,
-  toPracticeFeedback,
-  toPracticeQuestion,
-} from '@/lib/practice/grading';
-import {
-  isComplete,
-  QuestionBody,
-  FeedbackPanel,
-  TYPE_HINT,
-  type Answer,
-} from '@/features/lessons/components/practice-session';
+import { PRACTICE_SESSION_SIZE, publishBlockers } from '@/lib/practice/practice-rules';
 import {
   RIGHTS_STATUS_LABELS,
   RIGHTS_STATUS_VALUES,
@@ -49,147 +35,9 @@ import {
   READINESS,
 } from './practice-labels';
 import { QuestionEditor, draftFromQuestion, emptyDraft, type EditorDraft } from './question-editor';
+import { StudentPreview } from './student-preview';
 
 type EditorState = { question: Question | null; draft: EditorDraft; key: number } | null;
-
-function StudentPreview({
-  questions,
-  onClose,
-}: {
-  questions: CoverageQuestion[];
-  onClose: () => void;
-}) {
-  const [index, setIndex] = React.useState(0);
-  const [answer, setAnswer] = React.useState<Answer>();
-  const [feedback, setFeedback] = React.useState<ReturnType<typeof toPracticeFeedback>>();
-  const item = questions[index];
-  const practiceQuestion = toPracticeQuestion(item.question);
-
-  function checkAnswer() {
-    try {
-      const response = parsePracticeResponse(item.question, answer);
-      setFeedback(
-        toPracticeFeedback(item.question, response, gradePracticeResponse(item.question, response))
-      );
-    } catch {
-      setFeedback(undefined);
-    }
-  }
-
-  function move(next: number) {
-    setIndex(next);
-    setAnswer(undefined);
-    setFeedback(undefined);
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-3 sm:p-6"
-      data-testid="student-preview"
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label="Xem trước như học sinh"
-        className="mx-auto my-4 w-full max-w-3xl rounded-2xl bg-slate-50 shadow-2xl sm:my-8"
-      >
-        <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-          <div>
-            <p className="text-xs font-semibold text-blue-700">Xem trước như học sinh</p>
-            <p className="text-xs text-slate-500">
-              Bản xem thử không tạo lượt làm hay lưu tiến độ.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Đóng xem trước"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
-          >
-            <X className="size-5" />
-          </button>
-        </header>
-        <div className="p-4 sm:p-6">
-          {questions.length > 1 && (
-            <label className="mb-4 block text-xs font-semibold text-slate-600">
-              Câu hỏi
-              <select
-                value={index}
-                onChange={(event) => move(Number(event.target.value))}
-                className="ml-2 h-9 max-w-[75%] rounded-lg border border-slate-300 bg-white px-2 text-sm"
-                data-testid="preview-question-select"
-              >
-                {questions.map((entry, i) => (
-                  <option key={entry.question.id} value={i}>
-                    {entry.question.textbookSource?.questionNumber
-                      ? `Câu ${entry.question.textbookSource.questionNumber}`
-                      : entry.question.code}{' '}
-                    · {entry.question.code}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <div
-            className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7"
-            data-testid="preview-practice-question"
-          >
-            <p className="text-[13px] font-semibold text-blue-700">
-              {TYPE_HINT[practiceQuestion.type]}
-            </p>
-            <div className="mt-2 text-[17px] font-semibold leading-8 text-slate-900 sm:text-lg">
-              <QuestionPrompt
-                questionId={practiceQuestion.id}
-                stem={practiceQuestion.stem}
-                content={practiceQuestion.content}
-              />
-            </div>
-            <div className="mt-5">
-              <QuestionBody
-                question={practiceQuestion}
-                answer={answer}
-                feedback={feedback}
-                setAnswer={setAnswer}
-              />
-            </div>
-            {feedback && <FeedbackPanel feedback={feedback} />}
-          </div>
-          <div className="mt-4 flex flex-col-reverse justify-between gap-2 sm:flex-row">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={index === 0}
-                onClick={() => move(index - 1)}
-                className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold disabled:opacity-40"
-              >
-                Câu trước
-              </button>
-              <button
-                type="button"
-                disabled={index === questions.length - 1}
-                onClick={() => move(index + 1)}
-                className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold disabled:opacity-40"
-              >
-                Câu tiếp
-              </button>
-            </div>
-            {!feedback && (
-              <button
-                type="button"
-                disabled={!isComplete(practiceQuestion, answer)}
-                onClick={checkAnswer}
-                className="h-11 rounded-xl bg-blue-700 px-5 text-sm font-bold text-white disabled:bg-slate-300"
-                data-testid="preview-submit"
-              >
-                Kiểm tra câu trả lời
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
 
 function answerSummary(question: Question) {
   if (question.questionType === 'TRUE_FALSE') {
@@ -239,6 +87,9 @@ function QuestionCard({
   const [confirming, setConfirming] = React.useState(false);
   const [verified, setVerified] = React.useState(false);
   const ai = isAiAssisted(question);
+  // In review but failing a publishing check: say why instead of offering a button that fails.
+  const blockers = state === 'IN_REVIEW' ? publishBlockers(question) : [];
+  const fromTextbook = !!question.textbookSource && (state === 'DRAFT' || state === 'IN_REVIEW');
 
   async function run(body: Record<string, unknown>, message: string) {
     setBusy(true);
@@ -359,6 +210,31 @@ function QuestionCard({
         </div>
       )}
       {reason && <p className="mt-2 text-xs font-medium text-rose-700">{reason}</p>}
+      {blockers.length > 0 && (
+        <div
+          className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200"
+          data-testid="publish-blockers"
+        >
+          <p className="font-bold">Chưa xuất bản được:</p>
+          <ul className="mt-0.5 list-disc space-y-0.5 pl-4">
+            {blockers.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          {fromTextbook && (
+            <p className="mt-1">
+              Câu từ sách: xác nhận quyền và xuất bản một bước ở{' '}
+              <Link
+                href={`/admin/practice/${question.primaryKnowledgeNodeId}/textbook`}
+                className="font-semibold text-primary underline"
+              >
+                Bài tập từ sách
+              </Link>
+              .
+            </p>
+          )}
+        </div>
+      )}
       {error && (
         <p className="mt-2 text-xs font-medium text-rose-700" role="alert">
           {error}
@@ -382,7 +258,10 @@ function QuestionCard({
               type="button"
               disabled={!verified || busy}
               onClick={() =>
-                run({ editorialStatus: 'IN_REVIEW', answerVerified: true }, 'Đã gửi duyệt.')
+                run(
+                  { editorialStatus: 'IN_REVIEW', answerVerified: true },
+                  'Đã chuyển sang chờ xuất bản.'
+                )
               }
               className={`${button} bg-violet-700 text-white`}
               data-testid="confirm-submit-review"
@@ -415,7 +294,9 @@ function QuestionCard({
             type="button"
             disabled={busy}
             onClick={() =>
-              ai ? setConfirming(true) : run({ editorialStatus: 'IN_REVIEW' }, 'Đã gửi duyệt.')
+              ai
+                ? setConfirming(true)
+                : run({ editorialStatus: 'IN_REVIEW' }, 'Đã chuyển sang chờ xuất bản.')
             }
             className={`${button} bg-amber-500 text-white hover:bg-amber-600`}
             data-testid="action-submit-review"
@@ -427,7 +308,8 @@ function QuestionCard({
           <>
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || blockers.length > 0}
+              title={blockers.length ? blockers.join(' ') : undefined}
               onClick={() =>
                 run(
                   { editorialStatus: 'PUBLISHED', usageContexts: withPractice },
@@ -437,12 +319,12 @@ function QuestionCard({
               className={`${button} bg-emerald-600 text-white hover:bg-emerald-700`}
               data-testid="action-publish"
             >
-              <CheckCircle2 className="size-3.5" /> Duyệt và xuất bản
+              <CheckCircle2 className="size-3.5" /> Xuất bản cho học sinh
             </button>
             <button
               type="button"
               disabled={busy}
-              onClick={() => run({ editorialStatus: 'DRAFT' }, 'Đã trả về nháp.')}
+              onClick={() => run({ editorialStatus: 'DRAFT' }, 'Đã trả về bản nháp.')}
               className={`${button} text-slate-600 hover:bg-slate-100`}
             >
               Trả về nháp
@@ -705,6 +587,8 @@ export function LessonPracticeWorkspace({
   const selected = questions.filter((item) => selectedIds.has(item.question.id));
   const selectedDrafts = selected.filter((item) => item.state === 'DRAFT');
   const selectedInReview = selected.filter((item) => item.state === 'IN_REVIEW');
+  const publishable = selectedInReview.filter((item) => !publishBlockers(item.question).length);
+  const unpublishable = selectedInReview.length - publishable.length;
   const previewQuestions = selected.filter(
     (item) =>
       item.state !== 'ARCHIVED' &&
@@ -927,16 +811,21 @@ export function LessonPracticeWorkspace({
                   {bulkBusy ? 'Đang xử lý…' : `Gửi duyệt ${selectedDrafts.length} câu`}
                 </button>
               )}
-              {selectedInReview.length > 0 && (
+              {publishable.length > 0 && (
                 <button
                   type="button"
                   disabled={bulkBusy}
-                  onClick={() => void runBulkStatus(selectedInReview, 'PUBLISHED')}
+                  onClick={() => void runBulkStatus(publishable, 'PUBLISHED')}
                   className="min-h-10 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white disabled:opacity-50"
                   data-testid="bulk-publish"
                 >
-                  {bulkBusy ? 'Đang xử lý…' : `Xuất bản ${selectedInReview.length} câu`}
+                  {bulkBusy ? 'Đang xử lý…' : `Xuất bản ${publishable.length} câu`}
                 </button>
+              )}
+              {unpublishable > 0 && (
+                <p className="self-center text-xs text-amber-900" data-testid="bulk-unpublishable">
+                  {unpublishable} câu chờ xuất bản chưa đủ điều kiện: xem lý do trên từng câu.
+                </p>
               )}
               <button
                 type="button"
@@ -956,7 +845,7 @@ export function LessonPracticeWorkspace({
                 data-testid="rights-blocker"
               >
                 <p className="font-bold">
-                  Chưa xác nhận quyền sử dụng — câu vẫn là bản nháp và không thể xuất bản.
+                  Chưa xác nhận quyền sử dụng: các câu này chưa xuất bản được.
                 </p>
                 <p className="mt-1">
                   Chọn trạng thái đúng với giấy phép hoặc sự cho phép thực tế. Nếu chưa có quyền,
@@ -1021,7 +910,10 @@ export function LessonPracticeWorkspace({
       </section>
 
       {previewOpen && previewQuestions.length > 0 && (
-        <StudentPreview questions={previewQuestions} onClose={() => setPreviewOpen(false)} />
+        <StudentPreview
+          questions={previewQuestions.map((item) => item.question)}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
 
       <div ref={editorRef} className="scroll-mt-4">

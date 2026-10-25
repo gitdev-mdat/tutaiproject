@@ -9,6 +9,7 @@ import {
   importExercises,
   loadLessonPractice,
   PracticeRequestError,
+  publishExercises,
   rejectSolution,
   saveExerciseDraft,
   verifyByAdmin,
@@ -57,6 +58,14 @@ const mutation = z.discriminatedUnion('action', [
     lessonId: z.string(),
     exerciseIds: z.array(z.string()).min(1).max(100),
     rightsStatus: z.enum(RIGHTS_STATUS_VALUES),
+  }),
+  z.object({
+    action: z.literal('publish'),
+    lessonId: z.string(),
+    exerciseIds: z.array(z.string()).min(1).max(100),
+    rightsStatus: z.enum(RIGHTS_STATUS_VALUES),
+    attested: z.boolean(),
+    dryRun: z.boolean().optional(),
   }),
 ]);
 
@@ -132,6 +141,15 @@ export async function POST(request: Request) {
             input.lessonId,
             input.exerciseIds,
             input.rightsStatus,
+            actor
+          ),
+        });
+      case 'publish':
+        return NextResponse.json({
+          outcomes: await publishExercises(
+            input.lessonId,
+            input.exerciseIds,
+            { rights: input.rightsStatus, attested: input.attested, dryRun: input.dryRun },
             actor
           ),
         });

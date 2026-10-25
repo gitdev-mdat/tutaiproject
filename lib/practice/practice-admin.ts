@@ -116,7 +116,7 @@ export async function getPracticeCoverage(): Promise<LessonCoverage[]> {
       if (publication !== 'PUBLISHED' && counts.IN_PRACTICE > 0) {
         attention.push('Có câu luyện tập nhưng bài học chưa hiển thị cho học sinh.');
       }
-      if (counts.IN_REVIEW > 0) attention.push(`${counts.IN_REVIEW} câu đang chờ duyệt.`);
+      if (counts.IN_REVIEW > 0) attention.push(`${counts.IN_REVIEW} câu đang chờ xuất bản.`);
       if (counts.NOT_USABLE + counts.PUBLISHED_ELSEWHERE > 0) {
         attention.push(
           `${counts.NOT_USABLE + counts.PUBLISHED_ELSEWHERE} câu đã xuất bản nhưng học sinh chưa nhận được.`

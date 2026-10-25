@@ -11,9 +11,14 @@ import type {
   RightsStatus,
   TextbookQuestionSource,
 } from '@/lib/question-bank/qb-types';
-import { validateForManualCreation } from '@/lib/question-bank/qb-validation';
+import {
+  validateForManualCreation,
+  validateForPublishing,
+  validateForReview,
+} from '@/lib/question-bank/qb-validation';
+import { practiceExclusionReason } from '@/lib/practice/grading';
 import type { ExercisePracticeView } from './practice-state';
-import { hasStudentVisibleDiagram, Q22_DERIVATIVE_GRAPH } from './student-diagram';
+import { studentQuestionContent } from './student-diagram';
 
 /**
  * Verified textbook exercises → DRAFT questions in the existing Question Bank.
@@ -96,22 +101,7 @@ function questionFields(item: TextbookImportItem, rights: RightsStatus, now: str
   ].filter(Boolean);
   return {
     stem: view.stem,
-    ...(view.hasDiagram && hasStudentVisibleDiagram(view)
-      ? {
-          content: [
-            { id: `${view.id}-text`, type: 'TEXT' as const, text: view.stem },
-            {
-              id: `${view.id}-diagram`,
-              type: 'IMAGE' as const,
-              media: {
-                assetId: Q22_DERIVATIVE_GRAPH,
-                alt: 'Đồ thị y = f′(x), cắt trục hoành tại −1, 0 và 2',
-                sourcePage: view.printedPages[0],
-              },
-            },
-          ],
-        }
-      : {}),
+    ...(studentQuestionContent(view) ? { content: studentQuestionContent(view) } : {}),
     questionType: 'MULTIPLE_CHOICE_SINGLE' as const,
     options,
     correctAnswer: view.answer!,
@@ -315,4 +305,136 @@ export function applyTextbookImport(
     });
   }
   return { questions: next, outcomes, audits };
+}
+
+export type TextbookPublishOutcome = {
+  exerciseId: string;
+  questionNumber: string | null;
+  result: 'PUBLISHED' | 'ALREADY_PUBLISHED' | 'BLOCKED';
+  questionId?: string;
+  questionCode?: string;
+  /** Where the question sits: the lesson, or the chapter for chapter-level practice. */
+  destinationId?: string;
+  /** Why it was not published; empty when it was. */
+  reasons: string[];
+  /** The canonical question as students get it (or would get it). */
+  question?: Pick<Question, 'stem' | 'options' | 'correctAnswer' | 'explanation' | 'content'>;
+};
+
+const withPractice = (contexts: Question['usageContexts']): Question['usageContexts'] => [
+  ...new Set([...contexts, 'OPEN_PRACTICE' as const]),
+];
+
+/**
+ * Verified textbook exercises → published lesson practice, in one step: the
+ * import above (draft, deduplicated, never overwriting reviewed work), then the
+ * Question Bank's own review and publishing checks on the result. The Admin's
+ * answer verification in the textbook workspace is the content review, and the
+ * rights status is the Admin's attested decision; a question failing any check
+ * is reported with its reasons and left unpublished.
+ *
+ * `rights` must be a resolved status: an unresolved one never publishes.
+ */
+export function applyTextbookPublish(
+  questions: Question[],
+  items: TextbookImportItem[],
+  options: { rights: RightsStatus; actor: string; now: string }
+): {
+  questions: Question[];
+  outcomes: TextbookPublishOutcome[];
+  imports: TextbookImportOutcome[];
+  audits: QuestionAuditEntry[];
+} {
+  if (options.rights === 'REVIEW_REQUIRED')
+    throw new Error('An unresolved rights status cannot be published.');
+  const imported = applyTextbookImport(questions, items, options);
+  const next = [...imported.questions];
+  const audits = [...imported.audits];
+  const outcomes: TextbookPublishOutcome[] = [];
+  for (const item of items) {
+    const { view } = item;
+    const base = {
+      exerciseId: view.id,
+      questionNumber: view.questionNumber,
+      destinationId: view.lesson?.lessonId,
+    };
+    const step = imported.outcomes.find((outcome) => outcome.exerciseId === view.id);
+    const index = step?.questionId ? next.findIndex((q) => q.id === step.questionId) : -1;
+    const duplicate = step?.result === 'SKIPPED' && step.questionId;
+    if (!step || index < 0 || duplicate) {
+      outcomes.push({
+        ...base,
+        result: 'BLOCKED',
+        ...(duplicate ? { questionId: step.questionId, questionCode: step.questionCode } : {}),
+        reasons: [step?.reason ?? 'Câu này chưa nhập được.'],
+      });
+      continue;
+    }
+    const existing = next[index];
+    const found = {
+      questionId: existing.id,
+      questionCode: existing.code,
+      destinationId: existing.primaryKnowledgeNodeId,
+      question: {
+        stem: existing.stem,
+        options: existing.options,
+        correctAnswer: existing.correctAnswer,
+        explanation: existing.explanation,
+        content: existing.content,
+      },
+    };
+    if (existing.editorialStatus === 'PUBLISHED') {
+      outcomes.push({ ...base, ...found, result: 'ALREADY_PUBLISHED', reasons: [] });
+      continue;
+    }
+    if (existing.editorialStatus === 'ARCHIVED') {
+      outcomes.push({
+        ...base,
+        ...found,
+        result: 'BLOCKED',
+        reasons: ['Câu đã bị gỡ khỏi luyện tập: khôi phục trong Ngân hàng câu hỏi nếu cần.'],
+      });
+      continue;
+    }
+    const rightsChanged = existing.source.rightsStatus === 'REVIEW_REQUIRED';
+    const candidate: Question = {
+      ...existing,
+      source: rightsChanged
+        ? { ...existing.source, rightsStatus: options.rights }
+        : existing.source,
+      accessTier: 'OPEN',
+      usageContexts: withPractice(existing.usageContexts),
+      editorialStatus: 'PUBLISHED',
+      updatedAt: options.now,
+      updatedBy: options.actor,
+    };
+    const reasons = [
+      ...new Set([
+        ...validateForReview(candidate).errors.map((error) => error.message),
+        ...validateForPublishing(candidate).errors.map((error) => error.message),
+        ...[practiceExclusionReason(candidate)].filter((reason): reason is string => !!reason),
+      ]),
+    ];
+    if (reasons.length) {
+      outcomes.push({ ...base, ...found, result: 'BLOCKED', reasons });
+      continue;
+    }
+    next[index] = candidate;
+    const audit = (action: QuestionAuditEntry['action'], prev: unknown, value: unknown) =>
+      audits.push({
+        id: `audit-${randomUUID()}`,
+        questionId: existing.id,
+        action,
+        actor: options.actor,
+        timestamp: options.now,
+        previousValue: prev,
+        newValue: value,
+        note: `Xuất bản từ Bài tập từ sách “${item.documentTitle}” (Câu ${view.questionNumber ?? '?'}): Admin đã kiểm tra đáp án và xác nhận quyền sử dụng.`,
+      });
+    if (rightsChanged) audit('SOURCE_RIGHTS_CHANGED', existing.source, candidate.source);
+    if (existing.editorialStatus === 'DRAFT') audit('SUBMITTED_FOR_REVIEW', 'DRAFT', 'IN_REVIEW');
+    audit('PUBLISHED', 'IN_REVIEW', 'PUBLISHED');
+    outcomes.push({ ...base, ...found, result: 'PUBLISHED', reasons: [] });
+  }
+  return { questions: next, outcomes, imports: imported.outcomes, audits };
 }

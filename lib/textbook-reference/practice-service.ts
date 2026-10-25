@@ -1,6 +1,10 @@
 import 'server-only';
 
 import { childrenOf, knowledgeBreadcrumb } from '@/lib/knowledge-tree/knowledge-tree';
+import type {
+  KnowledgeTreeDocument,
+  KnowledgeTreeNode,
+} from '@/lib/knowledge-tree/knowledge-tree-types';
 import { readKnowledgeArticles } from '@/lib/knowledge-tree/knowledge-article-storage';
 import { readKnowledgeTree } from '@/lib/knowledge-tree/knowledge-tree-storage';
 import { getLessonPublicationState } from '@/lib/knowledge-tree/learning-visibility';
@@ -19,8 +23,10 @@ import { formatSpan } from './lesson-coverage';
 import { mapPrintedPage } from './page-mapping';
 import {
   applyTextbookImport,
+  applyTextbookPublish,
   textbookExternalId,
   type TextbookImportOutcome,
+  type TextbookPublishOutcome,
 } from './practice-import';
 import { practiceSetsForLesson, type PracticeSet } from './practice-sources';
 import { exercisePracticeView, type ExercisePracticeView } from './practice-state';
@@ -45,6 +51,10 @@ import type { ExerciseChoice, TextbookArtifact, TextbookExtractionJob } from './
 export interface PracticeLessonOption {
   id: string;
   title: string;
+  /** A lesson, or the chapter itself for questions practised only in "Ôn chương". */
+  kind: 'LESSON' | 'CHAPTER';
+  /** Whether students can open it now. */
+  visible: boolean;
 }
 
 export interface PracticeSetView {
@@ -86,6 +96,8 @@ export interface ImportedQuestion {
 export interface LessonPracticeWorkspace {
   lesson: { id: string; title: string; path: string[]; published: boolean };
   lessons: PracticeLessonOption[];
+  /** Per book: the rights status its published questions already carry, if any. */
+  bookRights: Record<string, RightsStatus | null>;
   sets: PracticeSetView[];
   counts: {
     extracted: number;
@@ -177,6 +189,17 @@ async function autoVerifyStrongMatches(
     if ('artifact' in result) updated.set(exercise.id, result.artifact);
   }
   return artifacts.map((artifact) => updated.get(artifact.id) ?? artifact);
+}
+
+/** The lesson's chapter, when its parent is one: chapter-level questions are placed there. */
+function chapterOf(tree: KnowledgeTreeDocument, lesson: KnowledgeTreeNode) {
+  const parent = tree.nodes.find((item) => item.id === lesson.parentId);
+  const type = (parent?.sourceGraphNodeType as string | undefined) ?? parent?.nodeType;
+  return parent?.kind === 'GROUP' &&
+    parent.status !== 'ARCHIVED' &&
+    (type === 'CHUONG' || type === 'DOMAIN')
+    ? parent
+    : null;
 }
 
 async function lessonContext(lessonId: string) {
@@ -322,14 +345,23 @@ export async function loadLessonPractice(
   const linked = new Set(
     mappings.filter((m) => m.status === 'CONFIRMED').map((m) => m.knowledgeNodeId)
   );
-  const lessons = [
+  const lessons: PracticeLessonOption[] = [
     ...siblings,
     ...tree.nodes.filter(
       (item) => linked.has(item.id) && !siblings.some((sibling) => sibling.id === item.id)
     ),
   ]
     .filter((item) => isAttachableKnowledgeNode(item))
-    .map((item) => ({ id: item.id, title: item.title }));
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      kind: 'LESSON' as const,
+      visible:
+        getLessonPublicationState(tree.nodes, item.id, articles.articles[item.id]) === 'PUBLISHED',
+    }));
+  const chapter = chapterOf(tree, node);
+  if (chapter)
+    lessons.push({ id: chapter.id, title: chapter.title, kind: 'CHAPTER', visible: true });
 
   const all = setViews.flatMap((set) => set.exercises);
   const imported = all.filter((exercise) => exercise.question);
@@ -362,6 +394,9 @@ export async function loadLessonPractice(
         getLessonPublicationState(tree.nodes, node.id, articles.articles[node.id]) === 'PUBLISHED',
     },
     lessons,
+    bookRights: Object.fromEntries(
+      books.map((book) => [book.id, bookRightsStatus(questions, book.id)])
+    ),
     sets: setViews,
     counts: {
       extracted: all.length,
@@ -809,7 +844,11 @@ export async function saveExerciseDraft(
 export async function assignLesson(exerciseIds: string[], lessonId: string, actor: string) {
   await assertNotPublished(exerciseIds);
   const tree = await readKnowledgeTree();
-  if (!isAttachableKnowledgeNode(tree.nodes.find((node) => node.id === lessonId)))
+  const target = tree.nodes.find((node) => node.id === lessonId);
+  const isChapter = tree.nodes.some(
+    (node) => node.parentId === lessonId && node.kind === 'KNOWLEDGE' && chapterOf(tree, node)
+  );
+  if (!isAttachableKnowledgeNode(target) && !isChapter)
     throw new PracticeRequestError('Bài học không tồn tại hoặc đã lưu trữ.', 404);
   const at = new Date().toISOString();
   for (const id of exerciseIds)
@@ -823,12 +862,8 @@ export async function assignLesson(exerciseIds: string[], lessonId: string, acto
  * under the bank's lock. Each exercise's lesson decides the question's place in
  * the Knowledge Tree; the bank's own review then publishes it.
  */
-export async function importExercises(
-  lessonId: string,
-  exerciseIds: string[],
-  rights: RightsStatus,
-  actor: string
-): Promise<TextbookImportOutcome[]> {
+/** The workspace's exercises the Admin selected, with what an import needs for each. */
+async function selectedItems(lessonId: string, exerciseIds: string[]) {
   const workspace = await loadLessonPractice(lessonId);
   if (!workspace) throw new PracticeRequestError('Không tìm thấy bài học.', 404);
   const tree = await readKnowledgeTree();
@@ -844,13 +879,16 @@ export async function importExercises(
       }))
   );
   const missing = exerciseIds.filter((id) => !items.some((item) => item.view.id === id));
-  const now = new Date().toISOString();
-  const { outcomes, audits } = await updateQuestionsLocked((questions) => {
-    const applied = applyTextbookImport(questions, items, { rights, actor, now });
-    return { questions: applied.questions, result: applied };
-  });
-  for (const entry of audits) await appendAuditEntry(entry);
-  // The stable exercise → question mapping, kept on the exercise as well.
+  return { workspace, items, missing };
+}
+
+/** The stable exercise → question mapping, kept on the exercise as well. */
+async function rememberImports(
+  outcomes: TextbookImportOutcome[],
+  items: Awaited<ReturnType<typeof selectedItems>>['items'],
+  actor: string,
+  now: string
+) {
   for (const outcome of outcomes)
     if (outcome.questionId && (outcome.result === 'CREATED' || outcome.result === 'UPDATED')) {
       const item = items.find((candidate) => candidate.view.id === outcome.exerciseId)!;
@@ -866,13 +904,103 @@ export async function importExercises(
         },
       }));
     }
+}
+
+const NOT_IN_WORKSPACE = 'Câu này không thuộc phần bài tập của bài đang mở.';
+
+export async function importExercises(
+  lessonId: string,
+  exerciseIds: string[],
+  rights: RightsStatus,
+  actor: string
+): Promise<TextbookImportOutcome[]> {
+  const { items, missing } = await selectedItems(lessonId, exerciseIds);
+  const now = new Date().toISOString();
+  const { outcomes, audits } = await updateQuestionsLocked((questions) => {
+    const applied = applyTextbookImport(questions, items, { rights, actor, now });
+    return { questions: applied.questions, result: applied };
+  });
+  for (const entry of audits) await appendAuditEntry(entry);
+  await rememberImports(outcomes, items, actor, now);
   return [
     ...outcomes,
     ...missing.map((id) => ({
       exerciseId: id,
       questionNumber: null,
       result: 'SKIPPED' as const,
-      reason: 'Câu này không thuộc phần bài tập của bài đang mở.',
+      reason: NOT_IN_WORKSPACE,
     })),
   ];
+}
+
+/**
+ * The rights status already attested for a book: the one its published
+ * questions carry. Null when none is published yet or they disagree.
+ */
+export function bookRightsStatus(questions: Question[], documentId: string): RightsStatus | null {
+  const statuses = new Set(
+    questions
+      .filter(
+        (q) =>
+          q.textbookSource?.documentId === documentId &&
+          q.editorialStatus === 'PUBLISHED' &&
+          q.source.rightsStatus !== 'REVIEW_REQUIRED'
+      )
+      .map((q) => q.source.rightsStatus)
+  );
+  return statuses.size === 1 ? [...statuses][0] : null;
+}
+
+export interface PublishRequest {
+  rights: RightsStatus;
+  /** The Admin states the rights status reflects a real licence or permission. */
+  attested: boolean;
+  /** Only report what would happen; nothing is written. */
+  dryRun?: boolean;
+}
+
+/**
+ * Publishes the selected exercises to their lesson (or chapter) practice in one
+ * step; see `applyTextbookPublish`. Rights must be resolved, and attested unless
+ * it is the status this book's published questions already carry.
+ */
+export async function publishExercises(
+  lessonId: string,
+  exerciseIds: string[],
+  request: PublishRequest,
+  actor: string
+): Promise<TextbookPublishOutcome[]> {
+  if (request.rights === 'REVIEW_REQUIRED' && !request.dryRun)
+    throw new PracticeRequestError(
+      'Chưa xác nhận quyền sử dụng sách: câu hỏi chưa được xuất bản. Khi có giấy phép hoặc sự cho phép, chọn trạng thái tương ứng.'
+    );
+  const { items, missing } = await selectedItems(lessonId, exerciseIds);
+  const { questions } = await listQuestions({ pageSize: 100_000 });
+  const documents = new Set(items.map((item) => item.view.documentId));
+  const known = [...documents].every(
+    (documentId) => bookRightsStatus(questions, documentId) === request.rights
+  );
+  if (!request.attested && !known && !request.dryRun)
+    throw new PracticeRequestError(
+      'Hãy xác nhận trạng thái quyền sử dụng phản ánh giấy phép hoặc sự cho phép có thật.'
+    );
+  const now = new Date().toISOString();
+  const missed = missing.map((id) => ({
+    exerciseId: id,
+    questionNumber: null,
+    result: 'BLOCKED' as const,
+    reasons: [NOT_IN_WORKSPACE],
+  }));
+  // A preview before the rights are settled checks everything else.
+  const rights = request.rights === 'REVIEW_REQUIRED' ? 'LICENSED' : request.rights;
+  const options = { rights, actor, now };
+  if (request.dryRun)
+    return [...applyTextbookPublish(questions, items, options).outcomes, ...missed];
+  const applied = await updateQuestionsLocked((current) => {
+    const result = applyTextbookPublish(current, items, options);
+    return { questions: result.questions, result };
+  });
+  for (const entry of applied.audits) await appendAuditEntry(entry);
+  await rememberImports(applied.imports, items, actor, now);
+  return [...applied.outcomes, ...missed];
 }

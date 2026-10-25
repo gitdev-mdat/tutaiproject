@@ -1,0 +1,194 @@
+{
+  "viewport": 1440,
+  "base": "http://localhost:3302",
+  "at": "2026-10-25T08:48:49.551Z",
+  "results": [
+    {
+      "id": "S1",
+      "name": "Answer key pages 29–31 extracted (recorded Gemini output) and shown as a 3-stage overview",
+      "ok": true,
+      "info": "JOB a2ddaa8a-454f-4d58-b0a7-8c58a43ea445 COMPLETED [ \u001b[33m29\u001b[39m, \u001b[33m30\u001b[39m, \u001b[33m31\u001b[39m ]  COMPLETE · 1 | Trích và ghép đáp án |  | 3/22 câu có đáp án |  | 15 câu chưa có lời giải trong các trang đã trích |  | 2 | Kiểm tra và phân loại |  | 4 câu cần xử lý |  | Ghép đáp án chưa chắc, ký hiệu cần sửa, thiếu lời giải hoặc chưa chọn bài |  | 3 | Xuất bản |  | 3 câu sẵn sàng |  | 0 đã xuất bản · 0 học sinh đang nhận"
+    },
+    {
+      "id": "C1",
+      "name": "Lesson practice: an in-review question with rights \"Cần xem xét\" shows why it cannot be published; the button is disabled",
+      "ok": true,
+      "info": "Chưa xuất bản được: |  | Chưa xác nhận quyền sử dụng nguồn (trạng thái \"Cần xem xét\") nên chưa xuất bản được. Khi có giấy phép hoặc sự cho phép, chọn trạng thái quyền tương ứng. |  | Câu từ sách: xác nhận quyền và xuất bản một bước ở Bài tập từ sách."
+    },
+    {
+      "id": "S2",
+      "name": "Câu 1 matched to its printed solution (evidence shown), Admin confirms: answer D from p. 29",
+      "ok": true,
+      "info": "Đáp án D · theo Câu 1 tr. 29, Admin đã xác nhận"
+    },
+    {
+      "id": "S3",
+      "name": "Mismatch detected: another question’s solution for Câu 8 is refused with its conflicts; Câu 8 stays without answer and cannot be published",
+      "ok": true,
+      "info": "Câu 2 chưa khớp hoàn toàn với đề này: |  | Khác số câu: đề Câu 8, lời giải Câu 2 | Chưa đối chiếu được nội dung toán: lời giải không nhắc lại hàm số hay đạo hàm của đề | Tôi đã đối chiếu đề và lời giải trên trang sách: đây đúng là lời giải của câu này. | Vẫn xác nhận | Hủy"
+    },
+    {
+      "id": "S3b",
+      "name": "Missing answers are listed on their own (\"Chưa có đáp án\")",
+      "ok": true,
+      "info": "15 rows"
+    },
+    {
+      "id": "S4",
+      "name": "Câu 2 assigned to lesson P1 (subject Toán, grade 12, chapter inherited on publish)",
+      "ok": true,
+      "info": "Admin đã chọn. |  | Học sinh gặp câu này ở: Luyện tập sau bài “Tính đơn điệu của hàm số (P1)” (và Ôn chương khi chương đủ câu)"
+    },
+    {
+      "id": "S6",
+      "name": "A wrong mapping (Câu 2 → P2) is corrected back to P1 before publishing",
+      "ok": true,
+      "info": "knowledge-c5e8afbc-1daf-44e2-9a27-ee73f05b33e6 → knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9"
+    },
+    {
+      "id": "S5",
+      "name": "Câu 6 placed on the chapter itself: only in \"Ôn chương\"",
+      "ok": true,
+      "info": "Admin đã chọn. |  | Học sinh gặp câu này ở: Ôn chương “ỨNG DỤNG ĐẠO HÀM ĐỂ KHẢO SÁT VÀ VẼ ĐỒ THỊ CỦA HÀM SỐ” (không thuộc riêng bài nào)"
+    },
+    {
+      "id": "S3c",
+      "name": "Content issue explained in place (Câu 7: the book prints only the answer letter, or its pairing is unconfirmed)",
+      "ok": true,
+      "info": "Chưa xuất bản được vì: |  | Chưa xác nhận đáp án: chọn lời giải trong sách hoặc tự giải và ghi nhận."
+    },
+    {
+      "id": "S8",
+      "name": "Unresolved rights and unattested rights are refused by the server (422); nothing published",
+      "ok": true,
+      "info": "422 Chưa xác nhận quyền sử dụng sách: câu hỏi chưa được xuất bản. Khi có giấy phép hoặc sự cho phép, chọn trạng thái tương ứng. / 422 Hãy xác nhận trạng thái quyền sử dụng phản ánh giấy phép hoặc sự cho phép có thật."
+    },
+    {
+      "id": "S8b",
+      "name": "A mixed batch: the dry run publishes Câu 3 and holds Câu 8 with its reason",
+      "ok": true,
+      "info": "[[\"3\",\"PUBLISHED\",\"\"],[\"8\",\"BLOCKED\",\"Chưa xác nhận đáp án: chọn lời giải trong sách hoặc tự giải và ghi nhận.\"]]"
+    },
+    {
+      "id": "S8c",
+      "name": "Choosing \"Chưa rõ\" keeps publishing disabled and offers saving drafts only",
+      "ok": true,
+      "info": "Chưa có giấy phép hoặc sự cho phép thì chưa xuất bản được. Có thể lưu nháp để xuất bản sau, khi đã xác nhận được quyền."
+    },
+    {
+      "id": "S9a",
+      "name": "Pre-publication summary: 4 questions → lesson P1, 1 → the chapter, rights attested, answers listed",
+      "ok": true,
+      "info": "5 ready · Xuất bản 5 câu · SẼ XUẤT BẢN |  | 4 câu → Bài “Tính đơn điệu của hàm số (P1)” | "
+    },
+    {
+      "id": "S7",
+      "name": "Eligible questions published: 5 in the bank, OPEN + OPEN_PRACTICE, rights \"Có giấy phép\", hierarchy set",
+      "ok": true,
+      "info": "3:P1 5:P1 1:P1 2:P1 6:chapter"
+    },
+    {
+      "id": "S9",
+      "name": "Bulk publication confirmed: \"4 câu hỏi đã được xuất bản vào bài …\" and \"1 câu … Ôn chương\", with \"Xem như học sinh\"",
+      "ok": true,
+      "info": "4 câu hỏi đã được xuất bản vào bài “Tính đơn điệu của hàm số (P1)”. |  | Học sinh gặp ở: Luyện tập sau bài “Tính đơn điệu của hàm số (P1)” (và Ôn chương khi chương đủ câu). Lượt luyện tập tiếp theo đã có các câu này. |  | Xem như học sinh | Xem các câu đã xuất bản |  | 1 câu hỏi đã được xuất bản vào Ôn chương “ỨNG DỤNG ĐẠO HÀM ĐỂ KHẢO SÁT VÀ VẼ ĐỒ THỊ CỦA HÀM SỐ”. |  | Học sinh gặp ở: Ôn chương “ỨNG DỤNG ĐẠO HÀM ĐỂ KHẢO SÁT VÀ VẼ ĐỒ THỊ CỦA HÀM SỐ” (không thuộc riêng bài nào). Lượt luyện tập tiế"
+    },
+    {
+      "id": "C2",
+      "name": "The two questions from the screenshot (in review, \"Cần xem xét\") were published in place: same ids, rights change audited",
+      "ok": true,
+      "info": "IMPORTED,IMPORTED,SUBMITTED_FOR_REVIEW,SUBMITTED_FOR_REVIEW,SOURCE_RIGHTS_CHANGED,PUBLISHED,SOURCE_RIGHTS_CHANGED,PUBLISHED"
+    },
+    {
+      "id": "S16",
+      "name": "Publishing again creates nothing: ALREADY_PUBLISHED, one bank question per exercise, rights already known for this book",
+      "ok": true,
+      "info": "[\"ALREADY_PUBLISHED\",\"ALREADY_PUBLISHED\"]"
+    },
+    {
+      "id": "R1",
+      "name": "A student cannot use Admin publishing APIs (publish, PATCH, read a bank question with its answer)",
+      "ok": true,
+      "info": "403 403 403"
+    },
+    {
+      "id": "S17",
+      "name": "Interactive Math P1 still renders for P1",
+      "ok": true,
+      "info": ""
+    },
+    {
+      "id": "S10",
+      "name": "Student sees the published lesson practice: 4 questions for P1",
+      "ok": true,
+      "info": "ỨNG DỤNG ĐẠO HÀM ĐỂ KHẢO SÁT VÀ VẼ ĐỒ THỊ CỦA HÀM SỐ |  | Luyện tập: Tính đơn điệu của hàm số (P1) |  | 4 câu |  | bám sát bài vừa học |  | Chấm ngay |  | sau mỗi câu |  | Có lời giải |  | cho mọi câu |  | Bắt đầu"
+    },
+    {
+      "id": "S18",
+      "name": "Unanswered questions reach the student without answer or explanation",
+      "ok": true,
+      "info": "keys: id,code,type,stem,options,statements,difficulty"
+    },
+    {
+      "id": "C3",
+      "name": "Every question shown is the same canonical bank question the Admin published (id, stem, options)",
+      "ok": true,
+      "info": "Q-MAT-L78FSQ Q-MAT-60IFAP Q-MAT-VFRL9X Q-MAT-8VMXPF"
+    },
+    {
+      "id": "S11",
+      "name": "Correct answer: graded on the server, \"Chính xác!\" with the solution",
+      "ok": true,
+      "info": "Chính xác!"
+    },
+    {
+      "id": "S12",
+      "name": "Wrong answer: states the student’s choice and the right one, then the worked solution step by step",
+      "ok": true,
+      "info": "Chưa đúng, xem lời giải nhé |  | Em chọn B · Đáp án đúng: A |  | LỜI GIẢI |  | 1 | Đáp án A. | 2 | Tập xác định: D = ℝ. | 3 | y' = (x3 + 3x2 - 4)' = 3x2 + 6x | 4 | y' = 0 ⇔ | 5 | x = 0 | 6 | x = -2 | "
+    },
+    {
+      "id": "S13",
+      "name": "Leaving and returning offers \"Làm tiếp (2/4)\" and resumes at question 3 with answers kept",
+      "ok": true,
+      "info": "Làm tiếp (2/4) · 3/4"
+    },
+    {
+      "id": "S15",
+      "name": "Result saved: attempt COMPLETED 3/4 in practice_attempts, shown as 3/4",
+      "ok": true,
+      "info": "3/4 · COMPLETED 3/4"
+    },
+    {
+      "id": "S14",
+      "name": "Retry of the missed question saved as its own MISTAKES attempt; the first attempt is unchanged; no streak or celebration is awarded by practice retries",
+      "ok": true,
+      "info": "MISTAKES COMPLETED 1/1 · first COMPLETED 3/4 · streak rows 0/0 → 0/0"
+    },
+    {
+      "id": "S15b",
+      "name": "Practice history shown on return: best result and completed attempts",
+      "ok": true,
+      "info": "Kết quả tốt nhất của em: 3/4. Đã làm 2 lượt."
+    },
+    {
+      "id": "S5b",
+      "name": "Chapter-level practice (\"Ôn chương\") includes the chapter-level question and the lesson questions",
+      "ok": true,
+      "info": "5 questions, chapter-level Q-MAT-RNWORW included=true"
+    },
+    {
+      "id": "E",
+      "name": "No page errors in the browser",
+      "ok": true,
+      "info": ""
+    },
+    {
+      "id": "O",
+      "name": "No horizontal overflow at 1440px (student)",
+      "ok": true,
+      "info": "0px"
+    }
+  ],
+  "errors": []
+}

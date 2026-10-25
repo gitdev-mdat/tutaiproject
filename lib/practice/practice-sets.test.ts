@@ -76,6 +76,19 @@ describe('pickChapterReview', () => {
     expect(pickChapterReview(only, chapter)).toEqual([]);
   });
 
+  it('counts questions placed on the chapter itself as one more part of the review', () => {
+    const lessonOnly = [question({}), question({}), question({})];
+    const onChapter = [
+      question({ primaryKnowledgeNodeId: 'c1' }),
+      question({ primaryKnowledgeNodeId: 'c1', editorialStatus: 'DRAFT' }),
+    ];
+    const picked = pickChapterReview([...lessonOnly, ...onChapter], chapter);
+    expect(picked).toHaveLength(4);
+    expect(picked.map((q) => q.primaryKnowledgeNodeId)).toContain('c1');
+    expect(picked.some((q) => q.editorialStatus === 'DRAFT')).toBe(false);
+    expect(pickChapterReview(onChapter, chapter)).toEqual([]);
+  });
+
   it('takes lesson by lesson so every lesson is covered, and never Plus questions', () => {
     const pool = [
       ...Array.from({ length: 8 }, () => question({ primaryKnowledgeNodeId: 'l1' })),
