@@ -43,7 +43,8 @@ export function StudentPreview({
       setFeedback(
         withSolutionGuide(
           toPracticeFeedback(question, response, gradePracticeResponse(question, response)),
-          question
+          question,
+          'admin'
         )
       );
     } catch {

@@ -15,6 +15,36 @@ import { v4 as uuidv4 } from 'uuid';
 import { isAiAssisted, type EditorialStatus } from '@/lib/question-bank/qb-types';
 import { computeContentHash } from '@/lib/question-bank/qb-hash';
 import { adminApiGuard } from '@/lib/auth/admin';
+import type { CalculatorGuideReview } from '@/lib/calculator-tutor/types';
+
+const GUIDE_REVIEW_STATUSES = ['ACCEPTED', 'DISABLED', 'ORIGINAL_ONLY'] as const;
+
+/** Admin's decision on a generated calculator guide: null clears it. Corrections are plain text. */
+function parseGuideReview(value: unknown): CalculatorGuideReview | null | 'invalid' {
+  if (value === null) return null;
+  if (typeof value !== 'object') return 'invalid';
+  const input = value as Record<string, unknown>;
+  if (!GUIDE_REVIEW_STATUSES.includes(input.status as (typeof GUIDE_REVIEW_STATUSES)[number]))
+    return 'invalid';
+  if (typeof input.sourceHash !== 'string' || !/^[0-9a-f]{8}$/.test(input.sourceHash))
+    return 'invalid';
+  const corrections: Record<string, string> = {};
+  if (input.corrections !== undefined) {
+    if (typeof input.corrections !== 'object' || input.corrections === null) return 'invalid';
+    for (const [id, text] of Object.entries(input.corrections)) {
+      if (typeof text !== 'string' || text.length > 1000 || !/^[\w-]{1,40}$/.test(id))
+        return 'invalid';
+      if (text.trim()) corrections[id] = text.trim();
+    }
+  }
+  return {
+    status: input.status as CalculatorGuideReview['status'],
+    sourceHash: input.sourceHash,
+    ...(Object.keys(corrections).length ? { corrections } : {}),
+    by: 'admin',
+    at: new Date().toISOString(),
+  };
+}
 
 export async function GET(_req: Request, { params }: { params: Promise<{ questionId: string }> }) {
   const denied = await adminApiGuard();
@@ -69,6 +99,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ questi
       answerVerified?: boolean;
     };
     const updated = { ...existing, ...body, updatedAt: new Date().toISOString() };
+    if (body.calculatorGuideReview !== undefined) {
+      const review = parseGuideReview(body.calculatorGuideReview);
+      if (review === 'invalid') {
+        return NextResponse.json(
+          { error: 'Quyết định về hướng dẫn máy tính không hợp lệ.' },
+          { status: 422 }
+        );
+      }
+      if (review) updated.calculatorGuideReview = review;
+      else delete updated.calculatorGuideReview;
+    }
     const contentChanged = (
       [
         'stem',
@@ -196,6 +237,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ questi
         action: 'SOURCE_RIGHTS_CHANGED',
         prev: existing.source,
         next: body.source,
+      });
+    }
+
+    if (
+      body.calculatorGuideReview !== undefined &&
+      JSON.stringify(updated.calculatorGuideReview ?? null) !==
+        JSON.stringify(existing.calculatorGuideReview ?? null)
+    ) {
+      auditActions.push({
+        action: 'UPDATED',
+        prev: existing.calculatorGuideReview ?? null,
+        next: updated.calculatorGuideReview ?? null,
       });
     }
 

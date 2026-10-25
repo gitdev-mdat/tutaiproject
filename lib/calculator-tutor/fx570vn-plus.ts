@@ -12,6 +12,12 @@
  * precision, from the expression the student typed: a value that is undefined
  * (ln of a non-positive number, division by zero) is shown as ERROR, as the
  * calculator does.
+ *
+ * Input follows the default MathI/O setting: √▭ and x^▭ open a box that ▶ leaves
+ * (the box is closed automatically at the end of the expression); x² squares
+ * what is before it. sin, cos, tan, CALC and ∫ are on the keypad but outside the
+ * simulation: their result depends on settings (angle unit) or screens that are
+ * not simulated, so they say so instead of computing something.
  */
 
 export const MODEL = {
@@ -29,6 +35,12 @@ export type KeyId =
   | 'DOWN'
   | 'LEFT'
   | 'RIGHT'
+  | 'CALC'
+  | 'INTEG'
+  | 'POWER'
+  | 'SIN'
+  | 'COS'
+  | 'TAN'
   | 'FRAC'
   | 'SQRT'
   | 'SQUARE'
@@ -74,6 +86,12 @@ export const KEYS: Record<KeyId, KeyFace> = {
   DOWN: { id: 'DOWN', label: '▼', aria: 'Mũi tên xuống' },
   LEFT: { id: 'LEFT', label: '◀', aria: 'Mũi tên trái' },
   RIGHT: { id: 'RIGHT', label: '▶', aria: 'Mũi tên phải' },
+  CALC: { id: 'CALC', label: 'CALC', shift: 'SOLVE', alpha: '=', aria: 'CALC' },
+  INTEG: { id: 'INTEG', label: '∫▭', shift: 'd/dx', aria: 'Tích phân' },
+  POWER: { id: 'POWER', label: 'x▭', aria: 'Luỹ thừa' },
+  SIN: { id: 'SIN', label: 'sin', aria: 'sin' },
+  COS: { id: 'COS', label: 'cos', aria: 'cos' },
+  TAN: { id: 'TAN', label: 'tan', aria: 'tan' },
   FRAC: { id: 'FRAC', label: '▭/▭', aria: 'Phân số' },
   SQRT: { id: 'SQRT', label: '√▭', aria: 'Căn bậc hai' },
   SQUARE: { id: 'SQUARE', label: 'x²', aria: 'Bình phương' },
@@ -125,6 +143,11 @@ export type Token =
   | 'e'
   | 'π'
   | 'ln('
+  | '√('
+  | '^('
+  /** The end of a √ or x^ box; shown as ")" and passed with ▶. */
+  | '⟩'
+  | '²'
   | '('
   | ')'
   | '+'
@@ -211,9 +234,20 @@ const DIGIT_TOKENS: Partial<Record<KeyId, Token>> = {
   DIVIDE: '÷',
   NEG: '⁻',
   LN: 'ln(',
+  SQUARE: '²',
 };
 
+/** Keys that open a MathI/O box: the box end is inserted with them. */
+const BOX_KEYS: Partial<Record<KeyId, Token>> = { SQRT: '√(', POWER: '^(' };
+
 const UNSUPPORTED = 'Phím này nằm ngoài phạm vi bản mô phỏng (chỉ mô phỏng chức năng TABLE).';
+const OUTSIDE: Partial<Record<KeyId, string>> = {
+  SIN: 'sin, cos, tan không được mô phỏng: kết quả phụ thuộc đơn vị góc (Deg/Rad) cài trên máy.',
+  COS: 'sin, cos, tan không được mô phỏng: kết quả phụ thuộc đơn vị góc (Deg/Rad) cài trên máy.',
+  TAN: 'sin, cos, tan không được mô phỏng: kết quả phụ thuộc đơn vị góc (Deg/Rad) cài trên máy.',
+  CALC: 'CALC/SOLVE không được mô phỏng (bản mô phỏng chỉ có TABLE).',
+  INTEG: 'Tích phân và đạo hàm tại điểm không được mô phỏng (bản mô phỏng chỉ có TABLE).',
+};
 
 /** The token a key types, after SHIFT/ALPHA, or null when it types nothing. */
 function tokenFor(key: KeyId, state: CalcState): Token | null {
@@ -231,6 +265,9 @@ const TOKEN_MESSAGE: Partial<Record<Token, string>> = {
   e: 'Nhập hằng số e ≈ 2,718 (ALPHA + ×10ˣ).',
   π: 'Nhập hằng số π ≈ 3,142 (SHIFT + ×10ˣ).',
   'ln(': 'Phím ln nhập "ln(" và tự mở ngoặc.',
+  '√(': 'Mở ô căn bậc hai. Nhập biểu thức trong căn, bấm ▶ để ra khỏi ô.',
+  '^(': 'Mở ô số mũ. Nhập số mũ, bấm ▶ để ra khỏi ô.',
+  '²': 'Bình phương phần đứng trước.',
   '÷': 'Nhập phép chia.',
   ')': 'Đóng ngoặc.',
   '(': 'Mở ngoặc.',
@@ -307,6 +344,16 @@ export function press(previous: CalcState, key: KeyId): PressResult {
     case 'STEP': {
       const tokens = editing(previous);
       const token = tokenFor(key, previous);
+      const box = !previous.shift && !previous.alpha ? BOX_KEYS[key] : undefined;
+      if (box) {
+        if (previous.screen !== 'F' && previous.screen !== 'G')
+          return fail('Start, End và Step chỉ cần số, không cần căn hay số mũ.');
+        const at = previous.cursor;
+        return done(
+          withEdited(state, [...tokens.slice(0, at), box, '⟩', ...tokens.slice(at)], at + 1),
+          TOKEN_MESSAGE[box]!
+        );
+      }
       if (token) {
         if (previous.screen !== 'F' && previous.screen !== 'G' && token === 'X') {
           return fail('Start, End và Step là các số, không chứa X.');
@@ -316,15 +363,27 @@ export function press(previous: CalcState, key: KeyId): PressResult {
           TOKEN_MESSAGE[token] ?? `Nhập "${token}".`
         );
       }
+      if (OUTSIDE[key]) return fail(OUTSIDE[key]!);
       if (previous.shift || previous.alpha) return fail(UNSUPPORTED);
       if (key === 'DEL') {
-        if (previous.cursor === 0) return fail('Không còn gì để xoá ở bên trái con trỏ.');
+        const at = previous.cursor;
+        if (at === 0) return fail('Không còn gì để xoá ở bên trái con trỏ.');
+        const left = tokens[at - 1];
+        // The end of a box is not deleted: the cursor goes back inside the box.
+        if (left === '⟩') return done({ ...state, cursor: at - 1 }, 'Vào lại trong ô.');
+        if (left === '√(' || left === '^(') {
+          const end = boxEnd(tokens, at - 1);
+          return done(
+            withEdited(
+              state,
+              tokens.filter((_, index) => index !== at - 1 && index !== end),
+              at - 1
+            ),
+            'Xoá ô, giữ phần bên trong.'
+          );
+        }
         return done(
-          withEdited(
-            state,
-            [...tokens.slice(0, previous.cursor - 1), ...tokens.slice(previous.cursor)],
-            previous.cursor - 1
-          ),
+          withEdited(state, [...tokens.slice(0, at - 1), ...tokens.slice(at)], at - 1),
           'Xoá ký tự bên trái con trỏ.'
         );
       }
@@ -336,7 +395,7 @@ export function press(previous: CalcState, key: KeyId): PressResult {
       if (key === 'RIGHT')
         return done(
           { ...state, cursor: Math.min(tokens.length, previous.cursor + 1) },
-          'Dời con trỏ sang phải.'
+          tokens[previous.cursor] === '⟩' ? 'Ra khỏi ô.' : 'Dời con trỏ sang phải.'
         );
       if (key === 'AC') {
         if (previous.screen === 'F' || previous.screen === 'G')
@@ -352,6 +411,7 @@ export function press(previous: CalcState, key: KeyId): PressResult {
     }
 
     case 'TABLE': {
+      if (OUTSIDE[key]) return fail(OUTSIDE[key]!);
       if (previous.shift || previous.alpha) return fail(UNSUPPORTED);
       const columns = previous.hasG ? 3 : 2;
       if (key === 'DOWN' || key === 'UP') {
@@ -398,6 +458,19 @@ export function press(previous: CalcState, key: KeyId): PressResult {
       }
       return fail('Máy đang báo lỗi. Bấm AC để quay lại.');
   }
+}
+
+/** Index of the box end matching the box opened at `open`. */
+function boxEnd(tokens: Token[], open: number): number {
+  let depth = 0;
+  for (let index = open + 1; index < tokens.length; index += 1) {
+    if (tokens[index] === '√(' || tokens[index] === '^(') depth += 1;
+    if (tokens[index] === '⟩') {
+      if (depth === 0) return index;
+      depth -= 1;
+    }
+  }
+  return -1;
 }
 
 /** = on an input screen. */
@@ -505,11 +578,14 @@ type Node =
   | { t: 'x' }
   | { t: 'neg'; a: Node }
   | { t: 'ln'; a: Node }
+  | { t: 'sqrt'; a: Node }
+  | { t: 'pow'; a: Node; b: Node }
   | { t: 'bin'; op: '+' | '−' | '×' | '÷'; a: Node; b: Node };
 
 /**
- * Reads tokens with the calculator's precedence: × and ÷ (including implied
- * multiplication such as 2X) before + and −. Closing brackets at the end of the
+ * Reads tokens with the calculator's precedence (fx-570VN PLUS user's guide,
+ * "Calculation priority sequence"): x² and x^ before signs, multiplication
+ * without a sign (2X) before × and ÷, and those before + and −. Closing brackets at the end of the
  * expression may be omitted, as on the calculator. Returns null on a syntax error.
  */
 export function parse(tokens: Token[]): Node | null {
@@ -517,7 +593,7 @@ export function parse(tokens: Token[]): Node | null {
   const peek = () => tokens[i];
   const startsFactor = (token: Token | undefined) =>
     token !== undefined &&
-    (/^[\d.]$/.test(token) || ['X', 'e', 'π', 'ln(', '(', '⁻'].includes(token));
+    (/^[\d.]$/.test(token) || ['X', 'e', 'π', 'ln(', '√(', '(', '⁻'].includes(token));
 
   function number(): Node | null {
     let text = '';
@@ -532,7 +608,14 @@ export function parse(tokens: Token[]): Node | null {
     }
     return peek() === undefined;
   }
-  function factor(): Node | null {
+  function boxClosing(): boolean {
+    if (peek() === '⟩') {
+      i += 1;
+      return true;
+    }
+    return false;
+  }
+  function primary(): Node | null {
     const token = peek();
     if (token === undefined) return null;
     if (/^[\d.]$/.test(token)) return number();
@@ -540,31 +623,57 @@ export function parse(tokens: Token[]): Node | null {
     if (token === 'X') return { t: 'x' };
     if (token === 'e') return { t: 'num', v: Math.E };
     if (token === 'π') return { t: 'num', v: Math.PI };
-    if (token === '⁻') {
-      const a = factor();
-      return a && { t: 'neg', a };
-    }
     if (token === '(' || token === 'ln(') {
       const a = sum();
       if (!a || !closing()) return null;
       return token === '(' ? a : { t: 'ln', a };
     }
+    if (token === '√(') {
+      const a = sum();
+      if (!a || !boxClosing()) return null;
+      return { t: 'sqrt', a };
+    }
     return null;
   }
-  function product(): Node | null {
+  /** x² and x^▭ apply to what is just before them, before a sign: (−)X² is −(X²). */
+  function postfix(): Node | null {
+    let a = primary();
+    while (a && (peek() === '²' || peek() === '^(')) {
+      if (tokens[i++] === '²') {
+        a = { t: 'pow', a, b: { t: 'num', v: 2 } };
+      } else {
+        const b = sum();
+        if (!b || !boxClosing()) return null;
+        a = { t: 'pow', a, b };
+      }
+    }
+    return a;
+  }
+  function factor(): Node | null {
+    if (peek() === '⁻') {
+      i += 1;
+      const a = factor();
+      return a && { t: 'neg', a };
+    }
+    return postfix();
+  }
+  /** Multiplication without a sign (2X, 3ln(X)) comes before × and ÷: 1÷2X is 1÷(2X). */
+  function implied(): Node | null {
     let a = factor();
-    while (a) {
-      const token = peek();
-      if (token === '×' || token === '÷') {
-        i += 1;
-        const b = factor();
-        if (!b) return null;
-        a = { t: 'bin', op: token, a, b };
-      } else if (startsFactor(token)) {
-        const b = factor();
-        if (!b) return null;
-        a = { t: 'bin', op: '×', a, b };
-      } else break;
+    while (a && startsFactor(peek())) {
+      const b = factor();
+      if (!b) return null;
+      a = { t: 'bin', op: '×', a, b };
+    }
+    return a;
+  }
+  function product(): Node | null {
+    let a = implied();
+    while (a && (peek() === '×' || peek() === '÷')) {
+      const op = tokens[i++] as '×' | '÷';
+      const b = implied();
+      if (!b) return null;
+      a = { t: 'bin', op, a, b };
     }
     return a;
   }
@@ -598,6 +707,16 @@ function run(node: Node, x: number): number {
       const a = run(node.a, x);
       if (!(a > 0)) throw new MathError();
       return Math.log(a);
+    }
+    case 'sqrt': {
+      const a = run(node.a, x);
+      if (a < 0) throw new MathError();
+      return Math.sqrt(a);
+    }
+    case 'pow': {
+      const value = run(node.a, x) ** run(node.b, x);
+      if (!Number.isFinite(value)) throw new MathError();
+      return value;
     }
     case 'bin': {
       const a = run(node.a, x);
@@ -661,7 +780,12 @@ export function formatCell(value: number | null): string {
 
 /** An expression as typed, for the input line. */
 export function expressionText(tokens: Token[]): string {
-  return tokens.map((token) => (token === '⁻' ? '-' : token)).join('');
+  return tokens.map(tokenText).join('');
+}
+
+/** How a token reads on the input line. */
+export function tokenText(token: Token): string {
+  return token === '⁻' ? '-' : token === '⟩' ? ')' : token === '^(' ? '^(' : token;
 }
 
 /** Plain-text summary of the screen, for tests and screen readers. */

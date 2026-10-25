@@ -1,3 +1,4 @@
+import type { CalculatorGuideReview } from '@/lib/calculator-tutor/types';
 /**
  * Question Bank — canonical domain types.
  *
@@ -275,6 +276,13 @@ export interface Question {
 
   /** Admin-only provenance of a question imported from a textbook exercise. */
   textbookSource?: TextbookQuestionSource;
+
+  /**
+   * Admin's decision on the calculator guide generated from this question
+   * (lib/calculator-tutor). The guide itself is not stored: it is generated from
+   * the content, and the decision only holds for the content hash it was made on.
+   */
+  calculatorGuideReview?: CalculatorGuideReview;
 }
 
 /**

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Question } from '@/lib/question-bank/qb-types';
 import { replay, screenText, type CalcState } from './fx570vn-plus';
-import { SOLUTION_GUIDES, solutionGuideFor } from './registry';
+import corpus from './fixtures/math-book-3.json';
+import { REFERENCE_GUIDES, solutionGuideFor } from './registry';
 import { X_OVER_LN_X } from './guides/x-over-ln-x';
 
-describe.each(SOLUTION_GUIDES.map((guide) => [guide.id, guide] as const))('%s', (_id, guide) => {
+describe.each(REFERENCE_GUIDES.map((guide) => [guide.id, guide] as const))('%s', (_id, guide) => {
   it('every step leaves the screen it promises, replayed key by key', () => {
     let state: CalcState | undefined;
     for (const step of guide.calculator.steps) {
@@ -64,34 +65,37 @@ describe('x / ln x', () => {
   });
 });
 
-describe('matching a question', () => {
+describe('matching the reference lesson, by content only', () => {
+  const real = corpus.questions[0];
   const base = {
-    id: 'qa-other',
-    stem: 'Cho hàm số $y = \\frac{x}{\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?',
-    explanation: 'Tập xác định: $D = (0; +\frac{\\infty}{\\infty}) \\setminus \\{1\\}$.\nCách 2: …',
-    textbookSource: { documentTitle: 'math_book_3', questionNumber: '1' },
+    id: 'qa-other-id',
+    stem: real.stem,
+    options: real.options,
+    explanation: real.explanation,
   } as unknown as Question;
 
-  it('by id, or by the same textbook question with the same formula', () => {
-    expect(
-      solutionGuideFor({
-        ...base,
-        id: 'q-b48ea52f-2c80-41f8-9740-852bbad40ed5',
-        textbookSource: undefined,
-      })?.id
-    ).toBe(X_OVER_LN_X.id);
+  it('the same question content gets the reference lesson, whatever its id', () => {
     expect(solutionGuideFor(base)?.id).toBe(X_OVER_LN_X.id);
+    expect(solutionGuideFor({ ...base, id: 'anything-else' })?.origin).toBe('reference');
   });
 
-  it('not another question of the book, nor the same number in another book', () => {
-    expect(solutionGuideFor({ ...base, stem: 'Cho hàm số $y = x - \\ln(x + 1)$.' })).toBeNull();
+  it('another question on x / ln x (other choices) gets a generated guide, not the reference', () => {
+    const other = {
+      ...base,
+      options: [
+        { key: 'A', content: 'Hàm số đồng biến trên $(e; +\\infty)$' },
+        { key: 'B', content: 'Hàm số đồng biến trên $(0; 1)$' },
+      ],
+    } as Question;
+    const guide = solutionGuideFor(other)!;
+    expect(guide.origin).toBe('generated');
+    expect(guide.level).toBe('A');
+  });
+
+  it('a question without a calculator method gets nothing', () => {
     expect(
-      solutionGuideFor({
-        ...base,
-        textbookSource: { documentTitle: 'other', questionNumber: '1' },
-      } as Question)
+      solutionGuideFor({ ...base, explanation: 'Tập xác định: $D = \\mathbb{R}$.' })
     ).toBeNull();
-    expect(solutionGuideFor({ ...base, textbookSource: undefined })).toBeNull();
   });
 
   it('keeps only the source notes that apply to the imported text, and no matching rule in the payload', () => {
@@ -100,9 +104,11 @@ describe('matching a question', () => {
     expect(guide.source.notes.some((note) => /ký tự điều khiển/.test(note.text))).toBe(true);
     const clean = solutionGuideFor({
       ...base,
-      explanation: 'Tập xác định: $D = (0; +\\infty) \\setminus \\{1\\}$.',
+      explanation: real.explanation.replace(
+        /\$D = \(0; \+[^$]*\$/,
+        '$D = (0; +\\infty) \\setminus \\{1\\}$'
+      ),
     })!;
     expect(clean.source.notes.some((note) => /ký tự điều khiển/.test(note.text))).toBe(false);
-    expect(clean.source.notes.some((note) => /Cách 1/.test(note.text))).toBe(false);
   });
 });

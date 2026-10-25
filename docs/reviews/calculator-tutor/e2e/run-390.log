@@ -1,8 +1,8 @@
       Tests  1 passed (1)
-   Start at  10:19:01
-   Duration  541ms (transform 132ms, setup 0ms, collect 127ms, tests 172ms, environment 0ms, prepare 82ms)
+   Start at  12:52:46
+   Duration  537ms (transform 123ms, setup 0ms, collect 147ms, tests 149ms, environment 0ms, prepare 80ms)
 
-PASS P1 Before answering: no solution, guide or calculator on the page or in the attempt API — attempt pa-30369e92-8bb8-41c2-a317-58f4030e7205
+PASS P1 Before answering: no solution, guide or calculator on the page or in the attempt API — attempt pa-8685d08b-7e19-47d2-9fdc-d5156b8db3aa
 PASS M1 After answering: the solution shows two separate methods, derivative first
 PASS M2 Method 1: correct domain, derivative, x = e, conclusion D, sign table −, −, + — 1 | Tập xác định: cần x > 0 để ln x có nghĩa và ln x ≠ 0 (tức x ≠ 1) để mẫu khác 0, nên D = (0; +∞) ∖ {1}. | 2 | Đạo hàm: y' =  | 1 · ln x - x ·  | 1 | x | (ln 
 PASS M3 Original imported solution kept verbatim (17 lines, incl. "Start? Ta chọn x = 0" and "SHIFT x10^x") with 6 notes — 17 lines, 6 notes

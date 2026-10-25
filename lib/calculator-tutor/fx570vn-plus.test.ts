@@ -146,15 +146,75 @@ describe('TABLE', () => {
   });
 });
 
+describe('MathI/O boxes: √▭, x^▭ and x²', () => {
+  const X: KeyId[] = ['ALPHA', 'RPAREN'];
+  it('√ opens a box that ▶ leaves; the box closes itself at the end', () => {
+    // (2X − 3) ÷ √(X² − 1)
+    const state = replay([
+      ...OPEN,
+      'LPAREN',
+      '2',
+      ...X,
+      'MINUS',
+      '3',
+      'RPAREN',
+      'DIVIDE',
+      'SQRT',
+      ...X,
+      'SQUARE',
+      'MINUS',
+      '1',
+    ]);
+    expect(screenText(state)).toBe('f(X)=(2X−3)÷√(X²−1)');
+    expect(evaluate(state.f, 2)).toEqual({ kind: 'value', value: 1 / Math.sqrt(3) });
+    expect(evaluate(state.f, 0.5)).toEqual({ kind: 'math' });
+    expect(evaluate(state.f, 1)).toEqual({ kind: 'math' });
+  });
+
+  it('x^▭ takes the exponent in a box; ▶ goes on after it', () => {
+    const state = replay([...OPEN, ...X, 'POWER', '3', 'RIGHT', 'PLUS', '1']);
+    expect(screenText(state)).toBe('f(X)=X^(3)+1');
+    expect(evaluate(state.f, 2)).toEqual({ kind: 'value', value: 9 });
+  });
+
+  it('(−)X² is −(X²), and 1÷2X is 1÷(2X) (multiplication without a sign first)', () => {
+    const square = replay([...OPEN, 'NEG', ...X, 'SQUARE']);
+    expect(evaluate(square.f, 3)).toEqual({ kind: 'value', value: -9 });
+    const quotient = replay([...OPEN, '1', 'DIVIDE', '2', ...X]);
+    expect(evaluate(quotient.f, 4)).toEqual({ kind: 'value', value: 1 / 8 });
+  });
+
+  it('DEL steps back into a box and removes a box with its end, keeping what is inside', () => {
+    let state = replay([...OPEN, 'SQRT', '4', 'RIGHT']);
+    state = replay(['DEL'], state);
+    expect(state.cursor).toBe(2);
+    state = replay(['LEFT', 'DEL'], state);
+    expect(screenText(state)).toBe('f(X)=4');
+  });
+
+  it('boxes are not accepted at Start?/End?/Step?', () => {
+    const state = replay([...OPEN, ...X, 'EQ', 'EQ']);
+    expect(press(state, 'SQRT').ok).toBe(false);
+  });
+});
+
 describe('unsupported keys say so', () => {
-  it.each<KeyId>(['SQRT', 'SQUARE', 'LOG', 'FRAC', 'RCL', 'ENG', 'SD', 'MPLUS', 'ANS', 'ON'])(
-    '%s',
+  it.each<KeyId>(['LOG', 'FRAC', 'RCL', 'ENG', 'SD', 'MPLUS', 'ANS', 'ON'])('%s', (key) => {
+    const state = replay([...OPEN]);
+    const result = press(state, key);
+    expect(result.ok).toBe(false);
+    expect(result.state.f).toEqual(state.f);
+    expect(result.message).toMatch(/ngoài phạm vi/);
+  });
+
+  it.each<KeyId>(['SIN', 'COS', 'TAN', 'CALC', 'INTEG'])(
+    '%s says why it is not simulated',
     (key) => {
       const state = replay([...OPEN]);
       const result = press(state, key);
       expect(result.ok).toBe(false);
       expect(result.state.f).toEqual(state.f);
-      expect(result.message).toMatch(/ngoài phạm vi/);
+      expect(result.message).toMatch(/không được mô phỏng/);
     }
   );
 

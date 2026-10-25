@@ -6,7 +6,7 @@
    "id": "P1",
    "label": "Before answering: no solution, guide or calculator on the page or in the attempt API",
    "ok": true,
-   "detail": "attempt pa-00457117-822f-4416-b7b3-f028e7dbb0c1"
+   "detail": "attempt pa-ae4ff673-5296-4457-b21e-f22a8a1b591a"
   },
   {
    "id": "M1",
@@ -126,7 +126,7 @@
    "id": "T8",
    "label": "Practice completed with keyboard input: success state and the \"not a proof\" conclusion",
    "ok": true,
-   "detail": "66 presses in 2 s"
+   "detail": "66 presses in 3 s"
   },
   {
    "id": "T9",

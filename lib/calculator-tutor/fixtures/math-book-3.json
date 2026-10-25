@@ -1,0 +1,1290 @@
+{
+ "note": "Read-only snapshot of the Mathematics question bank (math_book_3) and its textbook artifacts, exported 2026-10-25 from Production for detector tests. Not used at runtime.",
+ "questions": [
+  {
+   "id": "q-b48ea52f-2c80-41f8-9740-852bbad40ed5",
+   "code": "Q-MAT-TPG9WI",
+   "stem": "Cho hàm số $y = \\frac{x}{\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số luôn đồng biến trên $(0; +\\infty)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$"
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "Tập xác định: $D = (0; +\frac{\\infty}{\\infty}) \\setminus \\{1\\}$.\n\nTa có: $y' = \\left(\\frac{x}{\\ln x}\\right)' = \\frac{\\ln x - 1}{(\\ln x)^2}$.\n\n$y' = 0 \\Leftrightarrow \\ln x = 1 \\Leftrightarrow x = e$;\n$y'$ không xác định tại $x = 1$\n\n+ $y' > 0$ $\\forall x \\in (e; +\\infty)$ nên hàm số đồng biến trên $(e; +\\infty)$.\n\n+ $y' < 0$ $\\forall x \\in (0; 1)$ nên hàm số nghịch biến trên $(0; 1)$.\n\n+ $y' < 0$ $\\forall x \\in (1; e)$ nên hàm số nghịch biến trên $(1; e)$.\n\nCách 2: Sử dụng máy tính casio:\nNhận thấy ở các phương án có các khoảng sau: $(0; +\\infty); (0; 1); (0; e); (1; e); (e; +\\infty)$.\nLúc này ta sử dụng lệnh MODE 7 TABLE để xét tính đồng biến nghịch biến của hàm số:\nNhập vào máy $Fx = \\frac{x}{\\ln x}$:\n\nẤn 2 lần = máy hiện Start? Ta chọn $x = 0$ , ấn $0 =$\nEnd? Ta nhập SHIFT x10^x (chính là chọn end là $e$).\nDo ở đây ta cho chạy từ $0$ đến $e$ bởi ta cần xét tính đồng biến nghịch biến trên $(0; +\\infty); (0; 1); (0; e); (1; e)$.\nẤn = máy hiện Step? Nhập 0,2, máy hiện như sau:\n\nTừ đây ta nhận thấy giá trị của hàm số giảm khi cho $x$ chạy từ $0$ đến $1$. Vậy hàm số nghịch biến trên $(0; 1)$ ; từ đây ta loại A và B. Tiếp theo kéo xuống thì máy hiện:\n\nLúc này ta thấy các giá trị của hàm số tiếp tục giảm khi cho $x$ chạy từ $1$ đến $e$. Do vậy hàm số nghịch biến trên $(1; e)$, từ đây ta loại C, chọn D.",
+   "questionNumber": "1",
+   "solutionPages": [
+    29
+   ]
+  },
+  {
+   "id": "q-ad569b3b-95d7-4359-8856-878eb209fdf2",
+   "code": "Q-MAT-1WC5W7",
+   "stem": "Cho hàm số $y = x - \\ln(x + 1)$. Khẳng định nào dưới đây là đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số có tập xác định là $\\mathbb{R} \\setminus \\{-1\\}$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số đồng biến trên $(-1; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số đồng biến trên $(-\\infty; 0)$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số nghịch biến trên $(-1; 0)$"
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "Tập xác định: $D = (-1; +\\infty) \\Rightarrow$ loại A.\n\n$y' = [x - \\ln(x + 1)]' = \\frac{x}{x + 1}$.\n\n$y' = 0 \\Leftrightarrow x = 0$\n$y' > 0 \\Leftrightarrow x > 0 \\Rightarrow$ hàm số đồng biến trên $(0; +\\infty)$.\n$y' < 0 \\Leftrightarrow -1 < x < 0$\n$\\Rightarrow$ hàm số nghịch biến trên $(-1; 0)$\n\nCách 2: Sử dụng máy tính casio bằng lệnh TABLE trong MODE 7 tương tự bài 1.",
+   "questionNumber": "2",
+   "solutionPages": [
+    29
+   ]
+  },
+  {
+   "id": "q-a2f9782c-4d1f-4ede-88c3-5db872d311f0",
+   "code": "Q-MAT-H4W9GR",
+   "stem": "Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(-2; 0)$"
+    },
+    {
+     "key": "B",
+     "content": "$(-\\infty; -2)$"
+    },
+    {
+     "key": "C",
+     "content": "$(0; +\\infty)$"
+    },
+    {
+     "key": "D",
+     "content": "$\\mathbb{R}$"
+    }
+   ],
+   "correctAnswer": "A",
+   "explanation": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (x^3 + 3x^2 - 4)' = 3x^2 + 6x$\n\n$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = -2$\n\nTa có hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng N, tức hàm số nghịch biến trên $(-2; 0)$.",
+   "questionNumber": "3",
+   "solutionPages": [
+    29
+   ]
+  },
+  {
+   "id": "q-8eea9567-2e2c-4a04-88c2-6a5e76c11ef5",
+   "code": "Q-MAT-V163BU",
+   "stem": "Cho hàm số $y = \\frac{-x + 2}{x - 1}$. Khẳng định nào dưới đây là đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số đồng biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số nghịch biến trên tập $\\mathbb{R} \\setminus \\{1\\}$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số nghịch biến với mọi $x \\ne 1$."
+    }
+   ],
+   "correctAnswer": "B",
+   "explanation": "Tập xác định: $D = \\mathbb{R} \\setminus \\{1\\}$.\n\nTa có $ad - bc = 1 - 2 = -1 < 0$\n\nSuy ra hàm số nghịch biến trên từng khoảng $(-\\infty; 1)$ và $(1; +\\infty)$.",
+   "questionNumber": "4",
+   "solutionPages": [
+    29
+   ]
+  },
+  {
+   "id": "q-346b64e7-d514-4dde-86a6-2e6e21163cae",
+   "code": "Q-MAT-QAS8RK",
+   "stem": "Hàm số $y = -x^3 + 3x^2 + 9x$ đồng biến trên khoảng nào sau đây?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(-2; 3)$"
+    },
+    {
+     "key": "B",
+     "content": "$(-2; -1)$"
+    },
+    {
+     "key": "C",
+     "content": "$\\mathbb{R}$"
+    },
+    {
+     "key": "D",
+     "content": "$(2; 3)$"
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (-x^3 + 3x^2 + 9x)' = -3x^2 + 6x + 9$\n\n$y' = 0 \\Leftrightarrow x = 3$ hoặc $x = -1$\n\nTa thấy hàm số có hệ số $a = -1 < 0$ nên hàm số đồng biến trên $(-1; 3)$.",
+   "questionNumber": "5",
+   "solutionPages": [
+    29
+   ]
+  },
+  {
+   "id": "q-66ec1c9d-7dad-4a1b-a5a4-d811b83d0939",
+   "code": "Q-MAT-29M0ZK",
+   "stem": "Cho hàm số $y = -x^3 - 6x^2 + 10$. Chọn khẳng định đúng trong các khẳng định sau :",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; 0)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; -4)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số đã cho đồng biến trên khoảng $(0; +\\infty)$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số đã cho đồng biến trên khoảng $(-4; 0)$"
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (-x^3 - 6x^2 + 10)' = -3x^2 - 12x$\n\n$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = -4$\n\nDo hệ số $a = -1 < 0$ nên hàm số đồng biến trên $(-4; 0)$",
+   "questionNumber": "6",
+   "solutionPages": [
+    29
+   ]
+  },
+  {
+   "id": "q-1fc6d9ee-16b5-4a95-ab9e-f2f34d9884b6",
+   "code": "Q-MAT-7PA28A",
+   "stem": "Cho hàm số $y = x^4 - 2x^2 - 1$. Khẳng định nào sau đây là đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số đã cho đồng biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số đã cho nghịch biến trên khoảng $(0; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số đã cho nghịch biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$"
+    }
+   ],
+   "correctAnswer": "C",
+   "explanation": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (x^4 - 2x^2 - 1)' = 4x^3 - 4x$\n\n$y' = 0 \\Leftrightarrow x = \\pm 1$ hoặc $x = 0$\n\nDo hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng W từ đây suy ra hàm số nghịch biến trên $(-\\infty; -1)$ và $(0; 1)$; hàm số đồng biến trên $(-1; 0)$ và $(1; +\\infty)$.",
+   "questionNumber": "7",
+   "solutionPages": [
+    29,
+    30
+   ]
+  },
+  {
+   "id": "q-f2bb3eeb-ce89-479e-8494-00f16c025153",
+   "code": "Q-MAT-YNANDC",
+   "stem": "Hàm số $f(x)$ có đạo hàm $f'(x) = x^2(x + 2)$. Phát biểu nào sau đây là đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số đồng biến trên khoảng $(-2; +\\infty)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số nghịch biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số đồng biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số nghịch biến trên khoảng $(-2; 0)$"
+    }
+   ],
+   "correctAnswer": "A",
+   "explanation": "Vì $f'(x) = x^2(x + 2) \\ge 0$ $\\forall x \\in (-2; +\\infty)$ nên hàm số đồng biến trên $(-2; +\\infty)$.",
+   "questionNumber": "8",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-a5711978-26ce-4dc3-83a3-e8d16ce83969",
+   "code": "Q-MAT-P6MIQB",
+   "stem": "Hàm số $y = 2x^4 + 1$ đồng biến trên khoảng nào?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$\\left(-\\infty; -\\frac{1}{2}\\right)$"
+    },
+    {
+     "key": "B",
+     "content": "$(0; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "$\\left(-\\frac{1}{2}; +\\infty\\right)$"
+    },
+    {
+     "key": "D",
+     "content": "$(-\\infty; 0)$"
+    }
+   ],
+   "correctAnswer": "B",
+   "explanation": "Cách suy luận 1:\nTập xác định: $D = \\mathbb{R}$.\n\n$y' = (2x^4 + 1)' = 8x^3$\n\n$y' = 0 \\Leftrightarrow x = 0$\n\nVì $y' > 0$ $\\forall x \\in (0; +\\infty)$ nên hàm số đồng biến trên $(0; +\\infty)$.\n\nCách suy luận 2:\nĐồ thị hàm số có dạng Parabol có đỉnh là $I(0; 1)$ và hệ số $a = 2 > 0$ nên đồ thị hàm số là Parabol có bề lõm hướng xuống, tức hàm số đồng biến trên $(0; +\\infty)$.",
+   "questionNumber": "9",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-78b413d8-51a3-4e57-b083-1d20d60026cf",
+   "code": "Q-MAT-EPNV24",
+   "stem": "Biết rằng hàm số $y = ax^4 + bx^2 + c$ ($a \\ne 0$) đồng biến trên $(0; +\\infty)$, khẳng định nào sau đây đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$a < 0; b \\le 0$"
+    },
+    {
+     "key": "B",
+     "content": "$ab \\le 0$"
+    },
+    {
+     "key": "C",
+     "content": "$ab \\ge 0$"
+    },
+    {
+     "key": "D",
+     "content": "$a > 0; b \\ge 0$"
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "Ở phần sau ta sẽ học về đồ thị hàm số bậc 4 trùng phương, ở phần dạng đồ thị ta có sơ đồ về dạng đồ thị hàm bậc bốn trùng phương. Từ đó ta rút ra nhận xét:\nDo hàm số đồng biến trên $(0; +\\infty)$ nên đồ thị hàm số không thể có ba điểm cực trị, vậy đồ thị hàm số có dạng parabol quay bề lõm xuống dưới và có đỉnh là $I(0; c)$.\nÁp dụng sơ đồ tôi vừa giới thiệu ở bài sau để thỏa mãn điều kiện trên thì $a > 0$ và $ab \\ge 0 \\Leftrightarrow a > 0$ và $b \\ge 0$",
+   "questionNumber": "10",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-4bc4d8ef-034a-4bab-a9c5-c3b9215646e6",
+   "code": "Q-MAT-X08BWR",
+   "stem": "Hàm số $y = -\\frac{1}{4}x^4 - 2x^2 + 3$ nghịch biến trong khoảng nào sau đây:",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(-\\infty; 0)$"
+    },
+    {
+     "key": "B",
+     "content": "$(0; 2)$"
+    },
+    {
+     "key": "C",
+     "content": "$(2; +\\infty)$"
+    },
+    {
+     "key": "D",
+     "content": "$(0; +\\infty)$"
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "Từ việc xem xét sơ đồ tôi giới thiệu ở câu 10 thì ta có:\n$ab = \\left(-\\frac{1}{4}\\right)(-2) > 0$ và $a = -\\frac{1}{4} < 0$ nên đồ thị hàm số là parabol quay bề lõm lên trên, tức hàm số nghịch biến trên $(0; +\\infty)$.",
+   "questionNumber": "11",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-11d3f087-bd96-4783-9990-0239691cea81",
+   "code": "Q-MAT-BU1PBZ",
+   "stem": "Hàm số nào sau đây đồng biến trên tập xác định của nó:",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$y = x^3 - x + 1$"
+    },
+    {
+     "key": "B",
+     "content": "$y = \\frac{x + 1}{x - 1}$"
+    },
+    {
+     "key": "C",
+     "content": "$y = x^3 + 2x - 3$"
+    },
+    {
+     "key": "D",
+     "content": "$y = x^4 + 2x^2 + 3$"
+    }
+   ],
+   "correctAnswer": "C",
+   "explanation": "Phương án A. Tập xác định: $D = \\mathbb{R}$.\n$y' = (x^3 - x + 1)' = 3x^2 - 1$\n$y' = 0 \\Leftrightarrow x = \\pm \\sqrt{\\frac{1}{3}}$\n$\\Rightarrow$ Hàm số này không đồng biến trên tập xác định của nó.\n\nPhương án B. Loại vì hàm số nghịch biến trên từng khoảng $(-\\infty; 1)$ và $(1; +\\infty)$.\n\nPhương án C. Tập xác định: $D = \\mathbb{R}$.\n$y' = 3x^2 + 2 > 0$ $\\forall x \\in D$\n$\\Rightarrow$ Hàm số này đồng biến trên tập xác định của nó.",
+   "questionNumber": "12",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-0ce3094b-8a71-46a1-8cbd-1a2177957670",
+   "code": "Q-MAT-PX2P3V",
+   "stem": "Hỏi hàm số $y = \\sqrt{2x - x^2}$ đồng biến trên khoảng nào?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(-\\infty; 2)$"
+    },
+    {
+     "key": "B",
+     "content": "$(0; 1)$"
+    },
+    {
+     "key": "C",
+     "content": "$(1; 2)$"
+    },
+    {
+     "key": "D",
+     "content": "$(1; +\\infty)$"
+    }
+   ],
+   "correctAnswer": "B",
+   "explanation": "Tập xác định: $D = [0; 2]$.\n\n$y' = \\frac{-2x + 2}{2\\sqrt{2x - x^2}} = \\frac{1 - x}{\\sqrt{2x - x^2}}$\n\n$y' = 0 \\Leftrightarrow x = 1$\n\nVì $y' > 0$ $\\forall x \\in (0; 1)$ nên hàm số đồng biến trên $(0; 1)$.",
+   "questionNumber": "13",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-f67d5f29-420d-4e37-a8c1-9c1ba677f5a3",
+   "code": "Q-MAT-XG1AKO",
+   "stem": "Cho hàm số $y = \\sin x - \\cos x + \\sqrt{3}x$. Tìm khẳng định đúng trong các khẳng định sau:",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số nghịch biến trên $(-\\infty; 0)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số nghịch biến trên $(1; 2)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số là hàm lẻ."
+    },
+    {
+     "key": "D",
+     "content": "Hàm số đồng biến trên $(-\\infty; +\\infty)$"
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "$y' = (\\sin x - \\cos x + \\sqrt{3}x)'$\n$= \\cos x + \\sin x + \\sqrt{3} = \\sqrt{2}\\sin\\left(x + \\frac{\\pi}{4}\\right) + \\sqrt{3}$\n$= \\sqrt{2}\\left[\\sin\\left(x + \\frac{\\pi}{4}\\right) + 1\\right] + (\\sqrt{3} - \\sqrt{2}) > 0$\n\nVậy hàm số đồng biến trên $(-\\infty; +\\infty)$.",
+   "questionNumber": "14",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-01d05579-4f6c-43ee-9a2f-3541fd13585c",
+   "code": "Q-MAT-JUEEFE",
+   "stem": "Hàm số $y = x^4 - 2x^2 - 7$ nghịch biến trên khoảng nào?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(0; 1)$"
+    },
+    {
+     "key": "B",
+     "content": "$(0; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "$(-1; 0)$"
+    },
+    {
+     "key": "D",
+     "content": "$(-\\infty; 0)$"
+    }
+   ],
+   "correctAnswer": "A",
+   "explanation": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = 0 \\Leftrightarrow 4x^3 - 4x = 0 \\Leftrightarrow x = 0$ hoặc $x = 1$ hoặc $x = -1$\n\nHệ số $a = 1 > 0$ nên đồ thị hàm số có dạng W, từ đây suy ra hàm số nghịch biến trên $(-\\infty; -1)$ và $(0; 1)$.",
+   "questionNumber": "15",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-39e4cbbb-4c32-46a6-a0b5-0682949d2432",
+   "code": "Q-MAT-4CET4N",
+   "stem": "Hỏi hàm số $y = \\sqrt{x^2 - 4x + 3}$ nghịch biến trên khoảng nào?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(2; +\\infty)$"
+    },
+    {
+     "key": "B",
+     "content": "$(3; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "$(-\\infty; 1)$"
+    },
+    {
+     "key": "D",
+     "content": "$(-\\infty; 2)$"
+    }
+   ],
+   "correctAnswer": "C",
+   "explanation": "Tập xác định: $D = \\mathbb{R} \\setminus [1; 3]$\n\n$y' = \\frac{2x - 4}{2\\sqrt{x^2 - 4x + 3}} = \\frac{x - 2}{\\sqrt{x^2 - 4x + 3}}$\n\n$y' = 0 \\Leftrightarrow x = 2$ (không thuộc $D$)\n\nVì $y' < 0$ $\\forall x \\in (-\\infty; 1)$ nên hàm số nghịch biến trên $(-\\infty; 1)$.",
+   "questionNumber": "16",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-6e43b024-167d-4b99-9750-7712d20d5239",
+   "code": "Q-MAT-G6R87G",
+   "stem": "Xét tính đơn điệu của hàm số $y = x^3 - 3x + 2$.",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số đã cho nghịch biến trên khoảng $(-1; 1)$, đồng biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số đã cho đồng biến trên khoảng $(-1; 1)$, nghịch biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số đã cho đồng biến trên $(-\\infty; +\\infty)$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số đã cho nghịch biến trên khoảng $(0; 3)$, đồng biến trên các khoảng $(-\\infty; 0)$ và $(3; +\\infty)$"
+    }
+   ],
+   "correctAnswer": "A",
+   "explanation": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = 3x^2 - 3$\n\n$y' = 0 \\Leftrightarrow x = \\pm 1$\n\nMặt khác hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng N, tức hàm số đã cho đồng biến trên $(-\\infty; -1)$ và $(1; +\\infty)$, nghịch biến trên $(-1; 1)$.",
+   "questionNumber": "17",
+   "solutionPages": [
+    30
+   ]
+  },
+  {
+   "id": "q-e44362d2-c4e2-461c-9b34-3926367efd46",
+   "code": "Q-MAT-791ONI",
+   "stem": "Hàm số $y = \\ln(x + 2) + \\frac{3}{x + 2}$ đồng biến trên khoảng nào ?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(-\\infty; 1)$."
+    },
+    {
+     "key": "B",
+     "content": "$(1; +\\infty)$."
+    },
+    {
+     "key": "C",
+     "content": "$\\left(\\frac{1}{2}; 1\\right)$."
+    },
+    {
+     "key": "D",
+     "content": "$\\left(-\\frac{1}{2}; +\\infty\\right)$."
+    }
+   ],
+   "correctAnswer": "B",
+   "explanation": "Tập xác định: $D = (-2; +\\infty)$\n\n$y' = \\frac{1}{x + 2} - \\frac{3}{(x + 2)^2} = \\frac{x - 1}{(x + 2)^2}$\n\nVì $y' > 0$ $\\forall x \\in (1; +\\infty)$ nên hàm số đồng biến trên $(1; +\\infty)$.",
+   "questionNumber": "18",
+   "solutionPages": [
+    31
+   ]
+  },
+  {
+   "id": "q-ac4190f5-1644-4c8c-bf73-4824f920a159",
+   "code": "Q-MAT-9G5904",
+   "stem": "Hàm số $y = 2x^2 - x^4$ nghịch biến trên những khoảng nào ? Tìm đáp án đúng nhất.",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(-1; 0); (1; +\\infty)$."
+    },
+    {
+     "key": "B",
+     "content": "$(-\\infty; -1); (0; 1)$."
+    },
+    {
+     "key": "C",
+     "content": "$(-1; 0)$."
+    },
+    {
+     "key": "D",
+     "content": "$(-1; 1)$."
+    }
+   ],
+   "correctAnswer": "A",
+   "explanation": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = -4x^3 + 4x = -4x(x^2 - 1)$\n\n$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = \\pm 1$\n\nMặt khác hệ số $a = -1 < 0$, suy ra đồ thị hàm số có dạng chữ M, tức hàm số nghịch biến trên $(-1; 0)$ và $(1; +\\infty)$.",
+   "questionNumber": "19",
+   "solutionPages": [
+    31
+   ]
+  },
+  {
+   "id": "q-aaff2694-d152-45e6-9a86-ace707f2f3a5",
+   "code": "Q-MAT-56T7XM",
+   "stem": "Hàm số $y = \\frac{2x - 3}{\\sqrt{x^2 - 1}}$ nghịch biến trên khoảng nào trong các khoảng dưới đây?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "$(-\\infty; -1)$ và $\\left(1; \\frac{3}{2}\\right)$."
+    },
+    {
+     "key": "B",
+     "content": "$\\left(\\frac{3}{2}; +\\infty\\right)$."
+    },
+    {
+     "key": "C",
+     "content": "$\\left(1; \\frac{3}{2}\\right)$."
+    },
+    {
+     "key": "D",
+     "content": "$(-\\infty; -1)$."
+    }
+   ],
+   "correctAnswer": "D",
+   "explanation": "Với các bài toán mà ta khó tính đạo hàm, ta nên dùng TABLE để giải quyết bài toán.\nNhập MODE 7:TABLE\nNhập như sau:\n\nTiếp theo ấn 2 lần dấu =.\nStart? ấn -3 =\nEnd? ấn 3 =\nStep? 0.5 =\n\nMáy hiện:\n\nTừ đây ta thấy hàm số nghịch biến trên $(-\\infty; -1)$.",
+   "questionNumber": "20",
+   "solutionPages": [
+    31
+   ]
+  },
+  {
+   "id": "q-8b8e20f2-203d-4c84-8303-309701545dea",
+   "code": "Q-MAT-1UIRPW",
+   "stem": "Cho hàm số $y = x^3 - 3x^2 + 1$. Mệnh đề nào sau đây là mệnh đề đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số đồng biến trên khoảng $(0; 2)$."
+    },
+    {
+     "key": "B",
+     "content": "Hàm số nghịch biến trên khoảng $(-\\infty; 0)$."
+    },
+    {
+     "key": "C",
+     "content": "Hàm số nghịch biến trên khoảng $(0; 2)$."
+    },
+    {
+     "key": "D",
+     "content": "Hàm số nghịch biến trên khoảng $(2; +\\infty)$."
+    }
+   ],
+   "correctAnswer": "C",
+   "explanation": "Ta thấy hàm số có $y' = 3x^2 - 6x = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$\n\nMặt khác hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng chữ N, tức hàm số nghịch biến trên $(0; 2)$.",
+   "questionNumber": "21",
+   "solutionPages": [
+    31
+   ]
+  },
+  {
+   "id": "q-50c73a1b-a505-4d39-b7a1-e344dc8c9dd5",
+   "code": "Q-MAT-M2NPPT",
+   "stem": "Cho hàm số $f(x)$ xác định trên $\\mathbb{R}$ và có đồ thị hàm số $y = f'(x)$ là đường cong trong hình bên. Mệnh đề nào dưới đây đúng?",
+   "questionType": "MULTIPLE_CHOICE_SINGLE",
+   "options": [
+    {
+     "key": "A",
+     "content": "Hàm số $f(x)$ đồng biến trên khoảng $(1; 2)$"
+    },
+    {
+     "key": "B",
+     "content": "Hàm số $f(x)$ nghịch biến trên khoảng $(0; 2)$"
+    },
+    {
+     "key": "C",
+     "content": "Hàm số $f(x)$ đồng biến trên khoảng $(-2; 1)$"
+    },
+    {
+     "key": "D",
+     "content": "Hàm số $f(x)$ nghịch biến trên khoảng $(-1; 1)$"
+    }
+   ],
+   "correctAnswer": "B",
+   "explanation": "Đây là một bài toán dễ mắc sai lầm, do đồ thị trong hình vẽ\n\nNhận thấy trên $(-\\infty; -2)$ và $(0; 2)$ thì $f'(x) < 0$ nên hàm số $y = f(x)$ nghịch biến trên $(-\\infty; -2)$ và $(0; 2)$.\nPhân tích sai lầm: Nhiều học sinh tưởng đây là đồ thị của hàm số $y = f(x)$ và chọn luôn D.",
+   "questionNumber": "22",
+   "solutionPages": [
+    31
+   ]
+  }
+ ],
+ "artifacts": [
+  {
+   "id": "e5e6405d-c425-4fef-a7bb-87088ef035c8",
+   "kind": "THEORY",
+   "printedPages": [
+    13
+   ],
+   "title": "A. Lý thuyết - Tính đơn điệu của hàm số",
+   "questionNumber": null,
+   "content": "1. Hàm số đồng biến hoặc nghịch biến trên $K$ (với $K$ là một khoảng (đoạn), nửa khoảng (nửa đoạn)) được gọi chung là hàm số đơn điệu trên $K$.\n\n2. Tính đơn điệu của hàm số và dấu của đạo hàm.\n\nĐiều kiện cần để hàm số đơn điệu:\nGiả sử hàm số $f$ có đạo hàm trên khoảng $I$. Khi đó\nNếu hàm số $f$ đồng biến trên $I$ thì $f'(x) \\ge 0, \\forall x \\in I$.\nNếu hàm số $f$ nghịch biến trên $I$ thì $f'(x) \\le 0, \\forall x \\in I$.\n\nĐiều kiện đủ để hàm số đơn điệu:\n1. Giả sử hàm số $f$ có đạo hàm trên khoảng $I$.\na. Nếu $f'(x) \\ge 0$ với mọi $x \\in I$ và $f'(x) = 0$ chỉ tại một số hữu hạn điểm của $I$ thì hàm số đồng biến trên $I$.\nb. Nếu $f'(x) \\le 0$ với mọi $x \\in I$ và $f'(x) = 0$ chỉ tại một số hữu hạn điểm của $I$ thì hàm số nghịch biến trên $I$.\nc. Nếu $f'(x) = 0$ với mọi $x \\in I$ thì hàm số không đổi trên $I$.\n\n2. Giả sử hàm số $f$ liên tục trên nửa khoảng $[a;b)$ và có đạo hàm trên khoảng $(a;b)$\na. Nếu $f'(x) > 0$ (hoặc $f'(x) < 0$) với mọi $x \\in (a;b)$ thì hàm số đồng biến (hoặc nghịch biến) trên nửa khoảng $[a;b)$.\nb. Nếu $f'(x) = 0$ với mọi $x \\in (a;b)$ thì hàm số $f$ không đổi trên nửa khoảng $[a;b)$.\n\nNếu hàm số đồng biến trên $K$ thì đồ thị hàm số đi lên từ trái sang phải.\nNếu hàm số nghịch biến trên $K$ thì đồ thị hàm số đi xuống từ trái sang phải (hình 1.1).\n\nVí dụ: Hàm số có đồ thị ở hình 1.1 nghịch biến trên khoảng $(-\\infty;a)$, không đổi trên khoảng $(a;b)$ và đồng biến trên khoảng $(b;+\\infty)$.\nTa có thể nói rằng hàm số có đồ thị ở hình 1.1 đồng biến trên $(-\\infty;a]$ bởi $f(x) \\ge 0$ với mọi $x \\in (-\\infty;a]$ và dấu bằng chỉ xảy ra tại $x = a$ (tức là hữu hạn nghiệm).\n\nLí giải: Ở phần trên về cách xác định tính đơn điệu của hàm số bằng đạo hàm phải có dấu bằng xảy ra tại hữu hạn nghiệm bởi: Nếu là vô hạn nghiệm, hay là xảy ra trên toàn khoảng đó thì hàm số không còn tính đơn điệu nữa, mà là hàm không đổi trên khoảng đó. Ví dụ như ở hàm số có đồ thị như hình 1.1 thì trên $(a;b)$ hàm số là hàm hằng."
+  },
+  {
+   "id": "4bb69e63-32e2-403e-8e11-8cfd1692fa51",
+   "kind": "THEORY",
+   "printedPages": [
+    14
+   ],
+   "title": "Quy tắc xét tính đơn điệu của hàm số",
+   "questionNumber": null,
+   "content": "3. Quy tắc xét tính đơn điệu của hàm số.\n\na. Tìm tập xác định.\nb. Tính đạo hàm $f'(x)$. Tìm các điểm $x_i$ ($i=1,2,3,...,n$) làm cho đạo hàm bằng $0$ hoặc không xác định.\nc. Sắp xếp các điểm tìm được theo thứ tự tăng dần.\nd. Nêu kết luận về các khoảng đồng biến, nghịch biến của hàm số."
+  },
+  {
+   "id": "4f904927-35df-4d8e-823f-f83a73b567ea",
+   "kind": "WORKED_EXAMPLE",
+   "printedPages": [
+    14
+   ],
+   "title": "Ví dụ 1: Xét tính nghịch biến của hàm số $y = \\sqrt{x - x^2}$",
+   "questionNumber": null,
+   "content": "Ví dụ 1: Hàm số $y = \\sqrt{x - x^2}$ nghịch biến trên khoảng:\n\nA. $(\\frac{1}{2}; 1)$\n\nB. $(0; \\frac{1}{2})$\n\nC. $(-\\infty; 0)$\n\nD. $(1; +\\infty)$\n\nĐáp án A.\n\nLời giải\n\nCách 1: Điều kiện: $x \\in (0; 1)$\n\nTa có $y' = (\\sqrt{x - x^2})' = \\frac{-2x + 1}{2\\sqrt{x - x^2}}$; $y'$ không xác định khi $x = 0$ hoặc $x = 1$\n\n$y' = 0$ khi $x = \\frac{1}{2}$. Khi đó ta có 2 khoảng cần xét đó là $(0; \\frac{1}{2}); (\\frac{1}{2}; 1)$. Nhận thấy ở đây $y' < 0$ với $x \\in (\\frac{1}{2}; 1)$, do đó hàm số nghịch biến trên $(\\frac{1}{2}; 1)$."
+  },
+  {
+   "id": "e9a77926-c594-4968-b3c0-20f0f25ede3c",
+   "kind": "METHOD",
+   "printedPages": [
+    14
+   ],
+   "title": "Sử dụng máy tính Casio để xét tính đơn điệu của hàm số",
+   "questionNumber": null,
+   "content": "Sử dụng máy tính\n\nThao tác:\n1. Ấn MODE 7, nhập hàm số cần tính giá trị.\n2. START? Nhập $x$ bắt đầu từ đâu.\n3. END? Nhập $x$ kết thúc ở đâu.\n4. STEP? Bước nhảy giữa các giá trị, tính từ điểm đầu mút."
+  },
+  {
+   "id": "art-02136a10601290aa50596d2f1e7eebac",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 6",
+   "questionNumber": "6",
+   "content": "Cho hàm số $y = -x^3 - 6x^2 + 10$. Chọn khẳng định đúng trong các khẳng định sau :\nA. Hàm số đã cho đồng biến trên khoảng $(-\\infty; 0)$\nB. Hàm số đã cho đồng biến trên khoảng $(-\\infty; -4)$\nC. Hàm số đã cho đồng biến trên khoảng $(0; +\\infty)$\nD. Hàm số đã cho đồng biến trên khoảng $(-4; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)"
+  },
+  {
+   "id": "art-0493b6b7708946ae97305c8772aea897",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 10",
+   "questionNumber": "10",
+   "content": "Biết rằng hàm số $y = ax^4 + bx^2 + c$ ($a \\ne 0$) đồng biến trên $(0; +\\infty)$, khẳng định nào sau đây đúng?\nA. $a < 0; b \\le 0$\nB. $ab \\le 0$\nC. $ab \\ge 0$\nD. $a > 0; b \\ge 0$\n(Trích đề thi thử trường THPT Lương Thế Vinh – Hà Nội)"
+  },
+  {
+   "id": "art-2a058628eedfcf5734a52364e43767ea",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 5",
+   "questionNumber": "5",
+   "content": "Hàm số $y = -x^3 + 3x^2 + 9x$ đồng biến trên khoảng nào sau đây?\nA. $(-2; 3)$\nB. $(-2; -1)$\nC. $\\mathbb{R}$\nD. $(2; 3)$\n(Trích đề thi thử lần I – THPT chuyên Lam Sơn)"
+  },
+  {
+   "id": "art-45c7dc13c699445a5cd678ffc4154ea9",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 1",
+   "questionNumber": "1",
+   "content": "Cho hàm số $y = \\frac{x}{\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?\nA. Hàm số luôn đồng biến trên $(0; +\\infty)$\nB. Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$\nC. Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$\nD. Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)"
+  },
+  {
+   "id": "art-4e68f719fe71c907197b6f21501a95e4",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 8",
+   "questionNumber": "8",
+   "content": "Hàm số $f(x)$ có đạo hàm $f'(x) = x^2(x + 2)$. Phát biểu nào sau đây là đúng?\nA. Hàm số đồng biến trên khoảng $(-2; +\\infty)$\nB. Hàm số nghịch biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$\nC. Hàm số đồng biến trên các khoảng $(-\\infty; -2)$ và $(0; +\\infty)$\nD. Hàm số nghịch biến trên khoảng $(-2; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)"
+  },
+  {
+   "id": "art-57207cf84d1b9d11738033a3dbc52073",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 2",
+   "questionNumber": "2",
+   "content": "Cho hàm số $y = x - \\ln(x + 1)$. Khẳng định nào dưới đây là đúng?\nA. Hàm số có tập xác định là $\\mathbb{R} \\setminus \\{-1\\}$\nB. Hàm số đồng biến trên $(-1; +\\infty)$\nC. Hàm số đồng biến trên $(-\\infty; 0)$\nD. Hàm số nghịch biến trên $(-1; 0)$\n(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)"
+  },
+  {
+   "id": "art-83b4e21306aba14e605ff569874bb154",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 3",
+   "questionNumber": "3",
+   "content": "Hỏi hàm số $y = x^3 + 3x^2 - 4$ nghịch biến trên khoảng nào?\nA. $(-2; 0)$\nB. $(-\\infty; -2)$\nC. $(0; +\\infty)$\nD. $\\mathbb{R}$\n(Trích đề thi thử lần I – THPT Kim Liên Hà Nội)"
+  },
+  {
+   "id": "art-86d2caab2fdffb75745ba5b3fd65dd60",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 7",
+   "questionNumber": "7",
+   "content": "Cho hàm số $y = x^4 - 2x^2 - 1$. Khẳng định nào sau đây là đúng?\nA. Hàm số đã cho đồng biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$\nB. Hàm số đã cho nghịch biến trên khoảng $(0; +\\infty)$\nC. Hàm số đã cho nghịch biến trên khoảng $(-\\infty; -1)$ và khoảng $(0; 1)$\nD. Hàm số đã cho nghịch biến trên khoảng $(-1; 0)$\n(Trích đề thi thử lần I – THPT chuyên Lương Văn Tụy)"
+  },
+  {
+   "id": "art-87b2a4fbb2371427b3aee8b346913955",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 4",
+   "questionNumber": "4",
+   "content": "Cho hàm số $y = \\frac{-x + 2}{x - 1}$. Khẳng định nào dưới đây là đúng?\nA. Hàm số đồng biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$\nB. Hàm số nghịch biến trên mỗi (từng) khoảng $(-\\infty; 1)$ và $(1; +\\infty)$\nC. Hàm số nghịch biến trên tập $\\mathbb{R} \\setminus \\{1\\}$\nD. Hàm số nghịch biến với mọi $x \\ne 1$.\n(Trích đề thi thử lần I – THPT chuyên KHTN)"
+  },
+  {
+   "id": "art-a43cf3b5a00ab34b6beb6da6f87a9759",
+   "kind": "EXERCISE",
+   "printedPages": [
+    19
+   ],
+   "title": "Câu 9",
+   "questionNumber": "9",
+   "content": "Hàm số $y = 2x^4 + 1$ đồng biến trên khoảng nào?\nA. $\\left(-\\infty; -\\frac{1}{2}\\right)$\nB. $(0; +\\infty)$\nC. $\\left(-\\frac{1}{2}; +\\infty\\right)$\nD. $(-\\infty; 0)$\n(Trích đề minh họa lần I của BGD – 2017)"
+  },
+  {
+   "id": "art-2af3516ce67d9606e6bd18051561cf5f",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 19",
+   "questionNumber": "19",
+   "content": "Hàm số $y = 2x^2 - x^4$ nghịch biến trên những khoảng nào ? Tìm đáp án đúng nhất.\nA. $(-1; 0); (1; +\\infty)$.\nB. $(-\\infty; -1); (0; 1)$.\nC. $(-1; 0)$.\nD. $(-1; 1)$.\n(Trích đề thi thử THPT Công Nghiệp - Hòa Bình)"
+  },
+  {
+   "id": "art-34fb292f8fa955fd590e4a28b108232f",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 22",
+   "questionNumber": "22",
+   "content": "Cho hàm số $f(x)$ xác định trên $\\mathbb{R}$ và có đồ thị hàm số $y = f'(x)$ là đường cong trong hình bên. Mệnh đề nào dưới đây đúng?\nA. Hàm số $f(x)$ đồng biến trên khoảng $(1; 2)$\nB. Hàm số $f(x)$ nghịch biến trên khoảng $(0; 2)$\nC. Hàm số $f(x)$ đồng biến trên khoảng $(-2; 1)$\nD. Hàm số $f(x)$ nghịch biến trên khoảng $(-1; 1)$"
+  },
+  {
+   "id": "art-559754ccdfe66900c2b293d9173d8fb6",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 13",
+   "questionNumber": "13",
+   "content": "Hỏi hàm số $y = \\sqrt{2x - x^2}$ đồng biến trên khoảng nào?\nA. $(-\\infty; 2)$\nB. $(0; 1)$\nC. $(1; 2)$\nD. $(1; +\\infty)$\n(Trích đề thi thử lần I – Sở GD & ĐT Nam Định)"
+  },
+  {
+   "id": "art-55b787114e92009f7af70e657a5d6810",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 18",
+   "questionNumber": "18",
+   "content": "Hàm số $y = \\ln(x + 2) + \\frac{3}{x + 2}$ đồng biến trên khoảng nào ?\nA. $(-\\infty; 1)$.\nB. $(1; +\\infty)$.\nC. $\\left(\\frac{1}{2}; 1\\right)$.\nD. $\\left(-\\frac{1}{2}; +\\infty\\right)$.\n(Trích đề thi thử THPT chuyên Lê Hồng Phong – Nam Định)"
+  },
+  {
+   "id": "art-5ea4f25b4ecf5753f6db1e63db102b8d",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 17",
+   "questionNumber": "17",
+   "content": "Xét tính đơn điệu của hàm số $y = x^3 - 3x + 2$.\nA. Hàm số đã cho nghịch biến trên khoảng $(-1; 1)$, đồng biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$\nB. Hàm số đã cho đồng biến trên khoảng $(-1; 1)$, nghịch biến trên các khoảng $(-\\infty; -1)$ và $(1; +\\infty)$\nC. Hàm số đã cho đồng biến trên $(-\\infty; +\\infty)$\nD. Hàm số đã cho nghịch biến trên khoảng $(0; 3)$, đồng biến trên các khoảng $(-\\infty; 0)$ và $(3; +\\infty)$\n(Trích đề thi thử lần I – THPT Nguyễn Thị Minh Khai)"
+  },
+  {
+   "id": "art-6ddbaaa089615176fcfa7ac9d0c77b64",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 16",
+   "questionNumber": "16",
+   "content": "Hỏi hàm số $y = \\sqrt{x^2 - 4x + 3}$ nghịch biến trên khoảng nào?\nA. $(2; +\\infty)$\nB. $(3; +\\infty)$\nC. $(-\\infty; 1)$\nD. $(-\\infty; 2)$\n(Trích đề thi thử lần I – THPT Nguyễn Thị Minh Khai)"
+  },
+  {
+   "id": "art-701731e585d95df0c3b531683c7ed38a",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 14",
+   "questionNumber": "14",
+   "content": "Cho hàm số $y = \\sin x - \\cos x + \\sqrt{3}x$. Tìm khẳng định đúng trong các khẳng định sau:\nA. Hàm số nghịch biến trên $(-\\infty; 0)$\nB. Hàm số nghịch biến trên $(1; 2)$\nC. Hàm số là hàm lẻ.\nD. Hàm số đồng biến trên $(-\\infty; +\\infty)$\n(Trích đề thi thử lần I – THPT chuyên Thái Bình)"
+  },
+  {
+   "id": "art-798ef4fcaf4b41483aede3ec9b67d4a3",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 11",
+   "questionNumber": "11",
+   "content": "Hàm số $y = -\\frac{1}{4}x^4 - 2x^2 + 3$ nghịch biến trong khoảng nào sau đây:\nA. $(-\\infty; 0)$\nB. $(0; 2)$\nC. $(2; +\\infty)$\nD. $(0; +\\infty)$"
+  },
+  {
+   "id": "art-a70af6e86557c99cbb2a3907600287f1",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 21",
+   "questionNumber": "21",
+   "content": "Cho hàm số $y = x^3 - 3x^2 + 1$. Mệnh đề nào sau đây là mệnh đề đúng?\nA. Hàm số đồng biến trên khoảng $(0; 2)$.\nB. Hàm số nghịch biến trên khoảng $(-\\infty; 0)$.\nC. Hàm số nghịch biến trên khoảng $(0; 2)$.\nD. Hàm số nghịch biến trên khoảng $(2; +\\infty)$.\n(Trích đề thi thử THPT Phan Đình Phùng – Hà Nội)"
+  },
+  {
+   "id": "art-ec76b70e01886c48c1bb6e9feb68cfd8",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 15",
+   "questionNumber": "15",
+   "content": "Hàm số $y = x^4 - 2x^2 - 7$ nghịch biến trên khoảng nào?\nA. $(0; 1)$\nB. $(0; +\\infty)$\nC. $(-1; 0)$\nD. $(-\\infty; 0)$\n(Trích đề thi thử lần I – THPT chuyên Thái Bình)"
+  },
+  {
+   "id": "art-ecedd91e62b62d02f593e81da5fd705d",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 20",
+   "questionNumber": "20",
+   "content": "Hàm số $y = \\frac{2x - 3}{\\sqrt{x^2 - 1}}$ nghịch biến trên khoảng nào trong các khoảng dưới đây?\nA. $(-\\infty; -1)$ và $\\left(1; \\frac{3}{2}\\right)$.\nB. $\\left(\\frac{3}{2}; +\\infty\\right)$.\nC. $\\left(1; \\frac{3}{2}\\right)$.\nD. $(-\\infty; -1)$.\n(Trích đề thi thử THPT Phan Đình Phùng – Hà Nội)"
+  },
+  {
+   "id": "art-f0b1960ad9064c3d6bf7f4d82ae148b7",
+   "kind": "EXERCISE",
+   "printedPages": [
+    20
+   ],
+   "title": "Câu 12",
+   "questionNumber": "12",
+   "content": "Hàm số nào sau đây đồng biến trên tập xác định của nó:\nA. $y = x^3 - x + 1$\nB. $y = \\frac{x + 1}{x - 1}$\nC. $y = x^3 + 2x - 3$\nD. $y = x^4 + 2x^2 + 3$\n(Trích đề thi thử lần I – Sở GD & ĐT Hà Tĩnh)"
+  },
+  {
+   "id": "art-2aebbaed5cf8577995f75ef588263177",
+   "kind": "SOLUTION",
+   "printedPages": [
+    29
+   ],
+   "title": "Câu 1",
+   "questionNumber": "1",
+   "content": "Tập xác định: $D = (0; +\frac{\\infty}{\\infty}) \\setminus \\{1\\}$.\n\nTa có: $y' = \\left(\\frac{x}{\\ln x}\\right)' = \\frac{\\ln x - 1}{(\\ln x)^2}$.\n\n$y' = 0 \\Leftrightarrow \\ln x = 1 \\Leftrightarrow x = e$;\n$y'$ không xác định tại $x = 1$\n\n+ $y' > 0$ $\\forall x \\in (e; +\\infty)$ nên hàm số đồng biến trên $(e; +\\infty)$.\n\n+ $y' < 0$ $\\forall x \\in (0; 1)$ nên hàm số nghịch biến trên $(0; 1)$.\n\n+ $y' < 0$ $\\forall x \\in (1; e)$ nên hàm số nghịch biến trên $(1; e)$.\n\nCách 2: Sử dụng máy tính casio:\nNhận thấy ở các phương án có các khoảng sau: $(0; +\\infty); (0; 1); (0; e); (1; e); (e; +\\infty)$.\nLúc này ta sử dụng lệnh MODE 7 TABLE để xét tính đồng biến nghịch biến của hàm số:\nNhập vào máy $Fx = \\frac{x}{\\ln x}$:\n\nẤn 2 lần = máy hiện Start? Ta chọn $x = 0$ , ấn $0 =$\nEnd? Ta nhập SHIFT x10^x (chính là chọn end là $e$).\nDo ở đây ta cho chạy từ $0$ đến $e$ bởi ta cần xét tính đồng biến nghịch biến trên $(0; +\\infty); (0; 1); (0; e); (1; e)$.\nẤn = máy hiện Step? Nhập 0,2, máy hiện như sau:\n\nTừ đây ta nhận thấy giá trị của hàm số giảm khi cho $x$ chạy từ $0$ đến $1$. Vậy hàm số nghịch biến trên $(0; 1)$ ; từ đây ta loại A và B. Tiếp theo kéo xuống thì máy hiện:\n\nLúc này ta thấy các giá trị của hàm số tiếp tục giảm khi cho $x$ chạy từ $1$ đến $e$. Do vậy hàm số nghịch biến trên $(1; e)$, từ đây ta loại C, chọn D."
+  },
+  {
+   "id": "art-64980ed427004fb50695e90ef50c5648",
+   "kind": "SOLUTION",
+   "printedPages": [
+    29
+   ],
+   "title": "Câu 6",
+   "questionNumber": "6",
+   "content": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (-x^3 - 6x^2 + 10)' = -3x^2 - 12x$\n\n$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = -4$\n\nDo hệ số $a = -1 < 0$ nên hàm số đồng biến trên $(-4; 0)$"
+  },
+  {
+   "id": "art-c70e827c557a4c50eae696aed9ed1990",
+   "kind": "SOLUTION",
+   "printedPages": [
+    29
+   ],
+   "title": "Câu 3",
+   "questionNumber": "3",
+   "content": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (x^3 + 3x^2 - 4)' = 3x^2 + 6x$\n\n$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = -2$\n\nTa có hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng N, tức hàm số nghịch biến trên $(-2; 0)$."
+  },
+  {
+   "id": "art-c9521f3fc9bc17c2304c39b415227def",
+   "kind": "SOLUTION",
+   "printedPages": [
+    29
+   ],
+   "title": "Câu 4",
+   "questionNumber": "4",
+   "content": "Tập xác định: $D = \\mathbb{R} \\setminus \\{1\\}$.\n\nTa có $ad - bc = 1 - 2 = -1 < 0$\n\nSuy ra hàm số nghịch biến trên từng khoảng $(-\\infty; 1)$ và $(1; +\\infty)$."
+  },
+  {
+   "id": "art-eeb5204978fb1bfc066524b4a6573539",
+   "kind": "SOLUTION",
+   "printedPages": [
+    29
+   ],
+   "title": "Câu 2",
+   "questionNumber": "2",
+   "content": "Tập xác định: $D = (-1; +\\infty) \\Rightarrow$ loại A.\n\n$y' = [x - \\ln(x + 1)]' = \\frac{x}{x + 1}$.\n\n$y' = 0 \\Leftrightarrow x = 0$\n$y' > 0 \\Leftrightarrow x > 0 \\Rightarrow$ hàm số đồng biến trên $(0; +\\infty)$.\n$y' < 0 \\Leftrightarrow -1 < x < 0$\n$\\Rightarrow$ hàm số nghịch biến trên $(-1; 0)$\n\nCách 2: Sử dụng máy tính casio bằng lệnh TABLE trong MODE 7 tương tự bài 1."
+  },
+  {
+   "id": "art-f24f4991d0099bed883fc915fbb60460",
+   "kind": "SOLUTION",
+   "printedPages": [
+    29,
+    30
+   ],
+   "title": "Câu 7",
+   "questionNumber": "7",
+   "content": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (x^4 - 2x^2 - 1)' = 4x^3 - 4x$\n\n$y' = 0 \\Leftrightarrow x = \\pm 1$ hoặc $x = 0$\n\nDo hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng W từ đây suy ra hàm số nghịch biến trên $(-\\infty; -1)$ và $(0; 1)$; hàm số đồng biến trên $(-1; 0)$ và $(1; +\\infty)$."
+  },
+  {
+   "id": "art-f2653543a422265d7c56785336fb8e04",
+   "kind": "SOLUTION",
+   "printedPages": [
+    29
+   ],
+   "title": "Câu 5",
+   "questionNumber": "5",
+   "content": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = (-x^3 + 3x^2 + 9x)' = -3x^2 + 6x + 9$\n\n$y' = 0 \\Leftrightarrow x = 3$ hoặc $x = -1$\n\nTa thấy hàm số có hệ số $a = -1 < 0$ nên hàm số đồng biến trên $(-1; 3)$."
+  },
+  {
+   "id": "art-16614e5042eccdc2796d6ea3ccb9621b",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 8",
+   "questionNumber": "8",
+   "content": "Vì $f'(x) = x^2(x + 2) \\ge 0$ $\\forall x \\in (-2; +\\infty)$ nên hàm số đồng biến trên $(-2; +\\infty)$."
+  },
+  {
+   "id": "art-3248bea03b9062aaac3a6e6ce0f0045f",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 13",
+   "questionNumber": "13",
+   "content": "Tập xác định: $D = [0; 2]$.\n\n$y' = \\frac{-2x + 2}{2\\sqrt{2x - x^2}} = \\frac{1 - x}{\\sqrt{2x - x^2}}$\n\n$y' = 0 \\Leftrightarrow x = 1$\n\nVì $y' > 0$ $\\forall x \\in (0; 1)$ nên hàm số đồng biến trên $(0; 1)$."
+  },
+  {
+   "id": "art-3aa94ee98a5206c5f99d3dee7eab9736",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 12",
+   "questionNumber": "12",
+   "content": "Phương án A. Tập xác định: $D = \\mathbb{R}$.\n$y' = (x^3 - x + 1)' = 3x^2 - 1$\n$y' = 0 \\Leftrightarrow x = \\pm \\sqrt{\\frac{1}{3}}$\n$\\Rightarrow$ Hàm số này không đồng biến trên tập xác định của nó.\n\nPhương án B. Loại vì hàm số nghịch biến trên từng khoảng $(-\\infty; 1)$ và $(1; +\\infty)$.\n\nPhương án C. Tập xác định: $D = \\mathbb{R}$.\n$y' = 3x^2 + 2 > 0$ $\\forall x \\in D$\n$\\Rightarrow$ Hàm số này đồng biến trên tập xác định của nó."
+  },
+  {
+   "id": "art-47743de2ff1c5e2f02badd24806ab077",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 15",
+   "questionNumber": "15",
+   "content": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = 0 \\Leftrightarrow 4x^3 - 4x = 0 \\Leftrightarrow x = 0$ hoặc $x = 1$ hoặc $x = -1$\n\nHệ số $a = 1 > 0$ nên đồ thị hàm số có dạng W, từ đây suy ra hàm số nghịch biến trên $(-\\infty; -1)$ và $(0; 1)$."
+  },
+  {
+   "id": "art-617217adc5811dadc772565ff33e420e",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 10",
+   "questionNumber": "10",
+   "content": "Ở phần sau ta sẽ học về đồ thị hàm số bậc 4 trùng phương, ở phần dạng đồ thị ta có sơ đồ về dạng đồ thị hàm bậc bốn trùng phương. Từ đó ta rút ra nhận xét:\nDo hàm số đồng biến trên $(0; +\\infty)$ nên đồ thị hàm số không thể có ba điểm cực trị, vậy đồ thị hàm số có dạng parabol quay bề lõm xuống dưới và có đỉnh là $I(0; c)$.\nÁp dụng sơ đồ tôi vừa giới thiệu ở bài sau để thỏa mãn điều kiện trên thì $a > 0$ và $ab \\ge 0 \\Leftrightarrow a > 0$ và $b \\ge 0$"
+  },
+  {
+   "id": "art-7fbd1ced50bf6940191b20fc82e37bec",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 17",
+   "questionNumber": "17",
+   "content": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = 3x^2 - 3$\n\n$y' = 0 \\Leftrightarrow x = \\pm 1$\n\nMặt khác hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng N, tức hàm số đã cho đồng biến trên $(-\\infty; -1)$ và $(1; +\\infty)$, nghịch biến trên $(-1; 1)$."
+  },
+  {
+   "id": "art-807df139dd9aca2f174a429e24a64f93",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 9",
+   "questionNumber": "9",
+   "content": "Cách suy luận 1:\nTập xác định: $D = \\mathbb{R}$.\n\n$y' = (2x^4 + 1)' = 8x^3$\n\n$y' = 0 \\Leftrightarrow x = 0$\n\nVì $y' > 0$ $\\forall x \\in (0; +\\infty)$ nên hàm số đồng biến trên $(0; +\\infty)$.\n\nCách suy luận 2:\nĐồ thị hàm số có dạng Parabol có đỉnh là $I(0; 1)$ và hệ số $a = 2 > 0$ nên đồ thị hàm số là Parabol có bề lõm hướng xuống, tức hàm số đồng biến trên $(0; +\\infty)$."
+  },
+  {
+   "id": "art-a44d56f2203a1b881b4f88939365e71f",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 14",
+   "questionNumber": "14",
+   "content": "$y' = (\\sin x - \\cos x + \\sqrt{3}x)'$\n$= \\cos x + \\sin x + \\sqrt{3} = \\sqrt{2}\\sin\\left(x + \\frac{\\pi}{4}\\right) + \\sqrt{3}$\n$= \\sqrt{2}\\left[\\sin\\left(x + \\frac{\\pi}{4}\\right) + 1\\right] + (\\sqrt{3} - \\sqrt{2}) > 0$\n\nVậy hàm số đồng biến trên $(-\\infty; +\\infty)$."
+  },
+  {
+   "id": "art-ad2af08d76854f45481e953a185cebc6",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 11",
+   "questionNumber": "11",
+   "content": "Từ việc xem xét sơ đồ tôi giới thiệu ở câu 10 thì ta có:\n$ab = \\left(-\\frac{1}{4}\\right)(-2) > 0$ và $a = -\\frac{1}{4} < 0$ nên đồ thị hàm số là parabol quay bề lõm lên trên, tức hàm số nghịch biến trên $(0; +\\infty)$."
+  },
+  {
+   "id": "art-cbc60ca7ab5a4dc3d4ae7fd4c9b6fdcb",
+   "kind": "SOLUTION",
+   "printedPages": [
+    30
+   ],
+   "title": "Câu 16",
+   "questionNumber": "16",
+   "content": "Tập xác định: $D = \\mathbb{R} \\setminus [1; 3]$\n\n$y' = \\frac{2x - 4}{2\\sqrt{x^2 - 4x + 3}} = \\frac{x - 2}{\\sqrt{x^2 - 4x + 3}}$\n\n$y' = 0 \\Leftrightarrow x = 2$ (không thuộc $D$)\n\nVì $y' < 0$ $\\forall x \\in (-\\infty; 1)$ nên hàm số nghịch biến trên $(-\\infty; 1)$."
+  },
+  {
+   "id": "art-448c603493ce585ba9f324b1fedd2999",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 21",
+   "questionNumber": "21",
+   "content": "Ta thấy hàm số có $y' = 3x^2 - 6x = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$\n\nMặt khác hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng chữ N, tức hàm số nghịch biến trên $(0; 2)$."
+  },
+  {
+   "id": "art-549013333d7d65acdefdf72d03385fa1",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 20",
+   "questionNumber": "20",
+   "content": "Với các bài toán mà ta khó tính đạo hàm, ta nên dùng TABLE để giải quyết bài toán.\nNhập MODE 7:TABLE\nNhập như sau:\n\nTiếp theo ấn 2 lần dấu =.\nStart? ấn -3 =\nEnd? ấn 3 =\nStep? 0.5 =\n\nMáy hiện:\n\nTừ đây ta thấy hàm số nghịch biến trên $(-\\infty; -1)$."
+  },
+  {
+   "id": "art-5c0469a2fa4c0113a32c4417d55ca9e8",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 1",
+   "questionNumber": "1",
+   "content": "Đặt $e^x = t (t > 0)$\n\nVì $x \\in \\left(\\ln\\frac{1}{4}; 0\\right)$\n\n$\\Rightarrow t \\in \\left(\\frac{1}{4}; 1\\right) \\Rightarrow m^2 \\notin \\left(\\frac{1}{4}; 1\\right) \\Rightarrow m \\le -1$ hoặc $m \\ge 1$ hoặc $-\\frac{1}{2} \\le m \\le \\frac{1}{2}$\n\n$y = \\frac{t - m - 2}{t - m^2}$; $y' = \\frac{-m^2 + m + 2}{(t - m^2)^2}$\n\nHàm số đồng biến trên khoảng \\left(\\ln\\frac{1}{4}; 0\\right)\n\nKhi $y' > 0$ hay $-m^2 + m + 2 > 0 \\Leftrightarrow -1 < m < 2$\n\nVậy $-\\frac{1}{2} \\le m \\le \\frac{1}{2}$ hoặc $1 \\le m < 2$."
+  },
+  {
+   "id": "art-6da1baacfbc7827542ed5545dc0bdc46",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 2",
+   "questionNumber": "2",
+   "content": "Điều kiện: $x \\ne m$.\n\n$y' = \\frac{-m - 3}{(x - m)^2}$\n\nHàm số đồng biến trên từng khoảng xác định $\\Leftrightarrow -m - 3 > 0 \\Leftrightarrow m < -3$."
+  },
+  {
+   "id": "art-703f193ccd1bd4909498d1853574aedc",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 3",
+   "questionNumber": "3",
+   "content": "Đặt $\\sqrt{x - 1} = t$.\n\nVì $x \\in (17; 37) \\Rightarrow t \\in (4; 6) \\Rightarrow m \\notin (-6; -4)$\n\n$y = \\frac{(m - 1)t + 2}{t + m}$"
+  },
+  {
+   "id": "art-8e4f352b2046567d6e8e2e8243e8c946",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 18",
+   "questionNumber": "18",
+   "content": "Tập xác định: $D = (-2; +\\infty)$\n\n$y' = \\frac{1}{x + 2} - \\frac{3}{(x + 2)^2} = \\frac{x - 1}{(x + 2)^2}$\n\nVì $y' > 0$ $\\forall x \\in (1; +\\infty)$ nên hàm số đồng biến trên $(1; +\\infty)$."
+  },
+  {
+   "id": "art-b572014f928705212801781393c07327",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 19",
+   "questionNumber": "19",
+   "content": "Tập xác định: $D = \\mathbb{R}$.\n\n$y' = -4x^3 + 4x = -4x(x^2 - 1)$\n\n$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = \\pm 1$\n\nMặt khác hệ số $a = -1 < 0$, suy ra đồ thị hàm số có dạng chữ M, tức hàm số nghịch biến trên $(-1; 0)$ và $(1; +\\infty)$."
+  },
+  {
+   "id": "art-e03d8844409ca56ff9f8ab97929c5cfa",
+   "kind": "SOLUTION",
+   "printedPages": [
+    31
+   ],
+   "title": "Câu 22",
+   "questionNumber": "22",
+   "content": "Đây là một bài toán dễ mắc sai lầm, do đồ thị trong hình vẽ\n\nNhận thấy trên $(-\\infty; -2)$ và $(0; 2)$ thì $f'(x) < 0$ nên hàm số $y = f(x)$ nghịch biến trên $(-\\infty; -2)$ và $(0; 2)$.\nPhân tích sai lầm: Nhiều học sinh tưởng đây là đồ thị của hàm số $y = f(x)$ và chọn luôn D."
+  },
+  {
+   "id": "art-09bdd4e541a1885da5485b79f6a61fc0",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32,
+    33
+   ],
+   "title": "Câu 11",
+   "questionNumber": "11",
+   "content": "Cách 1: Đạo hàm trực tiếp\n\nTa có $y' = \\left(\\frac{\\sin x + m}{\\sin x - m}\\right)' = \\frac{\\cos x(\\sin x - m) - \\cos x(\\sin x + m)}{(\\sin x - m)^2} = \\frac{-2m\\cos x}{(\\sin x - m)^2}$, để hàm số nghịch biến trên \\left(\\frac{\\pi}{2}; \\pi\\right) thì $-2m\\cos x < 0$ và $m \\notin (0; 1)$\n\nDo $x \\in \\left(\\frac{\\pi}{2}; \\pi\\right)$ thì $\\cos x \\in (-1; 0)$, do vậy để hàm số đã cho nghịch biến trên \\left(\\frac{\\pi}{2}; \\pi\\right) thì $-2m > 0$ và ($m \\le 0$ hoặc $m \\ge 1$) $\\Leftrightarrow m < 0$\n\nCách 2: Đặt ẩn\n\nĐặt $\\sin x = t$,\n\nVì $x \\in \\left(\\frac{\\pi}{2}; \\pi\\right)$ nên $t \\in (0; 1)$.\n\nTa thấy hàm số $y = \\sin x$ nghịch biến trên \\left(\\frac{\\pi}{2}; \\pi\\right) do đó để thỏa mãn yêu cầu đề bài thì hàm số $y = f(t) = \\frac{t + m}{t - m}$ phải đồng biến trên $(0; 1)$\n\nTức là $ad - bc = -m - m > 0$ và $m \\notin (0; 1) \\Leftrightarrow m < 0$ và ($m \\le 0$ hoặc $m \\ge 1$) $\\Leftrightarrow m < 0$\n\nCách 3: Sử dụng TABLE\n\nTa thấy với $m = 0$ không thỏa mãn, do là hàm hằng nên ta loại A.\n\nVậy ta sẽ thử $m = 1$; Start $\\frac{\\pi}{2}$ ; End $\\pi$ Step $\\frac{\\pi}{10}$ thì ta được kết quả hiển thị trên máy tính.\n\nVậy với $m = 1$ không thỏa mãn. Do vậy ta loại được C, D. Từ đây ta chọn B."
+  },
+  {
+   "id": "art-0a142a250583d05a301c0411b5df5304",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 9",
+   "questionNumber": "9",
+   "content": "Ta có $y' = \\cos x + \\sin x + 2017\\sqrt{2}m$. Ta có $y' = \\sqrt{2}\\sin\\left(x + \\frac{\\pi}{4}\\right) + 2017\\sqrt{2}m$. Để hàm số đã cho đồng biến trên $\\mathbb{R}$ thì $y' \\ge 0$ với mọi $x \\in \\mathbb{R}$. Dấu bằng xảy ra tại hữu hạn điểm.\n\n$\\Leftrightarrow \\sin\\left(x + \\frac{\\pi}{4}\\right) \\ge -2017m$ với mọi $x \\in \\mathbb{R}$. Điều này xảy ra khi $-2017m \\le -1 \\Leftrightarrow m \\ge \\frac{1}{2017}$."
+  },
+  {
+   "id": "art-1aff30efc573b3e5cbfa7d6a11401859",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 4",
+   "questionNumber": "4",
+   "content": "$D = \\mathbb{R}$ ; $y' = 3x^2 - 6mx$\n\n$y' = 0 \\Leftrightarrow x = 0$ hoặc $x = 2m$ , mặt khác hàm số có hệ số $a = 1 > 0$ nên đồ thị hàm số có dạng chữ N, suy ra hàm số nghịch biến trên $(0; 2m)$.\n\nVậy để hàm số nghịch biến trên khoảng $(0; 1)$ thì $2m < 1 \\Leftrightarrow m < \\frac{1}{2}$."
+  },
+  {
+   "id": "art-567072bfc0d50c1d138d1e5c76aac7a1",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 5",
+   "questionNumber": "5",
+   "content": "$D = \\mathbb{R}$\n\nĐể hàm số đã cho đồng biến trên $\\mathbb{R}$ thì $b^2 - 3ac \\le 0 \\Leftrightarrow 0^2 - 3.1.(-3m^2) \\le 0 \\Leftrightarrow 9m^2 \\le 0 \\Rightarrow m = 0$."
+  },
+  {
+   "id": "art-9938f0b637c3af87d5b48c5a991a6743",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 7",
+   "questionNumber": "7",
+   "content": "Để hàm số đã cho đồng biến trên từng khoảng xác định thì $(m + 1).(-m) + 2 > 0 \\Leftrightarrow -m^2 - m + 2 > 0$\n\n$\\Leftrightarrow -2 < m < 1$."
+  },
+  {
+   "id": "art-b3f45c3d97ab97ae5ef5432e942630eb",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 10",
+   "questionNumber": "10",
+   "content": "Đặt $\\sin x = t$\n\nVì $x \\in \\left(0; \\frac{\\pi}{2}\\right) \\Rightarrow t \\in (0; 1)$\n\nHàm số trở thành $y = \\frac{2t - 1}{t - m}$. Để thỏa mãn yêu cầu đề bài thì hàm số $y = \\frac{2t - 1}{t - m}$ phải đồng biến trên $(0; 1)$\n\n$\\Leftrightarrow ad - bc = -2m + 1 > 0$ và $m \\notin (0; 1) \\Leftrightarrow m < \\frac{1}{2}$ và ($m \\le 0$ hoặc $m \\ge 1$) $\\Leftrightarrow m \\le 0$.\n\nVì $m \\notin (0; 1)$ nên $m \\le 0$."
+  },
+  {
+   "id": "art-ba134c2338bbfd0eed1299c91670eb79",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 3",
+   "questionNumber": "3",
+   "content": "$y' = \\frac{m^2 - m - 2}{(t + m)^2}$\n\nHàm số đồng biến khi $m^2 - m - 2 > 0 \\Rightarrow m > 2$ hoặc $m < -1$\n\nKết hợp các điều kiện ta có $m > 2$ hoặc $m \\le -6$ hoặc $-4 \\le m < 1$"
+  },
+  {
+   "id": "art-bbb54f6231f807e7c672187a89985501",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 8",
+   "questionNumber": "8",
+   "content": "$y' = 3x^2 + 6x - m$\n\nPhương trình $y' = 0$ có $\\Delta' = b'^2 - ac = 3^2 - 3.1.(-m) = 9 + 3m$\n\nTrường hợp 1: đồ thị hàm số có hai điểm cực trị, thì $x = 0$ phải là điểm cực đại, lúc này: $y'(0) = 0 \\Leftrightarrow m = 0$ (không thỏa mãn)\n\nVậy hàm số phải luôn đồng biến trên $\\mathbb{R} \\Leftrightarrow m \\le -3$"
+  },
+  {
+   "id": "art-bbe7c0bf8d249c58f757b5c0d8c47cd2",
+   "kind": "SOLUTION",
+   "printedPages": [
+    32
+   ],
+   "title": "Câu 6",
+   "questionNumber": "6",
+   "content": "Để hàm số luôn nghịch biến trên $(-\\infty; +\\infty)$ thì $b^2 - 3ac \\le 0 \\Leftrightarrow m^2 - 3.\\left(-\\frac{1}{3}\\right).(3m + 2) \\le 0$\n\n$\\Leftrightarrow m^2 + 3m + 2 \\le 0 \\Leftrightarrow -2 \\le m \\le -1$."
+  },
+  {
+   "id": "art-9308b6427051a3e85ab1338a66c6119f",
+   "kind": "SOLUTION",
+   "printedPages": [
+    33
+   ],
+   "title": "Câu 13",
+   "questionNumber": "13",
+   "content": "Với $m = 0$ thì hàm số trở thành $y = 2$ là hàm hằng, loại. Từ đây ta loại A, C.\n\nVới $m \\ne 0$:\n\nĐến đây ta không cần thử mà có thể chọn luôn D, bởi hàm số đồng biến trên $\\mathbb{R}$ khi hệ số $a > 0$ và phương trình $y' = 0$ có nghiệm kép hoặc vô nghiệm, tuy nhiên với phương án B, $m \\le \\frac{4}{3}$ thì $m$ có thể âm, tức hệ số $a$ âm thì không thể đồng biến trên $\\mathbb{R}$ được. Vậy ta chọn D.\n\nChú ý: Với bài toán này việc hiểu bản chất và suy luận nhanh hơn rất nhiều so với việc bấm máy thử từng phương án."
+  },
+  {
+   "id": "art-a52c35665c5e2db4892f4700cccb3662",
+   "kind": "SOLUTION",
+   "printedPages": [
+    33
+   ],
+   "title": "Câu 12",
+   "questionNumber": "12",
+   "content": "Cách 1: Giải toán thông thường\n\nTa có $y' = -x^2 + 2(m - 1)x + (m + 3)$\n\nHàm số đã cho đồng biến trên $(0; 3) \\Leftrightarrow y' \\ge 0, \\forall x \\in (0; 3)$.\n\nVì hàm số $y'(x)$ liên tục tại $x = 0; x = 3$ nên $y' \\ge 0, \\forall x \\in (0; 3) \\Leftrightarrow y' \\ge 0, \\forall x \\in [0; 3]$ (mục đích là để cô lập tham số $m$)\n\n$\\Leftrightarrow m \\ge \\frac{x^2 + 2x - 3}{2x + 1}, \\forall x \\in [0; 3]$.\n\n(Do $2x + 1 > 0, \\forall x \\in [0; 3]$, nên khi chia cả hai vế không làm đổi dấu bất phương trình).\n\n$\\Leftrightarrow m \\ge \\max_{x \\in [0; 3]} g(x)$ với $g(x) = \\frac{x^2 + 2x - 3}{2x + 1}$\n\nMặt khác ta tìm được $\\max_{x \\in [0; 3]} g(x) = g(3) = \\frac{12}{7}$.\n\nVậy $m \\ge \\frac{12}{7}$.\n\nCách 2: Thử giá trị.\n\nLúc này ta chọn một giá trị $m$ nằm trong khoảng \\left(\\frac{7}{12}; \\frac{12}{7}\\right) là có thể xác định được kết quả, ta chọn $m = 1$ khi đó hàm số trở thành $y = -\\frac{1}{3}x^3 + 4x - 10$.\n\nCó $y' = 0 \\Leftrightarrow -x^2 + 4 = 0 \\Leftrightarrow x = -2$ hoặc $x = 2$\n\nDo hệ số $a = -\\frac{1}{3} < 0$ nên hàm số đồng biến trên $(-2; 2)$ vậy không thỏa mãn đề bài. Vậy loại B, C, D, chọn A."
+  }
+ ]
+}

@@ -9,14 +9,17 @@ import type { SolutionGuide } from '../types';
  */
 export const X_OVER_LN_X: SolutionGuide = {
   id: 'math12-monotonic-x-over-ln-x',
+  // Matched by content, never by id: the TABLE method of a question on this function with
+  // these four answer choices (the conclusion below names them). A copy of the question
+  // gets the same lesson; another question on x / ln x gets a generated guide.
   match: {
-    // Production: Q-MAT-TPG9WI.
-    questionIds: ['q-b48ea52f-2c80-41f8-9740-852bbad40ed5'],
-    textbook: {
-      documentTitle: 'math_book_3',
-      questionNumber: '1',
-      stemIncludes: 'y = \\frac{x}{\\ln x}',
-    },
+    functionLatex: '\\frac{x}{\\ln x}',
+    options: [
+      'Hàm số luôn đồng biến trên $(0; +\\infty)$',
+      'Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$',
+      'Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$',
+      'Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$',
+    ],
   },
   derivative: {
     title: 'Cách 1: Giải bằng đạo hàm',
@@ -52,7 +55,10 @@ export const X_OVER_LN_X: SolutionGuide = {
     id: 'fx570vnplus-table-x-over-ln-x',
     model: MODEL,
     functionLatex: '$f(x) = \\frac{x}{\\ln x}$',
-    domainLatex: '$D = (0; 1) \\cup (1; +\\infty)$',
+    intro:
+      'Tập xác định $D = (0; 1) \\cup (1; +\\infty)$: hai khoảng rời nhau, nên lập bảng riêng cho từng khoảng.',
+    freeHint:
+      'Máy mô phỏng nhận mọi phím của chức năng TABLE. Thử bấm AC rồi nhập một khoảng khác, ví dụ Start = 0.5, End = 1.5, Step = 0.25 để xem dòng ERROR tại X = 1.',
     objective:
       'Lập bảng giá trị của $f(x) = \\frac{x}{\\ln x}$ trên từng khoảng của tập xác định, rồi đối chiếu với kết quả của Cách 1.',
     steps: [

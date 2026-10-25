@@ -27,6 +27,7 @@ import {
 } from '@/lib/calculator-tutor/fx570vn-plus';
 import type { CalculatorTutorial, TutorialStep } from '@/lib/calculator-tutor/types';
 import { CalculatorDevice, KEYBOARD } from './calculator-device';
+import { ORIGIN_LABEL } from './origin';
 
 type Mode = 'choose' | 'watch' | 'practice' | 'free';
 
@@ -76,7 +77,7 @@ function Checkpoint({ checkpoint }: { checkpoint: NonNullable<TutorialStep['chec
 }
 
 /** True on phone widths, where the tutor opens as a full-screen workspace. */
-function useCompact(): boolean {
+export function useCompact(): boolean {
   return React.useSyncExternalStore(
     (notify) => {
       const query = window.matchMedia('(max-width: 639px)');
@@ -255,10 +256,11 @@ export function CalculatorTutor({ tutorial }: { tutorial: CalculatorTutorial }) 
           <p className="text-[15px] leading-7 text-slate-800">
             <QuestionMath text={tutorial.objective} />
           </p>
-          <p className="rounded-xl bg-slate-50 px-3 py-2 text-[13px] leading-6 text-slate-700">
-            Tập xác định <QuestionMath text={tutorial.domainLatex} />: hai khoảng rời nhau, nên lập
-            bảng riêng cho từng khoảng.
-          </p>
+          {tutorial.intro && (
+            <p className="rounded-xl bg-slate-50 px-3 py-2 text-[13px] leading-6 text-slate-700">
+              <QuestionMath text={tutorial.intro} />
+            </p>
+          )}
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
@@ -289,8 +291,8 @@ export function CalculatorTutor({ tutorial }: { tutorial: CalculatorTutorial }) 
         <div className="space-y-2" data-testid="tutor-free">
           <p className="text-[15px] font-bold text-slate-900">Thử tự do</p>
           <p className="text-[13px] leading-6 text-slate-700">
-            Máy mô phỏng nhận mọi phím của chức năng TABLE. Thử bấm AC rồi nhập một khoảng khác, ví
-            dụ Start = 0.5, End = 1.5, Step = 0.25 để xem dòng ERROR tại X = 1.
+            {tutorial.freeHint ??
+              'Máy mô phỏng nhận mọi phím của chức năng TABLE. Bấm AC để quay lại f(X), rồi thử một khoảng khác.'}
           </p>
           <button
             type="button"
@@ -401,6 +403,15 @@ export function CalculatorTutor({ tutorial }: { tutorial: CalculatorTutorial }) 
               </span>
             )}
             {current.title}
+            {current.origin && current.origin !== 'SOURCE' && current.origin !== 'MODEL' && (
+              <span
+                className={`ml-2 inline-flex h-5 items-center rounded-full px-2 align-middle text-[11px] font-bold ${ORIGIN_LABEL[current.origin].className}`}
+                data-testid="tutor-origin"
+                data-origin={current.origin}
+              >
+                {ORIGIN_LABEL[current.origin].label}
+              </span>
+            )}
           </p>
           <p className="mt-1 text-[14px] leading-6 text-slate-800" data-testid="tutor-instruction">
             {current.instruction}

@@ -10,19 +10,22 @@ import {
   formatFull,
   type CalcState,
   type KeyId,
+  tokenText,
   type Token,
 } from '@/lib/calculator-tutor/fx570vn-plus';
 
 /**
  * The Tú Tài teaching calculator: an LCD and a keypad laid out like a common
  * scientific calculator, with no manufacturer branding or artwork. Only the
- * keys of the TABLE lesson do something; the others answer that they are
- * outside the simulation.
+ * keys of the TABLE mode do something; the others answer that they are outside
+ * the simulation. `highlight` marks keys without simulating them (guided
+ * illustrations).
  */
 
 type Layout = { keys: KeyId[]; small?: boolean };
 
 const FUNCTION_ROWS: Layout[] = [
+  { keys: ['CALC', 'INTEG', 'POWER', 'SIN', 'COS', 'TAN'], small: true },
   { keys: ['FRAC', 'SQRT', 'SQUARE', 'LOG', 'LN', 'NEG'], small: true },
   { keys: ['RCL', 'ENG', 'LPAREN', 'RPAREN', 'SD', 'MPLUS'], small: true },
 ];
@@ -70,6 +73,11 @@ export const KEYBOARD: Record<string, KeyId> = {
   A: 'ALPHA',
   l: 'LN',
   L: 'LN',
+  r: 'SQRT',
+  R: 'SQRT',
+  '^': 'POWER',
+  q: 'SQUARE',
+  Q: 'SQUARE',
 };
 
 const ACCENT: Partial<Record<KeyId, string>> = {
@@ -148,7 +156,7 @@ function Expression({
   cursor: number;
   blink: boolean;
 }) {
-  const parts = tokens.map((token) => (token === '⁻' ? '-' : token));
+  const parts = tokens.map(tokenText);
   return (
     <span className="break-all">
       {parts.slice(0, cursor).join('')}
@@ -308,9 +316,18 @@ export function CalculatorDevice({
   onPress,
   caption,
   compact = false,
+  highlights = [],
+  screen,
+  label = 'TABLE',
 }: {
   compact?: boolean;
   state: CalcState;
+  /** Keys marked without being simulated (guided illustration). */
+  highlights?: KeyId[];
+  /** Replaces the simulated LCD: an illustration never draws a calculator screen it does not compute. */
+  screen?: React.ReactNode;
+  /** What the device is, top right. */
+  label?: string;
   /** The key to press next, highlighted. */
   target: KeyId | null;
   /** Show the demonstration pointer on the target key. */
@@ -325,7 +342,7 @@ export function CalculatorDevice({
       id={id}
       small={small}
       labels={labels}
-      target={target === id}
+      target={target === id || highlights.includes(id)}
       pointer={pointer && target === id}
       pressed={pressed === id}
       onPress={onPress}
@@ -337,10 +354,10 @@ export function CalculatorDevice({
       onClick={() => onPress(id)}
       aria-label={KEYS[id].aria}
       data-key={id}
-      data-target={target === id || undefined}
+      data-target={target === id || highlights.includes(id) || undefined}
       className={`absolute grid touch-manipulation place-items-center text-[11px] text-slate-200 transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${className} ${
         pressed === id ? 'bg-white/25' : 'hover:bg-white/10'
-      } ${target === id ? 'z-10 rounded-md bg-amber-300/30 ring-[3px] ring-amber-300 motion-safe:animate-[calc-glow_1.4s_ease-in-out_infinite]' : ''}`}
+      } ${target === id || highlights.includes(id) ? 'z-10 rounded-md bg-amber-300/30 ring-[3px] ring-amber-300 motion-safe:animate-[calc-glow_1.4s_ease-in-out_infinite]' : ''}`}
     >
       {KEYS[id].label}
       {pointer && target === id && (
@@ -361,11 +378,20 @@ export function CalculatorDevice({
     >
       {!compact && (
         <div className="mb-2 flex items-center justify-between px-1 text-[10px] font-semibold tracking-wide text-slate-400">
-          <span>Tú Tài · Máy tính mô phỏng</span>
-          <span>TABLE</span>
+          <span>Tú Tài · {screen ? 'Minh hoạ bàn phím' : 'Máy tính mô phỏng'}</span>
+          <span>{label}</span>
         </div>
       )}
-      <Lcd state={state} compact={compact} />
+      {screen ? (
+        <div
+          className={`flex flex-col justify-center rounded-lg ${compact ? 'min-h-[72px]' : 'min-h-[104px]'} border border-dashed border-slate-500/60 bg-[#1F2633] px-3 py-2 text-slate-100`}
+          data-testid="calc-illustration-screen"
+        >
+          {screen}
+        </div>
+      ) : (
+        <Lcd state={state} compact={compact} />
+      )}
       <div
         className="mt-2 min-h-[1.25rem] px-1 text-[11px] leading-snug text-sky-200"
         aria-live="polite"

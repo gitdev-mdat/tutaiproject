@@ -1,0 +1,81 @@
+{
+  "inspected": {
+    "questions": 22,
+    "solutions": 36
+  },
+  "withCalculatorMethod": 4,
+  "questionsWithCalculatorMethod": 3,
+  "levels": {
+    "A": 3,
+    "B": 0,
+    "C": 1
+  },
+  "needsReview": 1,
+  "report": [
+    {
+      "kind": "question",
+      "label": "Câu 1 (Q-MAT-TPG9WI)",
+      "operation": "TABLE",
+      "level": "A",
+      "origin": "reference",
+      "visibleToStudents": true,
+      "review": [],
+      "info": [
+        "OCR",
+        "OCR",
+        "FIGURE_MISSING",
+        "MODEL_ASSUMED",
+        "KEY_CORRECTED"
+      ],
+      "steps": 6,
+      "keys": 33
+    },
+    {
+      "kind": "question",
+      "label": "Câu 2 (Q-MAT-1WC5W7)",
+      "operation": "TABLE",
+      "level": "A",
+      "origin": "generated",
+      "visibleToStudents": false,
+      "review": [
+        "RANGE_PROPOSED"
+      ],
+      "info": [
+        "MODEL_ASSUMED"
+      ],
+      "steps": 5,
+      "keys": 33
+    },
+    {
+      "kind": "question",
+      "label": "Câu 20 (Q-MAT-56T7XM)",
+      "operation": "TABLE",
+      "level": "A",
+      "origin": "generated",
+      "visibleToStudents": true,
+      "review": [],
+      "info": [
+        "FIGURE_MISSING",
+        "MODEL_ASSUMED"
+      ],
+      "steps": 6,
+      "keys": 39
+    },
+    {
+      "kind": "solution-only",
+      "label": "Lời giải Câu 11 tr. 32,33",
+      "operation": "TABLE",
+      "level": "C",
+      "origin": "generated",
+      "visibleToStudents": null,
+      "review": [],
+      "info": [
+        "MODEL_ASSUMED",
+        "NO_FUNCTION",
+        "TEXT_ONLY"
+      ],
+      "steps": 4,
+      "keys": 0
+    }
+  ]
+}

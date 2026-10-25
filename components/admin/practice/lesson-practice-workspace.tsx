@@ -36,6 +36,7 @@ import {
 } from './practice-labels';
 import { QuestionEditor, draftFromQuestion, emptyDraft, type EditorDraft } from './question-editor';
 import { StudentPreview } from './student-preview';
+import { CalculatorGuideReviewPanel } from './calculator-guide-review';
 
 type EditorState = { question: Question | null; draft: EditorDraft; key: number } | null;
 
@@ -208,6 +209,9 @@ function QuestionCard({
         <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-slate-700">
           <QuestionMath text={question.explanation ?? ''} />
         </div>
+      )}
+      {state !== 'ARCHIVED' && (
+        <CalculatorGuideReviewPanel question={question} onChanged={onChanged} />
       )}
       {reason && <p className="mt-2 text-xs font-medium text-rose-700">{reason}</p>}
       {blockers.length > 0 && (

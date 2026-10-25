@@ -1,0 +1,198 @@
+{
+ "viewport": "1440x900",
+ "input": "mouse",
+ "results": [
+  {
+   "id": "S0",
+   "label": "Before answering Câu 20: no guide, no calculator on the page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "S1",
+   "label": "Câu 20 (no config file): \"Thực hành bằng máy tính\" alone (the source has no other method), level A",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "S2",
+   "label": "Demonstration types (2X−3)÷√(X²−1) key by key, √ opening a box",
+   "ok": true,
+   "detail": "S A Math f(X)=(2X−3)÷√(X²)"
+  },
+  {
+   "id": "S3",
+   "label": "Student presses all keys of the generated lesson (mouse); ERROR rows at x = −1…1 explained",
+   "ok": true,
+   "detail": "39 presses"
+  },
+  {
+   "id": "S4",
+   "label": "Conclusion computed from the table: decreasing on −3…−1,5, increasing on 1,5…3, not a proof",
+   "ok": true,
+   "detail": "Em đã tự bấm xong cả bài! |  | 39 lần bấm phím · 6 bước |  | F(X) giảm khi X đi từ −3 đến −1,5. | F(X) tăng khi X đi từ 1,5 đến 3. | Lời giải kết luận: \"Từ đây ta thấy hàm số nghịch biến trên (-∞; -1)"
+  },
+  {
+   "id": "S5",
+   "label": "The tutor sends nothing to the server (grading, attempts, streak, XP untouched)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "O1",
+   "label": "No horizontal overflow (Câu 20)",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "id": "S6",
+   "label": "Câu 2 (proposed range, not yet accepted): students see the original solution only",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "S6b",
+   "label": "Câu 2: no generated guide before Admin accepts it; original steps shown",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "S7",
+   "label": "SOLVE question (QA): level B guided illustration, keys highlighted, no simulated screen",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "S7b",
+   "label": "Step \"bấm SHIFT SOLVE\": SHIFT and CALC (SOLVE) highlighted, labelled as illustration",
+   "ok": true,
+   "detail": "SHIFT,CALC"
+  },
+  {
+   "id": "S7c",
+   "label": "Missing screenshot in the source is marked, not drawn",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "O2",
+   "label": "No horizontal overflow (level B)",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "id": "S8",
+   "label": "Câu 11 (sin; Radian step missing in the source): held for review, not shown yet",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "S9",
+   "label": "Only a mention of the calculator: held for review, not shown",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "S10",
+   "label": "Câu 3 (no calculator method): original solution only",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "A1",
+   "label": "Admin sees a guide panel on the 5 questions with a calculator method, none on Câu 3",
+   "ok": true,
+   "detail": "5 panels"
+  },
+  {
+   "id": "A2",
+   "label": "Câu 2 panel: TABLE, level A, step count, the proposed-range warning, not visible yet",
+   "ok": true,
+   "detail": "Hướng dẫn bấm máy |  | Mức A · Mô phỏng từng phím |  | Nhận diện: Bảng giá trị (TABLE) · không ghi đời máy · 5 bước, 33 phím · độ tin cậy cao |  | Chưa hiện cho học sinh: cần chấp nhận sau khi xem các cảnh báo dưới đây. |  | Lời giải không "
+  },
+  {
+   "id": "A3",
+   "label": "Preview: two methods (book text, then calculator), every generated step replays to its screen",
+   "ok": true,
+   "detail": "5/5"
+  },
+  {
+   "id": "A4",
+   "label": "Accept: saved on the question (no new table), panel says students will see it",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "A5",
+   "label": "Correct an instruction: stored as a correction, guide accepted",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "A6",
+   "label": "Keep the original solution: stored, students keep the source text",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "A7",
+   "label": "Disable hides a guide; clearing the decision brings it back",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "O3",
+   "label": "No horizontal overflow (admin)",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "id": "T1",
+   "label": "Câu 20 still has its guide after the decision was cleared",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "T2",
+   "label": "Câu 2 after Admin accepted: two methods, the proposed range is labelled \"Tú Tài đề xuất\"",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "T3a",
+   "label": "Câu 11 keeps its three methods apart: the book's Cách 1–2 as text, then \"Thực hành bằng máy tính\"",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "T3",
+   "label": "Câu 11 after correction: level B, first step shows Admin's corrected instruction",
+   "ok": true,
+   "detail": "Bấm SHIFT, MODE rồi chọn 4 (Rad): trên màn hình hiện chữ R."
+  },
+  {
+   "id": "T4",
+   "label": "Unsupported function (sin): values computed from the formula, labelled, π/2 → ERROR, π → −1",
+   "ok": true,
+   "detail": "X f(X) π/2 ERROR 3π/5 −39,86345819 7π/10 −9,472135955 4π/5 −3,851839996 9π/10 −1,894427191 π −1"
+  },
+  {
+   "id": "T5",
+   "label": "Mention-only question kept as original solution",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "O4",
+   "label": "No horizontal overflow (second attempt)",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "id": "E",
+   "label": "No page errors",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}
