@@ -553,8 +553,17 @@ function ExerciseDetail({
               Đáp án <strong className="text-emerald-700">{exercise.answer}</strong> ·{' '}
               {exercise.verification.method === 'ADMIN_SOLVED'
                 ? 'Admin tự giải'
-                : `theo ${exercise.confirmedSolution?.title ?? 'lời giải'} tr. ${exercise.confirmedSolution?.printedPages.join(', ')}, Admin đã xác nhận`}
+                : exercise.verification.method === 'AUTO_VERIFIED_SOLUTION'
+                  ? `hệ thống đã đối chiếu với ${exercise.confirmedSolution?.title ?? 'lời giải'} tr. ${exercise.confirmedSolution?.printedPages.join(', ')}`
+                  : `theo ${exercise.confirmedSolution?.title ?? 'lời giải'} tr. ${exercise.confirmedSolution?.printedPages.join(', ')}, Admin đã xác nhận`}
             </p>
+            {exercise.verification.verificationSummary?.length ? (
+              <ul className="space-y-0.5 text-xs text-slate-600" data-testid="verification-summary">
+                {exercise.verification.verificationSummary.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            ) : null}
             {exercise.check.status !== 'NOT_APPLICABLE' && (
               <p
                 className={`text-xs ${exercise.check.status === 'CONFLICT' ? 'font-semibold text-rose-700' : 'text-slate-600'}`}
@@ -1053,6 +1062,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
   const counts = workspace.counts;
   const tiles = [
     { label: 'Câu trích từ sách', value: counts.extracted },
+    { label: 'Tự đối chiếu được', value: counts.autoVerified },
     { label: 'Đã xác nhận đáp án', value: counts.solutionsConfirmed },
     { label: 'Cần Admin xem', value: counts.needsReview },
     { label: 'Đã vào Ngân hàng', value: counts.imported },

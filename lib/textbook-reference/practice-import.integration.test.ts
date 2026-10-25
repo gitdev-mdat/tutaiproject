@@ -142,6 +142,41 @@ const solutions = extracted(
 );
 const ex = (n: string) => exercises.find((a) => a.questionNumber === n)!;
 const sol = (n: string) => solutions.find((a) => a.questionNumber === n)!;
+const q13 = extracted(
+  'toc-6',
+  [
+    {
+      kind: 'EXERCISE',
+      title: 'Câu 13',
+      questionNumber: '13',
+      printedPages: [20],
+      content:
+        'Câu 13: Cho hàm số $y = \\sqrt{2x - x^2}$. Hàm số đồng biến trên khoảng nào?\nA. $(-\\infty; 2)$\nB. $(0; 1)$\nC. $(1; 2)$\nD. $(1; +\\infty)$',
+      choices: [
+        { label: 'A', text: '$(-\\infty; 2)$' },
+        { label: 'B', text: '$(0; 1)$' },
+        { label: 'C', text: '$(1; 2)$' },
+        { label: 'D', text: '$(1; +\\infty)$' },
+      ],
+    },
+  ],
+  [20]
+)[0];
+const s13 = extracted(
+  'toc-9',
+  [
+    {
+      kind: 'SOLUTION',
+      title: 'Câu 13',
+      questionNumber: '13',
+      content:
+        "Câu 13: Tập xác định $[0; 2]$. $y' = \\frac{-2x+2}{2\\sqrt{2x-x^2}} = \\frac{1-x}{\\sqrt{2x-x^2}}$. $y' > 0$ $\\forall x \\in (0; 1)$ nên hàm số đồng biến trên $(0;1)$.",
+      printedPages: [30],
+      exerciseSetLabel: 'Dạng 1: Bài tập không chứa tham số',
+    },
+  ],
+  [30]
+)[0];
 const patch = (id: string, body: object) =>
   PATCH(new Request('http://test/api', { method: 'PATCH', body: JSON.stringify(body) }), {
     params: Promise.resolve({ questionId: id }),
@@ -238,6 +273,35 @@ describe.skipIf(!READY)('textbook exercises into the Question Bank (isolated Pos
     expect(workspace.lessons.map((l) => l.id)).toEqual([P1, P2]);
     expect(workspace.pageLayouts[DOC][19]).toEqual({ pdfPage: 10, position: 'RIGHT' });
     expect(workspace.pageLayouts[DOC][29]).toEqual({ pdfPage: 15, position: 'RIGHT' });
+  });
+
+  it('persists a unique mathematical match automatically and imports it only as a draft', async () => {
+    await insertTextbookArtifacts([q13, s13]);
+    const first = await loadLessonPractice(P1);
+    const view = first!.sets.flatMap((set) => set.exercises).find((item) => item.id === q13.id)!;
+    expect(view).toMatchObject({
+      status: 'MATCHED',
+      answer: 'B',
+      verification: {
+        method: 'AUTO_VERIFIED_SOLUTION',
+        solutionArtifactId: s13.id,
+        verificationSummary: expect.arrayContaining([
+          expect.stringMatching(/đạo hàm|phương án B/u),
+        ]),
+      },
+    });
+    const second = await loadLessonPractice(P1);
+    expect(second?.counts.autoVerified).toBe(1);
+    const outcome = await importExercises(P1, [q13.id], 'REVIEW_REQUIRED', 'it-admin');
+    expect(outcome[0].result).toBe('CREATED');
+    const question = (await listQuestions({ pageSize: 100_000 })).questions.find(
+      (item) => item.externalId === textbookExternalId(q13.id)
+    );
+    expect(question).toMatchObject({
+      editorialStatus: 'DRAFT',
+      correctAnswer: 'B',
+      textbookSource: { verification: 'AUTO_VERIFIED_SOLUTION' },
+    });
   });
 
   it('imports a confirmed question once, even when two imports race', async () => {

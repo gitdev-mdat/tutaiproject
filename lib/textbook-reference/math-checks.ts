@@ -132,7 +132,9 @@ export function checkMonotonicityAnswer(
   if (!answer || !choices?.length) return { status: 'NOT_APPLICABLE' };
   const fnSource = definedFunction(stem);
   const fn = fnSource ? polynomialOf(fnSource) : null;
-  if (!fn) return { status: 'NOT_APPLICABLE' };
+  const radicalMatch = fnSource ? /^\\sqrt\{([^{}]+)\}$/.exec(fnSource) : null;
+  const radical = radicalMatch ? polynomialOf(radicalMatch[1]) : null;
+  if (!fn && !radical) return { status: 'NOT_APPLICABLE' };
   const stemDirection = directionOf(stem.split('\n')[0] ?? stem) ?? directionOf(stem);
   const verdicts = choices.map((choice) => {
     const claims = claimsOf(choice.text, stemDirection);
@@ -140,7 +142,11 @@ export function checkMonotonicityAnswer(
       label: choice.label,
       holds: claims
         ? claims.every((claim) =>
-            claim.intervals.every((interval) => monotoneOn(fn, claim.direction, interval))
+            claim.intervals.every((interval) =>
+              fn
+                ? monotoneOn(fn, claim.direction, interval)
+                : monotoneOnRadical(radical!, claim.direction, interval)
+            )
           )
         : (null as boolean | null),
     };
@@ -161,8 +167,83 @@ export function checkMonotonicityAnswer(
       note: `Phương án ${answer} đúng theo đạo hàm, nhưng ${alsoTrue.join(', ')} cũng đúng.`,
     };
   const unknown = verdicts.some((v) => v.label !== answer && v.holds === null);
+  if (unknown)
+    return {
+      status: 'AMBIGUOUS',
+      note: `Phương án ${answer} đúng theo đạo hàm, nhưng chưa kiểm chứng được các phương án còn lại.`,
+    };
   return {
     status: 'CONFIRMED',
-    note: `Đã tính đạo hàm của y = ${fnSource}: phương án ${answer} đúng${unknown ? '' : ', các phương án còn lại sai'}.`,
+    note: `Đã tính đạo hàm của y = ${fnSource}: phương án ${answer} đúng, các phương án còn lại sai.`,
   };
+}
+
+/** Sign-checks sqrt of a concave quadratic on the interior of its real domain. */
+function monotoneOnRadical(
+  radicand: Polynomial,
+  direction: Direction,
+  interval: Interval
+): boolean {
+  const a = radicand.get(2) ?? 0;
+  const b = radicand.get(1) ?? 0;
+  const c = radicand.get(0) ?? 0;
+  if (!(a < 0)) return false;
+  const discriminant = b * b - 4 * a * c;
+  if (!(discriminant > 0)) return false;
+  const root = Math.sqrt(discriminant);
+  const roots = [(-b - root) / (2 * a), (-b + root) / (2 * a)].sort((x, y) => x - y);
+  const [domainStart, domainEnd] = roots;
+  if (interval.start < domainStart || interval.end > domainEnd) return false;
+  const vertex = -b / (2 * a);
+  return direction === 'INCREASING'
+    ? interval.end <= vertex + 1e-10
+    : interval.start >= vertex - 1e-10;
+}
+
+/** Infer a choice only from a single explicit derivative-sign interval in the solution. */
+export function inferMonotonicityChoice(
+  stem: string,
+  choices: ExerciseChoice[] | undefined,
+  solution: string
+): string | null {
+  if (!choices?.length) return null;
+  const facts: Array<{ direction: Direction; interval: string }> = [];
+  for (const [, sign, interval] of solution.matchAll(
+    /y\s*'\s*([<>])\s*0\s*\$?\s*(?:trên|tren)\s*\$?\s*(\([^)]*\))/giu
+  ))
+    facts.push({ direction: sign === '>' ? 'INCREASING' : 'DECREASING', interval });
+  for (const [, sign, interval] of solution.matchAll(
+    /y\s*'\s*([<>])\s*0[\s$]*(?:\\forall|∀)\s*x\s*\\in\s*\$?(\([^)]*\))/giu
+  ))
+    facts.push({ direction: sign === '>' ? 'INCREASING' : 'DECREASING', interval });
+  for (const [, word, interval] of solution.matchAll(
+    /(đồng|nghịch)\s+biến\s+(?:trên|tren)\s*\$?(\([^)]*\))/giu
+  ))
+    facts.push({ direction: word === 'đồng' ? 'INCREASING' : 'DECREASING', interval });
+  const normalizedFacts = [
+    ...new Set(
+      facts
+        .map((fact) => {
+          const parsed = intervalsOf(fact.interval);
+          return parsed?.length === 1
+            ? `${fact.direction}:${parsed[0].start}:${parsed[0].end}`
+            : '';
+        })
+        .filter(Boolean)
+    ),
+  ];
+  if (normalizedFacts.length !== 1) return null;
+  const [, direction, start, end] =
+    /^(INCREASING|DECREASING):([^:]+):([^:]+)$/.exec(normalizedFacts[0]) ?? [];
+  const expectedDirection = direction as Direction;
+  const requestedDirection = directionOf(stem);
+  if (expectedDirection !== requestedDirection) return null;
+  const normalized = `${start}:${end}`;
+  const eligible = choices.filter((choice) => {
+    const candidate = intervalsOf(choice.text);
+    return candidate?.length === 1 && `${candidate[0].start}:${candidate[0].end}` === normalized;
+  });
+  if (eligible.length !== 1) return null;
+  const check = checkMonotonicityAnswer(stem, choices, eligible[0].label);
+  return check.status === 'CONFIRMED' ? eligible[0].label : null;
 }

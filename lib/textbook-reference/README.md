@@ -1,6 +1,6 @@
 # Textbook reference backend
 
-Last Updated: 2026-10-23
+Last Updated: 2026-10-25
 
 Scanned textbooks are private authoring sources for the Knowledge Tree. The workflow has separate, persisted states:
 
@@ -46,7 +46,9 @@ Exercise-only pages are first-class (`extraction-response.ts`, prompt `textbook-
 
 Each returned item is validated on its own; valid items are stored even when others are rejected, cut off (`MAX_TOKENS` answers keep their finished items) or reported unreadable. A finished job records `outcome` (`COMPLETE` | `PARTIAL` | `EMPTY`) and `diagnostics` (images sent, per-page readability, rejected/unreadable items, finish reason, token usage). Failures are `INVALID_RESPONSE` (answered, nothing usable) or `UNREADABLE` (scan not readable), with usage kept. The same pages are not sent again after an `UNREADABLE`/`OUTPUT_LIMIT` failure or after 3 content failures; outages and quota limits never block them.
 
-Solutions (`solution-matching.ts`) are matched across batches: same book, same chapter, same problem type (from the printed heading above the solution), same question number, and a mathematical check (same function restated, or the stated derivative is that function's). Only an unambiguous candidate pairs; a number alone never does. Lifecycle on the artifact: `solutionStatus` `UNRESOLVED` → `MATCHED`; "verified" is matched with both sides approved. Questions are reviewable at once, but AI drafting reads an exercise only with its approved solution, and nothing is published to students or the Question Bank.
+Solutions (`solution-matching.ts`) are matched across batches: same book, same chapter, same problem type, same question number and a mathematical check. A stated derivative can establish the connection without repeating the original function; supported cases include square roots of concave quadratics, where the denominator is positive inside the function's domain. Multiple-choice monotonicity answers are checked against every option and the function domain. A unique strong match is persisted as `AUTO_VERIFIED_SOLUTION` only when the deterministic checker confirms one answer and the solution states either that answer or its equivalent interval. Existing Admin decisions, imported questions and rejected pairings are preserved. Unsupported expressions, multiple candidates, OCR uncertainty or any failed answer check stay visible for Admin review. The verification record stores its evidence summary.
+
+Auto-verification does not approve the source extract, create a Question Bank row or publish to students. Verified exercises can be selected in bulk and imported through the existing Question Bank flow as drafts; that bank remains the only publishing workflow. The Admin workspace reports automatic verifications separately and keeps them out of the manual matching queue, while allowing an Admin to inspect or clear an automatic result.
 
 ## Admin API (`app/api/admin/textbooks/route.ts`)
 

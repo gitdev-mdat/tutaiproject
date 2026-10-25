@@ -33,6 +33,7 @@ import {
   updateExercisePractice,
 } from './repository';
 import { assessSolution, proposeSolutions, solutionProblemTypes } from './solution-matching';
+import { checkMonotonicityAnswer } from './math-checks';
 import type { ExerciseChoice, TextbookArtifact, TextbookExtractionJob } from './types';
 
 /**
@@ -88,6 +89,7 @@ export interface LessonPracticeWorkspace {
   sets: PracticeSetView[];
   counts: {
     extracted: number;
+    autoVerified: number;
     solutionsConfirmed: number;
     needsReview: number;
     eligible: number;
@@ -108,6 +110,74 @@ export interface LessonPracticeWorkspace {
   >;
 }
 
+/**
+ * Persist only a unique strong pairing whose answer is independently confirmed
+ * by the deterministic monotonicity checker. Existing Admin decisions and
+ * imported drafts are left untouched.
+ */
+async function autoVerifyStrongMatches(
+  artifacts: TextbookArtifact[],
+  existingQuestionIds: Set<string>
+) {
+  const proposals = proposeSolutions(artifacts);
+  const solutions = new Map(
+    artifacts.filter((item) => item.kind === 'SOLUTION').map((item) => [item.id, item])
+  );
+  const updated = new Map<string, TextbookArtifact>();
+  for (const exercise of artifacts.filter((item) => item.kind === 'EXERCISE')) {
+    if (
+      exercise.practice?.verification ||
+      exercise.practice?.imported ||
+      existingQuestionIds.has(textbookExternalId(exercise.id))
+    )
+      continue;
+    const proposal = proposals.get(exercise.id);
+    if (proposal?.status !== 'SUGGESTED') continue;
+    const candidate = proposal.candidates.find((item) => item.strength === 'STRONG');
+    const solution = candidate ? solutions.get(candidate.solutionId) : null;
+    const answer = candidate?.answerChoice;
+    if (!candidate || !solution || !answer) continue;
+    const answerCheck = checkMonotonicityAnswer(exercise.content, exercise.choices, answer);
+    if (answerCheck.status !== 'CONFIRMED') continue;
+    const verificationSummary = [...candidate.evidence, answerCheck.note];
+    const result = await updateExercisePractice(
+      exercise.id,
+      async (current, confirmedElsewhere) => {
+        if (current.practice?.verification || current.practice?.imported)
+          return { error: 'Câu đã được xử lý.' };
+        if (await confirmedElsewhere(solution.id))
+          return { error: 'Lời giải đã gắn với câu khác.' };
+        return {
+          practice: {
+            ...current.practice,
+            verification: {
+              method: 'AUTO_VERIFIED_SOLUTION',
+              answer,
+              solutionArtifactId: solution.id,
+              verificationSummary,
+              by: 'system:deterministic-matcher',
+              at: new Date().toISOString(),
+            },
+          },
+          fields: {
+            solutionStatus: 'MATCHED',
+            answer: {
+              status: 'FROM_SOLUTION',
+              choice: answer,
+              solutionArtifactId: solution.id,
+            },
+            pairedArtifactId: solution.id,
+            solutionReference: `${solution.title} (tr. ${solution.printedPages.join(', ')})`,
+          },
+          solution: { id: solution.id, paired: true },
+        };
+      }
+    );
+    if ('artifact' in result) updated.set(exercise.id, result.artifact);
+  }
+  return artifacts.map((artifact) => updated.get(artifact.id) ?? artifact);
+}
+
 async function lessonContext(lessonId: string) {
   const [tree, articles] = await Promise.all([readKnowledgeTree(), readKnowledgeArticles()]);
   const node = tree.nodes.find((item) => item.id === lessonId);
@@ -126,7 +196,7 @@ export async function loadLessonPractice(
     (mapping) => mapping.status === 'CONFIRMED'
   );
   const documentIds = [...new Set(lessonMappings.map((mapping) => mapping.documentId))];
-  const [documents, mappings, artifacts, jobs, { questions }] = await Promise.all([
+  const [documents, mappings, loadedArtifacts, jobs, { questions }] = await Promise.all([
     Promise.all(documentIds.map((id) => getTextbookDocument(id))),
     Promise.all(documentIds.map((id) => listTextbookMappings({ documentId: id }))).then((r) =>
       r.flat()
@@ -140,6 +210,10 @@ export async function loadLessonPractice(
     listQuestions({ pageSize: 100_000 }),
   ]);
   const books = documents.flatMap((document) => (document ? [document] : []));
+  const artifacts = await autoVerifyStrongMatches(
+    loadedArtifacts,
+    new Set(questions.map((question) => question.externalId).filter((id): id is string => !!id))
+  );
   const sets = practiceSetsForLesson({ lessonId, documents: books, mappings, artifacts });
   const byId = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
   const questionsByExternal = new Map(
@@ -290,6 +364,7 @@ export async function loadLessonPractice(
     sets: setViews,
     counts: {
       extracted: all.length,
+      autoVerified: all.filter((e) => e.verification?.method === 'AUTO_VERIFIED_SOLUTION').length,
       solutionsConfirmed: all.filter((e) => e.status === 'MATCHED' || e.status === 'ADMIN_VERIFIED')
         .length,
       needsReview: all.filter((e) => e.status === 'SUGGESTED' || e.status === 'NEEDS_CONFIRMATION')
@@ -397,10 +472,6 @@ export async function confirmSolution(
     throw new PracticeRequestError('Không tìm thấy lời giải.', 404);
   if (!current || current.kind !== 'EXERCISE')
     throw new PracticeRequestError('Không tìm thấy câu hỏi.', 404);
-  if (!solution.answerChoice)
-    throw new PracticeRequestError(
-      'Lời giải này không ghi phương án đúng. Nếu bạn đã tự giải, dùng “Tự giải và ghi nhận đáp án”.'
-    );
   const artifacts = await listTextbookArtifacts({ documentId: solution.documentId });
   // Checked again under the row lock below; here so this refusal comes first.
   if (
@@ -418,7 +489,13 @@ export async function confirmSolution(
     problemType: null,
     inferred: false,
   };
-  const { conflicts } = assessSolution(current, solution, type).candidate;
+  const assessment = assessSolution(current, solution, type).candidate;
+  const answerChoice = assessment.answerChoice;
+  if (!answerChoice)
+    throw new PracticeRequestError(
+      'Lời giải chưa nêu được phương án duy nhất. Nếu bạn đã tự giải, dùng “Tự giải và ghi nhận đáp án”.'
+    );
+  const { conflicts } = assessment;
   const open = conflicts.filter((conflict) => !acknowledged.includes(conflict));
   if (open.length)
     throw new PracticeRequestError(
@@ -430,8 +507,8 @@ export async function confirmSolution(
     if (solution.documentId !== exercise.documentId) return { error: 'Lời giải thuộc sách khác.' };
     if (await confirmedElsewhere(solutionId))
       return { error: 'Lời giải này đã được xác nhận cho một câu khác.' };
-    if (!(exercise.choices ?? []).some((choice) => choice.label === solution.answerChoice))
-      return { error: `Phương án ${solution.answerChoice} không có trong đề.` };
+    if (!(exercise.choices ?? []).some((choice) => choice.label === answerChoice))
+      return { error: `Phương án ${answerChoice} không có trong đề.` };
     const previous = exercise.practice?.verification?.solutionArtifactId;
     if (previous && previous !== solutionId) return { error: 'Bỏ xác nhận lời giải cũ trước.' };
     const practice = {
@@ -441,7 +518,7 @@ export async function confirmSolution(
       ),
       verification: {
         method: 'TEXTBOOK_SOLUTION' as const,
-        answer: solution.answerChoice!,
+        answer: answerChoice,
         solutionArtifactId: solutionId,
         ...(conflicts.length ? { acknowledgedConflicts: conflicts } : {}),
         by: actor,
@@ -454,7 +531,7 @@ export async function confirmSolution(
         solutionStatus: 'MATCHED',
         answer: {
           status: 'FROM_SOLUTION',
-          choice: solution.answerChoice!,
+          choice: answerChoice,
           solutionArtifactId: solutionId,
         },
         pairedArtifactId: solutionId,

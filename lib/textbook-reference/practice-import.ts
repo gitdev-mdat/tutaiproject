@@ -70,6 +70,9 @@ function questionFields(item: TextbookImportItem, rights: RightsStatus, now: str
     ...(view.verification!.acknowledgedConflicts?.length
       ? { acknowledgedConflicts: view.verification!.acknowledgedConflicts }
       : {}),
+    ...(view.verification!.verificationSummary?.length
+      ? { verificationSummary: view.verification!.verificationSummary }
+      : {}),
     verifiedBy: view.verification!.by,
     verifiedAt: view.verification!.at,
     ...(view.check.status === 'CONFIRMED' || view.check.status === 'AMBIGUOUS'
@@ -272,7 +275,9 @@ export function applyTextbookImport(
       note: `Nhập từ bài tập sách “${item.documentTitle}” (Câu ${view.questionNumber ?? '?'}); đáp án ${
         view.verification!.method === 'ADMIN_SOLVED'
           ? 'do Admin tự giải'
-          : 'theo lời giải in trong sách, Admin xác nhận'
+          : view.verification!.method === 'AUTO_VERIFIED_SOLUTION'
+            ? 'được hệ thống đối chiếu toán học tự động'
+            : 'theo lời giải in trong sách, Admin xác nhận'
       }`,
     });
     outcomes.push({

@@ -111,7 +111,8 @@ export type ExerciseAnswer =
   | { status: 'ADMIN_VERIFIED'; choice: string };
 
 /** How an exercise's answer was verified, as recorded on the Question Bank question too. */
-export type PracticeVerificationMethod = 'TEXTBOOK_SOLUTION' | 'ADMIN_SOLVED';
+export type PracticeVerificationMethod =
+  'TEXTBOOK_SOLUTION' | 'AUTO_VERIFIED_SOLUTION' | 'ADMIN_SOLVED';
 
 /**
  * The Admin's practice decisions on one EXERCISE artifact. The extracted text
@@ -124,6 +125,8 @@ export interface ExercisePracticeRecord {
     solutionArtifactId: string | null;
     /** Evidence against the pairing that the Admin checked and accepted. */
     acknowledgedConflicts?: string[];
+    /** Deterministic evidence recorded when the source match was verified automatically. */
+    verificationSummary?: string[];
     by: string;
     at: string;
   };

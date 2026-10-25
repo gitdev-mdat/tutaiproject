@@ -115,7 +115,9 @@ function QuestionCard({
             {question.textbookSource.questionNumber ?? '?'} · đáp án{' '}
             {question.textbookSource.verification === 'ADMIN_SOLVED'
               ? 'Admin tự giải'
-              : 'theo lời giải in trong sách'}
+              : question.textbookSource.verification === 'AUTO_VERIFIED_SOLUTION'
+                ? 'đã đối chiếu tự động với lời giải sách'
+                : 'theo lời giải in trong sách'}
           </Chip>
         )}
         {pinned && state === 'IN_PRACTICE' && (

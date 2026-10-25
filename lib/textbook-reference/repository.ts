@@ -523,6 +523,12 @@ export async function updateExercisePractice(
     if (!row) return { error: 'Không tìm thấy câu hỏi.', status: 404 as const };
     const exercise = toArtifact(row);
     const decided = await change(exercise, async (solutionId) => {
+      const available = await tx`
+        select id from tutai.textbook_artifacts
+        where id = ${solutionId} and payload->>'kind' = 'SOLUTION'
+          and (payload->>'pairedArtifactId' is null or payload->>'pairedArtifactId' = ${id})
+        for update`;
+      if (!available.length) return true;
       const rows = await tx`
         select id from tutai.textbook_artifacts
         where document_id = ${exercise.documentId} and id <> ${id}

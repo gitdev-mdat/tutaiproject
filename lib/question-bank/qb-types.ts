@@ -291,8 +291,9 @@ export interface TextbookQuestionSource {
   questionNumber: string | null;
   exercisePages: number[];
   solutionPages: number[];
-  /** TEXTBOOK_SOLUTION: the book's printed solution, confirmed by an Admin. ADMIN_SOLVED: an Admin's own solution. */
-  verification: 'TEXTBOOK_SOLUTION' | 'ADMIN_SOLVED';
+  /** Source-answer verification method; publishing remains a separate Question Bank review. */
+  verification: 'TEXTBOOK_SOLUTION' | 'AUTO_VERIFIED_SOLUTION' | 'ADMIN_SOLVED';
+  verificationSummary?: string[];
   /** Evidence against the pairing that the Admin checked and accepted. */
   acknowledgedConflicts?: string[];
   verifiedBy: string;

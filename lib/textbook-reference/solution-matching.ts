@@ -1,4 +1,4 @@
-import { checkMonotonicityAnswer } from './math-checks';
+import { checkMonotonicityAnswer, inferMonotonicityChoice } from './math-checks';
 import type { TextbookArtifact } from './types';
 
 /**
@@ -33,7 +33,10 @@ export function definedFunction(text: string): string | null {
     const match = /(?:^|[^'a-z])(?:y|f\(x\))\s*=\s*([^=]+?)(?:\s*$|\s*(?:,|;|\.\s))/iu.exec(
       segment.replace(/\\left|\\right/g, '')
     );
-    if (match && /x/.test(match[1])) return normalizeExpression(match[1]);
+    if (match && /x/.test(match[1])) {
+      const radical = /^\\sqrt\{([^{}]+)\}$/.exec(match[1].trim());
+      return radical ? `\\sqrt{${normalizeExpression(radical[1])}}` : normalizeExpression(match[1]);
+    }
   }
   return null;
 }
@@ -83,7 +86,10 @@ function statedDerivatives(text: string): string[] {
       const first = match[1].trim();
       // "(P)' = Q": the stated derivative is Q.
       if (/^\(.*\)\s*'$/.test(first) && match[2]) found.push(match[2]);
-      else found.push(first);
+      else {
+        found.push(first);
+        if (match[2]) found.push(match[2]);
+      }
     }
   }
   return found;
@@ -106,7 +112,29 @@ export function statementMatches(
   if (bracketed.includes(`(${fn})'`) || normalizeExpression(bracketed).includes(`(${fn})'`))
     return { ok: true, how: `lời giải lấy đạo hàm của y = ${fn}` };
   const polynomial = polynomialOf(fn);
-  if (!polynomial) return { ok: false };
+  if (!polynomial) {
+    const radical = /^\\sqrt\{([^{}]+)\}$/.exec(fn);
+    const radicand = radical ? polynomialOf(radical[1]) : null;
+    if (!radicand || radicand.size > 3) return { ok: false };
+    const expected = derivative(radicand);
+    for (const stated of statedDerivatives(solution)) {
+      const parts = radicalDerivativeParts(stated);
+      const reported = parts ? polynomialOf(parts.numerator) : null;
+      const denominator = parts ? /^\\sqrt\{([^{}]+)\}$/.exec(parts.denominator) : null;
+      const denominatorPolynomial = denominator ? polynomialOf(denominator[1]) : null;
+      if (
+        reported &&
+        denominatorPolynomial &&
+        samePolynomial(radicand, denominatorPolynomial) &&
+        samePolynomial(
+          expected,
+          new Map([...reported].map(([power, coefficient]) => [power, coefficient * 2]))
+        )
+      )
+        return { ok: true, how: `đạo hàm căn thức trong lời giải đúng với y = ${fn}` };
+    }
+    return { ok: false };
+  }
   const expected = derivative(polynomial);
   for (const stated of statedDerivatives(solution)) {
     const reported = polynomialOf(stated);
@@ -114,6 +142,29 @@ export function statementMatches(
       return { ok: true, how: `đạo hàm trong lời giải đúng là đạo hàm của y = ${fn}` };
   }
   return { ok: false };
+}
+
+function groupAt(source: string, index: number): { value: string; end: number } | null {
+  if (source[index] !== '{') return null;
+  let depth = 0;
+  for (let i = index; i < source.length; i += 1) {
+    if (source[i] === '{') depth += 1;
+    if (source[i] === '}' && --depth === 0)
+      return { value: source.slice(index + 1, i), end: i + 1 };
+  }
+  return null;
+}
+
+function radicalDerivativeParts(source: string): { numerator: string; denominator: string } | null {
+  const fractionAt = source.indexOf('\\frac');
+  if (fractionAt >= 0) {
+    const numerator = groupAt(source, fractionAt + 5);
+    const denominator = numerator && groupAt(source, numerator.end);
+    if (numerator && denominator)
+      return { numerator: numerator.value, denominator: denominator.value };
+  }
+  const plain = /^\s*\(?([^/]+?)\)?\s*\/\s*(\\sqrt\{[^{}]+\})\s*$/.exec(source);
+  return plain ? { numerator: plain[1], denominator: plain[2] } : null;
 }
 
 export interface SolutionCandidate {
@@ -240,7 +291,9 @@ export function assessSolution(
         'Chưa đối chiếu được nội dung toán: lời giải không nhắc lại hàm số hay đạo hàm của đề'
       );
   }
-  const answer = solution.answerChoice ?? null;
+  const answer =
+    solution.answerChoice ??
+    inferMonotonicityChoice(exercise.content, exercise.choices, solution.content);
   const labels = new Set((exercise.choices ?? []).map((choice) => choice.label));
   if (!answer) conflicts.push('Lời giải không ghi phương án đúng');
   else if (labels.size && !labels.has(answer as never))
@@ -292,6 +345,8 @@ export function proposeSolutions(artifacts: TextbookArtifact[]): Map<string, Sol
     const id = exercise.practice?.verification?.solutionArtifactId;
     if (id) confirmedFor.set(id, exercise.id);
   }
+  for (const solution of solutions)
+    if (solution.pairedArtifactId) confirmedFor.set(solution.id, solution.pairedArtifactId);
   const proposals = new Map<string, SolutionProposal>();
   for (const exercise of exercises) {
     const set = exercise.exerciseSet;

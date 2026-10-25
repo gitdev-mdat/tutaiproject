@@ -13,6 +13,7 @@ import {
 } from './extraction-response';
 import { mapPrintedPage } from './page-mapping';
 import { proposeSolutions, solutionProblemTypes, statementMatches } from './solution-matching';
+import { checkMonotonicityAnswer } from './math-checks';
 import { sectionState, usableByAi } from './section-state';
 import { selectLessonReferences } from './reference-service';
 import type { TextbookAnchor, TextbookArtifact, TextbookTocEntry } from './types';
@@ -306,6 +307,60 @@ describe('question/solution matching', () => {
     expect(statementMatches(real, 'Câu 7: Đáp án C.').ok).toBe(false);
   });
 
+  it('auto-matches the radical-function regression from its derivative and unique interval', () => {
+    const exercise = artifact({
+      id: 'e13',
+      kind: 'EXERCISE',
+      questionNumber: '13',
+      exerciseSet: set1,
+      content: 'Câu 13: Hàm số $y = \\sqrt{2x - x^2}$ đồng biến trên khoảng nào?',
+      choices: [
+        { label: 'A', text: '$(-\\infty; 2)$' },
+        { label: 'B', text: '$(0; 1)$' },
+        { label: 'C', text: '$(1; 2)$' },
+        { label: 'D', text: '$(1; +\\infty)$' },
+      ],
+    });
+    const solution = artifact({
+      id: 's13',
+      kind: 'SOLUTION',
+      questionNumber: '13',
+      exerciseSet: solutionSet('dạng 1'),
+      printedPages: [30],
+      content:
+        "Câu 13: $D = [0; 2]$. $y' = \\frac{-2x+2}{2\\sqrt{2x-x^2}} = \\frac{1-x}{\\sqrt{2x-x^2}}$. $y' > 0$ $\\forall x \\in (0; 1)$ nên hàm số đồng biến trên $(0;1)$.",
+    });
+    expect(statementMatches(exercise.content, solution.content)).toMatchObject({ ok: true });
+    expect(proposeSolutions([exercise, solution]).get('e13')).toMatchObject({
+      status: 'SUGGESTED',
+      candidates: [{ solutionId: 's13', strength: 'STRONG', answerChoice: 'B', conflicts: [] }],
+    });
+    const wrong = {
+      ...solution,
+      id: 's13-wrong',
+      answerChoice: 'C',
+      content: solution.content + ' Đáp án C.',
+    };
+    expect(proposeSolutions([exercise, wrong]).get('e13')?.candidates[0].strength).toBe('WEAK');
+    expect(statementMatches(exercise.content, solution.content.replace('1-x', '1+x')).ok).toBe(
+      false
+    );
+  });
+
+  it('keeps a correct answer in review when any other choice cannot be checked', () => {
+    expect(
+      checkMonotonicityAnswer(
+        'Hàm số $y = x^2$ đồng biến trên khoảng nào?',
+        [
+          { label: 'A', text: 'Một mệnh đề khác' },
+          { label: 'B', text: '$(0; +\\infty)$' },
+          { label: 'C', text: '$(-\\infty; 0)$' },
+        ],
+        'B'
+      ).status
+    ).toBe('AMBIGUOUS');
+  });
+
   it('suggests only within the same chapter, problem type and number, with a verified statement', () => {
     const exercises = [
       artifact({
@@ -411,6 +466,33 @@ describe('question/solution matching', () => {
     const lone = proposeSolutions([exercise, unnamed]).get('e1')!;
     expect(lone.status).toBe('NEEDS_CONFIRMATION');
     expect(lone.candidates[0].conflicts).toContain('Chưa xác định được lời giải thuộc dạng nào');
+  });
+
+  it('does not reuse a solution already paired to another exercise', () => {
+    const exercise = artifact({
+      id: 'e-open',
+      kind: 'EXERCISE',
+      questionNumber: '1',
+      exerciseSet: set1,
+      content: 'Hàm số $y = x^2 - 2x$ đồng biến trên khoảng nào?',
+      choices: [
+        { label: 'A', text: '$(1; +\\infty)$' },
+        { label: 'B', text: '$(0; 1)$' },
+      ],
+    });
+    const solution = artifact({
+      id: 's-used',
+      kind: 'SOLUTION',
+      questionNumber: '1',
+      exerciseSet: solutionSet('dạng 1'),
+      pairedArtifactId: 'e-other',
+      answerChoice: 'A',
+      content: "$y' = 2x - 2$. Chọn A.",
+    });
+    expect(proposeSolutions([exercise, solution]).get(exercise.id)).toEqual({
+      status: 'UNRESOLVED',
+      candidates: [],
+    });
   });
 
   it('infers the problem type of solutions printed after their heading page', () => {
