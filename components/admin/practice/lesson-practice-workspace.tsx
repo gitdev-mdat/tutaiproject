@@ -116,7 +116,9 @@ function QuestionCard({
             {question.textbookSource.verification === 'ADMIN_SOLVED'
               ? 'Admin tự giải'
               : question.textbookSource.verification === 'AUTO_VERIFIED_SOLUTION'
-                ? 'đã đối chiếu tự động với lời giải sách'
+                ? question.textbookSource.verifiedUsing?.includes('AI_INDEPENDENT')
+                  ? `Gemini tự giải độc lập và đối chiếu với lời giải sách${question.textbookSource.verificationModel ? ` (${question.textbookSource.verificationModel})` : ''}`
+                  : 'đã đối chiếu tự động với lời giải sách'
                 : 'theo lời giải in trong sách'}
           </Chip>
         )}

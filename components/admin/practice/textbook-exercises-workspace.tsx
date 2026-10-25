@@ -554,7 +554,9 @@ function ExerciseDetail({
               {exercise.verification.method === 'ADMIN_SOLVED'
                 ? 'Admin tự giải'
                 : exercise.verification.method === 'AUTO_VERIFIED_SOLUTION'
-                  ? `hệ thống đã đối chiếu với ${exercise.confirmedSolution?.title ?? 'lời giải'} tr. ${exercise.confirmedSolution?.printedPages.join(', ')}`
+                  ? exercise.verification.verifiedUsing?.includes('AI_INDEPENDENT')
+                    ? `Gemini tự giải độc lập và đối chiếu với ${exercise.confirmedSolution?.title ?? 'lời giải'} tr. ${exercise.confirmedSolution?.printedPages.join(', ')}`
+                    : `hệ thống đã đối chiếu với ${exercise.confirmedSolution?.title ?? 'lời giải'} tr. ${exercise.confirmedSolution?.printedPages.join(', ')}`
                   : `theo ${exercise.confirmedSolution?.title ?? 'lời giải'} tr. ${exercise.confirmedSolution?.printedPages.join(', ')}, Admin đã xác nhận`}
             </p>
             {exercise.verification.verificationSummary?.length ? (
@@ -564,13 +566,17 @@ function ExerciseDetail({
                 ))}
               </ul>
             ) : null}
-            {exercise.check.status !== 'NOT_APPLICABLE' && (
-              <p
-                className={`text-xs ${exercise.check.status === 'CONFLICT' ? 'font-semibold text-rose-700' : 'text-slate-600'}`}
-              >
-                {exercise.check.note}
-              </p>
-            )}
+            {exercise.check.status !== 'NOT_APPLICABLE' &&
+              !(
+                exercise.verification.verifiedUsing?.includes('AI_INDEPENDENT') &&
+                exercise.check.status === 'AMBIGUOUS'
+              ) && (
+                <p
+                  className={`text-xs ${exercise.check.status === 'CONFLICT' ? 'font-semibold text-rose-700' : 'text-slate-600'}`}
+                >
+                  {exercise.check.note}
+                </p>
+              )}
             {exercise.explanation && (
               <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-slate-700">
                 <QuestionMath text={exercise.explanation} />

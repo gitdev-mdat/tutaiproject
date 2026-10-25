@@ -73,9 +73,17 @@ function questionFields(item: TextbookImportItem, rights: RightsStatus, now: str
     ...(view.verification!.verificationSummary?.length
       ? { verificationSummary: view.verification!.verificationSummary }
       : {}),
+    ...(view.verification!.verifiedUsing?.length
+      ? { verifiedUsing: view.verification!.verifiedUsing }
+      : {}),
+    ...(view.verification!.verificationModel
+      ? { verificationModel: view.verification!.verificationModel }
+      : {}),
     verifiedBy: view.verification!.by,
     verifiedAt: view.verification!.at,
-    ...(view.check.status === 'CONFIRMED' || view.check.status === 'AMBIGUOUS'
+    ...(view.check.status === 'CONFIRMED' ||
+    (view.check.status === 'AMBIGUOUS' &&
+      !view.verification!.verifiedUsing?.includes('AI_INDEPENDENT'))
       ? { answerCheck: view.check.note }
       : {}),
     ...(view.citation ? { citation: view.citation } : {}),
@@ -276,7 +284,9 @@ export function applyTextbookImport(
         view.verification!.method === 'ADMIN_SOLVED'
           ? 'do Admin tự giải'
           : view.verification!.method === 'AUTO_VERIFIED_SOLUTION'
-            ? 'được hệ thống đối chiếu toán học tự động'
+            ? view.verification!.verifiedUsing?.includes('AI_INDEPENDENT')
+              ? 'do Gemini tự giải độc lập và đối chiếu với lời giải sách'
+              : 'được hệ thống đối chiếu toán học tự động'
             : 'theo lời giải in trong sách, Admin xác nhận'
       }`,
     });

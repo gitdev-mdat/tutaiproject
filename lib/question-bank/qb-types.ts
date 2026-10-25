@@ -294,6 +294,8 @@ export interface TextbookQuestionSource {
   /** Source-answer verification method; publishing remains a separate Question Bank review. */
   verification: 'TEXTBOOK_SOLUTION' | 'AUTO_VERIFIED_SOLUTION' | 'ADMIN_SOLVED';
   verificationSummary?: string[];
+  verifiedUsing?: Array<'TEXTBOOK_SOLUTION' | 'DETERMINISTIC_MATH' | 'AI_INDEPENDENT'>;
+  verificationModel?: string;
   /** Evidence against the pairing that the Admin checked and accepted. */
   acknowledgedConflicts?: string[];
   verifiedBy: string;

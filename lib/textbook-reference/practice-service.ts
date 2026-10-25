@@ -155,6 +155,7 @@ async function autoVerifyStrongMatches(
               answer,
               solutionArtifactId: solution.id,
               verificationSummary,
+              verifiedUsing: ['TEXTBOOK_SOLUTION', 'DETERMINISTIC_MATH'],
               by: 'system:deterministic-matcher',
               at: new Date().toISOString(),
             },
@@ -423,6 +424,147 @@ export class PracticeRequestError extends Error {
     super(message);
     this.name = 'PracticeRequestError';
   }
+}
+
+const OPTION_LABELS = ['A', 'B', 'C', 'D'] as const;
+type OptionLabel = (typeof OPTION_LABELS)[number];
+export interface IndependentAnswerEvidence {
+  model: string;
+  matchedSolutionArtifactId: string | null;
+  association: 'MATCH' | 'NO_MATCH' | 'AMBIGUOUS';
+  associationReason: string;
+  independentAnswer: string | null;
+  textbookAnswer: string | null;
+  independentlySolved: boolean;
+  agreement: 'AGREE' | 'CONFLICT' | 'UNRESOLVED';
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  optionAssessment: Record<
+    OptionLabel,
+    { assessment: 'CORRECT' | 'INCORRECT' | 'UNCERTAIN'; reason: string }
+  >;
+  mathematicalSummary: string;
+}
+
+/** Persist a bounded AI audit only after source, answer, and all four options agree. */
+export async function confirmAiVerifiedSolution(
+  exerciseId: string,
+  solutionId: string,
+  evidence: IndependentAnswerEvidence
+): Promise<TextbookArtifact> {
+  const [exercise, solution] = await Promise.all([
+    getTextbookArtifact(exerciseId),
+    getTextbookArtifact(solutionId),
+  ]);
+  if (!exercise || exercise.kind !== 'EXERCISE' || !solution || solution.kind !== 'SOLUTION')
+    throw new PracticeRequestError('Không tìm thấy đề hoặc lời giải.', 404);
+  const artifacts = await listTextbookArtifacts({ documentId: exercise.documentId });
+  await assertNotPublished([exerciseId]);
+  const { questions } = await listQuestions({ pageSize: 100_000 });
+  if (questions.some((question) => question.externalId === textbookExternalId(exerciseId)))
+    throw new PracticeRequestError(
+      'Câu đã có trong Question Bank; không tự thay đổi bản ghi này.',
+      409
+    );
+  if (
+    evidence.matchedSolutionArtifactId !== solutionId ||
+    evidence.association !== 'MATCH' ||
+    evidence.confidence !== 'HIGH' ||
+    !evidence.independentlySolved ||
+    evidence.agreement !== 'AGREE'
+  )
+    throw new PracticeRequestError('Bằng chứng AI chưa đủ để xác nhận tự động.');
+
+  const answer = evidence.independentAnswer;
+  if (
+    !answer ||
+    !OPTION_LABELS.includes(answer as OptionLabel) ||
+    evidence.textbookAnswer !== answer
+  )
+    throw new PracticeRequestError('Đáp án AI và lời giải sách chưa khớp.');
+  if (solution.answerChoice && solution.answerChoice !== evidence.textbookAnswer)
+    throw new PracticeRequestError('Đáp án trích từ lời giải sách mâu thuẫn với kết quả AI.');
+  const choices = exercise.choices ?? [];
+  if (OPTION_LABELS.some((label) => !choices.some((choice) => choice.label === label)))
+    throw new PracticeRequestError('Đề không có đủ bốn phương án A–D.');
+  const correct = OPTION_LABELS.filter(
+    (label) => evidence.optionAssessment[label]?.assessment === 'CORRECT'
+  );
+  if (
+    correct.length !== 1 ||
+    correct[0] !== answer ||
+    OPTION_LABELS.some(
+      (label) =>
+        evidence.optionAssessment[label]?.assessment !==
+        (label === answer ? 'CORRECT' : 'INCORRECT')
+    )
+  )
+    throw new PracticeRequestError('Gemini chưa xác định duy nhất một phương án đúng.');
+  if (
+    exercise.documentId !== solution.documentId ||
+    exercise.questionNumber !== solution.questionNumber
+  )
+    throw new PracticeRequestError('Đề và lời giải không cùng sách hoặc khác số câu.');
+  if (
+    !exercise.exerciseSet?.chapterEntryId ||
+    exercise.exerciseSet.chapterEntryId !== solution.exerciseSet?.chapterEntryId
+  )
+    throw new PracticeRequestError('Đề và lời giải không cùng chương.');
+  const sameNumberInSet = artifacts.filter(
+    (artifact) =>
+      artifact.kind === 'SOLUTION' &&
+      artifact.questionNumber === exercise.questionNumber &&
+      artifact.exerciseSet?.chapterEntryId === exercise.exerciseSet?.chapterEntryId &&
+      (artifact.exerciseSet?.problemType === exercise.exerciseSet?.problemType ||
+        artifact.exerciseSet?.problemType == null)
+  );
+  if (sameNumberInSet.length !== 1 || sameNumberInSet[0].id !== solutionId)
+    throw new PracticeRequestError('Có nhiều lời giải cùng số câu trong nhóm; cần đối chiếu thêm.');
+  const check = checkMonotonicityAnswer(exercise.content, exercise.choices, answer);
+  if (check.status === 'CONFLICT')
+    throw new PracticeRequestError(`Bộ kiểm tra toán học hiện tại mâu thuẫn: ${check.note}`);
+
+  const optionSummary = OPTION_LABELS.map((label) => {
+    const result = evidence.optionAssessment[label];
+    return `${label}: ${result.assessment} — ${result.reason}`;
+  });
+  const verificationSummary = [
+    `Gemini (${evidence.model}) ghép lời giải tr. ${solution.printedPages.join(', ')} với Câu ${exercise.questionNumber} trong cùng nhóm sách/chương.`,
+    `AI tự giải độc lập: chọn ${answer}. ${evidence.mathematicalSummary}`,
+    `Đối chiếu lời giải in trong sách: chọn ${evidence.textbookAnswer}; trùng với kết quả AI.`,
+    evidence.associationReason,
+    ...optionSummary,
+  ];
+  return decide(exerciseId, async (current, confirmedElsewhere) => {
+    if (current.practice?.verification) return { error: 'Câu đã được xác nhận trước đó.' };
+    if (
+      current.documentId !== solution.documentId ||
+      current.questionNumber !== solution.questionNumber
+    )
+      return { error: 'Dữ liệu nguồn đã thay đổi trong lúc xác minh.' };
+    if (await confirmedElsewhere(solutionId)) return { error: 'Lời giải đã gắn với câu khác.' };
+    return {
+      practice: {
+        ...current.practice,
+        verification: {
+          method: 'AUTO_VERIFIED_SOLUTION',
+          answer,
+          solutionArtifactId: solutionId,
+          verificationSummary,
+          verifiedUsing: ['TEXTBOOK_SOLUTION', 'AI_INDEPENDENT'],
+          verificationModel: evidence.model,
+          by: `system:${evidence.model}`,
+          at: new Date().toISOString(),
+        },
+      },
+      fields: {
+        solutionStatus: 'MATCHED',
+        answer: { status: 'FROM_SOLUTION', choice: answer, solutionArtifactId: solutionId },
+        pairedArtifactId: solutionId,
+        solutionReference: `${solution.title} (tr. ${solution.printedPages.join(', ')})`,
+      },
+      solution: { id: solutionId, paired: true },
+    };
+  });
 }
 
 async function decide(

@@ -347,6 +347,19 @@ describe('question/solution matching', () => {
     );
   });
 
+  it('checks monotonicity on the two real-domain branches of a convex square-root quadratic', () => {
+    const stem = 'Hỏi hàm số $y = \\sqrt{x^2 - 4x + 3}$ nghịch biến trên khoảng nào?';
+    const choices = [
+      { label: 'A' as const, text: '$(2; +\\infty)$' },
+      { label: 'B' as const, text: '$(3; +\\infty)$' },
+      { label: 'C' as const, text: '$(-\\infty; 1)$' },
+      { label: 'D' as const, text: '$(-\\infty; 2)$' },
+    ];
+    expect(checkMonotonicityAnswer(stem, choices, 'C').status).toBe('CONFIRMED');
+    expect(checkMonotonicityAnswer(stem, choices, 'A').status).toBe('CONFLICT');
+    expect(checkMonotonicityAnswer(stem, choices, 'D').status).toBe('CONFLICT');
+  });
+
   it('keeps a correct answer in review when any other choice cannot be checked', () => {
     expect(
       checkMonotonicityAnswer(

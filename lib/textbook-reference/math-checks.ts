@@ -178,7 +178,7 @@ export function checkMonotonicityAnswer(
   };
 }
 
-/** Sign-checks sqrt of a concave quadratic on the interior of its real domain. */
+/** Sign-checks the derivative of sqrt of a quadratic within one real-domain component. */
 function monotoneOnRadical(
   radicand: Polynomial,
   direction: Direction,
@@ -187,14 +187,21 @@ function monotoneOnRadical(
   const a = radicand.get(2) ?? 0;
   const b = radicand.get(1) ?? 0;
   const c = radicand.get(0) ?? 0;
-  if (!(a < 0)) return false;
+  if (a === 0) return false;
   const discriminant = b * b - 4 * a * c;
   if (!(discriminant > 0)) return false;
   const root = Math.sqrt(discriminant);
   const roots = [(-b - root) / (2 * a), (-b + root) / (2 * a)].sort((x, y) => x - y);
+  const vertex = -b / (2 * a);
+  if (a > 0) {
+    // A convex quadratic is nonnegative outside its roots. Its square root
+    // decreases on the left component and increases on the right component.
+    if (interval.end <= roots[0]) return direction === 'DECREASING';
+    if (interval.start >= roots[1]) return direction === 'INCREASING';
+    return false;
+  }
   const [domainStart, domainEnd] = roots;
   if (interval.start < domainStart || interval.end > domainEnd) return false;
-  const vertex = -b / (2 * a);
   return direction === 'INCREASING'
     ? interval.end <= vertex + 1e-10
     : interval.start >= vertex - 1e-10;
