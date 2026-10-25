@@ -139,7 +139,7 @@ async function autoVerifyStrongMatches(
     if (!candidate || !solution || !answer) continue;
     const answerCheck = checkMonotonicityAnswer(exercise.content, exercise.choices, answer);
     if (answerCheck.status !== 'CONFIRMED') continue;
-    const verificationSummary = [...candidate.evidence, answerCheck.note];
+    const verificationSummary = [...candidate.evidence];
     const result = await updateExercisePractice(
       exercise.id,
       async (current, confirmedElsewhere) => {
