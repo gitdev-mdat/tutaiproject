@@ -1657,3 +1657,41 @@ body {
     transform: translateY(-50%);
   }
 }
+
+/* Calculator tutor (components/learning/calculator-tutor): only used behind motion-safe. */
+@keyframes calc-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(252 211 77 / 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgb(252 211 77 / 0);
+  }
+}
+@keyframes calc-tap {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-18deg);
+  }
+  45% {
+    transform: translate(-3px, -4px) rotate(-18deg);
+  }
+}
+@keyframes calc-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes calc-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}

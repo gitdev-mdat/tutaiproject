@@ -3,8 +3,10 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 import { QuestionPrompt } from '@/components/shared/question-content-renderer';
+import { withSolutionGuide } from '@/lib/calculator-tutor/registry';
 import {
   gradePracticeResponse,
+  type PracticeFeedback,
   parsePracticeResponse,
   toPracticeFeedback,
   toPracticeQuestion,
@@ -31,7 +33,7 @@ export function StudentPreview({
 }) {
   const [index, setIndex] = React.useState(0);
   const [answer, setAnswer] = React.useState<Answer>();
-  const [feedback, setFeedback] = React.useState<ReturnType<typeof toPracticeFeedback>>();
+  const [feedback, setFeedback] = React.useState<PracticeFeedback>();
   const question = questions[index];
   const practiceQuestion = toPracticeQuestion(question);
 
@@ -39,7 +41,10 @@ export function StudentPreview({
     try {
       const response = parsePracticeResponse(question, answer);
       setFeedback(
-        toPracticeFeedback(question, response, gradePracticeResponse(question, response))
+        withSolutionGuide(
+          toPracticeFeedback(question, response, gradePracticeResponse(question, response)),
+          question
+        )
       );
     } catch {
       setFeedback(undefined);
@@ -121,7 +126,7 @@ export function StudentPreview({
                 setAnswer={setAnswer}
               />
             </div>
-            {feedback && <FeedbackPanel feedback={feedback} />}
+            {feedback && <FeedbackPanel feedback={feedback} audience="admin" />}
           </div>
           <div className="mt-4 flex flex-col-reverse justify-between gap-2 sm:flex-row">
             <div className="flex gap-2">
