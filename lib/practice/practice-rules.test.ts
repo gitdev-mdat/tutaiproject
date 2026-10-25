@@ -7,6 +7,7 @@ import {
   practiceQuestionState,
   resultsByDifficulty,
 } from './practice-rules';
+import { gradePracticeResponse } from './grading';
 
 function question(overrides: Partial<Question>): Question {
   return {
@@ -72,6 +73,60 @@ describe('which questions students receive', () => {
     expect(picked).toHaveLength(10);
     expect(picked.map((q) => q.id).slice(0, 6)).toEqual(['q0', 'q2', 'q4', 'q6', 'q8', 'q10']);
     expect(picked.some((q) => q.id === 'other')).toBe(false);
+  });
+
+  it('includes the supported Q22 graph in lesson practice and still excludes drafts', () => {
+    const graphQuestion = question({
+      id: 'q22',
+      code: 'Q22',
+      stem: 'Đồ thị y = f′(x). Mệnh đề nào đúng?',
+      correctAnswer: 'B',
+      options: [
+        { key: 'A', content: 'Đồng biến trên (1; 2)' },
+        { key: 'B', content: 'Nghịch biến trên (0; 2)' },
+        { key: 'C', content: 'Đồng biến trên (-2; 1)' },
+        { key: 'D', content: 'Nghịch biến trên (-1; 1)' },
+      ],
+      explanation: 'Đồ thị cho thấy f′(x) < 0 trên (0; 2).',
+      content: [
+        { id: 'q22-text', type: 'TEXT', text: 'Đồ thị y = f′(x). Mệnh đề nào đúng?' },
+        {
+          id: 'q22-graph',
+          type: 'IMAGE',
+          media: {
+            assetId: '/textbook-figures/derivative-sign-q22.svg',
+            alt: 'Đồ thị dấu của đạo hàm f phẩy',
+          },
+        },
+      ],
+    });
+    const draft = question({ id: 'draft', editorialStatus: 'DRAFT' });
+    const otherLesson = question({ id: 'other-lesson', primaryKnowledgeNodeId: 'other' });
+
+    expect(practiceQuestionState(graphQuestion)).toMatchObject({ state: 'IN_PRACTICE' });
+    expect(pickLessonSession([draft, otherLesson, graphQuestion], 'lesson')).toEqual([
+      graphQuestion,
+    ]);
+    expect(
+      gradePracticeResponse(graphQuestion, {
+        type: 'MULTIPLE_CHOICE_SINGLE',
+        choice: 'B',
+      }).correct
+    ).toBe(true);
+    expect(
+      practiceQuestionState(
+        question({
+          id: 'unsupported-image',
+          content: [
+            {
+              id: 'other-image',
+              type: 'IMAGE',
+              media: { assetId: '/private/image.png', alt: 'Unsupported image' },
+            },
+          ],
+        })
+      ).state
+    ).toBe('NOT_USABLE');
   });
 
   it('passes at 80%', () => {
