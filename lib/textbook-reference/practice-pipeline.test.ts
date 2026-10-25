@@ -8,6 +8,7 @@ import {
   suggestLessonForSet,
 } from './practice-sources';
 import { exercisePracticeView, explainsSomething, stemOf } from './practice-state';
+import { VERIFIED_Q22_ARTIFACT_ID } from './student-diagram';
 import { proposeSolutions } from './solution-matching';
 import type { Question } from '@/lib/question-bank/qb-types';
 import type { TextbookArtifact, TextbookKnowledgeMapping, TextbookTocEntry } from './types';
@@ -252,6 +253,91 @@ describe('practice state and the Question Bank import', () => {
     const ready = view(confirm('3'));
     expect(ready).toMatchObject({ status: 'MATCHED', answer: 'A', blockers: [] });
     expect(ready.check.status).toBe('CONFIRMED');
+  });
+
+  it('imports Q22 with the supported derivative graph while retaining its printed answer and source', () => {
+    const [q22Exercise] = extracted(
+      'toc-6',
+      [
+        {
+          kind: 'EXERCISE',
+          title: 'Câu 22',
+          questionNumber: '22',
+          printedPages: [20],
+          hasDiagram: true,
+          content:
+            "Câu 22: Cho hàm số $f(x)$ xác định trên $\\mathbb{R}$ và có đồ thị hàm số $y=f'(x)$ là đường cong trong hình bên. Mệnh đề nào dưới đây đúng?",
+          choices: [
+            { label: 'A', text: 'Đồng biến trên $(1;2)$' },
+            { label: 'B', text: 'Nghịch biến trên $(0;2)$' },
+            { label: 'C', text: 'Đồng biến trên $(-2;1)$' },
+            { label: 'D', text: 'Nghịch biến trên $(-1;1)$' },
+          ],
+        },
+      ],
+      [20]
+    );
+    const [q22Solution] = extracted(
+      'toc-9',
+      [
+        {
+          kind: 'SOLUTION',
+          title: 'Câu 22',
+          questionNumber: '22',
+          printedPages: [31],
+          answerChoice: 'B',
+          content:
+            "Câu 22: Trên $(-\\infty;-2)$ và $(0;2)$ thì $f'(x)<0$, nên f nghịch biến trên $(0;2)$.",
+        },
+      ],
+      [29, 30, 31]
+    );
+    const q22 = exercisePracticeView({
+      exercise: {
+        ...q22Exercise,
+        id: VERIFIED_Q22_ARTIFACT_ID,
+        practice: {
+          verification: {
+            method: 'AUTO_VERIFIED_SOLUTION',
+            answer: 'B',
+            solutionArtifactId: q22Solution.id,
+            verifiedUsing: ['TEXTBOOK_SOLUTION', 'AI_INDEPENDENT'],
+            by: 'ai',
+            at: 't',
+          },
+        },
+      },
+      proposal: undefined,
+      artifactsById: new Map([[q22Solution.id, q22Solution]]),
+      suggestion,
+    });
+    expect(q22).toMatchObject({ answer: 'B', hasDiagram: true, blockers: [] });
+    const imported = applyTextbookImport(
+      [],
+      [{ view: q22, documentTitle: 'math_book_3', solutionPages: [31], hierarchy }],
+      { ...options, rights: 'REVIEW_REQUIRED' }
+    );
+    expect(imported.outcomes[0].result).toBe('CREATED');
+    expect(imported.questions[0]).toMatchObject({
+      correctAnswer: 'B',
+      editorialStatus: 'DRAFT',
+      primaryKnowledgeNodeId: P1,
+      source: { rightsStatus: 'REVIEW_REQUIRED' },
+      content: [
+        { type: 'TEXT', text: q22.stem },
+        {
+          type: 'IMAGE',
+          media: {
+            assetId: '/textbook-figures/derivative-sign-q22.svg',
+            sourcePage: 20,
+          },
+        },
+      ],
+      textbookSource: {
+        questionNumber: '22',
+        verification: 'AUTO_VERIFIED_SOLUTION',
+      },
+    });
   });
 
   it('never imports an answer without an explanation (Câu 7 prints only "Đáp án C.")', () => {

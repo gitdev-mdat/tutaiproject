@@ -17,7 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { LessonAssist } from '@/components/learning/lesson-assist';
-import { QuestionMath } from '@/components/shared/question-content-renderer';
+import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import type { PracticeFeedback, PracticeQuestion } from '@/lib/practice/grading';
 import type { AttemptView } from '@/lib/practice/practice-service';
 import { useStudentShell } from '@/components/student/student-shell';
@@ -891,13 +891,19 @@ function PracticeFlow({
         <p className="text-[13px] font-semibold text-blue-600">
           Câu {index + 1} · {TYPE_HINT[question.type]}
         </p>
-        <h1
+        <div
+          role="heading"
+          aria-level={1}
           ref={headingRef}
           tabIndex={-1}
           className="mt-2 text-[17px] leading-8 font-semibold whitespace-pre-line text-[#091224] focus:outline-none sm:text-[18px]"
         >
-          <QuestionMath text={question.stem} />
-        </h1>
+          <QuestionPrompt
+            questionId={question.id}
+            stem={question.stem}
+            content={question.content}
+          />
+        </div>
         <div className="mt-5">
           <QuestionBody
             question={question}

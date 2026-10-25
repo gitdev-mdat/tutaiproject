@@ -15,7 +15,7 @@ import {
   Sparkles,
   Users,
 } from 'lucide-react';
-import { QuestionMath } from '@/components/shared/question-content-renderer';
+import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import { LESSON_PUBLICATION_LABELS } from '@/lib/knowledge-tree/learning-visibility';
 import type { CoverageQuestion, LessonCoverage } from '@/lib/practice/practice-admin';
 import type { QuestionSuggestion } from '@/lib/practice/ai-question-suggest';
@@ -127,7 +127,7 @@ function QuestionCard({
         )}
       </div>
       <div className="mt-2 text-sm leading-relaxed whitespace-pre-line text-slate-900">
-        <QuestionMath text={question.stem} />
+        <QuestionPrompt questionId={question.id} stem={question.stem} content={question.content} />
       </div>
       {question.options.length > 0 && (
         <ul className="mt-2 grid gap-1 text-xs text-slate-600 sm:grid-cols-2">

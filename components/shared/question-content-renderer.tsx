@@ -271,7 +271,36 @@ export function QuestionContentRenderer({
   );
 }
 
+/** Student/admin prompt with any durable inline figures attached to a question. */
+export function QuestionPrompt({
+  questionId,
+  stem,
+  content,
+  className,
+}: {
+  questionId: string;
+  stem: string;
+  content?: QuestionContentBlock[];
+  className?: string;
+}) {
+  if (!content?.some((block) => block.type === 'IMAGE'))
+    return (
+      <div className={className}>
+        <QuestionMath text={stem} />
+      </div>
+    );
+  return (
+    <QuestionContentRenderer
+      blocks={content}
+      resolveAssetUrl={(assetId) => questionAssetUrl(questionId, assetId)}
+      className={className}
+    />
+  );
+}
+
 export function questionAssetUrl(questionId: string, storageKey: string): string {
+  if (storageKey.startsWith('/') && !storageKey.startsWith('//') && !storageKey.includes('..'))
+    return storageKey;
   const fileName = storageKey.split('/').pop() ?? '';
   return `/api/question-bank/assets/${encodeURIComponent(questionId)}/${encodeURIComponent(fileName)}`;
 }

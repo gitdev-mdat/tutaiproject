@@ -13,6 +13,7 @@ import type {
 } from '@/lib/question-bank/qb-types';
 import { validateForManualCreation } from '@/lib/question-bank/qb-validation';
 import type { ExercisePracticeView } from './practice-state';
+import { hasStudentVisibleDiagram, Q22_DERIVATIVE_GRAPH } from './student-diagram';
 
 /**
  * Verified textbook exercises → DRAFT questions in the existing Question Bank.
@@ -95,6 +96,22 @@ function questionFields(item: TextbookImportItem, rights: RightsStatus, now: str
   ].filter(Boolean);
   return {
     stem: view.stem,
+    ...(view.hasDiagram && hasStudentVisibleDiagram(view)
+      ? {
+          content: [
+            { id: `${view.id}-text`, type: 'TEXT' as const, text: view.stem },
+            {
+              id: `${view.id}-diagram`,
+              type: 'IMAGE' as const,
+              media: {
+                assetId: Q22_DERIVATIVE_GRAPH,
+                alt: 'Đồ thị y = f′(x), cắt trục hoành tại −1, 0 và 2',
+                sourcePage: view.printedPages[0],
+              },
+            },
+          ],
+        }
+      : {}),
     questionType: 'MULTIPLE_CHOICE_SINGLE' as const,
     options,
     correctAnswer: view.answer!,

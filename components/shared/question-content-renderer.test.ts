@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { QuestionMath } from './question-content-renderer';
+import { QuestionMath, QuestionPrompt } from './question-content-renderer';
 
 const text = (source: string) =>
   renderToStaticMarkup(createElement(QuestionMath, { text: source }))
@@ -80,5 +80,30 @@ describe('QuestionMath reader', () => {
     );
     expect(html).not.toContain('<img');
     expect(html).not.toContain('<b>');
+  });
+});
+
+describe('QuestionPrompt', () => {
+  it('renders the public textbook figure alongside the original question text', () => {
+    const html = renderToStaticMarkup(
+      createElement(QuestionPrompt, {
+        questionId: 'q-22',
+        stem: 'Đồ thị y = f\u2032(x).',
+        content: [
+          { id: 'text', type: 'TEXT', text: 'Đồ thị y = f\u2032(x).' },
+          {
+            id: 'figure',
+            type: 'IMAGE',
+            media: {
+              assetId: '/textbook-figures/derivative-sign-q22.svg',
+              alt: 'Đồ thị đạo hàm',
+            },
+          },
+        ],
+      })
+    );
+    expect(html).toContain('src="/textbook-figures/derivative-sign-q22.svg"');
+    expect(html).toContain('alt="Đồ thị đạo hàm"');
+    expect(html).toContain('Đồ thị y = f′(x).');
   });
 });

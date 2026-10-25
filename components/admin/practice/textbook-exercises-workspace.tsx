@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -17,6 +18,10 @@ import {
   X,
 } from 'lucide-react';
 import { QuestionMath } from '@/components/shared/question-content-renderer';
+import {
+  hasStudentVisibleDiagram,
+  Q22_DERIVATIVE_GRAPH,
+} from '@/lib/textbook-reference/student-diagram';
 import { textbookApi } from '@/components/admin/textbooks/textbook-client';
 import type {
   LessonPracticeWorkspace,
@@ -508,11 +513,26 @@ function ExerciseDetail({
         {exercise.citation && (
           <p className="mt-2 text-[11px] text-slate-500">{exercise.citation}</p>
         )}
-        {exercise.hasDiagram && (
-          <p className="mt-2 text-xs font-medium text-amber-800">
-            Câu này dựa vào hình vẽ hoặc bảng: đối chiếu trên trang sách.
-          </p>
-        )}
+        {exercise.hasDiagram &&
+          (hasStudentVisibleDiagram(exercise) ? (
+            <figure className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <Image
+                src={Q22_DERIVATIVE_GRAPH}
+                width={480}
+                height={280}
+                alt="Đồ thị y = f′(x), cắt trục hoành tại −1, 0 và 2"
+                unoptimized
+                className="mx-auto h-auto max-h-64 w-full max-w-md object-contain"
+              />
+              <figcaption className="mt-2 text-center text-xs text-slate-600">
+                Hình dành cho học sinh, vẽ lại theo đồ thị trang {exercise.printedPages[0]}.
+              </figcaption>
+            </figure>
+          ) : (
+            <p className="mt-2 text-xs font-medium text-amber-800">
+              Câu này dựa vào hình vẽ hoặc bảng: đối chiếu trên trang sách.
+            </p>
+          ))}
         <div className="mt-3 space-y-1">
           {exercise.printedPages.map((page) => (
             <ScanPage key={page} documentId={set.documentId} page={page} layout={layouts[page]} />
@@ -995,7 +1015,7 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
   const [busy, setBusy] = React.useState(false);
   const [notice, setNotice] = React.useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
   const [importing, setImporting] = React.useState(false);
-  const [rights, setRights] = React.useState('');
+  const [rights, setRights] = React.useState('REVIEW_REQUIRED');
   const [outcomes, setOutcomes] = React.useState<TextbookImportOutcome[] | null>(null);
   const detailRef = React.useRef<HTMLDivElement>(null);
 
@@ -1063,6 +1083,9 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
     set.exercises.map((exercise) => ({ set, exercise }))
   );
   const current = exercises.find((item) => item.exercise.id === selected) ?? null;
+  const eligible = exercises.filter(
+    ({ exercise }) => !exercise.question && exercise.blockers.length === 0
+  );
   const ready = exercises.filter(({ exercise }) => checked.has(exercise.id));
   const solutionsBySet = (set: PracticeSetView) => workspace.solutions[set.documentId] ?? [];
   const counts = workspace.counts;
@@ -1318,7 +1341,11 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
         </div>
       )}
 
-      {(ready.length > 0 || importing || outcomes) && (
+      {(eligible.length > 0 ||
+        ready.length > 0 ||
+        importing ||
+        outcomes ||
+        counts.imported > 0) && (
         <div
           className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur"
           data-testid="import-bar"
@@ -1409,19 +1436,66 @@ export function TextbookExercisesWorkspace({ lessonId }: { lessonId: string }) {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-slate-700">
-                  Đã chọn <strong>{ready.length}</strong> câu. Câu vào Ngân hàng dạng nháp; xuất bản
-                  là bước duyệt riêng.
+                  {eligible.length ? (
+                    <>
+                      <strong>{eligible.length} câu sẵn sàng</strong> đang lưu trong Tư liệu sách;
+                      câu đã nhập sẽ thành bản nháp, chưa xuất bản cho học sinh.
+                    </>
+                  ) : (
+                    <>
+                      Đã nhập <strong>{counts.imported} câu</strong> vào Ngân hàng. Xuất bản ở Câu
+                      luyện tập của bài để học sinh nhận câu.
+                    </>
+                  )}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setImporting(true)}
-                  className={`${button} h-9 bg-primary text-primary-foreground`}
-                  data-testid="import-open"
-                >
-                  Nhập vào Ngân hàng câu hỏi
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {eligible.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setChecked((selectedIds) => {
+                          const next = new Set(selectedIds);
+                          const allSelected = eligible.every(({ exercise }) =>
+                            next.has(exercise.id)
+                          );
+                          for (const { exercise } of eligible) {
+                            if (allSelected) next.delete(exercise.id);
+                            else next.add(exercise.id);
+                          }
+                          return next;
+                        })
+                      }
+                      className={`${button} h-9 border border-slate-200 text-slate-700`}
+                      data-testid="select-all-eligible"
+                    >
+                      {eligible.every(({ exercise }) => checked.has(exercise.id))
+                        ? 'Bỏ chọn các câu sẵn sàng'
+                        : `Chọn cả ${eligible.length} câu`}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (ready.length === 0 && eligible.length > 0)
+                        setChecked(new Set(eligible.map(({ exercise }) => exercise.id)));
+                      setImporting(true);
+                    }}
+                    className={`${button} h-9 bg-primary text-primary-foreground`}
+                    data-testid="import-open"
+                  >
+                    Đưa {ready.length || eligible.length} câu vào Ngân hàng
+                  </button>
+                  {counts.imported > 0 && (
+                    <Link
+                      href={`/admin/practice/${lessonId}`}
+                      className={`${button} h-9 border border-slate-200 text-slate-700`}
+                    >
+                      Xem, duyệt và xuất bản
+                    </Link>
+                  )}
+                </div>
               </div>
             )}
           </div>

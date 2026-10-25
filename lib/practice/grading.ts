@@ -202,6 +202,7 @@ export function toPracticeQuestion(question: Question) {
     code: question.code,
     type: question.questionType as PracticeQuestionType,
     stem: question.stem,
+    ...(question.content?.length ? { content: question.content } : {}),
     options: question.options.map((option) => ({ key: option.key, content: option.content })),
     statements:
       question.questionType === 'TRUE_FALSE'

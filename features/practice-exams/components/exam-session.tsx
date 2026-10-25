@@ -12,7 +12,7 @@ import {
   RotateCcw,
   XCircle,
 } from 'lucide-react';
-import { QuestionMath } from '@/components/shared/question-content-renderer';
+import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import {
   FeedbackPanel,
   QuestionBody,
@@ -293,7 +293,11 @@ function RunningExam({
             <span className="text-[13px] text-slate-500">{TYPE_HINT[question.type]}</span>
           </div>
           <div className="mt-3 text-[16px] leading-8 text-slate-800">
-            <QuestionMath text={question.stem} />
+            <QuestionPrompt
+              questionId={question.id}
+              stem={question.stem}
+              content={question.content}
+            />
           </div>
           <div className="mt-5">
             <QuestionBody

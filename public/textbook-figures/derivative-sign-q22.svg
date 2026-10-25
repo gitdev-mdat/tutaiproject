@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 280" role="img" aria-labelledby="title description">
+  <title id="title">Đồ thị dấu của đạo hàm f phẩy</title>
+  <desc id="description">Đường cong y bằng f phẩy x cắt trục hoành tại âm một, không và hai; dấu lần lượt âm, dương, âm, dương.</desc>
+  <rect width="480" height="280" fill="#fff" />
+  <g stroke="#64748b" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M38 140H450M216 254V24" />
+    <path d="m450 140-8-5m8 5-8 5M216 24l-5 8m5-8 5 8" />
+  </g>
+  <g stroke="#94a3b8" stroke-width="1.3">
+    <path d="M150 135v10M216 135v10M282 135v10M348 135v10" />
+  </g>
+  <path d="M48 240 C78 211 112 141 150 140 C171 106 199 93 216 140 C241 164 265 207 282 174 C304 150 327 140 348 140 C374 108 401 63 431 37" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round" />
+  <g fill="#0f172a" font-family="Arial, sans-serif" font-size="16">
+    <text x="455" y="146">x</text>
+    <text x="222" y="25">y</text>
+    <text x="139" y="164">−1</text>
+    <text x="210" y="164">0</text>
+    <text x="276" y="164">1</text>
+    <text x="343" y="164">2</text>
+    <text x="407" y="82" font-style="italic">y = f′(x)</text>
+  </g>
+</svg>

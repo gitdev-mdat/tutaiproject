@@ -1,5 +1,6 @@
 import { findMathIssues, hasMathIssues } from '@/lib/content/math-notation';
 import { checkMonotonicityAnswer, type AnswerCheck } from './math-checks';
+import { hasStudentVisibleDiagram } from './student-diagram';
 import type { LessonSuggestion } from './practice-sources';
 import type { SolutionCandidate, SolutionProposal } from './solution-matching';
 import type { ExerciseChoice, SolutionStatus, TextbookArtifact } from './types';
@@ -129,7 +130,16 @@ export function exercisePracticeView(input: {
     blockers.push('Chỉ đưa được câu trắc nghiệm có các phương án A–D vào luyện tập.');
   else if (answer && !choices.some((choice) => choice.label === answer))
     blockers.push(`Đáp án ${answer} không có trong các phương án.`);
-  if (exercise.hasDiagram)
+  if (
+    exercise.hasDiagram &&
+    !hasStudentVisibleDiagram({
+      id: exercise.id,
+      hasDiagram: true,
+      stem,
+      choices,
+      explanation,
+    })
+  )
     blockers.push(
       'Câu dựa vào hình, đồ thị hoặc bảng: học sinh không xem bản scan, nên chưa đưa vào luyện tập được.'
     );

@@ -15,7 +15,7 @@ import {
   Trophy,
   XCircle,
 } from 'lucide-react';
-import { QuestionMath } from '@/components/shared/question-content-renderer';
+import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import {
   FeedbackPanel,
   QuestionBody,
@@ -529,13 +529,19 @@ export function SetSession({
         <p className="text-[13px] font-semibold text-blue-600">
           Câu {index + 1} · {TYPE_HINT[question.type]}
         </p>
-        <h2
+        <div
+          role="heading"
+          aria-level={2}
           ref={headingRef}
           tabIndex={-1}
           className="mt-2 whitespace-pre-line text-[17px] font-semibold leading-8 text-[#091224] focus:outline-none sm:text-[18px]"
         >
-          <QuestionMath text={question.stem} />
-        </h2>
+          <QuestionPrompt
+            questionId={question.id}
+            stem={question.stem}
+            content={question.content}
+          />
+        </div>
         <div className="mt-5">
           <QuestionBody
             question={question}
