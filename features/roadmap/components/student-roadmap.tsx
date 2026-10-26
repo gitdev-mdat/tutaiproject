@@ -187,28 +187,32 @@ function Hero({
   progress?: { completed: number; total: number };
 }) {
   return (
-    <header className="rounded-[24px] bg-[#0A1F5C] px-5 pb-5 pt-5 text-white sm:px-7 sm:pb-6 sm:pt-6">
+    <header className="rounded-[24px] bg-[#0A1F5C] px-5 py-5 text-white sm:px-7 sm:py-6">
       {tabs}
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="min-w-0">
-          <h1
-            className={
-              tabs
-                ? 'sr-only'
-                : 'text-[26px] font-extrabold leading-tight tracking-tight text-white sm:text-[32px]'
-            }
-          >
-            {title}
-          </h1>
-          {targetScore ? (
-            <p className={`text-[14px] text-blue-100/80 ${tabs ? '' : 'mt-1'}`}>
-              Mục tiêu {targetScore} điểm
-            </p>
-          ) : null}
-        </div>
+      <h1
+        className={
+          tabs
+            ? 'sr-only'
+            : 'mb-4 text-[26px] font-extrabold leading-tight tracking-tight text-white sm:text-[32px]'
+        }
+      >
+        {title}
+      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        {targetScore ? (
+          <p className="text-[16px] text-blue-100">
+            Mục tiêu{' '}
+            <span className="text-[22px] font-extrabold text-[#5EE0A8]">{targetScore} điểm</span>
+          </p>
+        ) : (
+          <span />
+        )}
         {progress && (
-          <p className="shrink-0 text-[13px] text-blue-100/80" data-testid="roadmap-progress">
-            <span className="text-[18px] font-extrabold text-white" data-testid="roadmap-completed">
+          <p
+            className="rounded-full bg-white/10 px-3.5 py-1 text-[13px] text-blue-100"
+            data-testid="roadmap-progress"
+          >
+            <span className="text-[15px] font-bold text-white" data-testid="roadmap-completed">
               {progress.completed}/{progress.total}
             </span>{' '}
             bài đã xong
@@ -217,7 +221,7 @@ function Hero({
       </div>
       {progress && (
         <div
-          className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/15"
+          className="mt-3 h-2 overflow-hidden rounded-full bg-white/15"
           role="progressbar"
           aria-label="Tiến độ lộ trình"
           aria-valuenow={progress.completed}
@@ -273,7 +277,9 @@ function NextStepCard({
       : step.kind === 'check'
         ? { href: lessonHref(step.lesson.id), label: 'Học bài trước' }
         : null;
-  const status = standingLabel(standings.get(step.lesson.id)!);
+  const standing = standings.get(step.lesson.id)!;
+  const status = standingLabel(standing);
+  const open = standing.practice?.inProgress;
 
   return (
     <section
@@ -283,25 +289,48 @@ function NextStepCard({
       data-kind={step.kind}
       data-lesson={step.lesson.id}
     >
-      <p className="text-[13px] font-medium text-slate-500">
+      <p className="text-[14px] text-slate-500">
         Bài tiếp theo · {position}/{scope.lessons.length}
       </p>
       <h2
         id="roadmap-next-title"
-        className="mt-2 text-[24px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[28px]"
+        className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[32px]"
       >
         {step.lesson.title}
       </h2>
-      <p className="mt-1 text-[14px] text-slate-500">{readable(step.lesson.chapterTitle)}</p>
+      <p className="mt-1 text-[15px] text-slate-500">{readable(step.lesson.chapterTitle)}</p>
       {status.tone !== 'idle' && (
-        <p
-          className={`mt-4 text-[14px] font-semibold ${statusTone(status.tone)}`}
-          data-testid="roadmap-reason"
-        >
-          {status.text}
-        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p
+            className={`text-[15px] font-semibold ${statusTone(status.tone)}`}
+            data-testid="roadmap-reason"
+          >
+            {status.text}
+          </p>
+          {open && open.totalCount <= 20 && (
+            <span className="flex gap-1" aria-hidden="true">
+              {Array.from({ length: open.totalCount }, (_, i) => (
+                <span
+                  key={i}
+                  className={`h-2 w-4 rounded-full ${i < open.answeredCount ? 'bg-[#0052FF]' : 'bg-[#DCE5F3]'}`}
+                />
+              ))}
+            </span>
+          )}
+        </div>
       )}
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+      {step.lesson.description && (
+        <div className="mt-5 rounded-2xl bg-[#F5F8FC] px-4 py-3.5">
+          <p className="text-[13px] font-semibold text-slate-700">Nội dung bài học</p>
+          <p
+            className="mt-1 line-clamp-3 text-[14px] leading-6 text-slate-600"
+            data-testid="roadmap-next-description"
+          >
+            {step.lesson.description}
+          </p>
+        </div>
+      )}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
         <Link href={step.href} className={primaryClass} data-testid="roadmap-next-cta">
           {step.cta} <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
@@ -340,12 +369,12 @@ function LessonList({
   return (
     <section
       aria-labelledby="roadmap-map"
-      className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-6"
+      className="rounded-[24px] border border-[#E5EBF3] bg-white p-4 sm:p-6"
     >
-      <h2 id="roadmap-map" className="text-[17px] font-extrabold text-[#091224]">
+      <h2 id="roadmap-map" className="px-1 text-[18px] font-extrabold text-[#091224]">
         Các bài học
       </h2>
-      <ol className="mt-3 divide-y divide-[#EEF2F7]">
+      <ol className="mt-4 space-y-3">
         {scope.chapters.map((chapter, index) => {
           const done = chapter.lessons.filter((l) => standings.get(l.id)?.completed).length;
           const here = chapter.lessons.some((l) => l.id === nextLessonId);
@@ -356,16 +385,16 @@ function LessonList({
               title={readable(chapter.title)}
               done={done}
               count={chapter.lessons.length}
-              collapsible={many}
               open={!many || here || (!nextLessonId && index === scope.chapters.length - 1)}
             >
-              {chapter.lessons.map((lesson) => (
+              {chapter.lessons.map((lesson, i) => (
                 <LessonRow
                   key={lesson.id}
                   lessonId={lesson.id}
                   title={lesson.title}
                   standing={standings.get(lesson.id)!}
                   isNext={lesson.id === nextLessonId}
+                  last={i === chapter.lessons.length - 1}
                 />
               ))}
             </Chapter>
@@ -381,7 +410,6 @@ function Chapter({
   title,
   done,
   count,
-  collapsible,
   open,
   children,
 }: {
@@ -389,40 +417,27 @@ function Chapter({
   title: string;
   done: number;
   count: number;
-  collapsible: boolean;
   open: boolean;
   children: React.ReactNode;
 }) {
-  const heading = (
-    <span className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
-      <span className="min-w-0 text-[14px] font-bold leading-snug text-[#091224]">
-        {index + 1}. {title}
-      </span>
-      <span
-        className={`shrink-0 text-[12px] font-semibold ${done === count ? 'text-emerald-700' : 'text-slate-400'}`}
-      >
-        {done}/{count}
-      </span>
-    </span>
-  );
-  if (!collapsible)
-    return (
-      <li className="py-3 first:pt-1 last:pb-0" data-testid="roadmap-chapter">
-        <div className="flex px-2">{heading}</div>
-        <ol className="mt-1.5">{children}</ol>
-      </li>
-    );
   return (
-    <li className="py-3 first:pt-1 last:pb-0" data-testid="roadmap-chapter">
+    <li data-testid="roadmap-chapter">
       <details open={open} className="group">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
-          {heading}
+        <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl bg-[#F3F6FB] px-4 py-3 hover:bg-[#EDF2FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#091224]">
+            {index + 1}. {title}
+          </span>
+          <span
+            className={`shrink-0 text-[13px] font-semibold ${done === count ? 'text-emerald-700' : 'text-slate-500'}`}
+          >
+            {done}/{count}
+          </span>
           <ChevronDown
             className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
             aria-hidden="true"
           />
         </summary>
-        <ol className="mt-1.5">{children}</ol>
+        <ol className="mt-1">{children}</ol>
       </details>
     </li>
   );
@@ -433,19 +448,27 @@ function LessonRow({
   title,
   standing,
   isNext,
+  last,
 }: {
   lessonId: string;
   title: string;
   standing: LessonStanding;
   isNext: boolean;
+  last: boolean;
 }) {
   const label = standingLabel(standing);
   return (
-    <li>
+    <li className="relative">
+      {!last && (
+        <span
+          aria-hidden="true"
+          className="absolute left-[24px] top-[38px] -bottom-[14px] w-0.5 bg-[#E3E9F2]"
+        />
+      )}
       <Link
         href={lessonHref(lessonId)}
-        className={`flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-          isNext ? 'bg-[#F0F5FF]' : 'hover:bg-slate-50'
+        className={`relative flex items-center gap-3 rounded-xl px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+          isNext ? 'bg-[#EEF3FF]' : 'hover:bg-slate-50'
         }`}
         data-testid="roadmap-lesson"
         data-lesson={lessonId}
@@ -453,19 +476,21 @@ function LessonRow({
         aria-current={isNext ? 'step' : undefined}
       >
         <Mark tone={label.tone} isNext={isNext} />
-        <span
-          className={`min-w-0 flex-1 text-[14px] leading-snug ${
-            isNext ? 'font-bold text-[#091224]' : 'font-medium text-slate-700'
-          }`}
-        >
-          {title}
-          {isNext && <span className="sr-only"> (bước tiếp theo)</span>}
-        </span>
-        <span
-          className={`shrink-0 text-right text-[12px] ${statusTone(label.tone)}`}
-          data-testid="roadmap-lesson-status"
-        >
-          {label.text}
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+          <span
+            className={`min-w-0 flex-1 text-[15px] leading-snug ${
+              isNext ? 'font-bold text-[#091224]' : 'text-slate-700'
+            }`}
+          >
+            {title}
+            {isNext && <span className="sr-only"> (bước tiếp theo)</span>}
+          </span>
+          <span
+            className={`shrink-0 text-[13px] sm:text-right ${statusTone(label.tone)}`}
+            data-testid="roadmap-lesson-status"
+          >
+            {label.text}
+          </span>
         </span>
       </Link>
     </li>
@@ -477,7 +502,7 @@ function Mark({ tone, isNext }: { tone: string; isNext: boolean }) {
     return (
       <span
         aria-hidden="true"
-        className="grid size-[18px] shrink-0 place-items-center rounded-full bg-emerald-500 text-white"
+        className="grid size-[18px] shrink-0 place-items-center rounded-full bg-emerald-500 text-white ring-4 ring-white"
       >
         <Check className="size-3" strokeWidth={3.5} />
       </span>
@@ -485,14 +510,14 @@ function Mark({ tone, isNext }: { tone: string; isNext: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={`size-[18px] shrink-0 rounded-full ${
+      className={`size-[18px] shrink-0 rounded-full bg-white ${
         isNext
-          ? 'border-[5px] border-[#0052FF]'
+          ? 'border-[5px] border-[#0052FF] ring-4 ring-[#EEF3FF]'
           : tone === 'attention'
-            ? 'border-2 border-amber-400'
+            ? 'border-2 border-amber-400 ring-4 ring-white'
             : tone === 'active'
-              ? 'border-2 border-blue-400'
-              : 'border-2 border-slate-300'
+              ? 'border-2 border-blue-400 ring-4 ring-white'
+              : 'border-2 border-slate-300 ring-4 ring-white'
       }`}
     />
   );
@@ -523,7 +548,7 @@ function ProgramTabs({
       box.scrollLeft = active.offsetLeft - 20;
   }, [current]);
   return (
-    <nav aria-label="Chọn môn học" className="-mx-5 mb-4 sm:-mx-7">
+    <nav aria-label="Chọn môn học" className="-mx-5 mb-5 sm:-mx-7">
       <ul
         ref={list}
         className="flex gap-2 overflow-x-auto px-5 pb-1 sm:px-7 [scrollbar-width:none]"
@@ -536,7 +561,7 @@ function ProgramTabs({
               <Link
                 href={programHref(program)}
                 aria-current={active ? 'page' : undefined}
-                className={`inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[13px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
+                className={`inline-flex h-11 items-center gap-2.5 rounded-xl px-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
                   active
                     ? 'bg-white text-[#0A1F5C]'
                     : 'bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white'
@@ -547,7 +572,7 @@ function ProgramTabs({
                 {program.title}
                 {done && (
                   <span
-                    className={`text-[12px] font-semibold ${active ? 'text-slate-500' : 'text-blue-200/80'}`}
+                    className={`text-[13px] font-medium ${active ? 'text-slate-500' : 'text-blue-200/80'}`}
                   >
                     {done.completed}/{done.total}
                   </span>
@@ -577,6 +602,6 @@ function EmptyProgram() {
 }
 
 const primaryClass =
-  'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-center text-[15px] font-bold text-white transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';
+  'inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-7 text-center text-[16px] font-bold text-white transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';
 const linkClass =
   'inline-flex min-h-10 items-center rounded-lg text-[14px] font-semibold text-slate-600 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';

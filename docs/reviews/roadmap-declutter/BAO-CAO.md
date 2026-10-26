@@ -6,15 +6,23 @@
 
 | | Trước | Sau |
 | --- | --- | --- |
-| Số chữ trên trang (học sinh đang luyện) | 309 | 109 |
+| Số chữ trên trang (học sinh đang luyện) | 309 | 128 |
 | Chiều cao trang 1440 × 900 | 1143 px (phải cuộn) | 900 px (vừa một màn hình) |
-| Chiều cao trang 390 × 844 | 1816 px | 967 px |
-| Vị trí nút "Làm tiếp luyện tập", 1440 | y = 800 | y = 372 |
-| Vị trí nút trên 390 | y = 962 (dưới mép) | y = 391 |
+| Chiều cao trang 390 × 844 | 1816 px | 1270 px |
+| Vị trí nút "Làm tiếp luyện tập", 1440 | y = 800 | y = 503 |
+| Vị trí nút trên 390 | y = 962 (dưới mép) | y = 544 |
 
 Không có cuộn ngang ở khổ nào.
 
-## Đã bỏ
+## Vòng 2: theo mẫu Thi gửi
+
+Làm theo bố cục mẫu: phần đầu xanh đậm có tab môn, "Mục tiêu 8 điểm", "1/5 bài đã xong" và thanh tiến độ; thẻ bài tiếp theo có trạng thái kèm chấm tiến độ, ô "Nội dung bài học", nút lớn và link "Xem lại bài học"; danh sách "Các bài học" theo chương, đầu chương nền nhạt bấm để mở/gọn, các bài nối bằng một đường dọc.
+
+Không lấy từ mẫu: hình sách và đồ thị 3D, câu cổ vũ in nghiêng, các icon trang trí. Trên điện thoại, trạng thái bài nằm dưới tên bài để tên không bị gãy dòng.
+
+Trên 1440 và 1280, cột trái là bài tiếp theo, cột phải là danh sách bài; trang vừa một màn hình.
+
+## Đã bỏ (vòng 1)
 
 - Hình đồ thị và công thức trang trí trên nền xanh đậm.
 - Vòng tròn tiến độ, dòng "Còn 4 bài nữa trên hành trình", và ô "Thế nào là hoàn thành?". Thay bằng "1/5 bài đã xong" và một thanh tiến độ mảnh.
