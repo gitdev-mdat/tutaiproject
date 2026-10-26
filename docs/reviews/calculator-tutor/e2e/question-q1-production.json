@@ -1,0 +1,80 @@
+{
+ "id": "q-b48ea52f-2c80-41f8-9740-852bbad40ed5",
+ "code": "Q-MAT-TPG9WI",
+ "stem": "Cho hàm số $y = \\frac{x}{\\ln x}$. Trong các khẳng định dưới đây, khẳng định nào đúng?",
+ "grade": 12,
+ "source": {
+  "sourceName": "math_book_3",
+  "sourcePage": "đề tr. 19; lời giải tr. 29",
+  "sourceType": "LICENSED_MATERIAL",
+  "rightsStatus": "REVIEW_REQUIRED"
+ },
+ "options": [
+  {
+   "key": "A",
+   "content": "Hàm số luôn đồng biến trên $(0; +\\infty)$"
+  },
+  {
+   "key": "B",
+   "content": "Hàm số luôn nghịch biến trên $(0; e)$ và đồng biến trên $(e; +\\infty)$"
+  },
+  {
+   "key": "C",
+   "content": "Hàm số nghịch biến trên $(0; 1)$ và đồng biến trên $(1; +\\infty)$"
+  },
+  {
+   "key": "D",
+   "content": "Hàm số nghịch biến trên $(0; 1)$ và $(1; e)$; đồng biến trên $(e; +\\infty)$"
+  }
+ ],
+ "topicId": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+ "chapterId": "knowledge-7e1ba6a6-70f4-46e3-aa9e-d3ba5bace5aa",
+ "createdAt": "2026-10-25T05:22:55.576Z",
+ "createdBy": "codex:verified-textbook-handoff",
+ "isSpecial": false,
+ "subjectId": "MATH",
+ "updatedAt": "2026-10-25T07:43:33.249Z",
+ "accessTier": "OPEN",
+ "difficulty": "FOUNDATIONAL",
+ "examSetIds": [],
+ "externalId": "textbook:art-45c7dc13c699445a5cd678ffc4154ea9",
+ "skillCodes": [],
+ "contentHash": "53ec60681d979cd59c07936dcdf8ff7f58fc9be46d9a8e58661eeb96e67775d7",
+ "explanation": "Tập xác định: $D = (0; +\frac{\\infty}{\\infty}) \\setminus \\{1\\}$.\n\nTa có: $y' = \\left(\\frac{x}{\\ln x}\\right)' = \\frac{\\ln x - 1}{(\\ln x)^2}$.\n\n$y' = 0 \\Leftrightarrow \\ln x = 1 \\Leftrightarrow x = e$;\n$y'$ không xác định tại $x = 1$\n\n+ $y' > 0$ $\\forall x \\in (e; +\\infty)$ nên hàm số đồng biến trên $(e; +\\infty)$.\n\n+ $y' < 0$ $\\forall x \\in (0; 1)$ nên hàm số nghịch biến trên $(0; 1)$.\n\n+ $y' < 0$ $\\forall x \\in (1; e)$ nên hàm số nghịch biến trên $(1; e)$.\n\nCách 2: Sử dụng máy tính casio:\nNhận thấy ở các phương án có các khoảng sau: $(0; +\\infty); (0; 1); (0; e); (1; e); (e; +\\infty)$.\nLúc này ta sử dụng lệnh MODE 7 TABLE để xét tính đồng biến nghịch biến của hàm số:\nNhập vào máy $Fx = \\frac{x}{\\ln x}$:\n\nẤn 2 lần = máy hiện Start? Ta chọn $x = 0$ , ấn $0 =$\nEnd? Ta nhập SHIFT x10^x (chính là chọn end là $e$).\nDo ở đây ta cho chạy từ $0$ đến $e$ bởi ta cần xét tính đồng biến nghịch biến trên $(0; +\\infty); (0; 1); (0; e); (1; e)$.\nẤn = máy hiện Step? Nhập 0,2, máy hiện như sau:\n\nTừ đây ta nhận thấy giá trị của hàm số giảm khi cho $x$ chạy từ $0$ đến $1$. Vậy hàm số nghịch biến trên $(0; 1)$ ; từ đây ta loại A và B. Tiếp theo kéo xuống thì máy hiện:\n\nLúc này ta thấy các giá trị của hàm số tiếp tục giảm khi cho $x$ chạy từ $1$ đến $e$. Do vậy hàm số nghịch biến trên $(1; e)$, từ đây ta loại C, chọn D.",
+ "conceptCodes": [],
+ "fingerprints": {
+  "full": "53ec60681d979cd59c07936dcdf8ff7f58fc9be46d9a8e58661eeb96e67775d7",
+  "stem": "a1fd3c7adfcd04a083f18245dc6510fb67467e7ee32785fa71183e687d343d4f",
+  "stemAndOptions": "796b6f022f580069a2d06813b2f49d276d677acc69117bf0bcf1c9620fc74536"
+ },
+ "importOrigin": "PDF",
+ "questionType": "MULTIPLE_CHOICE_SINGLE",
+ "correctAnswer": "D",
+ "usageContexts": [],
+ "cognitiveLevel": "COMPREHENSION",
+ "textbookSource": {
+  "citation": "(Trích đề thi thử lần I – THPT chuyên Amsterdam Hà Nội)",
+  "documentId": "textbook-28823755f9b0448a",
+  "importedAt": "2026-10-25T05:22:55.576Z",
+  "verifiedAt": "2026-10-25T03:02:14.456Z",
+  "verifiedBy": "f8c8ff4a-9fd9-42c8-aa2c-78994a39c0a4",
+  "verification": "TEXTBOOK_SOLUTION",
+  "documentTitle": "math_book_3",
+  "exercisePages": [
+   19
+  ],
+  "solutionPages": [
+   29
+  ],
+  "questionNumber": "1",
+  "exerciseArtifactId": "art-45c7dc13c699445a5cd678ffc4154ea9",
+  "exerciseSetEntryId": "toc-6",
+  "solutionArtifactId": "art-2aebbaed5cf8577995f75ef588263177"
+ },
+ "editorialStatus": "IN_REVIEW",
+ "roadmapEligible": false,
+ "knowledgeCoverage": "FOCUS",
+ "primaryKnowledgeNodeId": "knowledge-45c34e43-ad2e-47bf-8845-68782b67cfb9",
+ "relatedKnowledgeNodeIds": [],
+ "prerequisiteConceptCodes": []
+}

@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { withSolutionGuide } from '@/lib/calculator-tutor/registry';
 import { randomUUID } from 'node:crypto';
 import { getSql } from '@/lib/db/postgres';
 import { getQuestion, listQuestions } from '@/lib/question-bank/qb-storage';
@@ -283,7 +284,10 @@ export async function gradeLessonCheck(
   );
   if (!question) throw new PracticeError(404, 'Câu hỏi không thuộc bài học này.');
   const response = parsePracticeResponse(question, rawResponse);
-  return toPracticeFeedback(question, response, gradePracticeResponse(question, response));
+  return withSolutionGuide(
+    toPracticeFeedback(question, response, gradePracticeResponse(question, response)),
+    question
+  );
 }
 
 export async function startPracticeAttempt(
@@ -372,10 +376,9 @@ export async function getPracticeAttempt(
     const question = questions.get(answer.question_id);
     if (!question) continue;
     const parsed = parsePracticeResponse(question, answer.response);
-    feedback[answer.question_id] = toPracticeFeedback(
-      question,
-      parsed,
-      gradePracticeResponse(question, parsed)
+    feedback[answer.question_id] = withSolutionGuide(
+      toPracticeFeedback(question, parsed, gradePracticeResponse(question, parsed)),
+      question
     );
   }
   return {
@@ -439,10 +442,13 @@ export async function answerPracticeQuestion(
     return { response, attempt: { ...locked, answered_count: answered } };
   });
   return {
-    feedback: toPracticeFeedback(
-      question,
-      result.response,
-      gradePracticeResponse(question, result.response)
+    feedback: withSolutionGuide(
+      toPracticeFeedback(
+        question,
+        result.response,
+        gradePracticeResponse(question, result.response)
+      ),
+      question
     ),
     attempt: summarize(result.attempt),
   };

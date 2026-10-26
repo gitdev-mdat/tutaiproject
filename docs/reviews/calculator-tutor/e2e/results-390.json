@@ -1,0 +1,198 @@
+{
+ "viewport": "390x844",
+ "input": "touch",
+ "results": [
+  {
+   "id": "P1",
+   "label": "Before answering: no solution, guide or calculator on the page or in the attempt API",
+   "ok": true,
+   "detail": "attempt pa-8685d08b-7e19-47d2-9fdc-d5156b8db3aa"
+  },
+  {
+   "id": "M1",
+   "label": "After answering: the solution shows two separate methods, derivative first",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "M2",
+   "label": "Method 1: correct domain, derivative, x = e, conclusion D, sign table −, −, +",
+   "ok": true,
+   "detail": "1 | Tập xác định: cần x > 0 để ln x có nghĩa và ln x ≠ 0 (tức x ≠ 1) để mẫu khác 0, nên D = (0; +∞) ∖ {1}. | 2 | Đạo hàm: y' =  | 1 · ln x - x ·  | 1 | x | (ln x)2 |  =  | ln x - 1 | (ln x)2 | . | 3 | y' = 0 ⇔ ln x = 1 ⇔"
+  },
+  {
+   "id": "M3",
+   "label": "Original imported solution kept verbatim (17 lines, incl. \"Start? Ta chọn x = 0\" and \"SHIFT x10^x\") with 6 notes",
+   "ok": true,
+   "detail": "17 lines, 6 notes"
+  },
+  {
+   "id": "W0",
+   "label": "Method 2 opens on a start screen: objective, domain, \"Xem hướng dẫn\" and \"Tự bấm thử\"",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "L1",
+   "label": "Phone: the tutor opens as a full-screen workspace with instruction and whole keypad on screen",
+   "ok": true,
+   "detail": "layout=focus"
+  },
+  {
+   "id": "W1",
+   "label": "Demonstration: highlights MODE first, then presses keys one by one with the screen updating",
+   "ok": true,
+   "detail": "first=MODE, now=DIVIDE, lcd=S A Math f(X)=X"
+  },
+  {
+   "id": "W2",
+   "label": "Pause stops the demonstration; resume continues from the same key",
+   "ok": true,
+   "detail": "paused at 2, after 2.6 s 2"
+  },
+  {
+   "id": "W3",
+   "label": "Previous goes back to step 2 at its start (f(X)= empty)",
+   "ok": true,
+   "detail": "S A Math f(X)="
+  },
+  {
+   "id": "W3b",
+   "label": "Function entered correctly on screen",
+   "ok": true,
+   "detail": "S A Math f(X)=X÷ln(X)"
+  },
+  {
+   "id": "W4",
+   "label": "Replay restarts the current step from its first key",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "W5",
+   "label": "Demo pauses at the checkpoint: rows x = 0 and x = 1 shown as ERROR, explained as outside the domain",
+   "ok": true,
+   "detail": "X F(X) 1 0 ERROR 2 0.5 -0.721 3 1 ERROR"
+  },
+  {
+   "id": "T1",
+   "label": "Wrong key: gentle correction, key not applied (screen unchanged), no answer forced yet",
+   "ok": true,
+   "detail": "Chưa đúng phím. Phím 5 không dùng ở bước này. Đọc lại hướng dẫn và thử lại nhé."
+  },
+  {
+   "id": "T2",
+   "label": "Second wrong key: the expected key (MODE) is highlighted",
+   "ok": true,
+   "detail": "target=MODE"
+  },
+  {
+   "id": "T3",
+   "label": "Gợi ý shows the hint for the step",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "T4",
+   "label": "Correct keys advance: MODE → 7 opens TABLE (f(X)=)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "T5",
+   "label": "Làm lại restarts the exercise at step 1 with a blank screen",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "T6",
+   "label": "TABLE (0; 1): Start 0.1, Step 0.1 → first values −0.043, −0.124, −0.249; no ERROR row",
+   "ok": true,
+   "detail": "X F(X) 1 0.1 -0.043 2 0.2 -0.124 3 0.3 -0.249"
+  },
+  {
+   "id": "T6b",
+   "label": "Range configuration on screen: Start? 1.2 typed for the interval (1; 4)",
+   "ok": true,
+   "detail": "S A Math Start? 1.2"
+  },
+  {
+   "id": "T7",
+   "label": "TABLE (1; 4): minimum near x = e then increasing; selected X = 3 shows F = 2.73071768",
+   "ok": true,
+   "detail": "3"
+  },
+  {
+   "id": "T8",
+   "label": "Practice completed with touch input: success state and the \"not a proof\" conclusion",
+   "ok": true,
+   "detail": "66 presses in 6 s"
+  },
+  {
+   "id": "T9",
+   "label": "No request was sent while watching or practising (no grading, streak or XP from the tutor)",
+   "ok": true,
+   "detail": "streak rows 0/0"
+  },
+  {
+   "id": "T10",
+   "label": "Free mode computes the student’s own range: Start 0.5, End 1.5, Step 0.25 → ERROR at x = 1 only",
+   "ok": true,
+   "detail": "X F(X) 1 0.5 -0.721 2 0.75 -2.607 3 1 ERROR"
+  },
+  {
+   "id": "T11",
+   "label": "An unsupported operation says so instead of faking a result",
+   "ok": true,
+   "detail": "Phím này nằm ngoài phạm vi bản mô phỏng (chỉ mô phỏng chức năng TABLE)."
+  },
+  {
+   "id": "L2",
+   "label": "Closing the phone workspace returns to the solution",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "O",
+   "label": "No horizontal overflow",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "id": "R1",
+   "label": "A question without a verified guide keeps the existing step-by-step solution",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "R2",
+   "label": "Interactive Math P1 still renders for the lesson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "A1",
+   "label": "Admin preview: guide marked verified, every step of the key sequence replays to its expected screen",
+   "ok": true,
+   "detail": "8/8"
+  },
+  {
+   "id": "A2",
+   "label": "Admin can try the tutorial in the preview (nothing stored)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "id": "A3",
+   "label": "A student cannot read the bank question (and its explanation) through the admin API",
+   "ok": true,
+   "detail": "403"
+  },
+  {
+   "id": "E",
+   "label": "No page errors",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+      Tests  1 passed (1)
+   Start at  12:53:30
+   Duration  504ms (transform 121ms, setup 0ms, collect 140ms, tests 149ms, environment 0ms, prepare 67ms)
+
+PASS S0 Before answering Câu 20: no guide, no calculator on the page
+PASS S1 Câu 20 (no config file): "Thực hành bằng máy tính" alone (the source has no other method), level A
+PASS S2 Demonstration types (2X−3)÷√(X²−1) key by key, √ opening a box — S A Math f(X)=(2X−3)÷√(X²)
+PASS S3 Student presses all keys of the generated lesson (mouse); ERROR rows at x = −1…1 explained — 39 presses
+PASS S4 Conclusion computed from the table: decreasing on −3…−1,5, increasing on 1,5…3, not a proof — Em đã tự bấm xong cả bài! |  | 39 lần bấm phím · 6 bước |  | F(X) giảm khi X đi từ −3 đến −1,5. | F(X) tăng khi X đi từ 1,5 đến 3. | Lời giải kết luận: "Từ đây 
+PASS S5 The tutor sends nothing to the server (grading, attempts, streak, XP untouched)
+PASS O1 No horizontal overflow (Câu 20)
+PASS S6 Câu 2 (proposed range, not yet accepted): students see the original solution only
+PASS S6b Câu 2: no generated guide before Admin accepts it; original steps shown
+PASS S7 SOLVE question (QA): level B guided illustration, keys highlighted, no simulated screen
+PASS S7b Step "bấm SHIFT SOLVE": SHIFT and CALC (SOLVE) highlighted, labelled as illustration — SHIFT,CALC
+PASS S7c Missing screenshot in the source is marked, not drawn
+PASS O2 No horizontal overflow (level B)
+PASS S8 Câu 11 (sin; Radian step missing in the source): held for review, not shown yet
+PASS S9 Only a mention of the calculator: held for review, not shown
+PASS S10 Câu 3 (no calculator method): original solution only
+PASS A1 Admin sees a guide panel on the 5 questions with a calculator method, none on Câu 3 — 5 panels
+PASS A2 Câu 2 panel: TABLE, level A, step count, the proposed-range warning, not visible yet — Hướng dẫn bấm máy |  | Mức A · Mô phỏng từng phím |  | Nhận diện: Bảng giá trị (TABLE) · không ghi đời máy · 5 bước, 33 phím · độ tin cậy cao |  | Chưa hiện cho
+PASS A3 Preview: two methods (book text, then calculator), every generated step replays to its screen — 5/5
+PASS A4 Accept: saved on the question (no new table), panel says students will see it
+PASS A5 Correct an instruction: stored as a correction, guide accepted
+PASS A6 Keep the original solution: stored, students keep the source text
+PASS A7 Disable hides a guide; clearing the decision brings it back
+PASS O3 No horizontal overflow (admin)
+PASS T1 Câu 20 still has its guide after the decision was cleared
+PASS T2 Câu 2 after Admin accepted: two methods, the proposed range is labelled "Tú Tài đề xuất"
+PASS T3a Câu 11 keeps its three methods apart: the book's Cách 1–2 as text, then "Thực hành bằng máy tính"
+PASS T3 Câu 11 after correction: level B, first step shows Admin's corrected instruction — Bấm SHIFT, MODE rồi chọn 4 (Rad): trên màn hình hiện chữ R.
+PASS T4 Unsupported function (sin): values computed from the formula, labelled, π/2 → ERROR, π → −1 — X f(X) π/2 ERROR 3π/5 −39,86345819 7π/10 −9,472135955 4π/5 −3,851839996 9π/10 −1,894427191 π −1
+PASS T5 Mention-only question kept as original solution
+PASS O4 No horizontal overflow (second attempt)
+PASS E No page errors
+
+1440: 32/32 passed

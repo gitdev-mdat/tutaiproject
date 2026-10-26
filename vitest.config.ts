@@ -24,6 +24,7 @@ export default defineConfig({
       'lib/access/**/*.test.ts',
       'lib/db/**/*.test.ts',
       'lib/practice/**/*.test.ts',
+      'lib/calculator-tutor/**/*.test.ts',
       'lib/learning/**/*.test.ts',
       'lib/content/**/*.test.ts',
       'lib/textbook-reference/**/*.test.ts',

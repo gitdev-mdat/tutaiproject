@@ -1,3 +1,4 @@
+import type { SolutionGuidePayload } from '@/lib/calculator-tutor/types';
 import type { Question, QuestionType } from '@/lib/question-bank/qb-types';
 import { Q22_DERIVATIVE_GRAPH } from '@/lib/textbook-reference/student-diagram';
 
@@ -234,4 +235,7 @@ export function toPracticeFeedback(question: Question, response: unknown, result
   };
 }
 
-export type PracticeFeedback = ReturnType<typeof toPracticeFeedback>;
+export type PracticeFeedback = ReturnType<typeof toPracticeFeedback> & {
+  /** A verified step-by-step guide (methods, calculator tutorial), attached on the server. */
+  guide?: SolutionGuidePayload;
+};

@@ -17,6 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { LessonAssist } from '@/components/learning/lesson-assist';
+import { SolutionGuideView } from '@/components/learning/calculator-tutor/solution-guide';
 import { QuestionMath, QuestionPrompt } from '@/components/shared/question-content-renderer';
 import type { PracticeFeedback, PracticeQuestion } from '@/lib/practice/grading';
 import type { AttemptView, LessonPracticeOverview } from '@/lib/practice/practice-service';
@@ -431,10 +432,13 @@ function SolutionSteps({ text }: { text: string }) {
 export function FeedbackPanel({
   feedback,
   id = 'practice-feedback',
+  audience = 'student',
   children,
 }: {
   feedback: PracticeFeedback;
   id?: string;
+  /** Admin previews also see how the solution guide was verified. */
+  audience?: 'student' | 'admin';
   /** Extra help under the solution, e.g. "Vì sao em sai?". */
   children?: React.ReactNode;
 }) {
@@ -457,7 +461,16 @@ export function FeedbackPanel({
       {feedback.explanation && (
         <div className="mt-3 border-t border-black/5 pt-3">
           <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">Lời giải</p>
-          <SolutionSteps text={feedback.explanation} />
+          {feedback.guide ? (
+            <SolutionGuideView
+              guide={feedback.guide}
+              explanation={feedback.explanation}
+              audience={audience}
+              renderSource={(text) => <SolutionSteps text={text} />}
+            />
+          ) : (
+            <SolutionSteps text={feedback.explanation} />
+          )}
         </div>
       )}
       {children && <div className="mt-3 border-t border-black/5 pt-3">{children}</div>}
@@ -628,10 +641,18 @@ function Results({
                       setAnswer={() => {}}
                       feedback={item}
                     />
-                    {item.explanation && (
-                      <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm leading-6 whitespace-pre-line text-slate-700">
-                        <QuestionMath text={item.explanation} />
-                      </div>
+                    {item.guide ? (
+                      <SolutionGuideView
+                        guide={item.guide}
+                        explanation={item.explanation}
+                        renderSource={(text) => <SolutionSteps text={text} />}
+                      />
+                    ) : (
+                      item.explanation && (
+                        <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm leading-6 whitespace-pre-line text-slate-700">
+                          <QuestionMath text={item.explanation} />
+                        </div>
+                      )
                     )}
                   </div>
                 )}
