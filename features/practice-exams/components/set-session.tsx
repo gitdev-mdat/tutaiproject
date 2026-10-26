@@ -542,7 +542,7 @@ export function SetSession({
             className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
             data-testid="practice-question"
           >
-            <p className="text-[13px] font-semibold text-blue-600">
+            <p className="text-[13px] font-medium text-slate-500">
               Câu {index + 1} · {TYPE_HINT[question.type]}
             </p>
             <div

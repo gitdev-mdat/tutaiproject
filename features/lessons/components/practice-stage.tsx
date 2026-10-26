@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { ListChecks } from 'lucide-react';
 
 /**
  * One practice question on screen. Where the content area is wide enough, the
@@ -36,18 +35,12 @@ export function PracticeStage({
           data-testid="practice-solution-pane"
         >
           {feedback ?? (
-            <div
-              className="hidden rounded-[24px] border border-dashed border-[#D5DEEA] bg-white/60 p-6 text-center @min-[880px]/stage:block"
+            <p
+              className="hidden pt-6 text-sm text-slate-400 @min-[880px]/stage:block"
               data-testid="solution-placeholder"
             >
-              <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-[#F4F8FF] text-[#0052FF]">
-                <ListChecks className="size-5" aria-hidden="true" />
-              </span>
-              <p className="mt-3 text-[15px] font-bold text-[#091224]">Kết quả và lời giải</p>
-              <p className="mx-auto mt-1 max-w-[280px] text-sm leading-6 text-slate-500">
-                Chọn đáp án rồi bấm Kiểm tra, lời giải từng bước sẽ hiện ở đây.
-              </p>
-            </div>
+              Lời giải hiện ở đây sau khi em kiểm tra.
+            </p>
           )}
         </div>
         <div className="[grid-area:a] sm:sticky sm:bottom-4 sm:z-10 sm:mt-4 sm:self-start sm:justify-self-end">

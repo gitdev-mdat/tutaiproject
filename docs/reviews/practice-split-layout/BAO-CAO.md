@@ -22,7 +22,7 @@
 
 - Khi vùng nội dung rộng từ 880 px trở lên (tức là màn hình khoảng 1280 px trở lên, đã trừ thanh bên), trang chia làm 2 cột: **câu hỏi + phương án + nút ở bên trái**, **kết quả + lời giải từng bước + "Vì sao em sai?" ở bên phải**.
 - Cột lời giải luôn nằm trong màn hình (sticky). Lời giải dài hơn màn hình thì cuộn trong khung của nó, còn đề bài bên trái đứng yên. Sang câu mới, khung lời giải quay về đầu.
-- Trước khi chấm, cột phải hiện ô gợi ý "Kết quả và lời giải sẽ hiện ở đây", để bố cục không bị nhảy khi chấm.
+- Trước khi chấm, cột phải chỉ có một dòng chữ nhạt "Lời giải hiện ở đây sau khi em kiểm tra.".
 - Phương án ngắn (≤ 22 ký tự) xếp lưới 2 × 2, giống cách Luyện thi đang làm.
 - Nút Kiểm tra / Câu tiếp theo luôn trong tầm tay: trên desktop và tablet nó bám đáy màn hình khi câu hỏi dài, còn trên điện thoại vẫn là thanh cố định ở đáy như cũ.
 - Màn hình hẹp hơn (tablet, 1024 có thanh bên, điện thoại) vẫn xếp một cột: câu hỏi, kết quả, rồi nút.
@@ -38,11 +38,22 @@
 
 Không có cuộn ngang ở khổ nào (`scrollWidth - innerWidth = 0`).
 
+## Màu sắc và chi tiết thừa (vòng 2, theo góp ý của Thi)
+
+- Chỉ dùng 3 màu, mỗi màu một nghĩa: xanh dương là thao tác/đang chọn, xanh lá là đúng, đỏ là sai. Bỏ màu vàng ở trạng thái sai.
+- Khung lời giải giờ là nền trắng, viền giống thẻ câu hỏi. Trước đây cả khung tô xanh lá hoặc vàng. Giờ chỉ dòng kết luận có màu: "Chính xác" hoặc "Chưa đúng · Đáp án đúng là A".
+- Bỏ icon ở dòng kết luận, bỏ nhãn chữ in hoa giãn chữ "LỜI GIẢI" (thay bằng tiêu đề thường "Lời giải"), và bỏ một đường kẻ thừa.
+- Các bước lời giải đánh số thường (1. 2. 3.), không dùng vòng tròn huy hiệu, không còn hiệu ứng hiện lần lượt từng dòng.
+- Phương án đúng mà em không chọn có viền xanh liền, không dùng viền nét đứt, không ghi thêm chữ "Đáp án đúng" (trình đọc màn hình vẫn đọc được).
+- Câu Đúng/Sai: khi chọn, nút có màu xanh dương thay vì xanh lá/đỏ, vì chọn "Sai" chưa có nghĩa là làm sai. Sau khi chấm, nút đã chọn chuyển sang màu xám, và chỉ ý sai mới được tô đỏ kèm dòng "Ý này Sai/Đúng".
+- Nhãn "Câu 1 · Chọn một đáp án" đổi sang màu xám, để đề bài là chỗ nổi bật nhất.
+- Những thay đổi này nằm trong thành phần dùng chung, nên phần xem lại bài thi, xem trước ở admin và kiểm tra nhanh trong bài học cũng đổi theo.
+
 ## Ảnh
 
 Trước: `truoc/1440-3-sai.png`, `truoc/1280-4-dung-sai.png`, `truoc/390-3-sai.png`
 
-Sau: `sau/1440-1-chon-dap-an.png`, `sau/1440-3-sai.png`, `sau/1280-4-dung-sai.png`, `sau/1366x620-loi-giai-cuon-xuong.png`, `sau/1024-3-sai-vi-sao.png`, `sau/390-3-sai.png`, `sau/1440-on-chuong.png`
+Sau: `sau/1440-1-chon-dap-an.png`, `sau/1440-2-dung-loi-giai-dai.png`, `sau/1440-3-sai.png`, `sau/1440-4-dung-sai.png`, `sau/1280-4-dung-sai.png`, `sau/1366x620-loi-giai-cuon-xuong.png`, `sau/1024-3-sai-vi-sao.png`, `sau/390-3-sai.png`, `sau/1440-on-chuong.png`
 
 ## Đã kiểm tra
 
