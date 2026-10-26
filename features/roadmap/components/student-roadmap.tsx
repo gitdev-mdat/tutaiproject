@@ -2,19 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ClipboardCheck,
-  Flag,
-  Info,
-  MapPin,
-  Trophy,
-} from 'lucide-react';
-import { JourneyTrack } from './journey-track';
+import { ArrowRight, Check, ChevronDown } from 'lucide-react';
 import { useStudentShell } from '@/components/student/student-shell';
 import { useLessonProgress } from '@/features/lessons/lib/lesson-progress';
 import {
@@ -25,7 +13,6 @@ import {
   programHref,
   ROADMAP_HREF,
   standingLabel,
-  startingPointFor,
   type LessonStanding,
   type NextStep,
   type StudyScope,
@@ -45,17 +32,13 @@ export interface RoadmapChoice {
 
 /**
  * The Roadmap is the student's one place to learn: every published program
- * (a subject's lessons for one grade), where they are on it, how far they
- * have come and the one step to take next. Lessons open from it and lead back
- * to it; there is no separate lesson catalog. Every mark on it comes from the
- * published curriculum, the student's practice results and their reading
- * progress; nothing is a template.
+ * (a subject's lessons for one grade), how far they have come and the one
+ * step to take next. Lessons open from it and lead back to it.
  *
- * - The hero names the program (with a switch between programs when there
- *   are several) and places the student on it (chapters as stages).
- * - The next-step card says what to do, why, and what finishing that lesson takes.
- * - The map lists every lesson of the program: chapters as milestones, lessons
- *   as stops, a pin where the student is. Any lesson opens from it.
+ * It shows what a student acts on and little else: the program and its
+ * progress, the next lesson with one button, and every lesson to open.
+ * Rules and reasons are not spelled out on the page; each lesson's status
+ * line and the button's label carry them.
  */
 export function StudentRoadmap({
   programs,
@@ -72,17 +55,11 @@ export function StudentRoadmap({
 }) {
   const { model } = useStudentShell();
   const progress = useLessonProgress(model.identity.id);
-  const firstName = model.identity.name.trim().split(/\s+/).pop() ?? '';
 
   if (!scope)
     return (
       <Page>
-        <Hero
-          title={choice?.requested ?? 'của em'}
-          subject={choice?.requested ?? ''}
-          greeting={firstName}
-          targetScore={targetScore}
-        />
+        <Hero title={choice?.requested ?? 'Lộ trình của em'} targetScore={targetScore} />
         <EmptyProgram />
       </Page>
     );
@@ -100,20 +77,14 @@ export function StudentRoadmap({
   if (!progress)
     return (
       <Page>
-        <Hero
-          title={scope.title}
-          subject={scope.subjectTitle}
-          greeting={firstName}
-          targetScore={targetScore}
-          tabs={tabs}
-        />
+        <Hero title={scope.title} targetScore={targetScore} tabs={tabs} />
         {choice && <ProgramBasisNote choice={choice} title={scope.title} />}
         <div
           aria-hidden="true"
           className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]"
         >
-          <div className="h-[320px] rounded-[24px] bg-white" />
-          <div className="h-[320px] rounded-[24px] bg-white" />
+          <div className="h-[260px] rounded-[24px] bg-white" />
+          <div className="h-[260px] rounded-[24px] bg-white" />
         </div>
       </Page>
     );
@@ -131,11 +102,9 @@ export function StudentRoadmap({
     <Page>
       <Hero
         title={scope.title}
-        subject={scope.subjectTitle}
-        greeting={firstName}
         targetScore={targetScore}
         tabs={tabs}
-        journey={{ scope, standings, completed, total, currentLessonId: step?.lesson.id ?? null }}
+        progress={{ completed, total }}
       />
       {choice && <ProgramBasisNote choice={choice} title={scope.title} />}
       {summaries === null && (
@@ -147,83 +116,44 @@ export function StudentRoadmap({
         <div className="lg:sticky lg:top-6">
           <NextStepCard step={step} scope={scope} standings={standings} />
         </div>
-        <JourneyMap
-          scope={scope}
-          standings={standings}
-          nextLessonId={step?.lesson.id ?? null}
-          initials={model.identity.initials}
-          targetScore={targetScore}
-        />
+        <LessonList scope={scope} standings={standings} nextLessonId={step?.lesson.id ?? null} />
       </div>
     </Page>
   );
 }
 
 /**
- * Why the student sees this program, in their words: what in their profile
- * chose it, or why another program stands in. Says plainly that the
- * self-reported score only chooses how a lesson starts and skips nothing.
+ * Only when the program on screen is not simply the one the profile asks
+ * for: one line saying so, with the way back or the way to change it.
  */
 function ProgramBasisNote({ choice, title }: { choice: RoadmapChoice; title: string }) {
   const { basis, requested, profileProgram } = choice;
-  const { model } = useStudentShell();
-  const checkFirst = startingPointFor(model.learning?.currentScore) === 'CHECK_FIRST';
-  let text: string;
-  if (basis === 'PROFILE')
-    text = `Chọn theo hồ sơ của em: ${requested ?? title}. Các bài theo thứ tự chương trình; bước tiếp theo đổi theo bài em đã học và kết quả luyện tập.`;
-  else if (basis === 'OTHER_GRADE')
-    text = `Hồ sơ của em là ${requested}, nhưng chương trình lớp đó chưa mở. Em đang học ${title}, chương trình gần nhất của cùng môn.`;
-  else if (basis === 'NO_SUBJECT_PROGRAM')
-    text = `${requested ? `Môn ${requested} em chọn` : 'Môn em chọn'} chưa có bài nào được mở. Trong lúc chờ, em có thể học ${title}. Khi có bài, lộ trình sẽ tự mở đúng môn của em.`;
-  else
-    text = profileProgram
-      ? `Em đang xem ${title}. Lộ trình theo hồ sơ của em là ${profileProgram.title}.`
-      : `Em đang xem ${title}.`;
+  if (basis === 'PROFILE') return null;
+  const text =
+    basis === 'OTHER_GRADE'
+      ? `${requested} chưa có bài, em đang học ${title}.`
+      : basis === 'NO_SUBJECT_PROGRAM'
+        ? `${requested ? `Môn ${requested}` : 'Môn em chọn'} chưa có bài, em đang học ${title}.`
+        : profileProgram
+          ? `Em đang xem ${title}.`
+          : null;
+  if (!text) return null;
+  const back = basis === 'CHOSEN' && profileProgram;
   return (
-    <div
-      className="mt-3 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[13px] leading-5 text-slate-600 sm:flex-row sm:items-center sm:justify-between"
+    <p
+      className="mt-3 flex flex-wrap gap-x-3 gap-y-1 px-1 text-[13px] text-slate-500"
       data-testid="roadmap-basis"
       data-basis={basis}
     >
-      <p className="flex min-w-0 gap-2">
-        <Info className="mt-0.5 size-4 shrink-0 text-blue-600" aria-hidden="true" />
-        <span>
-          {text}
-          {basis !== 'CHOSEN' && (
-            <span className="text-slate-500">
-              {' '}
-              Tú Tài chưa kiểm tra trình độ đầu vào.{' '}
-              <span
-                data-testid="roadmap-starting-point"
-                data-start={checkFirst ? 'CHECK_FIRST' : 'LEARN_FIRST'}
-              >
-                {checkFirst
-                  ? 'Em tự khai điểm trung bình từ 6,5, nên mỗi bài mới bắt đầu bằng làm thử luyện tập; bài chỉ tính là xong khi em đúng từ 80% số câu.'
-                  : 'Mỗi bài bắt đầu bằng học bài rồi luyện tập.'}
-              </span>{' '}
-              Điểm em nhập không dùng để bỏ qua bài nào.
-            </span>
-          )}
-        </span>
-      </p>
-      {basis === 'CHOSEN' && profileProgram ? (
-        <Link
-          href={ROADMAP_HREF}
-          className="shrink-0 font-semibold text-blue-700 hover:underline"
-          data-testid="roadmap-basis-back"
-        >
-          Về lộ trình của em
-        </Link>
-      ) : (
-        <Link
-          href="/student/profile#muc-tieu"
-          className="shrink-0 font-semibold text-blue-700 hover:underline"
-          data-testid="roadmap-basis-edit"
-        >
-          Đổi môn, lớp hoặc mục tiêu
-        </Link>
-      )}
-    </div>
+      <span>{text}</span>
+      <Link
+        href={back ? ROADMAP_HREF : '/student/profile#muc-tieu'}
+        className="font-semibold text-blue-700 hover:underline"
+        data-testid={back ? 'roadmap-basis-back' : 'roadmap-basis-edit'}
+      >
+        {back ? `Về ${profileProgram.title}` : 'Đổi môn, lớp'}
+      </Link>
+    </p>
   );
 }
 
@@ -235,178 +165,74 @@ function Page({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Hero: the whole program at a glance ─────────────────────────────────────
-
-interface Journey {
-  scope: StudyScope;
-  standings: Map<string, LessonStanding>;
-  completed: number;
-  total: number;
-  currentLessonId: string | null;
+/** Chapter titles come from textbooks in capitals; shown in sentence case, they read. */
+function readable(title: string): string {
+  if (title !== title.toLocaleUpperCase('vi') || !/\p{Ll}/u.test(title.toLocaleLowerCase('vi')))
+    return title;
+  const lower = title.toLocaleLowerCase('vi');
+  return lower.charAt(0).toLocaleUpperCase('vi') + lower.slice(1);
 }
+
+// ─── Hero: the program and how far along it the student is ───────────────────
 
 function Hero({
   title,
-  subject,
-  greeting,
   targetScore,
   tabs,
-  journey,
+  progress,
 }: {
   title: string;
-  subject: string;
-  greeting: string;
   targetScore: number | null;
   tabs?: React.ReactNode;
-  journey?: Journey;
+  progress?: { completed: number; total: number };
 }) {
-  const remaining = journey ? journey.total - journey.completed : 0;
   return (
-    <header className="relative isolate overflow-hidden rounded-[24px] bg-[#0A1F5C] px-5 pb-5 pt-6 text-white sm:px-8 sm:pb-7 sm:pt-8">
-      <HeroArt subject={subject} />
+    <header className="rounded-[24px] bg-[#0A1F5C] px-5 pb-5 pt-5 text-white sm:px-7 sm:pb-6 sm:pt-6">
       {tabs}
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0 max-w-[560px]">
-          {!tabs && (
-            <p className="mb-1.5 text-[13px] font-semibold tracking-wide text-blue-200">
-              Lộ trình của em
-            </p>
-          )}
-          <h1 className="text-[30px] text-white font-extrabold leading-[1.1] tracking-tight sm:text-[40px]">
-            Hành trình <span className="text-[#7FB2FF]">{title}</span>
-          </h1>
-          <p className="mt-2.5 text-[15px] leading-6 text-blue-100/90">
-            {greeting ? `${greeting} ơi, ` : ''}
-            {targetScore
-              ? `mục tiêu của em là ${targetScore} điểm. Đi từng bài, chắc từng bước.`
-              : 'đi từng bài, chắc từng bước. Mỗi bài em hoàn thành là một chặng đã qua.'}
-          </p>
-        </div>
-        {journey && (
-          <div
-            className="flex shrink-0 items-center gap-4 md:flex-col md:items-end md:gap-2"
-            data-testid="roadmap-progress"
+      <div className="flex items-baseline justify-between gap-4">
+        <div className="min-w-0">
+          <h1
+            className={
+              tabs
+                ? 'sr-only'
+                : 'text-[26px] font-extrabold leading-tight tracking-tight text-white sm:text-[32px]'
+            }
           >
-            <ProgressRing completed={journey.completed} total={journey.total} />
-            <p className="text-[13px] leading-5 text-blue-100/90 md:text-right">
-              {remaining === 0
-                ? 'Em đã đi hết các bài đang mở'
-                : `Còn ${remaining} bài nữa trên hành trình`}
-              <CompletionRule />
+            {title}
+          </h1>
+          {targetScore ? (
+            <p className={`text-[14px] text-blue-100/80 ${tabs ? '' : 'mt-1'}`}>
+              Mục tiêu {targetScore} điểm
             </p>
-          </div>
+          ) : null}
+        </div>
+        {progress && (
+          <p className="shrink-0 text-[13px] text-blue-100/80" data-testid="roadmap-progress">
+            <span className="text-[18px] font-extrabold text-white" data-testid="roadmap-completed">
+              {progress.completed}/{progress.total}
+            </span>{' '}
+            bài đã xong
+          </p>
         )}
       </div>
-      {journey && (
-        <div className="mt-6 sm:mt-7">
-          <JourneyTrack
-            program={journey.scope}
-            standings={journey.standings}
-            currentLessonId={journey.currentLessonId}
+      {progress && (
+        <div
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/15"
+          role="progressbar"
+          aria-label="Tiến độ lộ trình"
+          aria-valuenow={progress.completed}
+          aria-valuemin={0}
+          aria-valuemax={progress.total}
+        >
+          <div
+            className="h-full rounded-full bg-[#34D399] motion-safe:transition-[width] motion-safe:duration-700"
+            style={{
+              width: `${progress.total ? (progress.completed / progress.total) * 100 : 0}%`,
+            }}
           />
         </div>
       )}
     </header>
-  );
-}
-
-function ProgressRing({ completed, total }: { completed: number; total: number }) {
-  const radius = 34;
-  const circumference = 2 * Math.PI * radius;
-  const ratio = total ? completed / total : 0;
-  return (
-    <div
-      className="relative grid size-[92px] place-items-center"
-      role="img"
-      aria-label={`Đã hoàn thành ${completed} trên ${total} bài`}
-    >
-      <svg viewBox="0 0 80 80" className="absolute inset-0 size-full -rotate-90" aria-hidden="true">
-        <circle
-          cx="40"
-          cy="40"
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,.14)"
-          strokeWidth="7"
-        />
-        <circle
-          cx="40"
-          cy="40"
-          r={radius}
-          fill="none"
-          stroke="#34D399"
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - ratio)}
-          className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-700"
-        />
-      </svg>
-      <span className="text-center leading-none">
-        <span className="block text-[22px] font-extrabold" data-testid="roadmap-completed">
-          {completed}/{total}
-        </span>
-        <span className="mt-1 block text-[11px] font-semibold text-blue-100/80">bài xong</span>
-      </span>
-    </div>
-  );
-}
-
-/** What "completed" means, one tap away instead of a paragraph on the page. */
-function CompletionRule() {
-  return (
-    <details className="group relative mt-1 block text-left md:text-right [&_summary::-webkit-details-marker]:hidden">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded text-[12px] font-semibold text-blue-200 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
-        <Info className="size-3.5" aria-hidden="true" />
-        Thế nào là hoàn thành?
-      </summary>
-      <span className="absolute right-0 z-10 mt-2 block w-[min(280px,80vw)] rounded-xl bg-white p-3 text-left text-[13px] leading-5 text-slate-700 shadow-xl md:right-0 max-md:left-0">
-        Luyện tập đạt từ 80% số câu. Bài chưa có câu luyện tập thì học hết bài là xong. Chỉ mở bài
-        ra xem thì chưa tính.
-      </span>
-    </details>
-  );
-}
-
-/** Two formulas of the subject drawn into the hero's graph paper. */
-const HERO_FORMULAS: [RegExp, [string, string]][] = [
-  [/^vật/i, ['x = A cos(ωt + φ)', 'F = ma']],
-  [/^ho[áa]/i, ['2H₂ + O₂ → 2H₂O', 'n = m / M']],
-  [/^sinh/i, ['A = T, G ≡ X', '5′ → 3′']],
-];
-
-function HeroArt({ subject }: { subject: string }) {
-  const [top, side] = HERO_FORMULAS.find(([pattern]) => pattern.test(subject))?.[1] ?? [
-    'y = f(x)',
-    '∫ f(x) dx',
-  ];
-  return (
-    <svg
-      className="pointer-events-none absolute -right-24 -top-6 md:right-[150px] -z-10 h-[260px] w-[620px] text-[#7FB2FF] opacity-[.22] max-lg:opacity-[.1]"
-      viewBox="0 0 620 260"
-      fill="none"
-      aria-hidden="true"
-    >
-      <defs>
-        <pattern id="roadmap-hero-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-          <path d="M24 0H0V24" stroke="currentColor" strokeWidth=".6" />
-        </pattern>
-      </defs>
-      <rect x="120" width="500" height="260" fill="url(#roadmap-hero-grid)" opacity=".5" />
-      <g stroke="currentColor" strokeWidth="1.6">
-        <path d="M150 200H600M220 240V20" opacity=".6" />
-        <path d="M160 190C210 188 214 80 262 80c50 0 54 108 102 108c46 0 60-74 98-120 30-36 70-44 110-40" />
-      </g>
-      <g fill="currentColor" fontFamily="serif" fontStyle="italic" fontSize="16">
-        <text x="300" y="62">
-          {top}
-        </text>
-        <text x="450" y="150" opacity=".8">
-          {side}
-        </text>
-      </g>
-      <circle cx="262" cy="80" r="4" fill="currentColor" />
-    </svg>
   );
 }
 
@@ -425,20 +251,14 @@ function NextStepCard({
     return (
       <section
         aria-label="Bước tiếp theo"
-        className="relative overflow-hidden rounded-[24px] border border-emerald-100 bg-white p-6 sm:p-7"
+        className="rounded-[24px] border border-[#E5EBF3] bg-white p-6 sm:p-7"
         data-testid="roadmap-next"
         data-kind="done"
       >
-        <span className="grid size-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
-          <Trophy className="size-6" aria-hidden="true" />
-        </span>
-        <h2 className="mt-4 text-[22px] font-extrabold leading-snug text-[#091224]">
-          Em đã đi hết các bài đang mở
+        <h2 className="text-[22px] font-extrabold leading-snug text-[#091224]">
+          Em đã xong các bài đang mở
         </h2>
-        <p className="mt-1.5 text-[15px] leading-6 text-slate-600">
-          Mọi bài trong lộ trình đều đã hoàn thành. Bài mới sẽ xuất hiện trên hành trình khi thầy cô
-          mở thêm; trong lúc chờ, em luyện đề để giữ nhịp.
-        </p>
+        <p className="mt-1 text-[15px] text-slate-500">Trong lúc chờ bài mới, em luyện đề nhé.</p>
         <Link href="/student/practice" className={`${primaryClass} mt-6`}>
           Đi tới Luyện đề <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
@@ -446,59 +266,42 @@ function NextStepCard({
     );
 
   const position = scope.lessons.findIndex((lesson) => lesson.id === step.lesson.id) + 1;
-  const chapterIndex = scope.chapters.findIndex((c) => c.id === step.lesson.chapterId) + 1;
-  // When the step is this lesson's practice, the lesson itself stays one tap
-  // away: reading it again never costs an attempt or resets anything. Moving
-  // on to another lesson is the map's job, right below.
-  let alternative: { href: string; label: string } | null = null;
-  if (step.kind === 'practice' || step.kind === 'resume-practice') {
-    alternative = { href: lessonHref(step.lesson.id), label: 'Xem lại bài học' };
-  } else if (step.kind === 'retry') {
-    alternative = { href: lessonHref(step.lesson.id), label: 'Ôn lại bài trước khi luyện' };
-  } else if (step.kind === 'check') {
-    alternative = { href: lessonHref(step.lesson.id), label: 'Học bài trước' };
-  }
-  const standing = standings.get(step.lesson.id)!;
+  // When the step is this lesson's practice, the lesson itself stays one tap away.
+  const alternative =
+    step.kind === 'practice' || step.kind === 'resume-practice' || step.kind === 'retry'
+      ? { href: lessonHref(step.lesson.id), label: 'Xem lại bài học' }
+      : step.kind === 'check'
+        ? { href: lessonHref(step.lesson.id), label: 'Học bài trước' }
+        : null;
+  const status = standingLabel(standings.get(step.lesson.id)!);
 
   return (
     <section
       aria-labelledby="roadmap-next-title"
-      className="relative overflow-hidden rounded-[24px] border border-[#DCE6F7] bg-white p-5 shadow-[0_12px_32px_-18px_rgba(10,31,92,0.35)] sm:p-7"
+      className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
       data-testid="roadmap-next"
       data-kind={step.kind}
       data-lesson={step.lesson.id}
     >
-      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-[#0052FF]" />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="rounded-full bg-[#0052FF] px-2.5 py-1 text-[12px] font-bold text-white">
-          Bước tiếp theo
-        </span>
-        <span className="text-[13px] font-medium text-slate-500">
-          Chương {chapterIndex} · Bài {position}/{scope.lessons.length}
-        </span>
-      </div>
+      <p className="text-[13px] font-medium text-slate-500">
+        Bài tiếp theo · {position}/{scope.lessons.length}
+      </p>
       <h2
         id="roadmap-next-title"
-        className="mt-3 text-[24px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[28px]"
+        className="mt-2 text-[24px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[28px]"
       >
         {step.lesson.title}
       </h2>
-      <p className="mt-1 text-[14px] text-slate-500">{step.lesson.chapterTitle}</p>
-      {step.kind === 'start' && step.lesson.description && (
+      <p className="mt-1 text-[14px] text-slate-500">{readable(step.lesson.chapterTitle)}</p>
+      {status.tone !== 'idle' && (
         <p
-          className="mt-3 line-clamp-2 text-[14px] leading-6 text-slate-500"
-          data-testid="roadmap-next-description"
+          className={`mt-4 text-[14px] font-semibold ${statusTone(status.tone)}`}
+          data-testid="roadmap-reason"
         >
-          {step.lesson.description}
+          {status.text}
         </p>
       )}
-      <p className="mt-4 text-[15px] leading-6 text-slate-700" data-testid="roadmap-reason">
-        {step.reason}
-      </p>
-
-      <LessonTrack standing={standing} kind={step.kind} />
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5">
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
         <Link href={step.href} className={primaryClass} data-testid="roadmap-next-cta">
           {step.cta} <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
@@ -512,99 +315,26 @@ function NextStepCard({
   );
 }
 
-type TrackState = 'done' | 'current' | 'todo';
-
-/** What finishing this lesson takes, with the student's real state at each step. */
-function LessonTrack({ standing, kind }: { standing: LessonStanding; kind: NextStep['kind'] }) {
-  const { reading, practice, hasPractice } = standing;
-  const read: TrackState = reading.kind === 'learned' ? 'done' : 'current';
-  const readNote =
-    reading.kind === 'learned'
-      ? 'Đã học hết'
-      : reading.kind === 'started' && reading.total > 0
-        ? `Phần ${reading.stage}/${reading.total}`
-        : 'Chưa bắt đầu';
-
-  const steps: { label: string; note: string; state: TrackState; icon: typeof BookOpen }[] = [
-    { label: 'Học bài', note: readNote, state: read, icon: BookOpen },
-  ];
-  if (hasPractice) {
-    const open = practice?.inProgress;
-    const best = practice?.best;
-    const practising =
-      kind === 'resume-practice' || kind === 'practice' || kind === 'retry' || kind === 'check';
-    steps.push({
-      label: 'Luyện tập',
-      note: open
-        ? `Đang làm ${open.answeredCount}/${open.totalCount} câu`
-        : best
-          ? `Tốt nhất ${best.correctCount}/${best.totalCount} câu`
-          : `${practice!.questionCount} câu`,
-      state: practising ? 'current' : 'todo',
-      icon: ClipboardCheck,
-    });
-  }
-  steps.push({
-    label: 'Hoàn thành',
-    note: hasPractice ? 'Đúng từ 80% số câu' : 'Học đến phần cuối',
-    state: 'todo',
-    icon: Flag,
-  });
-
-  return (
-    <ol
-      className="mt-5 grid gap-2 rounded-2xl bg-[#F4F8FF] p-3 sm:p-4"
-      style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
-      aria-label="Để hoàn thành bài này"
-    >
-      {steps.map((item, index) => (
-        <li key={item.label} className="relative min-w-0">
-          {index < steps.length - 1 && (
-            <span
-              aria-hidden="true"
-              className={`absolute left-[34px] right-0 top-[15px] h-0.5 ${
-                item.state === 'done' ? 'bg-emerald-400' : 'bg-[#C9D8F2]'
-              }`}
-            />
-          )}
-          <span
-            aria-hidden="true"
-            className={`relative grid size-8 place-items-center rounded-full ${
-              item.state === 'done'
-                ? 'bg-emerald-500 text-white'
-                : item.state === 'current'
-                  ? 'bg-[#0052FF] text-white ring-4 ring-blue-200/70'
-                  : 'bg-white text-slate-400 ring-1 ring-[#C9D8F2]'
-            }`}
-          >
-            {item.state === 'done' ? (
-              <Check className="size-4" strokeWidth={3} />
-            ) : (
-              <item.icon className="size-4" />
-            )}
-          </span>
-          <span className="mt-2 block text-[13px] font-bold text-[#091224]">{item.label}</span>
-          <span className="block text-[12px] leading-4 text-slate-500">{item.note}</span>
-        </li>
-      ))}
-    </ol>
-  );
+function statusTone(tone: string) {
+  return tone === 'done'
+    ? 'text-emerald-700'
+    : tone === 'attention'
+      ? 'text-amber-700'
+      : tone === 'active'
+        ? 'text-blue-700'
+        : 'text-slate-500';
 }
 
-// ─── The map ─────────────────────────────────────────────────────────────────
+// ─── Every lesson ────────────────────────────────────────────────────────────
 
-function JourneyMap({
+function LessonList({
   scope,
   standings,
   nextLessonId,
-  initials,
-  targetScore,
 }: {
   scope: StudyScope;
   standings: Map<string, LessonStanding>;
   nextLessonId: string | null;
-  initials: string;
-  targetScore: number | null;
 }) {
   const many = scope.chapters.length > 2;
   return (
@@ -612,74 +342,45 @@ function JourneyMap({
       aria-labelledby="roadmap-map"
       className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-6"
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="roadmap-map" className="text-[17px] font-extrabold text-[#091224]">
-          Bản đồ hành trình
-        </h2>
-        <p className="text-[12px] text-slate-500">
-          {scope.lessons.length} bài · mọi bài đều mở, học trước thứ tự vẫn được tính
-        </p>
-      </div>
-
-      <ol className="relative mt-4">
+      <h2 id="roadmap-map" className="text-[17px] font-extrabold text-[#091224]">
+        Các bài học
+      </h2>
+      <ol className="mt-3 divide-y divide-[#EEF2F7]">
         {scope.chapters.map((chapter, index) => {
           const done = chapter.lessons.filter((l) => standings.get(l.id)?.completed).length;
           const here = chapter.lessons.some((l) => l.id === nextLessonId);
-          const finished = done === chapter.lessons.length;
           return (
-            <Milestone
+            <Chapter
               key={chapter.id}
               index={index}
-              title={chapter.title}
+              title={readable(chapter.title)}
               done={done}
               count={chapter.lessons.length}
-              finished={finished}
-              here={here}
               collapsible={many}
               open={!many || here || (!nextLessonId && index === scope.chapters.length - 1)}
             >
               {chapter.lessons.map((lesson) => (
-                <Stop
+                <LessonRow
                   key={lesson.id}
                   lessonId={lesson.id}
                   title={lesson.title}
                   standing={standings.get(lesson.id)!}
                   isNext={lesson.id === nextLessonId}
-                  initials={initials}
                 />
               ))}
-            </Milestone>
+            </Chapter>
           );
         })}
-        <li className="relative flex items-start gap-3 pt-1">
-          <span
-            aria-hidden="true"
-            className="relative z-[1] grid size-10 shrink-0 place-items-center rounded-full bg-[#FFF4D6] text-[#B7791F] ring-4 ring-white"
-          >
-            <Trophy className="size-5" />
-          </span>
-          <span className="min-w-0 pt-1">
-            <span className="block text-[15px] font-bold text-[#091224]">
-              Đích đến{targetScore ? `: ${targetScore} điểm` : ''}
-            </span>
-            <span className="mt-0.5 block text-[13px] leading-5 text-slate-500">
-              Hiện có {scope.lessons.length} bài trong {scope.chapters.length} chương. Bài mới sẽ tự
-              xuất hiện trên hành trình khi thầy cô mở thêm.
-            </span>
-          </span>
-        </li>
       </ol>
     </section>
   );
 }
 
-function Milestone({
+function Chapter({
   index,
   title,
   done,
   count,
-  finished,
-  here,
   collapsible,
   open,
   children,
@@ -688,99 +389,62 @@ function Milestone({
   title: string;
   done: number;
   count: number;
-  finished: boolean;
-  here: boolean;
   collapsible: boolean;
   open: boolean;
   children: React.ReactNode;
 }) {
-  const node = (
-    <span
-      aria-hidden="true"
-      className={`relative z-[1] grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-extrabold ring-4 ring-white ${
-        finished
-          ? 'bg-emerald-500 text-white'
-          : here
-            ? 'bg-[#0052FF] text-white'
-            : 'bg-[#EEF3FB] text-slate-500'
-      }`}
-    >
-      {finished ? <Check className="size-5" strokeWidth={3} /> : index + 1}
-    </span>
-  );
   const heading = (
-    <span className="min-w-0 flex-1 pt-0.5">
-      <span className="block text-[12px] font-semibold uppercase tracking-wider text-slate-400">
-        Chương {index + 1}
+    <span className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
+      <span className="min-w-0 text-[14px] font-bold leading-snug text-[#091224]">
+        {index + 1}. {title}
       </span>
-      <span className="block text-[15px] font-bold leading-snug text-[#091224]">{title}</span>
-      <span className="mt-1.5 flex items-center gap-2">
-        <span className="flex gap-1" aria-hidden="true">
-          {Array.from({ length: Math.min(count, 12) }, (_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 w-4 rounded-full ${i < done ? 'bg-emerald-500' : 'bg-slate-200'}`}
-            />
-          ))}
-        </span>
-        <span className="text-[12px] text-slate-500">
-          {done}/{count} bài xong
-        </span>
+      <span
+        className={`shrink-0 text-[12px] font-semibold ${done === count ? 'text-emerald-700' : 'text-slate-400'}`}
+      >
+        {done}/{count}
       </span>
     </span>
   );
-  const line = (
-    <span aria-hidden="true" className="absolute bottom-0 left-[19px] top-0 w-0.5 bg-[#E5EBF3]" />
-  );
-
   if (!collapsible)
     return (
-      <li className="relative pb-4" data-testid="roadmap-chapter">
-        {line}
-        <div className="flex items-start gap-3">
-          {node}
-          {heading}
-        </div>
-        <ol className="mt-2">{children}</ol>
+      <li className="py-3 first:pt-1 last:pb-0" data-testid="roadmap-chapter">
+        <div className="flex px-2">{heading}</div>
+        <ol className="mt-1.5">{children}</ol>
       </li>
     );
   return (
-    <li className="relative pb-4" data-testid="roadmap-chapter">
-      {line}
+    <li className="py-3 first:pt-1 last:pb-0" data-testid="roadmap-chapter">
       <details open={open} className="group">
-        <summary className="flex cursor-pointer list-none items-start gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
-          {node}
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
           {heading}
           <ChevronDown
-            className="mt-3 size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+            className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
             aria-hidden="true"
           />
         </summary>
-        <ol className="mt-2">{children}</ol>
+        <ol className="mt-1.5">{children}</ol>
       </details>
     </li>
   );
 }
 
-function Stop({
+function LessonRow({
   lessonId,
   title,
   standing,
   isNext,
-  initials,
 }: {
   lessonId: string;
   title: string;
   standing: LessonStanding;
   isNext: boolean;
-  initials: string;
 }) {
   const label = standingLabel(standing);
   return (
-    <li className="relative">
+    <li>
       <Link
         href={lessonHref(lessonId)}
-        className={`group relative flex items-center gap-3 rounded-xl py-2 pl-[11px] pr-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+        className={`flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
           isNext ? 'bg-[#F0F5FF]' : 'hover:bg-slate-50'
         }`}
         data-testid="roadmap-lesson"
@@ -788,62 +452,32 @@ function Stop({
         data-completed={standing.completed}
         aria-current={isNext ? 'step' : undefined}
       >
-        <StopMark tone={label.tone} isNext={isNext} initials={initials} />
-        <span className="min-w-0 flex-1">
-          <span
-            className={`block text-[14px] leading-snug ${
-              isNext ? 'font-bold text-[#091224]' : 'font-semibold text-slate-700'
-            } group-hover:text-[#091224]`}
-          >
-            {title}
-          </span>
-          <span
-            className={`mt-0.5 block text-[12px] ${
-              label.tone === 'done'
-                ? 'text-emerald-700'
-                : label.tone === 'attention'
-                  ? 'text-amber-800'
-                  : label.tone === 'active'
-                    ? 'text-blue-700'
-                    : 'text-slate-500'
-            }`}
-            data-testid="roadmap-lesson-status"
-          >
-            {label.text}
-            {isNext && <span className="sr-only"> (bước tiếp theo)</span>}
-          </span>
+        <Mark tone={label.tone} isNext={isNext} />
+        <span
+          className={`min-w-0 flex-1 text-[14px] leading-snug ${
+            isNext ? 'font-bold text-[#091224]' : 'font-medium text-slate-700'
+          }`}
+        >
+          {title}
+          {isNext && <span className="sr-only"> (bước tiếp theo)</span>}
         </span>
-        {isNext ? (
-          <span className="shrink-0 rounded-full bg-[#0052FF] px-2 py-0.5 text-[11px] font-bold text-white">
-            Em ở đây
-          </span>
-        ) : (
-          // Every stop opens its lesson, finished ones included: to read again.
-          <ChevronRight
-            className="size-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-500"
-            aria-hidden="true"
-          />
-        )}
+        <span
+          className={`shrink-0 text-right text-[12px] ${statusTone(label.tone)}`}
+          data-testid="roadmap-lesson-status"
+        >
+          {label.text}
+        </span>
       </Link>
     </li>
   );
 }
 
-function StopMark({ tone, isNext, initials }: { tone: string; isNext: boolean; initials: string }) {
-  if (isNext)
-    return (
-      <span
-        aria-hidden="true"
-        className="relative z-[1] grid size-[18px] shrink-0 place-items-center rounded-full bg-[#0052FF] text-[8px] font-bold text-white ring-4 ring-blue-100"
-      >
-        {initials.slice(0, 2)}
-      </span>
-    );
+function Mark({ tone, isNext }: { tone: string; isNext: boolean }) {
   if (tone === 'done')
     return (
       <span
         aria-hidden="true"
-        className="relative z-[1] grid size-[18px] shrink-0 place-items-center rounded-full bg-emerald-500 text-white ring-4 ring-white"
+        className="grid size-[18px] shrink-0 place-items-center rounded-full bg-emerald-500 text-white"
       >
         <Check className="size-3" strokeWidth={3.5} />
       </span>
@@ -851,12 +485,14 @@ function StopMark({ tone, isNext, initials }: { tone: string; isNext: boolean; i
   return (
     <span
       aria-hidden="true"
-      className={`relative z-[1] size-[18px] shrink-0 rounded-full bg-white ring-4 ring-white ${
-        tone === 'attention'
-          ? 'border-[3px] border-amber-400'
-          : tone === 'active'
-            ? 'border-[3px] border-blue-400'
-            : 'border-2 border-slate-300'
+      className={`size-[18px] shrink-0 rounded-full ${
+        isNext
+          ? 'border-[5px] border-[#0052FF]'
+          : tone === 'attention'
+            ? 'border-2 border-amber-400'
+            : tone === 'active'
+              ? 'border-2 border-blue-400'
+              : 'border-2 border-slate-300'
       }`}
     />
   );
@@ -887,10 +523,10 @@ function ProgramTabs({
       box.scrollLeft = active.offsetLeft - 20;
   }, [current]);
   return (
-    <nav aria-label="Chọn môn học" className="-mx-5 mb-5 sm:-mx-8 sm:mb-6">
+    <nav aria-label="Chọn môn học" className="-mx-5 mb-4 sm:-mx-7">
       <ul
         ref={list}
-        className="flex gap-2 overflow-x-auto px-5 pb-1 sm:px-8 [scrollbar-width:none]"
+        className="flex gap-2 overflow-x-auto px-5 pb-1 sm:px-7 [scrollbar-width:none]"
       >
         {programs.map((program) => {
           const active = program.id === current;
@@ -931,16 +567,8 @@ function EmptyProgram() {
       className="mt-5 rounded-[24px] border border-[#E5EBF3] bg-white p-6 text-center sm:p-10"
       data-testid="roadmap-empty"
     >
-      <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-        <MapPin className="size-6" aria-hidden="true" />
-      </span>
-      <h2 className="mt-4 text-[20px] font-extrabold text-[#091224]">
-        Hành trình đang được chuẩn bị
-      </h2>
-      <p className="mx-auto mt-1 max-w-[440px] text-[15px] leading-6 text-slate-500">
-        Thầy cô đang soạn những bài đầu tiên. Khi bài được mở, hành trình của em sẽ hiện ở đây theo
-        đúng thứ tự chương trình.
-      </p>
+      <h2 className="text-[20px] font-extrabold text-[#091224]">Chưa có bài nào được mở</h2>
+      <p className="mt-1 text-[15px] text-slate-500">Trong lúc chờ, em luyện đề nhé.</p>
       <Link href="/student/practice" className={`${primaryClass} mt-6`}>
         Đi tới Luyện đề <ArrowRight className="size-4" aria-hidden="true" />
       </Link>
@@ -949,6 +577,6 @@ function EmptyProgram() {
 }
 
 const primaryClass =
-  'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-center text-[15px] font-bold text-white shadow-[0_8px_20px_rgba(0,82,255,0.25)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';
+  'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-center text-[15px] font-bold text-white transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';
 const linkClass =
   'inline-flex min-h-10 items-center rounded-lg text-[14px] font-semibold text-slate-600 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
