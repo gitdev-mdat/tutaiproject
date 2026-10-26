@@ -36,6 +36,7 @@ import {
   type Summaries,
 } from '../lib/study-plan';
 import { nextStepLabel } from './lesson-practice-card';
+import { PracticeStage } from './practice-stage';
 
 type Lesson = { id: string; title: string; chapterTitle: string };
 export type Answer =
@@ -87,11 +88,20 @@ const OriginContext = React.createContext<PracticeOrigin>('roadmap');
  * Roadmap, a bookmark, a typed URL) it returns to the lesson's journey on the
  * Roadmap. Browser Back follows real history on its own.
  */
-function Shell({ lesson, children }: { lesson: Lesson; children: React.ReactNode }) {
+function Shell({
+  lesson,
+  wide = false,
+  children,
+}: {
+  lesson: Lesson;
+  /** The question view, which puts the solution beside the question where there is room. */
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
   const program = React.useContext(ProgramContext);
   const origin = React.useContext(OriginContext);
   return (
-    <div className="mx-auto w-full max-w-[720px] pb-28 sm:pb-12">
+    <div className={`mx-auto w-full pb-28 sm:pb-12 ${wide ? 'max-w-[1180px]' : 'max-w-[720px]'}`}>
       <p className="-mt-12 ml-12 flex min-h-10 items-center md:mt-0 lg:ml-0 lg:min-h-0">
         {origin === 'practice' ? (
           <Link
@@ -433,10 +443,13 @@ export function FeedbackPanel({
   feedback,
   id = 'practice-feedback',
   audience = 'student',
+  className = 'mt-5',
   children,
 }: {
   feedback: PracticeFeedback;
   id?: string;
+  /** Spacing from what comes before it; none when it stands in its own column. */
+  className?: string;
   /** Admin previews also see how the solution guide was verified. */
   audience?: 'student' | 'admin';
   /** Extra help under the solution, e.g. "Vì sao em sai?". */
@@ -446,7 +459,7 @@ export function FeedbackPanel({
     <div
       id={id}
       tabIndex={-1}
-      className={`mt-5 rounded-2xl border p-4 outline-none sm:p-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 ${feedback.correct ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
+      className={`${className} rounded-2xl border p-4 outline-none sm:p-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 ${feedback.correct ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
       role="status"
       data-testid="feedback"
       data-correct={feedback.correct}
@@ -1000,7 +1013,7 @@ function PracticeFlow({
   const canCheck = isComplete(question, answer) && !submitting;
 
   return (
-    <Shell lesson={lesson}>
+    <Shell lesson={lesson} wide>
       <div className="mt-4 flex items-center gap-3">
         <div
           className="h-2 flex-1 overflow-hidden rounded-full bg-[#E5EBF3]"
@@ -1020,83 +1033,92 @@ function PracticeFlow({
         </span>
       </div>
 
-      <section
-        className="mt-4 rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
-        data-testid="practice-question"
-      >
-        <p className="text-[13px] font-semibold text-blue-600">
-          Câu {index + 1} · {TYPE_HINT[question.type]}
-        </p>
-        <div
-          role="heading"
-          aria-level={1}
-          ref={headingRef}
-          tabIndex={-1}
-          className="mt-2 text-[17px] leading-8 font-semibold whitespace-pre-line text-[#091224] focus:outline-none sm:text-[18px]"
-        >
-          <QuestionPrompt
-            questionId={question.id}
-            stem={question.stem}
-            content={question.content}
-          />
-        </div>
-        <div className="mt-5">
-          <QuestionBody
-            question={question}
-            answer={answer}
-            feedback={feedback}
-            setAnswer={(next) => setAnswers((all) => ({ ...all, [question.id]: next }))}
-          />
-        </div>
-        {feedback && (
-          <FeedbackPanel feedback={feedback}>
-            {!feedback.correct && (
-              <LessonAssist
-                key={question.id}
-                target={{ kind: 'practice', attemptId: view.attempt.id, questionId: question.id }}
-                topic={`Câu ${index + 1}`}
-                label="Vì sao em sai?"
-              />
-            )}
-          </FeedbackPanel>
-        )}
-        {submitError && (
-          <p
-            className="mt-4 text-sm font-medium text-rose-700"
-            role="alert"
-            data-testid="submit-error"
+      <PracticeStage
+        questionId={question.id}
+        question={
+          <section
+            className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
+            data-testid="practice-question"
           >
-            {submitError}
-          </p>
-        )}
-      </section>
-
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#E5EBF3] bg-white/95 p-3 backdrop-blur sm:static sm:mt-4 sm:border-0 sm:bg-transparent sm:p-0">
-        <div className="mx-auto flex max-w-[720px] justify-end">
-          {feedback ? (
-            <button
-              type="button"
-              onClick={advance}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] sm:w-auto"
-              data-testid="practice-next"
+            <p className="text-[13px] font-semibold text-blue-600">
+              Câu {index + 1} · {TYPE_HINT[question.type]}
+            </p>
+            <div
+              role="heading"
+              aria-level={1}
+              ref={headingRef}
+              tabIndex={-1}
+              className="mt-2 text-[17px] leading-8 font-semibold whitespace-pre-line text-[#091224] focus:outline-none sm:text-[18px]"
             >
-              {view.attempt.status === 'COMPLETED' ? 'Xem kết quả' : 'Câu tiếp theo'}
-              <ArrowRight className="size-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void check()}
-              disabled={!canCheck}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:bg-slate-300 sm:w-auto"
-              data-testid="practice-check"
-            >
-              {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
-              Kiểm tra
-            </button>
-          )}
-        </div>
-      </div>
+              <QuestionPrompt
+                questionId={question.id}
+                stem={question.stem}
+                content={question.content}
+              />
+            </div>
+            <div className="mt-5">
+              <QuestionBody
+                question={question}
+                answer={answer}
+                feedback={feedback}
+                setAnswer={(next) => setAnswers((all) => ({ ...all, [question.id]: next }))}
+                compact
+              />
+            </div>
+            {submitError && (
+              <p
+                className="mt-4 text-sm font-medium text-rose-700"
+                role="alert"
+                data-testid="submit-error"
+              >
+                {submitError}
+              </p>
+            )}
+          </section>
+        }
+        feedback={
+          feedback && (
+            <FeedbackPanel feedback={feedback} className="">
+              {!feedback.correct && (
+                <LessonAssist
+                  key={question.id}
+                  target={{ kind: 'practice', attemptId: view.attempt.id, questionId: question.id }}
+                  topic={`Câu ${index + 1}`}
+                  label="Vì sao em sai?"
+                />
+              )}
+            </FeedbackPanel>
+          )
+        }
+        actions={
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#E5EBF3] bg-white/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+            <div className="mx-auto flex max-w-[720px] justify-end sm:max-w-none">
+              {feedback ? (
+                <button
+                  type="button"
+                  onClick={advance}
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] sm:w-auto"
+                  data-testid="practice-next"
+                >
+                  {view.attempt.status === 'COMPLETED' ? 'Xem kết quả' : 'Câu tiếp theo'}
+                  <ArrowRight className="size-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void check()}
+                  disabled={!canCheck}
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:bg-slate-300 sm:w-auto"
+                  data-testid="practice-check"
+                >
+                  {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Kiểm tra
+                </button>
+              )}
+            </div>
+          </div>
+        }
+      />
     </Shell>
   );
 }
