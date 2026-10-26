@@ -49,11 +49,18 @@ Không có cuộn ngang ở khổ nào (`scrollWidth - innerWidth = 0`).
 - Nhãn "Câu 1 · Chọn một đáp án" đổi sang màu xám, để đề bài là chỗ nổi bật nhất.
 - Những thay đổi này nằm trong thành phần dùng chung, nên phần xem lại bài thi, xem trước ở admin và kiểm tra nhanh trong bài học cũng đổi theo.
 
+## Hai cột cao bằng nhau (vòng 3)
+
+- Bên trái là một thẻ gồm câu hỏi, phương án và nút ở đáy thẻ, có đường kẻ mảnh ngăn phần nút. Bên phải là một thẻ chứa kết quả và lời giải.
+- Hai thẻ luôn cao bằng nhau. Chiều cao lấy theo thẻ câu hỏi, nhưng không thấp hơn min(640 px, chiều cao màn hình − 176 px). Vì thế câu ngắn không bị lùn bên cạnh một lời giải dài.
+- Lời giải dài hơn chiều cao đó thì cuộn bên trong thẻ phải. Câu hỏi dài hơn (ví dụ câu Đúng/Sai 4 ý) thì cả trang cuộn, thẻ phải giãn theo cho bằng, và nút vẫn bám đáy màn hình.
+- Ở 1920, 1440 và 1280, trang vừa khít một màn hình. Riêng câu Đúng/Sai 4 ý thì trang dài hơn khoảng 100 px.
+
 ## Ảnh
 
 Trước: `truoc/1440-3-sai.png`, `truoc/1280-4-dung-sai.png`, `truoc/390-3-sai.png`
 
-Sau: `sau/1440-1-chon-dap-an.png`, `sau/1440-2-dung-loi-giai-dai.png`, `sau/1440-3-sai.png`, `sau/1440-4-dung-sai.png`, `sau/1280-4-dung-sai.png`, `sau/1366x620-loi-giai-cuon-xuong.png`, `sau/1024-3-sai-vi-sao.png`, `sau/390-3-sai.png`, `sau/1440-on-chuong.png`
+Sau: `sau/1440-1-chon-dap-an.png`, `sau/1440-2-dung-loi-giai-dai.png`, `sau/1440-3-sai.png`, `sau/1440-4-dung-sai.png`, `sau/1280-3-sai.png`, `sau/1280-4-dung-sai.png`, `sau/1366x620-loi-giai-cuon-xuong.png`, `sau/1024-3-sai-vi-sao.png`, `sau/390-3-sai.png`, `sau/1440-on-chuong.png`
 
 ## Đã kiểm tra
 

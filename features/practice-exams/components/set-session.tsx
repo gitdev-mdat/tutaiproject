@@ -23,7 +23,7 @@ import {
   isComplete,
   type Answer,
 } from '@/features/lessons/components/practice-session';
-import { PracticeStage } from '@/features/lessons/components/practice-stage';
+import { PracticeStage, STAGE_FEEDBACK_CLASS } from '@/features/lessons/components/practice-stage';
 import { practiceHref } from '@/features/lessons/lib/study-plan';
 import type { PracticeFeedback } from '@/lib/practice/grading';
 import type { SetContext } from '@/lib/practice/practice-catalog';
@@ -538,10 +538,7 @@ export function SetSession({
       <PracticeStage
         questionId={question.id}
         question={
-          <section
-            className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
-            data-testid="practice-question"
-          >
+          <section data-testid="practice-question">
             <p className="text-[13px] font-medium text-slate-500">
               Câu {index + 1} · {TYPE_HINT[question.type]}
             </p>
@@ -578,7 +575,9 @@ export function SetSession({
             )}
           </section>
         }
-        feedback={feedback && <FeedbackPanel feedback={feedback} className="" />}
+        feedback={
+          feedback && <FeedbackPanel feedback={feedback} className={STAGE_FEEDBACK_CLASS} />
+        }
         actions={
           <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#E5EBF3] bg-white/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
             <div className="mx-auto flex max-w-[720px] justify-end sm:max-w-none">

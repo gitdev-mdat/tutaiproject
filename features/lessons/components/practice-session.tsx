@@ -36,7 +36,7 @@ import {
   type Summaries,
 } from '../lib/study-plan';
 import { nextStepLabel } from './lesson-practice-card';
-import { PracticeStage } from './practice-stage';
+import { PracticeStage, STAGE_FEEDBACK_CLASS } from './practice-stage';
 
 type Lesson = { id: string; title: string; chapterTitle: string };
 export type Answer =
@@ -1023,10 +1023,7 @@ function PracticeFlow({
       <PracticeStage
         questionId={question.id}
         question={
-          <section
-            className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
-            data-testid="practice-question"
-          >
+          <section data-testid="practice-question">
             <p className="text-[13px] font-medium text-slate-500">
               Câu {index + 1} · {TYPE_HINT[question.type]}
             </p>
@@ -1065,7 +1062,7 @@ function PracticeFlow({
         }
         feedback={
           feedback && (
-            <FeedbackPanel feedback={feedback} className="">
+            <FeedbackPanel feedback={feedback} className={STAGE_FEEDBACK_CLASS}>
               {!feedback.correct && (
                 <LessonAssist
                   key={question.id}
