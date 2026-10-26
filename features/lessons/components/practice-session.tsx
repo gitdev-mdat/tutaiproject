@@ -36,6 +36,7 @@ import {
   type Summaries,
 } from '../lib/study-plan';
 import { nextStepLabel } from './lesson-practice-card';
+import { PracticeStage, STAGE_FEEDBACK_CLASS } from './practice-stage';
 
 type Lesson = { id: string; title: string; chapterTitle: string };
 export type Answer =
@@ -87,11 +88,20 @@ const OriginContext = React.createContext<PracticeOrigin>('roadmap');
  * Roadmap, a bookmark, a typed URL) it returns to the lesson's journey on the
  * Roadmap. Browser Back follows real history on its own.
  */
-function Shell({ lesson, children }: { lesson: Lesson; children: React.ReactNode }) {
+function Shell({
+  lesson,
+  wide = false,
+  children,
+}: {
+  lesson: Lesson;
+  /** The question view, which puts the solution beside the question where there is room. */
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
   const program = React.useContext(ProgramContext);
   const origin = React.useContext(OriginContext);
   return (
-    <div className="mx-auto w-full max-w-[720px] pb-28 sm:pb-12">
+    <div className={`mx-auto w-full pb-28 sm:pb-12 ${wide ? 'max-w-[1180px]' : 'max-w-[720px]'}`}>
       <p className="-mt-12 ml-12 flex min-h-10 items-center md:mt-0 lg:ml-0 lg:min-h-0">
         {origin === 'practice' ? (
           <Link
@@ -149,16 +159,16 @@ function ChoiceButton({
 }) {
   const tone =
     state === 'correct'
-      ? 'border-emerald-400 bg-emerald-50'
+      ? 'border-emerald-500 bg-emerald-50'
       : state === 'wrong'
-        ? 'border-rose-300 bg-rose-50'
+        ? 'border-rose-400 bg-rose-50'
         : state === 'missed'
-          ? 'border-emerald-300 border-dashed bg-white'
+          ? 'border-emerald-500 bg-white'
           : selected
             ? 'border-[#0052FF] bg-[#F4F8FF] ring-2 ring-[#0052FF]/15'
             : 'border-[#E5EBF3] bg-white hover:border-blue-200 hover:bg-[#F8FAFF]';
   const badge =
-    state === 'correct'
+    state === 'correct' || state === 'missed'
       ? 'bg-emerald-600 text-white'
       : state === 'wrong'
         ? 'bg-rose-600 text-white'
@@ -188,9 +198,7 @@ function ChoiceButton({
       </span>
       <span className="pt-1 text-[15px] leading-6 text-[#091224]">
         <QuestionMath text={content} />
-        {state === 'missed' && (
-          <span className="block text-xs font-semibold text-emerald-700">Đáp án đúng</span>
-        )}
+        {state === 'missed' && <span className="sr-only"> (đáp án đúng)</span>}
       </span>
     </button>
   );
@@ -286,8 +294,8 @@ export function QuestionBody({
               className={`rounded-2xl border p-3.5 sm:p-4 ${
                 result
                   ? result.correct
-                    ? 'border-emerald-300 bg-emerald-50/60'
-                    : 'border-rose-300 bg-rose-50/60'
+                    ? 'border-[#E5EBF3] bg-white'
+                    : 'border-rose-400 bg-rose-50'
                   : 'border-[#E5EBF3] bg-white'
               }`}
             >
@@ -311,9 +319,9 @@ export function QuestionBody({
                       aria-pressed={selected}
                       className={`h-11 rounded-xl border text-sm font-bold transition ${
                         selected
-                          ? value
-                            ? 'border-emerald-600 bg-emerald-600 text-white'
-                            : 'border-rose-600 bg-rose-600 text-white'
+                          ? locked
+                            ? 'border-slate-300 bg-slate-100 text-[#091224]'
+                            : 'border-[#0052FF] bg-[#0052FF] text-white'
                           : 'border-[#E5EBF3] bg-white text-slate-700 hover:bg-slate-50'
                       } disabled:cursor-default`}
                       data-testid={`statement-${index}-${value ? 'true' : 'false'}`}
@@ -364,18 +372,10 @@ export function QuestionBody({
   );
 }
 
-/** "Em chọn B · Đáp án đúng: A" for a missed choice question, so the gap is stated, not hunted for. */
-function AnswerComparison({ feedback }: { feedback: PracticeFeedback }) {
-  const given = feedback.response as Answer;
+/** "A" for a missed choice question: the right answer, stated rather than hunted for. */
+function rightChoices(feedback: PracticeFeedback): string | null {
   const right = (feedback.answer as Answer)?.choices;
-  const chosen = given?.choice ? [given.choice] : given?.choices;
-  if (!chosen?.length || !right?.length) return null;
-  return (
-    <p className="mt-1.5 pl-7 text-sm text-amber-950" data-testid="answer-comparison">
-      Em chọn <strong>{chosen.join(', ')}</strong> · Đáp án đúng:{' '}
-      <strong className="text-emerald-700">{right.join(', ')}</strong>
-    </p>
-  );
+  return right?.length ? right.join(', ') : null;
 }
 
 /**
@@ -402,23 +402,16 @@ function SolutionSteps({ text }: { text: string }) {
   const steps = solutionLines(text);
   if (steps.length < 2)
     return (
-      <div className="mt-1.5 text-[15px] leading-7 whitespace-pre-line text-slate-800">
+      <div className="mt-2 text-[15px] leading-7 whitespace-pre-line text-slate-800">
         <QuestionMath text={text} />
       </div>
     );
   return (
-    <ol className="mt-2 space-y-1.5" data-testid="solution-steps">
+    <ol className="mt-2 space-y-1" data-testid="solution-steps">
       {steps.map((step, index) => (
-        <li
-          key={`${index}-${step}`}
-          className="flex gap-2.5 text-[15px] leading-7 text-slate-800 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-1 motion-safe:fill-mode-both motion-safe:duration-300"
-          style={{ animationDelay: `${120 + index * 140}ms` }}
-        >
-          <span
-            className="mt-1.5 grid size-5 shrink-0 place-items-center rounded-full bg-white text-[11px] font-bold text-slate-500 ring-1 ring-black/10"
-            aria-hidden="true"
-          >
-            {index + 1}
+        <li key={`${index}-${step}`} className="flex gap-3 text-[15px] leading-7 text-slate-800">
+          <span className="w-5 shrink-0 text-right text-slate-400 tabular-nums" aria-hidden="true">
+            {index + 1}.
           </span>
           <span className="min-w-0 flex-1">
             <QuestionMath text={step} />
@@ -433,10 +426,13 @@ export function FeedbackPanel({
   feedback,
   id = 'practice-feedback',
   audience = 'student',
+  className = 'mt-5',
   children,
 }: {
   feedback: PracticeFeedback;
   id?: string;
+  /** Spacing from what comes before it; none when it stands in its own column. */
+  className?: string;
   /** Admin previews also see how the solution guide was verified. */
   audience?: 'student' | 'admin';
   /** Extra help under the solution, e.g. "Vì sao em sai?". */
@@ -446,21 +442,25 @@ export function FeedbackPanel({
     <div
       id={id}
       tabIndex={-1}
-      className={`mt-5 rounded-2xl border p-4 outline-none sm:p-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 ${feedback.correct ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
+      className={`${className} rounded-[24px] border border-[#E5EBF3] bg-white p-5 outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 sm:p-6`}
       role="status"
       data-testid="feedback"
       data-correct={feedback.correct}
     >
       <p
-        className={`flex items-center gap-2 text-[16px] font-bold ${feedback.correct ? 'text-emerald-800' : 'text-amber-900'}`}
+        className={`text-[16px] font-bold ${feedback.correct ? 'text-emerald-700' : 'text-rose-700'}`}
       >
-        {feedback.correct ? <CheckCircle2 className="size-5" /> : <XCircle className="size-5" />}
-        {feedback.correct ? 'Chính xác!' : 'Chưa đúng, xem lời giải nhé'}
+        {feedback.correct ? 'Chính xác' : 'Chưa đúng'}
+        {!feedback.correct && rightChoices(feedback) && (
+          <span className="font-semibold text-slate-700" data-testid="answer-comparison">
+            {' '}
+            · Đáp án đúng là {rightChoices(feedback)}
+          </span>
+        )}
       </p>
-      {!feedback.correct && <AnswerComparison feedback={feedback} />}
       {feedback.explanation && (
-        <div className="mt-3 border-t border-black/5 pt-3">
-          <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">Lời giải</p>
+        <div className="mt-4">
+          <h3 className="text-[15px] font-semibold text-[#091224]">Lời giải</h3>
           {feedback.guide ? (
             <SolutionGuideView
               guide={feedback.guide}
@@ -473,7 +473,7 @@ export function FeedbackPanel({
           )}
         </div>
       )}
-      {children && <div className="mt-3 border-t border-black/5 pt-3">{children}</div>}
+      {children && <div className="mt-4 border-t border-[#EEF2F7] pt-3">{children}</div>}
     </div>
   );
 }
@@ -1000,7 +1000,7 @@ function PracticeFlow({
   const canCheck = isComplete(question, answer) && !submitting;
 
   return (
-    <Shell lesson={lesson}>
+    <Shell lesson={lesson} wide>
       <div className="mt-4 flex items-center gap-3">
         <div
           className="h-2 flex-1 overflow-hidden rounded-full bg-[#E5EBF3]"
@@ -1020,83 +1020,89 @@ function PracticeFlow({
         </span>
       </div>
 
-      <section
-        className="mt-4 rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
-        data-testid="practice-question"
-      >
-        <p className="text-[13px] font-semibold text-blue-600">
-          Câu {index + 1} · {TYPE_HINT[question.type]}
-        </p>
-        <div
-          role="heading"
-          aria-level={1}
-          ref={headingRef}
-          tabIndex={-1}
-          className="mt-2 text-[17px] leading-8 font-semibold whitespace-pre-line text-[#091224] focus:outline-none sm:text-[18px]"
-        >
-          <QuestionPrompt
-            questionId={question.id}
-            stem={question.stem}
-            content={question.content}
-          />
-        </div>
-        <div className="mt-5">
-          <QuestionBody
-            question={question}
-            answer={answer}
-            feedback={feedback}
-            setAnswer={(next) => setAnswers((all) => ({ ...all, [question.id]: next }))}
-          />
-        </div>
-        {feedback && (
-          <FeedbackPanel feedback={feedback}>
-            {!feedback.correct && (
-              <LessonAssist
-                key={question.id}
-                target={{ kind: 'practice', attemptId: view.attempt.id, questionId: question.id }}
-                topic={`Câu ${index + 1}`}
-                label="Vì sao em sai?"
+      <PracticeStage
+        questionId={question.id}
+        question={
+          <section data-testid="practice-question">
+            <p className="text-[13px] font-medium text-slate-500">
+              Câu {index + 1} · {TYPE_HINT[question.type]}
+            </p>
+            <div
+              role="heading"
+              aria-level={1}
+              ref={headingRef}
+              tabIndex={-1}
+              className="mt-2 text-[17px] leading-8 font-semibold whitespace-pre-line text-[#091224] focus:outline-none sm:text-[18px]"
+            >
+              <QuestionPrompt
+                questionId={question.id}
+                stem={question.stem}
+                content={question.content}
               />
+            </div>
+            <div className="mt-5">
+              <QuestionBody
+                question={question}
+                answer={answer}
+                feedback={feedback}
+                setAnswer={(next) => setAnswers((all) => ({ ...all, [question.id]: next }))}
+                compact
+              />
+            </div>
+            {submitError && (
+              <p
+                className="mt-4 text-sm font-medium text-rose-700"
+                role="alert"
+                data-testid="submit-error"
+              >
+                {submitError}
+              </p>
             )}
-          </FeedbackPanel>
-        )}
-        {submitError && (
-          <p
-            className="mt-4 text-sm font-medium text-rose-700"
-            role="alert"
-            data-testid="submit-error"
-          >
-            {submitError}
-          </p>
-        )}
-      </section>
-
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#E5EBF3] bg-white/95 p-3 backdrop-blur sm:static sm:mt-4 sm:border-0 sm:bg-transparent sm:p-0">
-        <div className="mx-auto flex max-w-[720px] justify-end">
-          {feedback ? (
-            <button
-              type="button"
-              onClick={advance}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] sm:w-auto"
-              data-testid="practice-next"
-            >
-              {view.attempt.status === 'COMPLETED' ? 'Xem kết quả' : 'Câu tiếp theo'}
-              <ArrowRight className="size-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void check()}
-              disabled={!canCheck}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:bg-slate-300 sm:w-auto"
-              data-testid="practice-check"
-            >
-              {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
-              Kiểm tra
-            </button>
-          )}
-        </div>
-      </div>
+          </section>
+        }
+        feedback={
+          feedback && (
+            <FeedbackPanel feedback={feedback} className={STAGE_FEEDBACK_CLASS}>
+              {!feedback.correct && (
+                <LessonAssist
+                  key={question.id}
+                  target={{ kind: 'practice', attemptId: view.attempt.id, questionId: question.id }}
+                  topic={`Câu ${index + 1}`}
+                  label="Vì sao em sai?"
+                />
+              )}
+            </FeedbackPanel>
+          )
+        }
+        actions={
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#E5EBF3] bg-white/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+            <div className="mx-auto flex max-w-[720px] justify-end sm:max-w-none">
+              {feedback ? (
+                <button
+                  type="button"
+                  onClick={advance}
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] sm:w-auto"
+                  data-testid="practice-next"
+                >
+                  {view.attempt.status === 'COMPLETED' ? 'Xem kết quả' : 'Câu tiếp theo'}
+                  <ArrowRight className="size-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void check()}
+                  disabled={!canCheck}
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-[15px] font-bold text-white hover:bg-[#0044CC] disabled:bg-slate-300 sm:w-auto"
+                  data-testid="practice-check"
+                >
+                  {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Kiểm tra
+                </button>
+              )}
+            </div>
+          </div>
+        }
+      />
     </Shell>
   );
 }

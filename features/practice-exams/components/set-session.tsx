@@ -23,6 +23,7 @@ import {
   isComplete,
   type Answer,
 } from '@/features/lessons/components/practice-session';
+import { PracticeStage, STAGE_FEEDBACK_CLASS } from '@/features/lessons/components/practice-stage';
 import { practiceHref } from '@/features/lessons/lib/study-plan';
 import type { PracticeFeedback } from '@/lib/practice/grading';
 import type { SetContext } from '@/lib/practice/practice-catalog';
@@ -50,9 +51,21 @@ const plusClass =
 const secondaryClass =
   'inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D5DEEA] bg-white px-5 text-[15px] font-semibold text-slate-700 hover:bg-slate-50';
 
-function Shell({ context, children }: { context: SetContext; children: React.ReactNode }) {
+function Shell({
+  context,
+  wide = false,
+  children,
+}: {
+  context: SetContext;
+  /** The question view, which puts the solution beside the question where there is room. */
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="mx-auto w-full max-w-[720px] pb-28 sm:pb-12" data-testid="set-page">
+    <div
+      className={`mx-auto w-full pb-28 sm:pb-12 ${wide ? 'max-w-[1180px]' : 'max-w-[720px]'}`}
+      data-testid="set-page"
+    >
       <p className="-mt-12 ml-12 flex min-h-10 items-center md:mt-0 lg:ml-0 lg:min-h-0">
         <Link
           href={practicePageHref(context.program, 'chapter')}
@@ -498,7 +511,7 @@ export function SetSession({
   const answered = Object.keys(view.feedback).length;
   const canCheck = isComplete(question, answer) && !busy;
   return (
-    <Shell context={context}>
+    <Shell context={context} wide>
       <div className="mt-4 flex items-center gap-3">
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${plus ? 'bg-[#0A1F5C] text-[#F5B83D]' : 'bg-[#EAF1FF] text-[#0052FF]'}`}
@@ -522,71 +535,78 @@ export function SetSession({
           {index + 1}/{view.questions.length}
         </span>
       </div>
-      <section
-        className="mt-4 rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
-        data-testid="practice-question"
-      >
-        <p className="text-[13px] font-semibold text-blue-600">
-          Câu {index + 1} · {TYPE_HINT[question.type]}
-        </p>
-        <div
-          role="heading"
-          aria-level={2}
-          ref={headingRef}
-          tabIndex={-1}
-          className="mt-2 whitespace-pre-line text-[17px] font-semibold leading-8 text-[#091224] focus:outline-none sm:text-[18px]"
-        >
-          <QuestionPrompt
-            questionId={question.id}
-            stem={question.stem}
-            content={question.content}
-          />
-        </div>
-        <div className="mt-5">
-          <QuestionBody
-            question={question}
-            answer={answer}
-            feedback={feedback}
-            setAnswer={(next) => setAnswers((all) => ({ ...all, [question.id]: next }))}
-          />
-        </div>
-        {feedback && <FeedbackPanel feedback={feedback} />}
-        {submitError && (
-          <p
-            className="mt-4 text-sm font-medium text-rose-700"
-            role="alert"
-            data-testid="submit-error"
-          >
-            {submitError}
-          </p>
-        )}
-      </section>
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#E5EBF3] bg-white/95 p-3 backdrop-blur sm:static sm:mt-4 sm:border-0 sm:bg-transparent sm:p-0">
-        <div className="mx-auto flex max-w-[720px] justify-end">
-          {feedback ? (
-            <button
-              type="button"
-              onClick={advance}
-              className={`${primaryClass} w-full sm:w-auto`}
-              data-testid="practice-next"
+      <PracticeStage
+        questionId={question.id}
+        question={
+          <section data-testid="practice-question">
+            <p className="text-[13px] font-medium text-slate-500">
+              Câu {index + 1} · {TYPE_HINT[question.type]}
+            </p>
+            <div
+              role="heading"
+              aria-level={2}
+              ref={headingRef}
+              tabIndex={-1}
+              className="mt-2 whitespace-pre-line text-[17px] font-semibold leading-8 text-[#091224] focus:outline-none sm:text-[18px]"
             >
-              {view.attempt.status === 'COMPLETED' ? 'Xem kết quả' : 'Câu tiếp theo'}
-              <ArrowRight className="size-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void check()}
-              disabled={!canCheck}
-              className={`${primaryClass} w-full disabled:bg-slate-300 sm:w-auto`}
-              data-testid="practice-check"
-            >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              Kiểm tra
-            </button>
-          )}
-        </div>
-      </div>
+              <QuestionPrompt
+                questionId={question.id}
+                stem={question.stem}
+                content={question.content}
+              />
+            </div>
+            <div className="mt-5">
+              <QuestionBody
+                question={question}
+                answer={answer}
+                feedback={feedback}
+                setAnswer={(next) => setAnswers((all) => ({ ...all, [question.id]: next }))}
+                compact
+              />
+            </div>
+            {submitError && (
+              <p
+                className="mt-4 text-sm font-medium text-rose-700"
+                role="alert"
+                data-testid="submit-error"
+              >
+                {submitError}
+              </p>
+            )}
+          </section>
+        }
+        feedback={
+          feedback && <FeedbackPanel feedback={feedback} className={STAGE_FEEDBACK_CLASS} />
+        }
+        actions={
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[#E5EBF3] bg-white/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+            <div className="mx-auto flex max-w-[720px] justify-end sm:max-w-none">
+              {feedback ? (
+                <button
+                  type="button"
+                  onClick={advance}
+                  className={`${primaryClass} w-full sm:w-auto`}
+                  data-testid="practice-next"
+                >
+                  {view.attempt.status === 'COMPLETED' ? 'Xem kết quả' : 'Câu tiếp theo'}
+                  <ArrowRight className="size-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void check()}
+                  disabled={!canCheck}
+                  className={`${primaryClass} w-full disabled:bg-slate-300 sm:w-auto`}
+                  data-testid="practice-check"
+                >
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Kiểm tra
+                </button>
+              )}
+            </div>
+          </div>
+        }
+      />
     </Shell>
   );
 }
