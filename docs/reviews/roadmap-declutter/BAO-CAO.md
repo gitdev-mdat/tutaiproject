@@ -6,9 +6,9 @@
 
 | | Trước | Sau |
 | --- | --- | --- |
-| Số chữ trên trang (học sinh đang luyện) | 309 | 128 |
+| Số chữ trên trang (học sinh đang luyện) | 309 | 140 |
 | Chiều cao trang 1440 × 900 | 1143 px (phải cuộn) | 900 px (vừa một màn hình) |
-| Chiều cao trang 390 × 844 | 1816 px | 1270 px |
+| Chiều cao trang 390 × 844 | 1816 px | 1430 px |
 | Vị trí nút "Làm tiếp luyện tập", 1440 | y = 800 | y = 503 |
 | Vị trí nút trên 390 | y = 962 (dưới mép) | y = 544 |
 
@@ -21,6 +21,12 @@ Làm theo bố cục mẫu: phần đầu xanh đậm có tab môn, "Mục tiêu
 Không lấy từ mẫu: hình sách và đồ thị 3D, câu cổ vũ in nghiêng, các icon trang trí. Trên điện thoại, trạng thái bài nằm dưới tên bài để tên không bị gãy dòng.
 
 Trên 1440 và 1280, cột trái là bài tiếp theo, cột phải là danh sách bài; trang vừa một màn hình.
+
+## Vòng 3: hai cột bằng nhau, thêm câu nói động lực
+
+- Trên máy tính, cột trái và cột phải kết thúc ngang nhau. Bên trái là thẻ bài tiếp theo, bên dưới là một ô câu nói, ô này giãn ra cho bằng chiều cao danh sách bài.
+- Ô câu nói đặt dưới thẻ bài tiếp theo, không đặt trên, để nút "Làm tiếp luyện tập" vẫn là thứ đầu tiên học sinh thấy. Trên điện thoại, ô này nằm cuối trang, sau danh sách bài.
+- Mỗi ngày một câu (theo giờ Việt Nam), lấy từ 6 câu: Hồ Chí Minh, Edison, Lenin, Churchill và tục ngữ Việt Nam. Ô nền xanh nhạt, chữ xanh đậm, không có icon hay dấu ngoặc lớn trang trí.
 
 ## Đã bỏ (vòng 1)
 

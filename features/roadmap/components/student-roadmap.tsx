@@ -112,11 +112,15 @@ export function StudentRoadmap({
           Chưa tải được kết quả luyện tập. Bước tiếp theo đang dựa trên phần em đã đọc.
         </p>
       )}
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <div className="lg:sticky lg:top-6">
+      {/* Side by side the two columns end level: the quote takes up what the lesson list leaves. */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
+        <div className="lg:col-start-1 lg:row-start-1">
           <NextStepCard step={step} scope={scope} standings={standings} />
         </div>
-        <LessonList scope={scope} standings={standings} nextLessonId={step?.lesson.id ?? null} />
+        <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <LessonList scope={scope} standings={standings} nextLessonId={step?.lesson.id ?? null} />
+        </div>
+        <DailyQuote className="lg:col-start-1 lg:row-start-2" />
       </div>
     </Page>
   );
@@ -356,6 +360,48 @@ function statusTone(tone: string) {
 
 // ─── Every lesson ────────────────────────────────────────────────────────────
 
+const QUOTES = [
+  { text: 'Không có việc gì khó, chỉ sợ lòng không bền.', by: 'Hồ Chí Minh' },
+  { text: 'Có công mài sắt, có ngày nên kim.', by: 'Tục ngữ Việt Nam' },
+  {
+    text: 'Thiên tài là một phần trăm cảm hứng và chín mươi chín phần trăm mồ hôi.',
+    by: 'Thomas Edison',
+  },
+  { text: 'Học, học nữa, học mãi.', by: 'V. I. Lenin' },
+  { text: 'Đi một ngày đàng, học một sàng khôn.', by: 'Tục ngữ Việt Nam' },
+  {
+    text: 'Thành công không phải là điểm cuối, thất bại không phải là dấu chấm hết: điều quan trọng là can đảm để tiếp tục.',
+    by: 'Winston Churchill',
+  },
+];
+
+/** One quote a day, the same for everyone on that day in Vietnam. */
+function quoteOfTheDay() {
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+  const n = Math.floor(Date.parse(day) / 86_400_000);
+  return QUOTES[n % QUOTES.length];
+}
+
+function DailyQuote({ className = '' }: { className?: string }) {
+  const quote = quoteOfTheDay();
+  return (
+    <figure
+      className={`flex flex-col justify-center rounded-[24px] bg-[#EEF3FF] px-6 py-6 text-[#0A1F5C] sm:px-7 ${className}`}
+      data-testid="roadmap-quote"
+    >
+      <blockquote
+        className="text-[18px] font-semibold leading-relaxed sm:text-[20px]"
+        suppressHydrationWarning
+      >
+        “{quote.text}”
+      </blockquote>
+      <figcaption className="mt-3 text-[14px] text-slate-500" suppressHydrationWarning>
+        {quote.by}
+      </figcaption>
+    </figure>
+  );
+}
+
 function LessonList({
   scope,
   standings,
@@ -369,7 +415,7 @@ function LessonList({
   return (
     <section
       aria-labelledby="roadmap-map"
-      className="rounded-[24px] border border-[#E5EBF3] bg-white p-4 sm:p-6"
+      className="h-full rounded-[24px] border border-[#E5EBF3] bg-white p-4 sm:p-6"
     >
       <h2 id="roadmap-map" className="px-1 text-[18px] font-extrabold text-[#091224]">
         Các bài học
