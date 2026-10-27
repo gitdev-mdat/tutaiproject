@@ -438,9 +438,17 @@ function MobileDrawer({ open, onClose, ctas }: MobileDrawerProps) {
 
 // ─── Public header ────────────────────────────────────────────────────────────
 
-// PublicHeader: rendered inside the Hero — not fixed, not sticky.
-// It scrolls away naturally when the Hero leaves the viewport.
-export function PublicHeader({ ctas = GUEST_CTAS }: { ctas?: LandingCtaModel }) {
+// PublicHeader: rendered inside the Hero. By default it scrolls away
+// naturally when the Hero leaves the viewport; pass sticky to pin it to
+// the top of the viewport instead (the hosting frame must reserve the
+// header height, see --public-header-height).
+export function PublicHeader({
+  ctas = GUEST_CTAS,
+  sticky = false,
+}: {
+  ctas?: LandingCtaModel;
+  sticky?: boolean;
+}) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   // Guests are in the acquisition funnel: the header keeps a visible accented entry point.
   // Signed-in students already get one dominant next action in the hero, so the header
@@ -454,7 +462,13 @@ export function PublicHeader({ ctas = GUEST_CTAS }: { ctas?: LandingCtaModel }) 
     // z-50: the hero frame is an isolated stacking context whose floating artwork uses
     // z-index 20. The header must sit above it so the account dropdown (and its options)
     // can never be overlapped by hero glass cards.
-    <header className="relative z-50 box-border px-[14px] pt-[14px] lg:px-6 lg:pt-4">
+    <header
+      className={
+        sticky
+          ? 'fixed inset-x-0 top-0 z-50 box-border px-[14px] pt-[14px] lg:px-6 lg:pt-4'
+          : 'relative z-50 box-border px-[14px] pt-[14px] lg:px-6 lg:pt-4'
+      }
+    >
       {/* Pill — full-width centered container with no scroll-dependent styles */}
       <div className="mx-auto flex h-14 max-w-[1440px] box-border items-center justify-between rounded-[13px] border border-white/[0.09] bg-[linear-gradient(180deg,rgba(18,36,64,0.80)_0%,rgba(12,26,52,0.76)_100%)] px-2.5 shadow-[0_10px_28px_rgba(0,10,30,0.16)] backdrop-blur-[18px] lg:h-[68px] lg:rounded-[18px] lg:px-6 lg:shadow-[0_14px_40px_rgba(0,10,30,0.18)]">
         {/* Wordmark */}

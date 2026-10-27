@@ -183,6 +183,9 @@ export function PricingPreview({ variant = 'home' }: PricingPreviewProps) {
               </div>
 
               <p className={styles.planDescription}>
+                Cả hai mức giá: 6 tháng 349.000đ · 12 tháng 599.000đ (tiết kiệm 99.000đ).
+              </p>
+              <p className={styles.planDescription}>
                 Học có chiến lược hơn để tiến gần mục tiêu điểm số.
               </p>
             </header>

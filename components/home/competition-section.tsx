@@ -40,6 +40,15 @@ export function CompetitionSection() {
   const [isVisible, setIsVisible] = React.useState(false);
   const competition = featuredCompetition;
 
+  // Same rule as CompetitionCountdown: an upcoming contest with no valid
+  // future start time shows "date to be announced" instead of a countdown
+  // label that contradicts the badge. This also hides the "trước giờ thi"
+  // caption below, which only makes sense next to a live countdown.
+  const sectionStartMs = Date.parse(competition.startAt);
+  const schedulePending =
+    competition.status === 'UPCOMING' &&
+    (Number.isNaN(sectionStartMs) || sectionStartMs <= Date.now());
+
   React.useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
@@ -189,9 +198,12 @@ export function CompetitionSection() {
                   <div>
                     <span>THỜI GIAN CÒN LẠI</span>
                     <strong>
-                      <CompetitionCountdown startAt={competition.startAt} />
+                      <CompetitionCountdown
+                        startAt={competition.startAt}
+                        status={competition.status}
+                      />
                     </strong>
-                    <small>trước giờ thi</small>
+                    {schedulePending ? null : <small>trước giờ thi</small>}
                   </div>
                 </div>
               </div>
