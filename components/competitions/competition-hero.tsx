@@ -213,7 +213,10 @@ export function CompetitionHero({ competition }: CompetitionHeroProps) {
                   {/* Actions & Status */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-auto">
                     <div className="text-sm font-medium text-slate-400">
-                      <CompetitionCountdown startAt={competition.startAt} />
+                      <CompetitionCountdown
+                        startAt={competition.startAt}
+                        status={competition.status}
+                      />
                     </div>
                     <div className="flex flex-col items-center sm:items-end w-full sm:w-auto">
                       <button className="relative overflow-hidden w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1768FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1558EB] transition-all duration-300 shadow-[0_4px_15px_rgba(23,104,255,0.25)] hover:shadow-[0_6px_20px_rgba(23,104,255,0.4)] hover:border-[#7ca8ff]/30 group/btn">

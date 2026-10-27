@@ -7,6 +7,9 @@
   --public-header-height: 84px;
   position: relative;
   display: flex;
+  /* Reserve room for the pinned header so hero content does not jump
+     when the header leaves normal flow (70px below lg, 84px at lg). */
+  padding-top: var(--public-header-height);
   min-height: 100vh;
   min-height: 100svh;
   flex-direction: column;

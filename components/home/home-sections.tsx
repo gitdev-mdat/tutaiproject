@@ -18,7 +18,7 @@ import styles from './home-sections.module.css';
  *
  * Native browser scrolling. No wheel interception, no forced section jumps.
  *
- * - PublicHeader lives here so it scrolls away naturally with Hero.
+ * - PublicHeader is pinned (sticky) so navigation stays reachable past the Hero.
  * - Each section is a plain semantic <section> in document flow.
  * - Section entrance animations are triggered by IntersectionObserver.
  * - The Hero scroll cue scrolls to #knowledge-gps via anchor link.
@@ -29,7 +29,7 @@ export function HomeSections({ landingContext }: { landingContext: StudentLandin
   return (
     <>
       <div className={styles.heroFrame}>
-        <PublicHeader ctas={ctas} />
+        <PublicHeader ctas={ctas} sticky />
         <section id="hero" className="flex min-h-0 flex-1" aria-label="Giới thiệu Tú Tài">
           <HeroKnowledgeAtlas
             primaryCta={ctas.hero.primary}

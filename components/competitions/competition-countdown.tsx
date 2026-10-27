@@ -4,13 +4,15 @@ import * as React from 'react';
 
 interface CompetitionCountdownProps {
   startAt: string;
+  status?: string;
 }
 
-export function CompetitionCountdown({ startAt }: CompetitionCountdownProps) {
+export function CompetitionCountdown({ startAt, status }: CompetitionCountdownProps) {
   const [remaining, setRemaining] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    const target = new Date(startAt).getTime();
+    const target = Date.parse(startAt);
+    if (Number.isNaN(target)) return;
 
     const update = () => {
       setRemaining(Math.max(0, target - Date.now()));
@@ -20,6 +22,18 @@ export function CompetitionCountdown({ startAt }: CompetitionCountdownProps) {
     const interval = window.setInterval(update, 1000);
     return () => window.clearInterval(interval);
   }, [startAt]);
+
+  // One source of truth for the schedule: a contest marked upcoming whose
+  // start time is missing or already past has no countdown to show. Render
+  // the "date to be announced" state instead of contradicting the badge
+  // with "already started" (or a NaN countdown for an invalid date).
+  // When a real future date is set, the live countdown below takes over.
+  const startMs = Date.parse(startAt);
+  const schedulePending =
+    Number.isNaN(startMs) || (status === 'UPCOMING' && startMs <= Date.now());
+  if (schedulePending) {
+    return <time dateTime={startAt}>Lịch thi sẽ được công bố</time>;
+  }
 
   if (remaining === null) return <time aria-label="Đang tải thời gian còn lại">--:--:--</time>;
 
