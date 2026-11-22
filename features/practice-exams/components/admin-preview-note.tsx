@@ -32,6 +32,35 @@ export function AdminPreviewNote({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * One line for a server-verified admin on a student page: why Plus content is
+ * open and what is still missing, without taking a card's worth of the page
+ * the admin is checking. Students never get it.
+ */
+export function AdminPreviewBar({ children }: { children: React.ReactNode }) {
+  return (
+    <aside
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-dashed border-[#C9D3EA] bg-[#F5F7FC] px-3 py-2 text-[12px] leading-5 text-slate-600"
+      data-testid="admin-preview-note"
+      aria-label="Ghi chú cho Admin"
+    >
+      <span className="inline-flex items-center gap-1 font-bold text-[#0A1F5C]">
+        <ShieldCheck className="size-3.5" aria-hidden="true" /> Admin
+      </span>
+      <span className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
+        {children}
+      </span>
+      <Link
+        href={PREMIUM_READINESS_HREF}
+        className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-md font-bold text-[#0A1F5C] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        data-testid="admin-readiness-link"
+      >
+        Nội dung còn thiếu <ArrowRight className="size-3" aria-hidden="true" />
+      </Link>
+    </aside>
+  );
+}
+
 /** Small label on a Plus surface opened through admin preview. */
 export function AdminPreviewTag() {
   return (
