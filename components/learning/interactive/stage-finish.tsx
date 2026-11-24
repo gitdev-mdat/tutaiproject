@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { BookOpen, Check, ChevronDown, RotateCcw } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, CircleCheck, RotateCcw } from 'lucide-react';
 import type { InteractivePlan } from '@/lib/learning/interactive-lesson';
 import type { ActivityOutcome } from '@/features/lessons/lib/lesson-progress';
 import type { Celebration } from '@/lib/learning/lesson-celebration';
@@ -11,9 +11,11 @@ import { playReward } from './sound';
 import { StreakPanel, type StreakState } from './streak';
 
 /**
- * The end of the lesson, kept calm: one status card (done, how it went, the
- * learning streak), the next step beside it, then what to remember and the
- * ways to review.
+ * The end of the lesson as one sheet that answers three questions in order:
+ * is it done (status, how it went, the streak), what to remember (the
+ * teacher's recap, objectives on request), and what to do next (the
+ * practice or next lesson, one primary action), with reviewing a part kept
+ * beside it and quieter.
  *
  * Only the first finish celebrates (see lib/learning/lesson-celebration):
  * the check pops, a short firework at 0.3 s (about 3 s, never takes a click)
@@ -32,7 +34,7 @@ export function FinishStage({
   celebrate,
   celebration,
   streak,
-  onRestart,
+  onReview,
   onRetryChallenge,
   sound,
 }: {
@@ -44,7 +46,8 @@ export function FinishStage({
   /** The one celebration of this page view (run 0 for none) and when it started. */
   celebration: Celebration;
   streak: StreakState;
-  onRestart: () => void;
+  /** Opens a part (by index) to review it with the student's answers. */
+  onReview: (index: number) => void;
   onRetryChallenge: (() => void) | null;
   sound: boolean;
 }) {
@@ -85,50 +88,53 @@ export function FinishStage({
   const fresh = celebrate;
   const mode = run ? 'celebrate' : fresh ? 'summary' : 'revisit';
 
+  const parts = plan.stages.filter((stage) => stage.kind !== 'finish');
+
   return (
-    <div className="mx-auto max-w-[1040px]" data-testid="finish" data-run={run} data-mode={mode}>
+    <div className="mt-1" data-testid="finish" data-run={run} data-mode={mode}>
       <Fireworks run={run} delay={FIREWORKS_AT} />
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:items-start md:gap-6">
-        <div
-          className={`rounded-2xl border bg-white p-4 sm:p-5 md:col-start-1 md:row-start-1 ${
-            fresh
-              ? 'border-emerald-200 shadow-[0_12px_32px_rgba(16,185,129,0.10)]'
-              : 'border-slate-200'
-          }`}
+      {/* One sheet: what was done and what to remember on the left, what to do
+          next and how to review on the right. On phones it reads in that
+          order: done, next, review, remember. */}
+      <article className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(9,18,36,0.04),0_16px_40px_-12px_rgba(9,18,36,0.08)] lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,392px)] lg:grid-rows-[auto_1fr]">
+        <header
+          className="px-5 pb-5 pt-6 sm:px-8 sm:pt-8 lg:col-start-1 lg:row-start-1"
           data-testid="finish-summary"
         >
-          <div className="flex items-start gap-3.5">
-            <span
-              className={`grid shrink-0 place-items-center rounded-full bg-emerald-500 text-white ${
-                fresh ? 'size-11' : 'size-9'
-              } ${run ? 'tt-pop' : ''}`}
-              aria-hidden="true"
-            >
-              <Check className={fresh ? 'size-6' : 'size-5'} strokeWidth={3} />
-            </span>
-            <div className="min-w-0">
-              <h3
-                className={`font-extrabold leading-snug text-[#091224] ${
-                  fresh ? 'text-[20px] sm:text-[22px]' : 'text-[17px] sm:text-[18px]'
-                }`}
-                data-testid="finish-title"
+          {fresh && (
+            <p className="mb-2.5 flex items-center gap-2 text-[13px] font-bold text-emerald-700">
+              <span
+                className={`grid size-6 place-items-center rounded-full bg-emerald-500 text-white ${run ? 'tt-pop' : ''}`}
+                aria-hidden="true"
               >
-                {fresh ? 'Tuyệt vời! Em đã tự khám phá cả bài.' : 'Em đã học xong bài này'}
-              </h3>
-              {values.length > 0 && (
-                <p
-                  className="mt-0.5 text-[14px] leading-6 text-slate-600"
-                  data-testid="finish-stats"
-                >
-                  {firstTry}/{values.length} câu đúng ngay lần đầu
-                  {helped ? ` · ${helped} câu đúng nhờ gợi ý` : ''}
-                  {shown ? ` · ${shown} câu đã xem đáp án` : ''}
-                </p>
-              )}
-            </div>
-          </div>
+                <Check className="size-3.5" strokeWidth={3} />
+              </span>
+              Hoàn thành bài học
+            </p>
+          )}
+          <h3
+            className="flex items-center gap-2.5 text-[24px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[28px]"
+            data-testid="finish-title"
+          >
+            {!fresh && (
+              <span
+                className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-500 text-white"
+                aria-hidden="true"
+              >
+                <Check className="size-4" strokeWidth={3} />
+              </span>
+            )}
+            {fresh ? 'Tuyệt vời! Em đã tự khám phá cả bài.' : 'Em đã học xong bài này'}
+          </h3>
+          {values.length > 0 && (
+            <p className="mt-1.5 text-[15px] leading-6 text-slate-600" data-testid="finish-stats">
+              {firstTry}/{values.length} câu đúng ngay lần đầu
+              {helped ? ` · ${helped} câu đúng nhờ gợi ý` : ''}
+              {shown ? ` · ${shown} câu đã xem đáp án` : ''}
+            </p>
+          )}
           {/* During the celebration the streak row opens as it appears, so the
-              card holds no empty gap before it. */}
+              header holds no empty gap before it. */}
           <div
             className={run ? 'tt-expand' : ''}
             style={run ? { animationDelay: `${revealDelay}s` } : undefined}
@@ -137,88 +143,146 @@ export function FinishStage({
               <StreakPanel state={streak} run={run} revealDelay={revealDelay} quiet={!fresh} />
             </div>
           </div>
-        </div>
+        </header>
 
-        {practiceCard && (
-          <div
-            className="min-w-0 md:sticky md:top-6 md:col-start-2 md:row-span-2 md:row-start-1"
-            data-testid="finish-next"
+        <aside
+          className="border-t border-slate-100 bg-[#F6F8FC] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l lg:border-t-0"
+          aria-label="Học tiếp"
+        >
+          {practiceCard && (
+            <div className="px-5 py-6 sm:px-8 lg:px-7 lg:pt-8" data-testid="finish-next">
+              {practiceCard}
+            </div>
+          )}
+          <nav
+            aria-labelledby="finish-review-title"
+            className={`px-5 pb-6 sm:px-8 lg:px-7 ${practiceCard ? 'border-t border-slate-200/70 pt-5' : 'pt-6'}`}
+            data-testid="finish-review"
           >
-            {practiceCard}
-          </div>
-        )}
-
-        <div className="min-w-0 md:col-start-1 md:row-start-2">
-          {plan.recap.length > 0 && (
-            <details
-              className="group rounded-2xl border border-slate-200 bg-white"
-              open
-              data-testid="recap"
+            <p
+              id="finish-review-title"
+              className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500"
             >
-              <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[15px] font-bold text-[#091224] [&::-webkit-details-marker]:hidden">
-                <ChevronDown
-                  className="size-4 transition-transform group-open:rotate-180"
-                  aria-hidden="true"
-                />
-                Điều cần nhớ
-              </summary>
-              <ol className="space-y-2.5 px-4 pb-4">
-                {plan.recap.map((item, index) => (
-                  <li key={index} className="flex gap-3">
-                    <span className="w-4 shrink-0 text-right text-[15px] font-extrabold leading-7 tabular-nums text-blue-600">
+              Ôn lại bài
+            </p>
+            <p className="mt-1 hidden text-[13px] leading-5 text-slate-500 lg:block">
+              Mở lại một phần để xem câu trả lời của em. Bài vẫn được tính là đã học.
+            </p>
+            <ol className="mt-3 flex flex-wrap gap-2 lg:-mx-2 lg:mt-2 lg:block">
+              {parts.map((stage, index) => (
+                <li key={stage.id}>
+                  <button
+                    type="button"
+                    onClick={() => onReview(index)}
+                    className="group flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1.5 pr-3.5 text-left hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:w-full lg:gap-3 lg:rounded-lg lg:border-0 lg:bg-transparent lg:px-2 lg:hover:bg-white"
+                    data-testid={index === 0 ? 'restart' : `review-${stage.id}`}
+                  >
+                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-[12px] font-bold tabular-nums text-emerald-700">
                       {index + 1}
                     </span>
-                    <span className="text-[15px] leading-7 text-slate-800">
-                      <InlineText text={item} />
+                    <span className="min-w-0 truncate text-[14px] lg:flex-1">
+                      <span className="font-semibold text-[#091224]">{PART_NAMES[stage.kind]}</span>
+                      <span className="hidden text-slate-500 lg:inline">
+                        {' · '}
+                        <InlineText text={stage.title} />
+                      </span>
                     </span>
-                  </li>
-                ))}
-              </ol>
-            </details>
-          )}
-          {(plan.objectives.length > 0 || plan.references) && (
-            <details className="group mt-3" data-testid="finish-more">
-              <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-1.5 text-[14px] font-semibold text-slate-500 hover:text-slate-800 [&::-webkit-details-marker]:hidden">
-                <ChevronDown
-                  className="size-4 transition-transform group-open:rotate-180"
-                  aria-hidden="true"
-                />
-                Mục tiêu bài học{plan.references ? ' và tài liệu tham khảo' : ''}
-              </summary>
-              <ul className="mt-1 space-y-1.5 text-[14px] leading-6 text-slate-600">
-                {plan.objectives.map((item, index) => (
-                  <li key={index}>
-                    • <InlineText text={item} />
-                  </li>
-                ))}
-              </ul>
-              {plan.references && (
-                <RichText content={plan.references} className="mt-2 text-[14px] text-slate-500" />
-              )}
-            </details>
-          )}
-          <div className="mt-3 flex flex-wrap gap-2" data-testid="finish-review">
-            <button
-              type="button"
-              onClick={onRestart}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-[14px] font-semibold text-[#091224] hover:border-blue-300 hover:bg-[#F4F8FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              data-testid="restart"
-            >
-              <BookOpen className="size-4" aria-hidden="true" /> Xem lại từ đầu
-            </button>
+                    <ChevronRight
+                      className="hidden size-4 shrink-0 text-slate-300 group-hover:text-blue-600 lg:block"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </li>
+              ))}
+            </ol>
             {onRetryChallenge && (
               <button
                 type="button"
                 onClick={onRetryChallenge}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[14px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="-mx-2 mt-2 flex min-h-10 w-[calc(100%+1rem)] items-center lg:mt-1 gap-3 rounded-lg px-2 text-left text-[14px] font-semibold text-slate-600 hover:bg-white hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 data-testid="retry-challenge"
               >
-                <RotateCcw className="size-4" aria-hidden="true" /> Thử thách lại
+                <span className="grid size-6 shrink-0 place-items-center" aria-hidden="true">
+                  <RotateCcw className="size-4" />
+                </span>
+                Làm lại phần Tự làm, giữ kết quả tốt nhất
               </button>
             )}
-          </div>
-        </div>
-      </div>
+          </nav>
+        </aside>
+
+        {(plan.recap.length > 0 || plan.objectives.length > 0 || plan.references) && (
+          <section
+            aria-labelledby="recap-title"
+            className="border-t border-slate-100 px-5 py-6 sm:px-8 lg:col-start-1 lg:row-start-2 lg:pb-8"
+            data-testid="recap"
+          >
+            {plan.recap.length > 0 && (
+              <>
+                <h3 id="recap-title" className="text-[17px] font-extrabold text-[#091224]">
+                  Điều cần nhớ
+                </h3>
+                <ol className="mt-2 divide-y divide-slate-100">
+                  {plan.recap.map((item, index) => (
+                    <li key={index} className="flex gap-3.5 py-3 first:pt-2 last:pb-0">
+                      <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-lg bg-blue-50 text-[13px] font-extrabold tabular-nums text-blue-700">
+                        {index + 1}
+                      </span>
+                      <span className="min-w-0 text-[16px] leading-7 text-slate-800">
+                        <InlineText text={item} />
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+            {(plan.objectives.length > 0 || plan.references) && (
+              <details
+                className={`group ${plan.recap.length ? 'mt-5 border-t border-slate-100 pt-3' : ''}`}
+                data-testid="finish-more"
+              >
+                <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-1.5 text-[14px] font-semibold text-slate-600 hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+                  <ChevronDown
+                    className="size-4 transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                  {plan.objectives.length > 0
+                    ? `Mục tiêu em đã đạt (${plan.objectives.length})`
+                    : 'Tài liệu tham khảo'}
+                </summary>
+                {plan.objectives.length > 0 && (
+                  <ul className="mt-1 space-y-1.5">
+                    {plan.objectives.map((item, index) => (
+                      <li key={index} className="flex gap-2.5 text-[15px] leading-6 text-slate-700">
+                        <CircleCheck
+                          className="mt-1 size-4 shrink-0 text-emerald-600"
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0">
+                          <InlineText text={item} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {plan.references && (
+                  <RichText content={plan.references} className="mt-3 text-[14px] text-slate-500" />
+                )}
+              </details>
+            )}
+          </section>
+        )}
+      </article>
     </div>
   );
 }
+
+/** The short name of each kind of part, as on the lesson's progress bar. */
+export const PART_NAMES = {
+  shape: 'Quan sát',
+  slope: 'Khám phá',
+  flat: 'Mở rộng',
+  solve: 'Áp dụng',
+  challenge: 'Tự làm',
+  finish: 'Hoàn thành',
+} as const;

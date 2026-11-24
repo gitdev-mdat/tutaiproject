@@ -1,0 +1,164 @@
+{
+ "shots": [
+  {
+   "n": "01",
+   "file": "01-truoc-1440-03-luyen-tap-da-mo-0-cau.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Trước: màn Hoàn thành hiện tại (phiên luyện tập vừa mở, 0 câu)",
+   "full": false
+  },
+  {
+   "n": "02",
+   "file": "02-sau-1440-01-vua-hoan-thanh.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Sau: vừa hoàn thành lần đầu (sau hiệu ứng)",
+   "full": false
+  },
+  {
+   "n": "03",
+   "file": "03-sau-1366-02-xem-lai-chua-luyen-tap.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Chưa bắt đầu luyện tập",
+   "full": false
+  },
+  {
+   "n": "04",
+   "file": "04-sau-1440-04-dang-luyen-tap.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Đang luyện tập (2/6 câu)",
+   "full": false
+  },
+  {
+   "n": "05",
+   "file": "05-sau-1440-05-luyen-tap-xong.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Luyện tập đạt, bước tiếp theo là bài kế",
+   "full": false
+  },
+  {
+   "n": "06",
+   "file": "06-sau-1920-02-xem-lai-chua-luyen-tap.png",
+   "w": "1920",
+   "h": 1080,
+   "label": "Mở lại bài đã học",
+   "full": false
+  },
+  {
+   "n": "07",
+   "file": "07-sau-1366-05-luyen-tap-xong.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Có bài tiếp theo (nút chính mở bài kế)",
+   "full": false
+  },
+  {
+   "n": "08",
+   "file": "08-sau-1440-06-tom-tat-dai.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Điều cần nhớ dài (9 ý)",
+   "full": false
+  },
+  {
+   "n": "09",
+   "file": "09-sau-390-01-vua-hoan-thanh.png",
+   "w": "390",
+   "h": 844,
+   "label": "Điện thoại: vừa hoàn thành",
+   "full": false
+  },
+  {
+   "n": "10",
+   "file": "10-sau-390-04-dang-luyen-tap-full.png",
+   "w": "390",
+   "h": 844,
+   "label": "Điện thoại: luyện tập và ôn lại (toàn trang)",
+   "full": true
+  },
+  {
+   "n": "11",
+   "file": "11-sau-360-07-tom-tat-dai-xem-lai-full.png",
+   "w": "360",
+   "h": 640,
+   "label": "Điện thoại 360: Điều cần nhớ dài (toàn trang)",
+   "full": true
+  },
+  {
+   "n": "12",
+   "file": "12-sau-390-02-xem-lai-chua-luyen-tap.png",
+   "w": "390",
+   "h": 844,
+   "label": "Điện thoại: mở lại bài đã học",
+   "full": false
+  },
+  {
+   "n": "x1",
+   "file": "x1-sau-1366-03-luyen-tap-da-mo-0-cau.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phiên luyện tập đã mở, chưa làm câu nào",
+   "full": false
+  },
+  {
+   "n": "x2",
+   "file": "x2-sau-1440-08-khong-co-luyen-tap.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Bài không có câu luyện tập",
+   "full": false
+  },
+  {
+   "n": "x3",
+   "file": "x3-sau-360-03-luyen-tap-da-mo-0-cau.png",
+   "w": "360",
+   "h": 640,
+   "label": "Điện thoại 360: phiên đã mở, 0 câu",
+   "full": false
+  },
+  {
+   "n": "x4",
+   "file": "x4-sau-1920-06-tom-tat-dai.png",
+   "w": "1920",
+   "h": 1080,
+   "label": "1920: Điều cần nhớ dài",
+   "full": false
+  }
+ ],
+ "pairs": [
+  {
+   "file": "truoc-sau/1440-03-luyen-tap-da-mo-0-cau.png",
+   "label": "Phiên luyện tập vừa mở, 0 câu (trạng thái trong ảnh của chủ dự án)",
+   "w": "1440"
+  },
+  {
+   "file": "truoc-sau/1366-02-xem-lai-chua-luyen-tap.png",
+   "label": "Mở lại bài đã học, chưa luyện tập",
+   "w": "1366"
+  },
+  {
+   "file": "truoc-sau/1920-01-vua-hoan-thanh.png",
+   "label": "Vừa hoàn thành lần đầu",
+   "w": "1920"
+  },
+  {
+   "file": "truoc-sau/1440-06-tom-tat-dai-full.png",
+   "label": "Điều cần nhớ dài (toàn trang)",
+   "w": "1440"
+  },
+  {
+   "file": "truoc-sau/390-02-xem-lai-chua-luyen-tap-full.png",
+   "label": "Điện thoại, mở lại bài (toàn trang)",
+   "w": "390"
+  },
+  {
+   "file": "truoc-sau/1440-08-khong-co-luyen-tap.png",
+   "label": "Bài không có câu luyện tập",
+   "w": "1440"
+  }
+ ]
+}
