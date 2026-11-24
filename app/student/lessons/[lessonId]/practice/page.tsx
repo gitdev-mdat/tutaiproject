@@ -37,7 +37,7 @@ export default async function LessonPracticePage({ params, searchParams }: Props
           href={ROADMAP_HREF}
           className="mt-6 inline-flex h-11 items-center rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white"
         >
-          Về lộ trình
+          Về trang Học
         </Link>
       </div>
     );

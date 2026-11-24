@@ -15,7 +15,7 @@ import {
   passedCount,
   type StatusTone,
 } from '@/lib/practice/catalog-status';
-import { lessonHref, practiceHref } from '@/features/lessons/lib/study-plan';
+import { practiceHref } from '@/features/lessons/lib/study-plan';
 import { AdminPreviewBar } from './admin-preview-note';
 import { DifficultyLadder } from './difficulty-ladder';
 import { PLUS_SURFACE, PlusRibbon, PlusTexture } from './plus-mark';
@@ -97,16 +97,8 @@ function LessonActionLink({ lesson, primary }: { lesson: LessonEntry; primary: b
   const describedBy = `lesson-${lesson.id}`;
   switch (action.kind) {
     case 'read':
-      return (
-        <Link
-          href={lessonHref(lesson.id)}
-          className={quietButton}
-          data-testid="lesson-read"
-          aria-describedby={describedBy}
-        >
-          <BookOpen className="size-4" aria-hidden="true" /> Học bài
-        </Link>
-      );
+      // Reading lives on the Học page; a lesson without questions only shows its status here.
+      return null;
     case 'resume':
       return (
         <Link
@@ -545,7 +537,7 @@ export function PracticeCatalogView({
             Chưa có bài nào để luyện
           </h2>
           <Link href="/student/roadmap" className={`${quietButton} mt-5`}>
-            Về Lộ trình
+            Về trang Học
           </Link>
         </section>
       ) : (

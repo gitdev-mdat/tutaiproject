@@ -131,7 +131,7 @@ function Shell({
             data-origin="roadmap"
           >
             <ArrowLeft className="size-3.5 shrink-0" aria-hidden="true" />
-            <span className="truncate">{program ? `Hành trình ${program.title}` : 'Lộ trình'}</span>
+            <span className="truncate">{program ? `Học ${program.title}` : 'Học'}</span>
           </Link>
         )}
       </p>
@@ -579,7 +579,7 @@ function Results({
                   className={primaryClass}
                   data-testid="next-lesson"
                 >
-                  {plan?.label ?? 'Xem lộ trình của em'} <ArrowRight className="size-4" />
+                  {plan?.label ?? 'Về trang Học'} <ArrowRight className="size-4" />
                 </Link>
               </>
             ) : (

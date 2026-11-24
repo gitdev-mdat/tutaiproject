@@ -226,7 +226,7 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
                 data-testid="journey-back"
               >
                 <ArrowLeft className="size-3.5 shrink-0" aria-hidden="true" />
-                <span className="truncate">{props.backLabel ?? 'Lộ trình'}</span>
+                <span className="truncate">{props.backLabel ?? 'Học'}</span>
               </Link>
             )}
             <span className="min-w-0 shrink-0 truncate" data-testid="lesson-trail">

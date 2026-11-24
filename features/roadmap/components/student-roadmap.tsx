@@ -4,21 +4,21 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, ChevronDown } from 'lucide-react';
 import { useStudentShell } from '@/components/student/student-shell';
-import { useLessonProgress } from '@/features/lessons/lib/lesson-progress';
+import {
+  lessonLearningState,
+  useLessonProgress,
+  type LessonLearningState,
+} from '@/features/lessons/lib/lesson-progress';
 import {
   lessonHref,
-  lessonStanding,
-  pickNextStep,
-  planProgress,
+  nextLessonToRead,
+  PRACTICE_HREF,
   programHref,
+  readingLabel,
   ROADMAP_HREF,
-  standingLabel,
-  type LessonStanding,
-  type NextStep,
+  type ReadingStep,
   type StudyScope,
-  type Summaries,
 } from '@/features/lessons/lib/study-plan';
-import type { LessonProgressState } from '@/features/lessons/lib/lesson-progress';
 import type { ProgramBasis } from '@/features/lessons/lib/program-match';
 
 /** Why the Roadmap shows this program; see program-match. */
@@ -31,27 +31,19 @@ export interface RoadmapChoice {
 }
 
 /**
- * The Roadmap is the student's one place to learn: every published program
- * (a subject's lessons for one grade), how far they have come and the one
- * step to take next. Lessons open from it and lead back to it.
- *
- * It shows what a student acts on and little else: the program and its
- * progress, the next lesson with one button, and every lesson to open.
- * Rules and reasons are not spelled out on the page; each lesson's status
- * line and the button's label carry them.
+ * "Học": the student's place to read lessons, and only that. It shows the
+ * lesson to read next with one button and every lesson with how far it has
+ * been read. Practice (results, "làm tiếp", wrong answers) lives on the
+ * "Luyện tập" page, so the two pages never offer the same thing.
  */
 export function StudentRoadmap({
   programs,
   program: scope,
   choice,
-  summaries,
-  targetScore,
 }: {
   programs: StudyScope[];
   program: StudyScope | null;
   choice?: RoadmapChoice;
-  summaries: Summaries | null;
-  targetScore: number | null;
 }) {
   const { model } = useStudentShell();
   const progress = useLessonProgress(model.identity.id);
@@ -59,68 +51,37 @@ export function StudentRoadmap({
   if (!scope)
     return (
       <Page>
-        <Hero title={choice?.requested ?? 'Lộ trình của em'} targetScore={targetScore} />
         <EmptyProgram />
       </Page>
     );
 
-  const tabs =
-    programs.length > 1 ? (
-      <ProgramTabs
-        programs={programs}
-        current={scope.id}
-        progress={progress}
-        summaries={summaries ?? {}}
-      />
-    ) : null;
+  const chips =
+    programs.length > 1 ? <ProgramChips programs={programs} current={scope.id} /> : null;
 
   if (!progress)
     return (
       <Page>
-        <Hero title={scope.title} targetScore={targetScore} tabs={tabs} />
+        {chips}
         {choice && <ProgramBasisNote choice={choice} title={scope.title} />}
-        <div
-          aria-hidden="true"
-          className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]"
-        >
-          <div className="h-[260px] rounded-[24px] bg-white" />
-          <div className="h-[260px] rounded-[24px] bg-white" />
+        <div aria-hidden="true" className="mt-4 space-y-4">
+          <div className="h-[180px] rounded-[20px] bg-white" />
+          <div className="h-[320px] rounded-[20px] bg-white" />
         </div>
       </Page>
     );
 
-  const safeSummaries = summaries ?? {};
-  const step = pickNextStep(scope.lessons, progress, safeSummaries, {
-    currentScore: model.learning?.currentScore,
-  });
-  const standings = new Map(
-    scope.lessons.map((lesson) => [lesson.id, lessonStanding(lesson.id, progress, safeSummaries)])
+  const next = nextLessonToRead(scope.lessons, progress);
+  const reading = new Map(
+    scope.lessons.map((lesson) => [lesson.id, lessonLearningState(progress, lesson.id)])
   );
-  const { completed, total } = planProgress(scope.lessons, progress, safeSummaries);
 
   return (
     <Page>
-      <Hero
-        title={scope.title}
-        targetScore={targetScore}
-        tabs={tabs}
-        progress={{ completed, total }}
-      />
+      {chips}
       {choice && <ProgramBasisNote choice={choice} title={scope.title} />}
-      {summaries === null && (
-        <p className="mt-3 text-[13px] text-amber-800" role="status">
-          Chưa tải được kết quả luyện tập. Bước tiếp theo đang dựa trên phần em đã đọc.
-        </p>
-      )}
-      {/* Side by side the two columns end level: the quote takes up what the lesson list leaves. */}
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
-        <div className="lg:col-start-1 lg:row-start-1">
-          <NextStepCard step={step} scope={scope} standings={standings} />
-        </div>
-        <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <LessonList scope={scope} standings={standings} nextLessonId={step?.lesson.id ?? null} />
-        </div>
-        <DailyQuote className="lg:col-start-1 lg:row-start-2" />
+      <div className="mt-4 space-y-4">
+        <NextLessonCard next={next} scope={scope} reading={reading} />
+        <LessonList scope={scope} reading={reading} nextLessonId={next?.lesson.id ?? null} />
       </div>
     </Page>
   );
@@ -163,8 +124,12 @@ function ProgramBasisNote({ choice, title }: { choice: RoadmapChoice; title: str
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-[1080px] pb-12" data-testid="roadmap">
-      {children}
+    <div className="mx-auto w-full max-w-[760px] pb-12" data-testid="roadmap">
+      {/* The sidebar names the page on wide screens; next to the menu button on small ones. */}
+      <h1 className="-mt-12 flex min-h-10 items-center pl-12 text-[17px] font-extrabold text-[#091224] md:-mt-2 lg:sr-only">
+        Học
+      </h1>
+      <div className="mt-4 lg:mt-0">{children}</div>
     </div>
   );
 }
@@ -177,173 +142,82 @@ function readable(title: string): string {
   return lower.charAt(0).toLocaleUpperCase('vi') + lower.slice(1);
 }
 
-// ─── Hero: the program and how far along it the student is ───────────────────
-
-function Hero({
-  title,
-  targetScore,
-  tabs,
-  progress,
-}: {
-  title: string;
-  targetScore: number | null;
-  tabs?: React.ReactNode;
-  progress?: { completed: number; total: number };
-}) {
-  return (
-    <header className="rounded-[24px] bg-[#0A1F5C] px-5 py-5 text-white sm:px-7 sm:py-6">
-      {tabs}
-      <h1
-        className={
-          tabs
-            ? 'sr-only'
-            : 'mb-4 text-[26px] font-extrabold leading-tight tracking-tight text-white sm:text-[32px]'
-        }
-      >
-        {title}
-      </h1>
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        {targetScore ? (
-          <p className="text-[16px] text-blue-100">
-            Mục tiêu{' '}
-            <span className="text-[22px] font-extrabold text-[#5EE0A8]">{targetScore} điểm</span>
-          </p>
-        ) : (
-          <span />
-        )}
-        {progress && (
-          <p
-            className="rounded-full bg-white/10 px-3.5 py-1 text-[13px] text-blue-100"
-            data-testid="roadmap-progress"
-          >
-            <span className="text-[15px] font-bold text-white" data-testid="roadmap-completed">
-              {progress.completed}/{progress.total}
-            </span>{' '}
-            bài đã xong
-          </p>
-        )}
-      </div>
-      {progress && (
-        <div
-          className="mt-3 h-2 overflow-hidden rounded-full bg-white/15"
-          role="progressbar"
-          aria-label="Tiến độ lộ trình"
-          aria-valuenow={progress.completed}
-          aria-valuemin={0}
-          aria-valuemax={progress.total}
-        >
-          <div
-            className="h-full rounded-full bg-[#34D399] motion-safe:transition-[width] motion-safe:duration-700"
-            style={{
-              width: `${progress.total ? (progress.completed / progress.total) * 100 : 0}%`,
-            }}
-          />
-        </div>
-      )}
-    </header>
-  );
-}
-
 // ─── The next step ───────────────────────────────────────────────────────────
 
-function NextStepCard({
-  step,
+function NextLessonCard({
+  next,
   scope,
-  standings,
+  reading,
 }: {
-  step: NextStep | null;
+  next: ReadingStep | null;
   scope: StudyScope;
-  standings: Map<string, LessonStanding>;
+  reading: Map<string, LessonLearningState>;
 }) {
-  if (!step)
+  if (!next)
     return (
       <section
-        aria-label="Bước tiếp theo"
-        className="rounded-[24px] border border-[#E5EBF3] bg-white p-6 sm:p-7"
+        aria-label="Bài tiếp theo"
+        className="rounded-[20px] border border-[#E5EBF3] bg-white p-5 sm:p-6"
         data-testid="roadmap-next"
         data-kind="done"
       >
-        <h2 className="text-[22px] font-extrabold leading-snug text-[#091224]">
-          Em đã xong các bài đang mở
+        <h2 className="text-[20px] font-extrabold leading-snug text-[#091224]">
+          Em đã học hết các bài đang mở
         </h2>
-        <p className="mt-1 text-[15px] text-slate-500">Trong lúc chờ bài mới, em luyện đề nhé.</p>
-        <Link href="/student/practice" className={`${primaryClass} mt-6`}>
-          Đi tới Luyện đề <ArrowRight className="size-4" aria-hidden="true" />
+        <p className="mt-1 text-[15px] text-slate-500">Giờ em làm bài tập để nhớ lâu hơn.</p>
+        <Link
+          href={PRACTICE_HREF}
+          className={`${primaryClass} mt-5`}
+          data-testid="roadmap-next-cta"
+        >
+          Sang Luyện tập <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       </section>
     );
 
-  const position = scope.lessons.findIndex((lesson) => lesson.id === step.lesson.id) + 1;
-  // When the step is this lesson's practice, the lesson itself stays one tap away.
-  const alternative =
-    step.kind === 'practice' || step.kind === 'resume-practice' || step.kind === 'retry'
-      ? { href: lessonHref(step.lesson.id), label: 'Xem lại bài học' }
-      : step.kind === 'check'
-        ? { href: lessonHref(step.lesson.id), label: 'Học bài trước' }
-        : null;
-  const standing = standings.get(step.lesson.id)!;
-  const status = standingLabel(standing);
-  const open = standing.practice?.inProgress;
+  const position = scope.lessons.findIndex((lesson) => lesson.id === next.lesson.id) + 1;
+  const status = readingLabel(reading.get(next.lesson.id) ?? { kind: 'new' });
 
   return (
     <section
       aria-labelledby="roadmap-next-title"
-      className="rounded-[24px] border border-[#E5EBF3] bg-white p-5 sm:p-7"
+      className="rounded-[20px] border border-[#E5EBF3] bg-white p-5 sm:p-6"
       data-testid="roadmap-next"
-      data-kind={step.kind}
-      data-lesson={step.lesson.id}
+      data-kind={next.cta === 'Học tiếp' ? 'resume-lesson' : 'start'}
+      data-lesson={next.lesson.id}
     >
-      <p className="text-[14px] text-slate-500">
-        Bài tiếp theo · {position}/{scope.lessons.length}
+      <p className="text-[13px] text-slate-500">
+        Bài {position}/{scope.lessons.length} · {readable(next.lesson.chapterTitle)}
       </p>
       <h2
         id="roadmap-next-title"
-        className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[32px]"
+        className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight text-[#091224] sm:text-[26px]"
       >
-        {step.lesson.title}
+        {next.lesson.title}
       </h2>
-      <p className="mt-1 text-[15px] text-slate-500">{readable(step.lesson.chapterTitle)}</p>
       {status.tone !== 'idle' && (
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <p
-            className={`text-[15px] font-semibold ${statusTone(status.tone)}`}
-            data-testid="roadmap-reason"
-          >
-            {status.text}
-          </p>
-          {open && open.totalCount <= 20 && (
-            <span className="flex gap-1" aria-hidden="true">
-              {Array.from({ length: open.totalCount }, (_, i) => (
-                <span
-                  key={i}
-                  className={`h-2 w-4 rounded-full ${i < open.answeredCount ? 'bg-[#0052FF]' : 'bg-[#DCE5F3]'}`}
-                />
-              ))}
-            </span>
-          )}
-        </div>
+        <p
+          className={`mt-2 text-[14px] font-semibold ${statusTone(status.tone)}`}
+          data-testid="roadmap-reason"
+        >
+          {status.text}
+        </p>
       )}
-      {step.lesson.description && (
-        <div className="mt-5 rounded-2xl bg-[#F5F8FC] px-4 py-3.5">
-          <p className="text-[13px] font-semibold text-slate-700">Nội dung bài học</p>
-          <p
-            className="mt-1 line-clamp-3 text-[14px] leading-6 text-slate-600"
-            data-testid="roadmap-next-description"
-          >
-            {step.lesson.description}
-          </p>
-        </div>
+      {next.lesson.description && (
+        <p
+          className="mt-3 line-clamp-2 text-[14px] leading-6 text-slate-600"
+          data-testid="roadmap-next-description"
+        >
+          {next.lesson.description}
+        </p>
       )}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
-        <Link href={step.href} className={primaryClass} data-testid="roadmap-next-cta">
-          {step.cta} <ArrowRight className="size-4" aria-hidden="true" />
-        </Link>
-        {alternative && (
-          <Link href={alternative.href} className={linkClass} data-testid="roadmap-next-alt">
-            {alternative.label}
-          </Link>
-        )}
-      </div>
+      <Link
+        href={lessonHref(next.lesson.id)}
+        className={`${primaryClass} mt-5`}
+        data-testid="roadmap-next-cta"
+      >
+        {next.cta} <ArrowRight className="size-4" aria-hidden="true" />
+      </Link>
     </section>
   );
 }
@@ -360,69 +234,27 @@ function statusTone(tone: string) {
 
 // ─── Every lesson ────────────────────────────────────────────────────────────
 
-const QUOTES = [
-  { text: 'Không có việc gì khó, chỉ sợ lòng không bền.', by: 'Hồ Chí Minh' },
-  { text: 'Có công mài sắt, có ngày nên kim.', by: 'Tục ngữ Việt Nam' },
-  {
-    text: 'Thiên tài là một phần trăm cảm hứng và chín mươi chín phần trăm mồ hôi.',
-    by: 'Thomas Edison',
-  },
-  { text: 'Học, học nữa, học mãi.', by: 'V. I. Lenin' },
-  { text: 'Đi một ngày đàng, học một sàng khôn.', by: 'Tục ngữ Việt Nam' },
-  {
-    text: 'Thành công không phải là điểm cuối, thất bại không phải là dấu chấm hết: điều quan trọng là can đảm để tiếp tục.',
-    by: 'Winston Churchill',
-  },
-];
-
-/** One quote a day, the same for everyone on that day in Vietnam. */
-function quoteOfTheDay() {
-  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
-  const n = Math.floor(Date.parse(day) / 86_400_000);
-  return QUOTES[n % QUOTES.length];
-}
-
-function DailyQuote({ className = '' }: { className?: string }) {
-  const quote = quoteOfTheDay();
-  return (
-    <figure
-      className={`flex flex-col justify-center rounded-[24px] bg-[#EEF3FF] px-6 py-6 text-[#0A1F5C] sm:px-7 ${className}`}
-      data-testid="roadmap-quote"
-    >
-      <blockquote
-        className="text-[18px] font-semibold leading-relaxed sm:text-[20px]"
-        suppressHydrationWarning
-      >
-        “{quote.text}”
-      </blockquote>
-      <figcaption className="mt-3 text-[14px] text-slate-500" suppressHydrationWarning>
-        {quote.by}
-      </figcaption>
-    </figure>
-  );
-}
-
 function LessonList({
   scope,
-  standings,
+  reading,
   nextLessonId,
 }: {
   scope: StudyScope;
-  standings: Map<string, LessonStanding>;
+  reading: Map<string, LessonLearningState>;
   nextLessonId: string | null;
 }) {
   const many = scope.chapters.length > 2;
   return (
     <section
       aria-labelledby="roadmap-map"
-      className="h-full rounded-[24px] border border-[#E5EBF3] bg-white p-4 sm:p-6"
+      className="rounded-[20px] border border-[#E5EBF3] bg-white p-3 sm:p-5"
     >
-      <h2 id="roadmap-map" className="px-1 text-[18px] font-extrabold text-[#091224]">
+      <h2 id="roadmap-map" className="px-2 pt-1 text-[16px] font-extrabold text-[#091224]">
         Các bài học
       </h2>
-      <ol className="mt-4 space-y-3">
+      <ol className="mt-3 space-y-2">
         {scope.chapters.map((chapter, index) => {
-          const done = chapter.lessons.filter((l) => standings.get(l.id)?.completed).length;
+          const done = chapter.lessons.filter((l) => reading.get(l.id)?.kind === 'learned').length;
           const here = chapter.lessons.some((l) => l.id === nextLessonId);
           return (
             <Chapter
@@ -433,14 +265,13 @@ function LessonList({
               count={chapter.lessons.length}
               open={!many || here || (!nextLessonId && index === scope.chapters.length - 1)}
             >
-              {chapter.lessons.map((lesson, i) => (
+              {chapter.lessons.map((lesson) => (
                 <LessonRow
                   key={lesson.id}
                   lessonId={lesson.id}
                   title={lesson.title}
-                  standing={standings.get(lesson.id)!}
+                  reading={reading.get(lesson.id) ?? { kind: 'new' }}
                   isNext={lesson.id === nextLessonId}
-                  last={i === chapter.lessons.length - 1}
                 />
               ))}
             </Chapter>
@@ -476,7 +307,7 @@ function Chapter({
           <span
             className={`shrink-0 text-[13px] font-semibold ${done === count ? 'text-emerald-700' : 'text-slate-500'}`}
           >
-            {done}/{count}
+            {done}/{count} đã học
           </span>
           <ChevronDown
             className="size-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
@@ -492,25 +323,17 @@ function Chapter({
 function LessonRow({
   lessonId,
   title,
-  standing,
+  reading,
   isNext,
-  last,
 }: {
   lessonId: string;
   title: string;
-  standing: LessonStanding;
+  reading: LessonLearningState;
   isNext: boolean;
-  last: boolean;
 }) {
-  const label = standingLabel(standing);
+  const label = readingLabel(reading);
   return (
     <li className="relative">
-      {!last && (
-        <span
-          aria-hidden="true"
-          className="absolute left-[24px] top-[38px] -bottom-[14px] w-0.5 bg-[#E3E9F2]"
-        />
-      )}
       <Link
         href={lessonHref(lessonId)}
         className={`relative flex items-center gap-3 rounded-xl px-4 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
@@ -518,7 +341,7 @@ function LessonRow({
         }`}
         data-testid="roadmap-lesson"
         data-lesson={lessonId}
-        data-completed={standing.completed}
+        data-completed={reading.kind === 'learned'}
         aria-current={isNext ? 'step' : undefined}
       >
         <Mark tone={label.tone} isNext={isNext} />
@@ -529,7 +352,7 @@ function LessonRow({
             }`}
           >
             {title}
-            {isNext && <span className="sr-only"> (bước tiếp theo)</span>}
+            {isNext && <span className="sr-only"> (bài tiếp theo)</span>}
           </span>
           <span
             className={`shrink-0 text-[13px] sm:text-right ${statusTone(label.tone)}`}
@@ -569,65 +392,29 @@ function Mark({ tone, isNext }: { tone: string; isNext: boolean }) {
   );
 }
 
-/**
- * The programs, as a switch at the top of the hero: one per subject and
- * grade with published lessons, each with how many of its lessons are done.
- * Only shown when there is more than one.
- */
-function ProgramTabs({
-  programs,
-  current,
-  progress,
-  summaries,
-}: {
-  programs: StudyScope[];
-  current: string;
-  progress: LessonProgressState | null;
-  summaries: Summaries;
-}) {
-  const list = React.useRef<HTMLUListElement>(null);
-  // On a phone the switch scrolls sideways: keep the open program in view.
-  React.useEffect(() => {
-    const box = list.current;
-    const active = box?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (box && active && active.offsetLeft + active.offsetWidth > box.clientWidth)
-      box.scrollLeft = active.offsetLeft - 20;
-  }, [current]);
+/** The programs with published lessons, as plain chips. Only shown when there is more than one. */
+function ProgramChips({ programs, current }: { programs: StudyScope[]; current: string }) {
   return (
-    <nav aria-label="Chọn môn học" className="-mx-5 mb-5 sm:-mx-7">
-      <ul
-        ref={list}
-        className="flex gap-2 overflow-x-auto px-5 pb-1 sm:px-7 [scrollbar-width:none]"
-      >
-        {programs.map((program) => {
-          const active = program.id === current;
-          const done = progress ? planProgress(program.lessons, progress, summaries) : null;
-          return (
-            <li key={program.id} className="shrink-0">
-              <Link
-                href={programHref(program)}
-                aria-current={active ? 'page' : undefined}
-                className={`inline-flex h-11 items-center gap-2.5 rounded-xl px-4 text-[15px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
-                  active
-                    ? 'bg-white text-[#0A1F5C]'
-                    : 'bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white'
-                }`}
-                data-testid="program-tab"
-                data-program={program.id}
-              >
-                {program.title}
-                {done && (
-                  <span
-                    className={`text-[13px] font-medium ${active ? 'text-slate-500' : 'text-blue-200/80'}`}
-                  >
-                    {done.completed}/{done.total}
-                  </span>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+    <nav aria-label="Môn học" className="flex flex-wrap gap-2">
+      {programs.map((program) => {
+        const active = program.id === current;
+        return (
+          <Link
+            key={program.id}
+            href={programHref(program)}
+            aria-current={active ? 'page' : undefined}
+            className={`inline-flex h-9 items-center rounded-full px-4 text-[13px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              active
+                ? 'bg-[#0A1F5C] text-white'
+                : 'border border-[#D5DEEA] bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+            data-testid="program-tab"
+            data-program={program.id}
+          >
+            {program.title}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
@@ -635,19 +422,14 @@ function ProgramTabs({
 function EmptyProgram() {
   return (
     <section
-      className="mt-5 rounded-[24px] border border-[#E5EBF3] bg-white p-6 text-center sm:p-10"
+      className="rounded-[20px] border border-[#E5EBF3] bg-white p-6 text-center sm:p-10"
       data-testid="roadmap-empty"
     >
-      <h2 className="text-[20px] font-extrabold text-[#091224]">Chưa có bài nào được mở</h2>
-      <p className="mt-1 text-[15px] text-slate-500">Trong lúc chờ, em luyện đề nhé.</p>
-      <Link href="/student/practice" className={`${primaryClass} mt-6`}>
-        Đi tới Luyện đề <ArrowRight className="size-4" aria-hidden="true" />
-      </Link>
+      <h2 className="text-[18px] font-extrabold text-[#091224]">Chưa có bài nào được mở</h2>
+      <p className="mt-1 text-[15px] text-slate-500">Khi có bài mới, bài sẽ hiện ở đây.</p>
     </section>
   );
 }
 
 const primaryClass =
-  'inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-7 text-center text-[16px] font-bold text-white transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';
-const linkClass =
-  'inline-flex min-h-10 items-center rounded-lg text-[14px] font-semibold text-slate-600 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+  'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-7 text-center text-[16px] font-bold text-white transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';

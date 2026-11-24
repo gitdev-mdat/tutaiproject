@@ -1,0 +1,133 @@
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: no horizontal overflow on /admin/practice
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: admin opens Admin › Luyện tập (200)
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: no horizontal overflow on /admin/practice/node-s0f2jitge
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: admin sees the existing questions of "Tính đơn điệu"
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: no horizontal overflow on /admin/practice/node-tichphan
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: admin opens lesson "Tích phân" (200)
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: "Tích phân" has no question yet
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: UI saves "Tích phân $\int_0^1 2x\,…" (201)
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: UI saves "Tích phân $\int_0^2 x\,d…" (201)
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: UI saves "Tích phân $\int_0^3 1\,d…" (201)
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: editor does not save a question without explanation
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: API accepts a draft without explanation (201)
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: new questions are linked to "Tích phân" and derive Toán 12
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: new questions start as drafts
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: blocked question shows the publish blocker
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: publish button disabled without explanation
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: bypassing the UI: bank accepts the status change (explanation is a warning there)
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: rights recorded on new question
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: admin student preview opens
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: DB: Q1, Q2 published; Q3 in review; Q4 published only by the API bypass
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: Admin list shows 2 in practice
+PASS [768] F1 Admin soạn, duyệt, xem trước và xuất bản câu hỏi :: no console errors (admin)
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: no horizontal overflow on /student/roadmap
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: Học: one h1 named Học
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: Học: no practice links in the page body
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: Học: no target-score banner, progress bar or quote
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: Học: no practice words
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: Học: next card offers reading
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: nav: Học, Luyện tập, Luyện thi, Thứ hạng, Đấu trường with no hints or headings
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: Học → next lesson opens the lesson
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: no horizontal overflow on /student/roadmap
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: Roadmap → sidebar "Luyện tập" opens the page
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: sidebar marks Luyện tập active
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: one h1 named Luyện tập
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: no repeated eyebrow / description / global counter
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: ordinary student sees no admin note
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: two chapters, grouped
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: "Tích phân" now has 2 questions (published only)
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: "Tích phân" offers Bắt đầu
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: next lesson (first not passed) is the only filled action
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: "Tính đơn điệu" shows 10 câu (session size, archived excluded)
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: session serves exactly Q1, Q2
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: in-review question is not served
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: published-without-explanation question is not served (server practice filter)
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: no answer key in payload
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: L1 session has 10 questions, none archived or Plus
+PASS [768] F2 Học sinh thấy đúng nội dung đã xuất bản :: no console errors (visibility)
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: UI grades a right answer as right
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: solution shown after answering
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: UI grades a wrong answer as wrong with the right key
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: refresh keeps the attempt and opens question 4
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: resume strip shows 3/10 câu
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: row says the same 3/10 câu
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no row is marked primary while a session is open
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: after logout, Practice sends to login
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: login again
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: Làm tiếp resumes at question 4 after re-login
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: attempt completes with 1/10
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: status: Cao nhất 1/10 · cần 8 để đạt
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: action: Xem 9 câu sai
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: Xem câu sai opens the results with 1/10
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: results offer Luyện lại 9 câu sai
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: retry has the 9 missed questions
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: best stays 1/10 after a retry of missed questions
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: action: Xem 6 câu còn sai
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: regression: 5/6 retry still offers Xem 1 câu còn sai
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: all missed fixed → Luyện lại (whole lesson)
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no horizontal overflow on /student/practice
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: passed: Đạt · 9/10
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: passed lesson marked done
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: chapter: 1/3 bài đạt
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: next action moves to "Cực trị"
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: DB history: LESSON 1/10, MISTAKES 3/9, 5/6, 1/1, LESSON 9/10
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: a finished answer cannot be regraded (stored result returned)
+PASS [768] F3 Vòng đời bài luyện: làm, dừng, làm tiếp, sửa câu sai, làm lại :: no console errors (lifecycle)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: no horizontal overflow on /student/practice?view=chapter
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free: Ôn chương for both chapters (chapter 2 opened by the 2 new published questions)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free: Tổng hợp locked
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free: no admin note, no Plus marketing paragraph
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free: no chapter left without sets
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free: Ôn chương starts (200)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free: Tổng hợp refused by the server (403)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: no horizontal overflow on /student/practice?view=chapter
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free: open chapter set shows in resume strip
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: no horizontal overflow on /student/practice?view=chapter
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: plus: Tổng hợp open
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: plus: no admin note
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: plus: Tổng hợp starts (200)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: free cannot read the Plus student attempt (404)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: no horizontal overflow on /student/practice?view=chapter
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: admin: one-line admin note with counts
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: admin note is compact (≤ 64 px tall at this width)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: admin: link to missing content
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: admin preview: Tổng hợp starts (200)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: admin preview wrote no Plus subscription
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: no console errors (sets)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: no console errors (sets)
+PASS [768] F4 Ôn chương, Tổng hợp Plus, quyền Admin :: no console errors (sets)
+PASS [768] F5 Trường hợp biên :: guest is sent to login
+PASS [768] F5 Trường hợp biên :: guest API start refused (401)
+PASS [768] F5 Trường hợp biên :: unknown lesson: API 404
+PASS [768] F5 Trường hợp biên :: no horizontal overflow on /student/lessons/node-khong-co/practice
+PASS [768] F5 Trường hợp biên :: unknown lesson page says it is not open
+PASS [768] F5 Trường hợp biên :: admin archives Q2 (200)
+PASS [768] F5 Trường hợp biên :: no horizontal overflow on /student/practice
+PASS [768] F5 Trường hợp biên :: after archive: row keeps the stored 1/2 result
+PASS [768] F5 Trường hợp biên :: after archive: new sessions have 1 question
+PASS [768] F5 Trường hợp biên :: no horizontal overflow on /student/lessons/node-tichphan/practice?attempt=pa-43c6912a-74bb-4a60-bbe4-5ead47e3b64b&from=practice
+PASS [768] F5 Trường hợp biên :: old results still open after archive
+PASS [768] F5 Trường hợp biên :: retry of an archived missed question: 409 with a message (known limitation)
+PASS [768] F5 Trường hợp biên :: network error: error state with retry
+PASS [768] F5 Trường hợp biên :: retry after network error recovers
+PASS [768] F5 Trường hợp biên :: slow API: loading skeleton shown
+PASS [768] F5 Trường hợp biên :: slow API: page completes
+PASS [768] F5 Trường hợp biên :: no horizontal overflow on /student/practice
+PASS [768] F5 Trường hợp biên :: back from a lesson returns to Practice
+PASS [768] F5 Trường hợp biên :: no console errors (edge)
+PASS [768] F5 Trường hợp biên :: no published content: empty state
+PASS [768] F6 Bố cục, bàn phím :: no horizontal overflow on /student/practice
+PASS [768] F6 Bố cục, bàn phím :: row actions inside their rows, no overlap with titles, nothing clipped
+PASS [768] F6 Bố cục, bàn phím :: focus order: subject → tabs → lesson actions
+PASS [768] F6 Bố cục, bàn phím :: Enter on "Theo chương" switches view
+PASS [768] F6 Bố cục, bàn phím :: focused control shows a ring
+PASS [768] F6 Bố cục, bàn phím :: no console errors (layout)
+
+131/131 passed at 768
