@@ -1,0 +1,185 @@
+{
+ "shots": [
+  {
+   "n": "01",
+   "file": "01-1366-01-ap-dung-dau.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phần 4 Áp dụng · mở đầu"
+  },
+  {
+   "n": "02",
+   "file": "02-1366-02-ap-dung-buoc-dang-lam.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phần 4 · bước đang làm (bước 2/4)"
+  },
+  {
+   "n": "03",
+   "file": "03-1366-03-ap-dung-xem-lai-buoc.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phần 4 · xem lại bước 1 đã xong"
+  },
+  {
+   "n": "04",
+   "file": "04-1366-04-ap-dung-chon-dap-an.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phần 4 · đang chọn dấu y′"
+  },
+  {
+   "n": "05",
+   "file": "05-1366-05-ap-dung-phan-hoi-dung.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phần 4 · phản hồi đúng"
+  },
+  {
+   "n": "06",
+   "file": "06-1366-06-ap-dung-bang-bien-thien.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phần 4 · bảng biến thiên"
+  },
+  {
+   "n": "07",
+   "file": "07-1440-07-tu-lam-dau.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Phần 5 Tự làm · mở đầu"
+  },
+  {
+   "n": "08",
+   "file": "08-1440-08-tu-lam-dang-lam.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Phần 5 · đang chọn nghiệm"
+  },
+  {
+   "n": "09",
+   "file": "09-1440-10-tu-lam-chon-dap-an.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Phần 5 · câu trắc nghiệm, đã chọn đáp án"
+  },
+  {
+   "n": "10",
+   "file": "10-1440-09-tu-lam-cau-hoi.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Phần 5 · cửa sổ câu hỏi của thầy cô"
+  },
+  {
+   "n": "11",
+   "file": "11-1440-11-tu-lam-phan-hoi.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Phần 5 · phản hồi câu trắc nghiệm"
+  },
+  {
+   "n": "12",
+   "file": "12-1440-12-tu-lam-giai-xong.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Phần 5 · giải xong, đồ thị xác nhận"
+  },
+  {
+   "n": "13",
+   "file": "13-1920-13-hoan-thanh.png",
+   "w": "1920",
+   "h": 1080,
+   "label": "Phần 6 · tổng kết"
+  },
+  {
+   "n": "14",
+   "file": "14-390-02-ap-dung-buoc-dang-lam.png",
+   "w": "390",
+   "h": 844,
+   "label": "Phần 4 · bước đang làm (điện thoại)"
+  },
+  {
+   "n": "15",
+   "file": "15-390-05-ap-dung-phan-hoi-dung.png",
+   "w": "390",
+   "h": 844,
+   "label": "Phần 4 · đồ thị ghim trên cùng"
+  },
+  {
+   "n": "16",
+   "file": "16-390-08-tu-lam-dang-lam.png",
+   "w": "390",
+   "h": 844,
+   "label": "Phần 5 · tự làm (điện thoại)"
+  },
+  {
+   "n": "17",
+   "file": "17-390-10-tu-lam-chon-dap-an.png",
+   "w": "390",
+   "h": 844,
+   "label": "Phần 5 · câu trắc nghiệm toàn màn hình"
+  },
+  {
+   "n": "18",
+   "file": "18-360-11c-tu-lam-mo-lai.png",
+   "w": "360",
+   "h": 640,
+   "label": "Phần 5 · mở lại cửa sổ, câu trả lời còn nguyên"
+  },
+  {
+   "n": "x1",
+   "file": "x1-1920-05-ap-dung-phan-hoi-dung.png",
+   "w": "1920",
+   "h": 1080,
+   "label": "Phần 4 · phản hồi đúng (1920)"
+  },
+  {
+   "n": "x2",
+   "file": "x2-1440-06-ap-dung-bang-bien-thien.png",
+   "w": "1440",
+   "h": 900,
+   "label": "Phần 4 · bảng biến thiên (1440)"
+  },
+  {
+   "n": "x3",
+   "file": "x3-360-02-ap-dung-buoc-dang-lam.png",
+   "w": "360",
+   "h": 640,
+   "label": "Phần 4 · bước đang làm (360×640)"
+  },
+  {
+   "n": "x4",
+   "file": "x4-1366-11b-tu-lam-sau-khi-dong.png",
+   "w": "1366",
+   "h": 768,
+   "label": "Phần 5 · đóng cửa sổ, thẻ ghi 1/2"
+  }
+ ],
+ "pairs": [
+  {
+   "file": "truoc-sau/1366-05-ap-dung-phan-hoi-dung.png",
+   "label": "Phần 4 phản hồi đúng",
+   "w": "1366"
+  },
+  {
+   "file": "truoc-sau/1366-12-tu-lam-giai-xong-full.png",
+   "label": "Phần 5 giải xong (cả trang)",
+   "w": "1366"
+  },
+  {
+   "file": "truoc-sau/1440-06-ap-dung-bang-bien-thien-full.png",
+   "label": "Phần 4 bảng biến thiên (cả trang)",
+   "w": "1440"
+  },
+  {
+   "file": "truoc-sau/1440-11-tu-lam-phan-hoi.png",
+   "label": "Phần 5 câu hỏi thầy cô",
+   "w": "1440"
+  },
+  {
+   "file": "truoc-sau/390-12-tu-lam-giai-xong-full.png",
+   "label": "Phần 5 điện thoại (cả trang)",
+   "w": "390"
+  }
+ ]
+}

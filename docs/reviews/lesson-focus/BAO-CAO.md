@@ -1,5 +1,8 @@
 # Tú Tài · Trải nghiệm bài học của học sinh: rà soát và tinh chỉnh
 
+> **Vòng 2 (không gian học tập theo khung nhìn):** xem [`KHONG-GIAN-HOC.md`](KHONG-GIAN-HOC.md).
+
+
 > Trạng thái: **READY FOR OWNER VISUAL REVIEW**. Chưa merge, chưa deploy, không đụng dữ liệu Production.
 
 Bài kiểm chứng: **"Tính đơn điệu của hàm số (P1)"**, bài học tương tác 6 phần (Quan sát, Khám phá, Mở rộng, Áp dụng, Tự làm, Hoàn thành). Nội dung bài lấy từ bản chụp bài P1 trên Production (`lib/knowledge-tree/__fixtures__/don-dieu-p1-2026-10-19.ts`), chạy trên CSDL QA cục bộ.
