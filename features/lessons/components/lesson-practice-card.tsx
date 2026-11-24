@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useStudentShell } from '@/components/student/student-shell';
 import type { LessonPracticeOverview } from '@/lib/practice/practice-service';
 import { useLessonProgress } from '../lib/lesson-progress';
+import { practiceState } from '../lib/practice-state';
 import {
   lessonHref,
   nextLessonToRead,
@@ -19,7 +20,7 @@ import {
 type Action = { href: string; label: string; testId?: string };
 
 const primaryClass =
-  'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0052FF] px-6 text-center text-[15px] font-bold text-white shadow-[0_8px_20px_rgba(0,82,255,0.2)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto';
+  'inline-flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-[#0052FF] px-5 py-3 text-left text-[15px] font-bold leading-snug text-white shadow-[0_8px_20px_rgba(0,82,255,0.2)] transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2';
 const linkClass =
   'inline-flex min-h-10 items-center gap-1 rounded-lg text-[14px] font-semibold text-slate-600 underline-offset-4 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
 
@@ -78,23 +79,26 @@ export function LessonNextStep({
     : null;
 
   const inProgress = overview?.inProgress ?? null;
-  const best = overview?.best ?? null;
-  const hasQuestions = !!overview && overview.questionCount > 0;
+  const state = practiceState(overview);
 
-  let state: 'unavailable' | 'empty' | 'ready' | 'in-progress' | 'passed' | 'retry';
-  if (!overview) state = 'unavailable';
-  else if (inProgress) state = 'in-progress';
-  else if (best?.passed) state = 'passed';
-  else if (best) state = 'retry';
-  else if (hasQuestions) state = 'ready';
-  else state = 'empty';
-
+  let eyebrow = 'Luyện tập bài này';
   let title: string;
   let detail: React.ReactNode;
   let primary: Action;
   const links: Action[] = [];
 
   switch (state) {
+    case 'opened':
+      // A session exists but nothing is answered: it is not "unfinished work".
+      title = 'Bài luyện tập đang chờ em';
+      detail = `${inProgress!.totalCount} câu, chưa trả lời câu nào. Chấm ngay từng câu, đạt 80% là hoàn thành bài.`;
+      primary = {
+        href: practice(inProgress!.id),
+        label: 'Bắt đầu làm bài',
+        testId: 'practice-continue',
+      };
+      if (readNext) links.push(readNext);
+      break;
     case 'in-progress':
       title = 'Em đang luyện tập dở';
       detail = `Đã làm ${inProgress!.answeredCount}/${inProgress!.totalCount} câu. Bài làm được lưu, em làm tiếp từ câu đang dừng.`;
@@ -107,7 +111,7 @@ export function LessonNextStep({
       break;
     case 'ready':
       title = 'Luyện tập để hoàn thành bài';
-      detail = `${overview!.questionCount} câu, chấm ngay từng câu và có lời giải. Đạt 80% là bài này hoàn thành.`;
+      detail = `${overview!.questionCount} câu, chấm ngay từng câu và có lời giải. Đạt 80% là hoàn thành bài.`;
       primary = { href: practice(), label: 'Bắt đầu luyện tập', testId: 'practice-start' };
       if (readNext) links.push(readNext);
       break;
@@ -129,88 +133,81 @@ export function LessonNextStep({
       if (readNext) links.push(readNext);
       break;
     case 'passed':
-      title = 'Em đã hoàn thành bài này';
+      eyebrow = 'Bước tiếp theo';
+      title = plan ? 'Sẵn sàng cho bài tiếp theo' : 'Em đã xong các bài trong lộ trình';
       detail = (
         <>
-          Luyện tập đạt <BestScore overview={overview!} />.
+          Luyện tập bài này đạt <BestScore overview={overview!} />.
         </>
       );
       primary = nextStep;
       links.push({ href: practice(), label: 'Luyện tập lại', testId: 'practice-start' });
       break;
     case 'empty':
-      title = 'Bài này đã hoàn thành';
-      detail = 'Bài chưa có câu luyện tập, nên học hết bài là hoàn thành.';
+      eyebrow = 'Bước tiếp theo';
+      title = plan ? 'Sẵn sàng cho bài tiếp theo' : 'Em đã xong các bài trong lộ trình';
+      detail = 'Bài này không có phần luyện tập, học xong bài là hoàn thành.';
       primary = nextStep;
       break;
     default:
       title = 'Chưa tải được phần luyện tập';
-      detail = 'Em tải lại trang sau ít phút nhé.';
+      detail = 'Em tải lại trang sau ít phút nhé. Bài học của em vẫn được lưu.';
       primary = nextStep;
   }
 
+  const counted = state === 'in-progress';
   return (
     <section
       id="luyen-tap"
       aria-labelledby="next-step-title"
-      className="scroll-mt-24 rounded-2xl border border-[#DCE6F7] bg-[#F4F8FF]"
+      className="scroll-mt-24"
       data-testid="lesson-practice-card"
       data-state={state === 'passed' || state === 'retry' ? 'done' : state}
+      data-practice={state}
     >
-      <div className="p-5 sm:p-6">
-        <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">
-          {state === 'passed' || state === 'empty' ? 'Bước tiếp theo' : 'Luyện tập bài này'}
-        </p>
-        <h3
-          id="next-step-title"
-          className="mt-1 flex items-center gap-2 text-[19px] font-extrabold leading-snug text-[#091224]"
+      <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">{eyebrow}</p>
+      <h3
+        id="next-step-title"
+        className="mt-1.5 text-[19px] font-extrabold leading-snug text-[#091224]"
+      >
+        {title}
+      </h3>
+      <p className="mt-1 text-[15px] leading-6 text-slate-600">{detail}</p>
+      {counted && (
+        <div
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100"
+          role="progressbar"
+          aria-label="Tiến độ luyện tập"
+          aria-valuemin={0}
+          aria-valuemax={inProgress!.totalCount}
+          aria-valuenow={inProgress!.answeredCount}
         >
-          {state === 'passed' && (
-            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-600 text-white">
-              <Check className="size-3.5" aria-hidden="true" />
-            </span>
-          )}
-          {title}
-        </h3>
-        <p className="mt-1 text-[15px] leading-6 text-slate-600">{detail}</p>
-        {state === 'in-progress' && (
           <div
-            className="mt-3 h-1.5 overflow-hidden rounded-full bg-blue-100"
-            role="progressbar"
-            aria-label="Tiến độ luyện tập"
-            aria-valuemin={0}
-            aria-valuemax={inProgress!.totalCount}
-            aria-valuenow={inProgress!.answeredCount}
-          >
-            <div
-              className="h-full rounded-full bg-[#0052FF]"
-              style={{
-                width: `${Math.round((inProgress!.answeredCount / Math.max(1, inProgress!.totalCount)) * 100)}%`,
-              }}
-            />
-          </div>
-        )}
-        {primary && (
-          <Link href={primary.href} className={`${primaryClass} mt-5`} data-testid={primary.testId}>
-            {primary.label}
-            <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
-          </Link>
-        )}
-        {links.length > 0 && (
-          <p className="mt-3 flex flex-col items-start gap-x-4 sm:flex-row sm:flex-wrap">
-            {links.map((link) => (
-              <Link
-                key={link.href + link.label}
-                href={link.href}
-                className={linkClass}
-                data-testid={link.testId}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </p>
-        )}
-      </div>
+            className="h-full rounded-full bg-[#0052FF]"
+            style={{
+              width: `${Math.round((inProgress!.answeredCount / Math.max(1, inProgress!.totalCount)) * 100)}%`,
+            }}
+          />
+        </div>
+      )}
+      <Link href={primary.href} className={`${primaryClass} mt-5`} data-testid={primary.testId}>
+        <span className="min-w-0">{primary.label}</span>
+        <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+      </Link>
+      {links.length > 0 && (
+        <p className="mt-2 flex flex-col items-start gap-x-4">
+          {links.map((link) => (
+            <Link
+              key={link.href + link.label}
+              href={link.href}
+              className={linkClass}
+              data-testid={link.testId}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </p>
+      )}
     </section>
   );
 }

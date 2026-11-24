@@ -22,7 +22,7 @@ import { InlineText } from '../rich-text';
 import { RuntimeContext } from './beats';
 import { preloadRewards, useSoundSetting } from './sound';
 import { FlatStage } from './stage-flat';
-import { FinishStage } from './stage-finish';
+import { FinishStage, PART_NAMES } from './stage-finish';
 import { useGraphHeight } from './stage-layout';
 import { ShapeStage } from './stage-shape';
 import { SlopeStage } from './stage-slope';
@@ -37,14 +37,7 @@ import { useLessonCompletion } from './streak';
  * resumes on the part that teaches the same thing.
  */
 
-const EYEBROW = {
-  shape: 'Quan sát',
-  slope: 'Khám phá',
-  flat: 'Mở rộng',
-  solve: 'Áp dụng',
-  challenge: 'Tự làm',
-  finish: 'Hoàn thành',
-} as const;
+const EYEBROW = PART_NAMES;
 
 export interface InteractiveLessonProps {
   studentKey: string | null;
@@ -196,7 +189,7 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
           celebrate={celebrate}
           celebration={celebration}
           streak={streak}
-          onRestart={() => show(0)}
+          onReview={show}
           onRetryChallenge={stageIds.includes('thu-suc') ? () => again('thu-suc') : null}
           sound={sound}
         />
@@ -234,7 +227,7 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
             {props.title}
           </h1>
           {/* The key idea is what the student is about to find: it is said once found. */}
-          {learned && journey.keyIdea && (
+          {learned && journey.keyIdea && stage.kind !== 'finish' && (
             <p
               className="mt-1 text-[14px] leading-6 text-slate-600 sm:text-[15px]"
               data-testid="key-idea"
@@ -244,16 +237,20 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
             </p>
           )}
         </div>
-        <StageBar
-          stages={stages}
-          current={current}
-          reachable={reachable}
-          learned={learned}
-          minutes={Math.max(8, (stages.length - 1) * 3)}
-          onSelect={show}
-          sound={sound}
-          onToggleSound={() => setSound(!sound)}
-        />
+        {/* At the end the sheet below says it is done and lists the parts to
+            review: the bar would only repeat it. */}
+        {stage.kind !== 'finish' && (
+          <StageBar
+            stages={stages}
+            current={current}
+            reachable={reachable}
+            learned={learned}
+            minutes={Math.max(8, (stages.length - 1) * 3)}
+            onSelect={show}
+            sound={sound}
+            onToggleSound={() => setSound(!sound)}
+          />
+        )}
       </header>
 
       <RuntimeContext.Provider value={runtime}>

@@ -852,7 +852,10 @@ function StageBody({
             )}
           </div>
           {practiceCard && (
-            <div className="min-w-0 @4xl:sticky @4xl:top-6" data-testid="finish-next">
+            <div
+              className="min-w-0 rounded-2xl border border-[#DCE6F7] bg-[#F4F8FF] p-5 sm:p-6 @4xl:sticky @4xl:top-6"
+              data-testid="finish-next"
+            >
               {practiceCard}
             </div>
           )}
