@@ -17,6 +17,9 @@ import {
   selectProgram,
   startingPointFor,
   latestResultSentence,
+  nextLessonToRead,
+  readingLabel,
+  readingProgress,
   CHECK_FIRST_FROM_SCORE,
   type Summaries,
 } from './study-plan';
@@ -389,5 +392,42 @@ describe('latestResultSentence', () => {
       },
     });
     expect(sentence).toBe(' Lần gần nhất em đúng 3/3 câu Cơ bản.');
+  });
+});
+
+describe('the Học page: reading only', () => {
+  it('starts a new student at the first lesson', () => {
+    expect(nextLessonToRead(lessons, fresh)).toEqual({ lesson: lessons[0], cta: 'Bắt đầu học' });
+    expect(nextLessonToRead(lessons, null)?.lesson.id).toBe('a');
+  });
+
+  it('continues the lesson opened last while it is unfinished', () => {
+    const state = progress({ a: { reached: 1, total: 4 }, c: { reached: 2, total: 5 } }, 'c');
+    expect(nextLessonToRead(lessons, state)).toEqual({ lesson: lessons[2], cta: 'Học tiếp' });
+  });
+
+  it('moves on to the first unread lesson once the last one is read', () => {
+    const state = progress({ a: { reached: 4, total: 4, done: true } }, 'a');
+    expect(nextLessonToRead(lessons, state)).toEqual({ lesson: lessons[1], cta: 'Bắt đầu học' });
+  });
+
+  it('has nothing to read once every lesson is read, whatever the practice results', () => {
+    const state = progress({
+      a: { reached: 4, total: 4, done: true },
+      b: { reached: 4, total: 4, done: true },
+      c: { reached: 4, total: 4, done: true },
+    });
+    expect(nextLessonToRead(lessons, state)).toBeNull();
+    expect(readingProgress(lessons, state)).toEqual({ learned: 3, total: 3 });
+  });
+
+  it('labels reading without practice words', () => {
+    expect(readingLabel({ kind: 'new' })).toEqual({ text: 'Chưa học', tone: 'idle' });
+    expect(readingLabel({ kind: 'started', stage: 2, total: 5 }).text).toBe('Đang học · phần 2/5');
+    expect(readingLabel({ kind: 'started', stage: 1, total: 0 }).text).toBe('Đã mở xem');
+    expect(readingLabel({ kind: 'learned', completedAt: 'x' })).toEqual({
+      text: 'Đã học',
+      tone: 'done',
+    });
   });
 });

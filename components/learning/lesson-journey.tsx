@@ -62,7 +62,7 @@ export interface LessonJourneyProps {
   subjectTitle: string;
   chapterTitle: string;
   backHref: string | null;
-  /** What the back link says: the journey the lesson belongs to ("Hành trình Toán 12"). */
+  /** What the back link says: the journey the lesson belongs to ("Học Toán 12"). */
   backLabel?: string;
   /** Where the lesson sits in that journey: "Chương 1 · Bài 2/3". */
   trail?: string;
@@ -254,7 +254,7 @@ function LessonHeader(
               data-testid="journey-back"
             >
               <ArrowLeft className="size-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">{props.backLabel ?? 'Lộ trình'}</span>
+              <span className="truncate">{props.backLabel ?? 'Học'}</span>
             </Link>
           )}
           {/* The admin preview shows the same header, without leaving the editor. */}

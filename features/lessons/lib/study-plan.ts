@@ -384,3 +384,51 @@ export function planProgress(
   ).length;
   return { completed, total: lessons.length };
 }
+
+// ─── The Học page: reading only ──────────────────────────────────────────────
+//
+// "Học" is where a student reads lessons; "Luyện tập" is where they answer
+// questions. The Học page therefore speaks only about reading: practice
+// results, retries and "làm tiếp" live on the Practice page. The rules above
+// (`pickNextStep`, `lessonStanding`) still decide completion and the step
+// after a practice session; nothing here changes them.
+
+/** One line on how far the student has read a lesson. */
+export function readingLabel(reading: LessonLearningState): { text: string; tone: StandingTone } {
+  if (reading.kind === 'learned') return { text: 'Đã học', tone: 'done' };
+  if (reading.kind === 'started')
+    return {
+      text: reading.total > 0 ? `Đang học · phần ${reading.stage}/${reading.total}` : 'Đã mở xem',
+      tone: 'active',
+    };
+  return { text: 'Chưa học', tone: 'idle' };
+}
+
+export type ReadingStep = { lesson: LearningLesson; cta: 'Học tiếp' | 'Bắt đầu học' };
+
+/**
+ * The lesson to read next: the one opened most recently if it is unfinished,
+ * then the first unfinished one in curriculum order. Null once every lesson
+ * has been read to the end.
+ */
+export function nextLessonToRead(
+  lessons: LearningLesson[],
+  progress: LessonProgressState | null
+): ReadingStep | null {
+  const state = (id: string) => lessonLearningState(progress, id);
+  const last = lessons.find((lesson) => lesson.id === progress?.lastLessonId);
+  const pick =
+    (last && state(last.id).kind === 'started' ? last : null) ??
+    lessons.find((lesson) => state(lesson.id).kind !== 'learned');
+  if (!pick) return null;
+  return { lesson: pick, cta: state(pick.id).kind === 'new' ? 'Bắt đầu học' : 'Học tiếp' };
+}
+
+/** Lessons read to the end, out of all lessons in scope. */
+export function readingProgress(lessons: LearningLesson[], progress: LessonProgressState | null) {
+  return {
+    learned: lessons.filter((lesson) => lessonLearningState(progress, lesson.id).kind === 'learned')
+      .length,
+    total: lessons.length,
+  };
+}

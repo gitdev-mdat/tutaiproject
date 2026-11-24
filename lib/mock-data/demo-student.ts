@@ -28,10 +28,9 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   {
     id: 'roadmap',
     group: 'learn',
-    hint: 'Bài học và tiến độ của em',
-    title: 'Lộ trình',
+    title: 'Học',
     href: '/student/roadmap',
-    description: 'Mọi bài học theo môn và chương, bước tiếp theo và tiến độ',
+    description: 'Đọc bài học theo môn và chương, bài nên học tiếp',
     keywords: [
       'roadmap',
       'lộ trình',
@@ -47,7 +46,6 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   {
     id: 'practice',
     group: 'learn',
-    hint: 'Củng cố theo bài, theo chương',
     title: 'Luyện tập',
     href: '/student/practice',
     description: 'Luyện tập theo bài, ôn chương và bộ Tổng hợp',
@@ -56,7 +54,6 @@ const DEMO_STUDENT_DESTINATIONS: StudentDestination[] = [
   {
     id: 'exams',
     group: 'extra',
-    hint: 'Đề tính giờ, xem lại bài',
     title: 'Luyện thi',
     href: '/student/exams',
     description: 'Làm đề thi có tính giờ, nộp bài và xem lại từng câu',

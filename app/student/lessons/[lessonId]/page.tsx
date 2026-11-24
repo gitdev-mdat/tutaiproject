@@ -60,13 +60,13 @@ export default async function StudentLessonPage({ params, searchParams }: Props)
           Bài học này chưa mở
         </h1>
         <p className="mt-2 text-[15px] leading-7 text-slate-500">
-          Bài có thể đang được thầy cô cập nhật. Em xem các bài khác trên lộ trình nhé.
+          Bài có thể đang được thầy cô cập nhật. Em xem các bài khác ở trang Học nhé.
         </p>
         <Link
           href={ROADMAP_HREF}
           className="mt-6 inline-flex h-11 items-center rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white hover:bg-[#0044CC]"
         >
-          Về lộ trình
+          Về trang Học
         </Link>
       </div>
     );
@@ -117,7 +117,7 @@ export default async function StudentLessonPage({ params, searchParams }: Props)
       subjectTitle={subject.title}
       chapterTitle={lesson.chapterTitle}
       backHref={programHref(program)}
-      backLabel={program ? `Hành trình ${program.title}` : 'Lộ trình'}
+      backLabel={program ? `Học ${program.title}` : 'Học'}
       trail={
         program && chapterIndex >= 0
           ? `Chương ${chapterIndex + 1} · Bài ${position}/${scope.length}`

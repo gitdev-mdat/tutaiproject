@@ -217,8 +217,8 @@ function LearningGoalsDialog({ goals }: { goals: LearningGoals }) {
         <DialogHeader>
           <DialogTitle>Cập nhật mục tiêu học tập</DialogTitle>
           <DialogDescription>
-            Lộ trình của em mở theo môn và lớp ở đây. Điểm em nhập chỉ là mục tiêu, không dùng để bỏ
-            qua bài nào.
+            Trang Học mở bài theo môn và lớp em chọn ở đây. Điểm em nhập chỉ là mục tiêu, không dùng
+            để bỏ qua bài nào.
           </DialogDescription>
         </DialogHeader>
         <form className={styles.editForm} onSubmit={submit} data-testid="learning-goals-form">
@@ -485,7 +485,7 @@ export function ProfileClient({
           <CardHeader
             icon={<Target size={21} />}
             title="Mục tiêu học tập"
-            subtitle="Lộ trình của em mở theo môn và lớp ở đây."
+            subtitle="Trang Học mở bài theo môn và lớp em chọn ở đây."
             action={<LearningGoalsDialog goals={learning} />}
           />
           <DetailRows

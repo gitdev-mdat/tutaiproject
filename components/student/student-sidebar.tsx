@@ -4,8 +4,8 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  BookOpen,
   LayoutDashboard,
-  Map,
   User,
   Dumbbell,
   FileText,
@@ -18,7 +18,7 @@ import {
 import type { StudentDestination, StudentShellModel } from '@/lib/student/types';
 
 const DESTINATION_ICONS: Record<string, typeof LayoutDashboard> = {
-  roadmap: Map,
+  roadmap: BookOpen,
   practice: Dumbbell,
   exams: FileText,
   rankings: Trophy,
@@ -108,89 +108,36 @@ export function StudentSidebar({
         </Link>
       </div>
 
+      {/* One flat list: where to study first, then the competitive extras. */}
       <nav className="flex-1 overflow-y-auto px-4 pb-4 pt-2" aria-label="Điều hướng học tập">
-        <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Hành trình học
-        </p>
-        <ol className="relative space-y-1">
-          <span
-            aria-hidden="true"
-            className="absolute bottom-6 left-[27px] top-6 w-px bg-gradient-to-b from-blue-200 via-blue-100 to-transparent"
-          />
-          {learn.map((item) => {
-            const isActive = isDestinationActive(pathname, item);
-            const Icon = DESTINATION_ICONS[item.id] ?? Map;
-            return (
-              <li key={item.id} className="relative">
-                <Link
-                  href={item.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`group flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                    isActive ? 'bg-blue-50' : 'hover:bg-slate-50'
-                  }`}
-                >
-                  <span
-                    className={`relative grid size-8 shrink-0 place-items-center rounded-lg ring-4 ring-white transition-colors ${
-                      isActive
-                        ? 'bg-[#0052FF] text-white'
-                        : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-slate-800'
-                    }`}
-                  >
-                    <Icon size={16} strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0">
-                    <span
-                      className={`block text-[14px] font-bold leading-5 ${
-                        isActive ? 'text-blue-700' : 'text-slate-700 group-hover:text-slate-900'
-                      }`}
-                    >
-                      {item.title}
-                    </span>
-                    {item.hint && (
-                      <span className="block truncate text-[12px] leading-4 text-slate-400">
-                        {item.hint}
-                      </span>
-                    )}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
-
-        {[
-          { label: 'Luyện thêm', items: extra },
-          { label: 'Thi đấu', items: compete },
-        ].map(
-          (section) =>
-            section.items.length > 0 && (
-              <div key={section.label} className="mt-5">
-                <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  {section.label}
-                </p>
-                <ul className="space-y-0.5">
-                  {section.items.map((item) => {
-                    const isActive = isDestinationActive(pathname, item);
-                    const Icon = DESTINATION_ICONS[item.id] ?? Map;
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          href={item.href}
-                          aria-current={isActive ? 'page' : undefined}
-                          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                            isActive
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
-                        >
-                          <Icon size={16} strokeWidth={2} aria-hidden="true" />
-                          {item.title}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+        {[[...learn, ...extra], compete].map(
+          (items, index) =>
+            items.length > 0 && (
+              <ul
+                key={index}
+                className={`space-y-1 ${index > 0 ? 'mt-3 border-t border-slate-100 pt-3' : ''}`}
+              >
+                {items.map((item) => {
+                  const isActive = isDestinationActive(pathname, item);
+                  const Icon = DESTINATION_ICONS[item.id] ?? BookOpen;
+                  return (
+                    <li key={item.id}>
+                      <Link
+                        href={item.href}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[14px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <Icon size={18} strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
+                        {item.title}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             )
         )}
       </nav>
