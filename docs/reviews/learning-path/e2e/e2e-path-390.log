@@ -1,0 +1,43 @@
+PASS [390] A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản :: chapter created in the admin tree
+PASS [390] A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản :: admin order is Khái niệm, Môđun, Phép cộng, Bài nháp
+PASS [390] A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản :: admin publishes "Khái niệm số phức" (200)
+PASS [390] A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản :: admin publishes "Môđun của số phức" (200)
+PASS [390] A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản :: admin publishes "Phép cộng số phức" (200)
+PASS [390] A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản :: admin saves draft of "Bài nháp chưa mở (QA)" (200)
+PASS [390] A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản :: admin page: no console errors (textbook storage 503 excluded)
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: path order: Tính đơn điệu, Khái niệm, Môđun, Phép cộng
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: unpublished lesson is not on the page
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: two chapters on the path
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: new chapter is "Chương 2" and holds Bài 2–4
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: progress starts at 0/4
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: hero offers "Bắt đầu học" on lesson 1
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: hero says what comes after
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: no practice links on Học
+PASS [390] S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ :: draft lesson URL does not open the lesson
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: lesson trail says Chương 1 · Bài 1/4
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: end of lesson shows the next step card
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: end of lesson offers the next lesson to read
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: "Học bài tiếp" opens the next lesson
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: back on Học: 2/4 read
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: hero moves to Môđun with "Bắt đầu học"
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: read lessons are marked on the path
+PASS [390] S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo :: after reload: still 2/4
+PASS [390] S3 Học dở một bài, quay lại tiếp tục :: hero says "Học tiếp" for the half-read lesson
+PASS [390] S3 Học dở một bài, quay lại tiếp tục :: path marks it "Đang học · phần"
+PASS [390] S4 Hoàn thành mọi bài đang mở, sang Luyện tập :: all read: 4/4
+PASS [390] S4 Hoàn thành mọi bài đang mở, sang Luyện tập :: finished card is shown
+PASS [390] S4 Hoàn thành mọi bài đang mở, sang Luyện tập :: finished card keeps the path visible
+PASS [390] S4 Hoàn thành mọi bài đang mở, sang Luyện tập :: finished card offers review from lesson 1
+PASS [390] S4 Hoàn thành mọi bài đang mở, sang Luyện tập :: "Sang Luyện tập" opens Practice
+PASS [390] A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái :: admin publishes "Phương trình bậc hai với hệ số thực" (200)
+PASS [390] A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái :: new lesson appears at the end
+PASS [390] A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái :: progress becomes 4/5
+PASS [390] A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái :: hero moves to the new lesson
+PASS [390] A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái :: new lesson is "Chưa học"-current, the others stay read
+PASS [390] A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái :: draft lesson is still hidden
+PASS [390] S5 Bố cục và lỗi :: no horizontal overflow at 390
+PASS [390] S5 Bố cục và lỗi :: one h1 named Học
+PASS [390] S5 Bố cục và lỗi :: chapter header toggles with the keyboard
+PASS [390] S5 Bố cục và lỗi :: no console errors (student)
+
+41/41 passed at 390 (student qpp_path390_6esocldi)

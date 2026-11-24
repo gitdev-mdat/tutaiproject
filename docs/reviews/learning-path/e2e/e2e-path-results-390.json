@@ -1,0 +1,289 @@
+[
+ {
+  "vp": 390,
+  "scenario": "A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản",
+  "name": "chapter created in the admin tree",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản",
+  "name": "admin order is Khái niệm, Môđun, Phép cộng, Bài nháp",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản",
+  "name": "admin publishes \"Khái niệm số phức\" (200)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản",
+  "name": "admin publishes \"Môđun của số phức\" (200)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản",
+  "name": "admin publishes \"Phép cộng số phức\" (200)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản",
+  "name": "admin saves draft of \"Bài nháp chưa mở (QA)\" (200)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A1 Admin tạo chương, nhiều bài, sắp thứ tự, xuất bản",
+  "name": "admin page: no console errors (textbook storage 503 excluded)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "path order: Tính đơn điệu, Khái niệm, Môđun, Phép cộng",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "unpublished lesson is not on the page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "two chapters on the path",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "new chapter is \"Chương 2\" and holds Bài 2–4",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "progress starts at 0/4",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "hero offers \"Bắt đầu học\" on lesson 1",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "hero says what comes after",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "no practice links on Học",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S1 Học sinh thấy chương mới đúng thứ tự, bài nháp không lộ",
+  "name": "draft lesson URL does not open the lesson",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "lesson trail says Chương 1 · Bài 1/4",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "end of lesson shows the next step card",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "end of lesson offers the next lesson to read",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "\"Học bài tiếp\" opens the next lesson",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "back on Học: 2/4 read",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "hero moves to Môđun with \"Bắt đầu học\"",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "read lessons are marked on the path",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S2 Bắt đầu học, hoàn thành bài, sang bài tiếp theo",
+  "name": "after reload: still 2/4",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S3 Học dở một bài, quay lại tiếp tục",
+  "name": "hero says \"Học tiếp\" for the half-read lesson",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S3 Học dở một bài, quay lại tiếp tục",
+  "name": "path marks it \"Đang học · phần\"",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S4 Hoàn thành mọi bài đang mở, sang Luyện tập",
+  "name": "all read: 4/4",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S4 Hoàn thành mọi bài đang mở, sang Luyện tập",
+  "name": "finished card is shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S4 Hoàn thành mọi bài đang mở, sang Luyện tập",
+  "name": "finished card keeps the path visible",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S4 Hoàn thành mọi bài đang mở, sang Luyện tập",
+  "name": "finished card offers review from lesson 1",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S4 Hoàn thành mọi bài đang mở, sang Luyện tập",
+  "name": "\"Sang Luyện tập\" opens Practice",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái",
+  "name": "admin publishes \"Phương trình bậc hai với hệ số thực\" (200)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái",
+  "name": "new lesson appears at the end",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái",
+  "name": "progress becomes 4/5",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái",
+  "name": "hero moves to the new lesson",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái",
+  "name": "new lesson is \"Chưa học\"-current, the others stay read",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "A2 Admin mở thêm bài mới, học sinh nhận đúng trạng thái",
+  "name": "draft lesson is still hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S5 Bố cục và lỗi",
+  "name": "no horizontal overflow at 390",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S5 Bố cục và lỗi",
+  "name": "one h1 named Học",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S5 Bố cục và lỗi",
+  "name": "chapter header toggles with the keyboard",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "vp": 390,
+  "scenario": "S5 Bố cục và lỗi",
+  "name": "no console errors (student)",
+  "ok": true,
+  "detail": ""
+ }
+]
