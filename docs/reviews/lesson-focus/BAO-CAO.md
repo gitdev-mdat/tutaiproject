@@ -201,9 +201,9 @@ Sau đó: S1 học đủ 6 phần từ lộ trình; S2 ăn mừng một lần; S
 
 ## 10. Pull Request
 
-- Nhánh: `feature/lesson-focus`
-- Commit: COMMIT_SHA
-- PR: PR_URL (nháp)
+- Nhánh: `feature/lesson-experience-refine` (tên `feature/lesson-focus` đã có một nhánh cũ của PR #13 đã đóng, nên không ghi đè)
+- Commit: `6256fef` (mã nguồn), commit tiếp theo là báo cáo và ảnh
+- PR: https://github.com/gitdev-mdat/tutaiproject/pull/45 (nháp)
 - Preview: Vercel tạo preview cho PR; link xem trong mục Checks của PR.
 
 Cách xem:
