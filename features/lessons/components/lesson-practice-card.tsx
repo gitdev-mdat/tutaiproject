@@ -6,6 +6,8 @@ import { useStudentShell } from '@/components/student/student-shell';
 import type { LessonPracticeOverview } from '@/lib/practice/practice-service';
 import { useLessonProgress } from '../lib/lesson-progress';
 import {
+  lessonHref,
+  nextLessonToRead,
   pickNextStep,
   practiceHref,
   programHref,
@@ -59,7 +61,21 @@ export function LessonNextStep({
     : null;
   const nextStep: Action = plan
     ? { href: plan.href, label: nextStepLabel(plan), testId: 'next-lesson-link' }
-    : { href: programHref(program), label: 'Xem lộ trình của em', testId: 'next-roadmap-link' };
+    : { href: programHref(program), label: 'Về lộ trình học', testId: 'next-roadmap-link' };
+  // While this lesson's practice comes first, the next lesson to read stays one tap away.
+  const reading = progress
+    ? nextLessonToRead(
+        lessons.filter((lesson) => lesson.id !== lessonId),
+        progress
+      )
+    : null;
+  const readNext: Action | null = reading
+    ? {
+        href: lessonHref(reading.lesson.id),
+        label: `Học bài tiếp: ${reading.lesson.title}`,
+        testId: 'next-reading-link',
+      }
+    : null;
 
   const inProgress = overview?.inProgress ?? null;
   const best = overview?.best ?? null;
@@ -87,11 +103,13 @@ export function LessonNextStep({
         label: 'Làm tiếp luyện tập',
         testId: 'practice-continue',
       };
+      if (readNext) links.push(readNext);
       break;
     case 'ready':
       title = 'Luyện tập để hoàn thành bài';
       detail = `${overview!.questionCount} câu, chấm ngay từng câu và có lời giải. Đạt 80% là bài này hoàn thành.`;
       primary = { href: practice(), label: 'Bắt đầu luyện tập', testId: 'practice-start' };
+      if (readNext) links.push(readNext);
       break;
     case 'retry':
       // Failed: try again, or first look at what went wrong.
@@ -108,6 +126,7 @@ export function LessonNextStep({
           label: 'Xem lại bài đã làm',
           testId: 'practice-review',
         });
+      if (readNext) links.push(readNext);
       break;
     case 'passed':
       title = 'Em đã hoàn thành bài này';
