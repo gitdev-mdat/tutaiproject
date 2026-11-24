@@ -473,7 +473,7 @@ function ContinueBar({
     <>
       <nav
         aria-label="Chuyển phần"
-        className="mt-10 hidden items-start justify-between gap-3 border-t border-slate-200 pt-6 md:flex"
+        className="sticky bottom-0 z-20 mt-8 hidden items-center justify-between gap-3 border-t border-slate-200 bg-[#F8FAFD]/90 py-3 backdrop-blur md:flex"
         data-testid="part-end"
       >
         {onBack ? (

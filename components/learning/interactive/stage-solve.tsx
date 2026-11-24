@@ -5,11 +5,11 @@ import { CheckCircle2 } from 'lucide-react';
 import type { PracticeQuestion } from '@/lib/practice/grading';
 import type { InteractivePlan } from '@/lib/learning/interactive-lesson';
 import { VariationTable, useAnalysis, type PieceTone } from '../function-graph';
-import { QuickCheck } from '../quick-check';
 import { InlineText } from '../rich-text';
-import { Feedback, RuntimeContext } from './beats';
+import { RuntimeContext } from './beats';
+import { TeacherQuestions } from './teacher-questions';
 import { ExploreGraph } from './explore-graph';
-import { GuidedSolver, MethodSteps, type SolverStep } from './guided-solver';
+import { GuidedSolver, type SolverStep } from './guided-solver';
 import { StageLayout } from './stage-layout';
 
 const AFTER = (step: SolverStep, target: SolverStep) => {
@@ -74,28 +74,22 @@ export function SolveStage({
   );
 
   return (
-    <StageLayout graph={graph}>
-      <div
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5"
-        data-testid="problem"
-      >
-        <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          {plan.example?.title ?? 'Ví dụ'}
-        </p>
-        <p className="mt-1 text-[16px] font-semibold leading-7 text-[#091224]">
-          <InlineText text={problem} />
-        </p>
-      </div>
-      <MethodSteps method={plan.method} step={step} />
+    <StageLayout graph={graph} balance="even">
+      <Problem label={plan.example?.title ?? 'Ví dụ'} text={problem} />
       <GuidedSolver
         source={plan.main}
         example={plan.example}
         activity="vi-du"
         onProgress={report}
+        method={plan.method}
+        finishLabel="Bảng biến thiên"
+        framedFinish={false}
+        finish={
+          // The solver said it is right and the graph says "Khớp đồ thị": the
+          // table that gathers the four steps needs no third note.
+          <VariationTable source={plan.main} animate={!review} />
+        }
       />
-      {/* The solver has just said it is right, and the graph says "Khớp đồ thị":
-          the table that gathers the four steps follows without a third note. */}
-      {step === 'solved' && <VariationTable source={plan.main} animate={!review} />}
     </StageLayout>
   );
 }
@@ -158,42 +152,54 @@ export function ChallengeStage({
   );
 
   return (
-    <StageLayout graph={graph} graphBelowOnPhones={!solved}>
-      <div
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5"
-        data-testid="problem"
-      >
-        <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          Thử thách
-        </p>
-        <p className="mt-1 text-[16px] font-semibold leading-7 text-[#091224]">
-          <InlineText
-            text={`Tìm các khoảng đồng biến và nghịch biến của hàm số $y = ${expression}$.`}
-          />
-        </p>
-        <p className="mt-1 text-[14px] text-slate-500">
-          Lần này không có lời giải mẫu. Em làm được!
-        </p>
-      </div>
-      <MethodSteps method={plan.method} step={step} />
-      <GuidedSolver source={source} example={null} activity="thu-suc" onProgress={report} />
-      {solved && (
-        <>
-          {!review && (
-            <Feedback tone="right" title="Đồ thị vừa hiện ra khớp với kết luận của em.">
-              Xanh là các khoảng đồng biến, đỏ là các khoảng nghịch biến.
-            </Feedback>
-          )}
-          {checks.length > 0 && (
-            <div className="pt-2" data-testid="lesson-checks">
-              <h3 className="text-[15px] font-bold text-[#091224]">Câu hỏi của thầy cô</h3>
-              <div className="mt-2">
-                <QuickCheck lessonId={lessonId} questions={checks} hint={plan.method} />
-              </div>
-            </div>
-          )}
-        </>
-      )}
+    <StageLayout graph={graph} graphBelowOnPhones={!solved} balance="even">
+      <Problem
+        label="Thử thách"
+        text={`Tìm các khoảng đồng biến và nghịch biến của hàm số $y = ${expression}$.`}
+        note="Lần này không có lời giải mẫu. Em làm được!"
+      />
+      <GuidedSolver
+        source={source}
+        example={null}
+        activity="thu-suc"
+        onProgress={report}
+        method={plan.method}
+        finishLabel="Kiểm tra"
+        finish={
+          <>
+            <p className="flex items-start gap-2 text-[15px] leading-6 text-[#091224]">
+              <CheckCircle2
+                className="mt-0.5 size-5 shrink-0 text-emerald-600"
+                aria-hidden="true"
+              />
+              <span>
+                <strong className="font-bold">Đồ thị vừa hiện ra khớp với kết luận của em.</strong>{' '}
+                Xanh là các khoảng đồng biến, đỏ là các khoảng nghịch biến.
+              </span>
+            </p>
+            {checks.length > 0 && (
+              <TeacherQuestions lessonId={lessonId} questions={checks} hint={plan.method} />
+            )}
+          </>
+        }
+      />
     </StageLayout>
+  );
+}
+
+/** The task, in one short card above the workspace. */
+function Problem({ label, text, note }: { label: string; text: string; note?: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3" data-testid="problem">
+      <p className="text-[15px] leading-7 text-[#091224] sm:text-[16px]">
+        <span className="mr-1.5 text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">
+          {label}
+        </span>
+        <span className="font-semibold">
+          <InlineText text={text} />
+        </span>
+      </p>
+      {note && <p className="text-[13px] text-slate-500">{note}</p>}
+    </div>
   );
 }

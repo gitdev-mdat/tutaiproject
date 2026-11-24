@@ -198,17 +198,21 @@ export function Choices({
   attempt,
   onAnswer,
   columns = 1,
+  layout,
   testId,
 }: {
   choices: Choice[];
   attempt: ReturnType<typeof useAttempt>;
   onAnswer?: (choice: Choice) => void;
   columns?: 1 | 2 | 3;
+  /** Grid classes that replace `columns`, e.g. one column on phones. */
+  layout?: string;
   testId?: string;
 }) {
   const [picked, setPicked] = React.useState<string[]>([]);
   const closed = attempt.done;
-  const grid = columns === 3 ? 'grid-cols-3' : columns === 2 ? 'grid-cols-2' : 'grid-cols-1';
+  const grid =
+    layout ?? (columns === 3 ? 'grid-cols-3' : columns === 2 ? 'grid-cols-2' : 'grid-cols-1');
   return (
     <div className={`mt-3 grid gap-2 ${grid}`} role="group" data-testid={testId}>
       {choices.map((choice) => {
