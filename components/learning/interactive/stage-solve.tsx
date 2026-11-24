@@ -93,16 +93,9 @@ export function SolveStage({
         activity="vi-du"
         onProgress={report}
       />
-      {step === 'solved' && (
-        <>
-          {!review && (
-            <Feedback tone="right" title="Kết luận của em khớp với đồ thị.">
-              Đây là bảng biến thiên gom lại cả bốn bước.
-            </Feedback>
-          )}
-          <VariationTable source={plan.main} animate={!review} />
-        </>
-      )}
+      {/* The solver has just said it is right, and the graph says "Khớp đồ thị":
+          the table that gathers the four steps follows without a third note. */}
+      {step === 'solved' && <VariationTable source={plan.main} animate={!review} />}
     </StageLayout>
   );
 }

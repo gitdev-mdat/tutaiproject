@@ -276,15 +276,17 @@ function StepReview({
   fallback: string | null;
 }) {
   const { review } = React.useContext(RuntimeContext);
+  const { status, misses, hints } = attempt.state;
+  const byThemselves = review || (status === 'correct' && misses === 0 && hints === 0);
   return (
     <>
       {!review && attempt.state.status === 'revealed' && (
         <Feedback tone="shown" title="Không sao, mình cùng xem lời giải nhé." />
       )}
       {model ? (
-        <ModelStep label={model.label} body={model.body} />
+        <ModelStep label={model.label} body={model.body} folded={byThemselves} />
       ) : fallback ? (
-        <ModelStep label={null} body={fallback} />
+        <ModelStep label={null} body={fallback} folded={byThemselves} />
       ) : null}
     </>
   );

@@ -142,7 +142,7 @@ export function ShapeStage({
       {turning.length > 0 && (
         <Beat
           number={1}
-          title="Quan sát"
+          title="Tìm chỗ đổi chiều"
           status={allFound ? 'done' : 'active'}
           summary={
             <>

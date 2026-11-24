@@ -1,26 +1,59 @@
 'use client';
 
+import * as React from 'react';
+import { soundSettingOn } from '@/lib/learning/lesson-celebration';
+
 /**
- * Optional, off by default: a soft two-note chime for a right answer and a
- * low note for a miss, synthesised with Web Audio (no audio files).
+ * The lesson's sound, on by default: a soft two-note chime for a right answer
+ * and a low note for a miss (synthesised with Web Audio, no files), and the
+ * completion bells played once, on the first finish of a lesson. A student can
+ * turn it off from the lesson header; that choice is kept on this device
+ * (`tutai:lesson-sound` = `'off'`).
  */
 
 const KEY = 'tutai:lesson-sound';
 
 export function readSoundSetting(): boolean {
   try {
-    return window.localStorage.getItem(KEY) === 'on';
+    return soundSettingOn(window.localStorage.getItem(KEY));
   } catch {
-    return false;
+    return true;
   }
 }
 
+let session: boolean | null = null;
+const listeners = new Set<() => void>();
+
 export function writeSoundSetting(on: boolean) {
+  session = on;
   try {
     window.localStorage.setItem(KEY, on ? 'on' : 'off');
   } catch {
     // Private mode: the setting lasts for this visit only.
   }
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  window.addEventListener('storage', listener);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener('storage', listener);
+  };
+}
+
+/**
+ * The sound setting, read after hydration (the server renders it off, so the
+ * first paint matches) and shared by every part of the page.
+ */
+export function useSoundSetting(): [boolean, (on: boolean) => void] {
+  const on = React.useSyncExternalStore(
+    subscribe,
+    () => session ?? readSoundSetting(),
+    () => false
+  );
+  return [on, writeSoundSetting];
 }
 
 let context: AudioContext | null = null;

@@ -2,10 +2,16 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Clock3, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock3, Lock, Volume2, VolumeX } from 'lucide-react';
 import type { LessonJourney } from '@/lib/knowledge-tree/lesson-journey';
 import type { PracticeQuestion } from '@/lib/practice/grading';
 import { restoreInteractiveStage, type InteractivePlan } from '@/lib/learning/interactive-lesson';
+import {
+  afterNavigation,
+  isFirstCompletion,
+  NO_CELEBRATION,
+  type Celebration,
+} from '@/lib/learning/lesson-celebration';
 import {
   recordLessonStage,
   recordLessonViewed,
@@ -14,7 +20,7 @@ import {
 import { LESSON_SUMMARY_HASH } from '@/features/lessons/lib/study-plan';
 import { InlineText } from '../rich-text';
 import { RuntimeContext } from './beats';
-import { preloadRewards, readSoundSetting, writeSoundSetting } from './sound';
+import { preloadRewards, useSoundSetting } from './sound';
 import { FlatStage } from './stage-flat';
 import { FinishStage } from './stage-finish';
 import { useGraphHeight } from './stage-layout';
@@ -73,11 +79,10 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
   // Parts the student chose to do again: shown fresh instead of answered.
   const [redo, setRedo] = React.useState<Record<string, number>>({});
   const [celebrate, setCelebrate] = React.useState(false);
-  // Each play of the completion celebration (the first finish, or a replay).
-  const [celebration, setCelebration] = React.useState({ run: 0, at: 0 });
-  const [sound, setSound] = React.useState(
-    () => typeof window !== 'undefined' && readSoundSetting()
-  );
+  // The one play of the completion celebration: the first finish only, spent
+  // once the student leaves the last part (see lib/learning/lesson-celebration).
+  const [celebration, setCelebration] = React.useState<Celebration>(NO_CELEBRATION);
+  const [sound, setSound] = useSoundSetting();
   const top = React.useRef<HTMLDivElement>(null);
   const height = useGraphHeight();
 
@@ -112,6 +117,7 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
   const show = (index: number, limit = reachable) => {
     if (index < 0 || index > limit) return;
     setCurrent(index);
+    setCelebration((value) => afterNavigation(value, index, last));
     window.requestAnimationFrame(() => {
       const rect = top.current?.getBoundingClientRect();
       if (rect && rect.top < 0) top.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -124,7 +130,7 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
     if (next > opened) {
       setOpened(next);
       if (studentKey) recordLessonStage(studentKey, lessonId, next, stageIds);
-      if (next === last && !learned) {
+      if (isFirstCompletion({ next, last, opened, learned, celebrated: celebrate })) {
         setCelebrate(true);
         setCelebration({ run: 1, at: Date.now() });
       }
@@ -146,13 +152,6 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
   React.useEffect(() => {
     if (sound && nearEnd) preloadRewards();
   }, [sound, nearEnd]);
-
-  const toggleSound = () => {
-    setSound((value) => {
-      writeSoundSetting(!value);
-      return !value;
-    });
-  };
 
   const runtime = React.useMemo(
     () => ({ lessonId, studentKey, review: review(current), sound }),
@@ -196,12 +195,10 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
           practiceCard={props.practiceCard}
           celebrate={celebrate}
           celebration={celebration}
-          onReplay={() => setCelebration((value) => ({ run: value.run + 1, at: Date.now() }))}
           streak={streak}
           onRestart={() => show(0)}
           onRetryChallenge={stageIds.includes('thu-suc') ? () => again('thu-suc') : null}
           sound={sound}
-          onToggleSound={toggleSound}
         />
       );
       break;
@@ -254,6 +251,8 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
           learned={learned}
           minutes={Math.max(8, (stages.length - 1) * 3)}
           onSelect={show}
+          sound={sound}
+          onToggleSound={() => setSound(!sound)}
         />
       </header>
 
@@ -264,19 +263,19 @@ export function InteractiveLesson(props: InteractiveLessonProps) {
           className="mt-4 sm:mt-6"
           data-stage={stage.kind}
         >
+          {/* The part's number and kind are on the bar above: here only what to do. */}
           {stage.kind !== 'finish' && (
-            <div className="mb-3 sm:mb-4">
-              <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">
-                Phần {current + 1} · {EYEBROW[stage.kind]}
-              </p>
+            <div className="mb-3 sm:mb-4" data-testid="part-heading">
               <h2
                 id={`${stage.id}-title`}
                 tabIndex={-1}
-                className="mt-0.5 text-[20px] font-extrabold leading-snug tracking-tight text-[#091224] focus:outline-none sm:text-[23px]"
+                className="text-[19px] font-extrabold leading-snug tracking-tight text-[#091224] focus:outline-none sm:text-[22px]"
               >
                 <InlineText text={stage.title} />
               </h2>
-              {stage.goal && <p className="mt-0.5 text-[14px] text-slate-500">{stage.goal}</p>}
+              {stage.goal && (
+                <p className="mt-0.5 text-[14px] leading-6 text-slate-500">{stage.goal}</p>
+              )}
             </div>
           )}
           {stage.kind === 'finish' && (
@@ -309,6 +308,8 @@ function StageBar({
   learned,
   minutes,
   onSelect,
+  sound,
+  onToggleSound,
 }: {
   stages: InteractivePlan['stages'];
   current: number;
@@ -316,6 +317,8 @@ function StageBar({
   learned: boolean;
   minutes: number;
   onSelect: (index: number) => void;
+  sound: boolean;
+  onToggleSound: () => void;
 }) {
   return (
     <nav
@@ -323,12 +326,36 @@ function StageBar({
       className="w-full shrink-0 lg:w-[400px]"
       data-testid="part-bar"
     >
-      <div className="flex items-center justify-between text-[13px]">
-        <span className="font-semibold text-[#091224]">
+      <div className="flex items-center justify-between gap-3 text-[13px]">
+        <span className="min-w-0 truncate font-semibold text-[#091224]" data-testid="part-count">
           Phần {current + 1}/{stages.length}
+          <span className="text-blue-700 sm:hidden"> · {EYEBROW[stages[current].kind]}</span>
         </span>
-        <span className="inline-flex items-center gap-1 text-slate-400">
-          <Clock3 className="size-3.5" aria-hidden="true" /> ~{minutes} phút
+        <span className="inline-flex shrink-0 items-center gap-1 text-slate-400">
+          {learned ? (
+            <span className="font-semibold text-emerald-700" data-testid="lesson-learned">
+              Đã học xong
+            </span>
+          ) : (
+            <>
+              <Clock3 className="size-3.5" aria-hidden="true" /> ~{minutes} phút
+            </>
+          )}
+          <button
+            type="button"
+            onClick={onToggleSound}
+            aria-pressed={sound}
+            aria-label={sound ? 'Tắt âm thanh bài học' : 'Bật âm thanh bài học'}
+            title={sound ? 'Tắt âm thanh' : 'Bật âm thanh'}
+            className="-my-2 -mr-2 ml-1 grid size-9 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            data-testid="sound-setting"
+          >
+            {sound ? (
+              <Volume2 className="size-4" aria-hidden="true" />
+            ) : (
+              <VolumeX className="size-4" aria-hidden="true" />
+            )}
+          </button>
         </span>
       </div>
       <ol className="mt-1.5 flex gap-1" aria-label="Tiến độ">
