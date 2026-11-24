@@ -1,0 +1,492 @@
+[
+ {
+  "width": 360,
+  "scenario": "A1 Bài chưa xuất bản không mở được",
+  "name": "draft P1: the lesson does not open for a student",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A1 Bài chưa xuất bản không mở được",
+  "name": "draft P1 is not on the learning path",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A2 Admin xuất bản bài qua Admin UI, thêm một bài nháp",
+  "name": "admin publishes P1 from the lesson editor (200)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A2 Admin xuất bản bài qua Admin UI, thêm một bài nháp",
+  "name": "article is PUBLISHED for learning",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A2 Admin xuất bản bài qua Admin UI, thêm một bài nháp",
+  "name": "the lesson content survives the save (graph y = x^3 - 3x^2 + 2 kept)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A2 Admin xuất bản bài qua Admin UI, thêm một bài nháp",
+  "name": "admin saves the second lesson as a draft",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A2 Admin xuất bản bài qua Admin UI, thêm một bài nháp",
+  "name": "admin: no console errors (textbook storage 503 excluded)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A3 Học sinh thấy bài vừa xuất bản, bài nháp vẫn ẩn",
+  "name": "P1 now on the learning path",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A3 Học sinh thấy bài vừa xuất bản, bài nháp vẫn ẩn",
+  "name": "the draft lesson is not on the path",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "A3 Học sinh thấy bài vừa xuất bản, bài nháp vẫn ẩn",
+  "name": "draft lesson URL does not open",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "roadmap opens the lesson",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "sound is on by default (header icon pressed)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "bat-dau: one heading, no repeated \"Phần n ·\" eyebrow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "bat-dau: continue is locked until the activity is done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "bat-dau: no horizontal overflow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "kham-pha: one heading, no repeated \"Phần n ·\" eyebrow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "kham-pha: continue is locked until the activity is done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "kham-pha: no horizontal overflow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "mo-rong: one heading, no repeated \"Phần n ·\" eyebrow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "mo-rong: continue is locked until the activity is done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "mo-rong: no horizontal overflow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "vi-du: one heading, no repeated \"Phần n ·\" eyebrow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "vi-du: continue is locked until the activity is done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "vi-du: one success note, not two",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "vi-du: worked solution folded after a first-try answer (\"Xem lời giải mẫu\")",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "vi-du: variation table shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "vi-du: no horizontal overflow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "thu-suc: one heading, no repeated \"Phần n ·\" eyebrow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "thu-suc: continue is locked until the activity is done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "thu-suc: no horizontal overflow",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "went through the five activity parts in order",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S1 Từ lộ trình mở bài và học đủ 6 phần",
+  "name": "no celebration before the last part",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "on the finish part",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "fireworks played once",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "completion sound played once",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "streak accent at most once (new day)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "mode is the first-time celebration",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "title: \"Tuyệt vời! Em đã tự khám phá cả bài.\"",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "no replay button, no sound toggle on the summary",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "the next step is visible without scrolling",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "fireworks gone after the celebration",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "no horizontal overflow on the summary",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S2 Lần đầu hoàn thành: ăn mừng và âm thanh đúng một lần",
+  "name": "progress saved as completed",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S3 Quay lại một phần rồi về cuối: không ăn mừng lại",
+  "name": "part 1 opens in review (continue open at once)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S3 Quay lại một phần rồi về cuối: không ăn mừng lại",
+  "name": "no second fireworks",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S3 Quay lại một phần rồi về cuối: không ăn mừng lại",
+  "name": "no second sound",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S3 Quay lại một phần rồi về cuối: không ăn mừng lại",
+  "name": "summary stays calm (no animation mode)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S4 Tải lại trang: trạng thái đã học, không hiệu ứng",
+  "name": "reload opens on the summary",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S4 Tải lại trang: trạng thái đã học, không hiệu ứng",
+  "name": "reload: no fireworks, no sound",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S4 Tải lại trang: trạng thái đã học, không hiệu ứng",
+  "name": "reload: quiet revisit mode",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S4 Tải lại trang: trạng thái đã học, không hiệu ứng",
+  "name": "reload: \"Em đã học xong bài này\" and \"Đã học xong\" in the header",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S4 Tải lại trang: trạng thái đã học, không hiệu ứng",
+  "name": "reload: no replay button, no sound toggle",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S5 Về lộ trình rồi mở lại bài",
+  "name": "roadmap marks P1 learned",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S5 Về lộ trình rồi mở lại bài",
+  "name": "reopen: no fireworks, no sound",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S5 Về lộ trình rồi mở lại bài",
+  "name": "reopen: quiet revisit mode",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "review bat-dau: opens with its answers, continue open",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "review kham-pha: opens with its answers, continue open",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "review mo-rong: opens with its answers, continue open",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "review vi-du: opens with its answers, continue open",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "review thu-suc: opens with its answers, continue open",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "review vi-du/thu-suc: worked solution folded",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "reviewing every part triggers no celebration",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S6 Xem lại các phần",
+  "name": "\"Xem lại từ đầu\" opens part 1",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S7 Luyện tập từ bài học và tiếp tục",
+  "name": "practice question graded in the UI",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S7 Luyện tập từ bài học và tiếp tục",
+  "name": "back on the lesson the card offers to continue practice",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S7 Luyện tập từ bài học và tiếp tục",
+  "name": "coming back from practice: no celebration",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S7 Luyện tập từ bài học và tiếp tục",
+  "name": "\"Luyện tiếp\" returns to the same attempt",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S8 Tiến độ được giữ nguyên",
+  "name": "lesson progress unchanged after revisits, review and practice",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S8 Tiến độ được giữ nguyên",
+  "name": "one learning day recorded on the server for P1 (idempotent completion)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "width": 360,
+  "scenario": "S8 Tiến độ được giữ nguyên",
+  "name": "no console errors (student)",
+  "ok": true,
+  "detail": ""
+ }
+]
