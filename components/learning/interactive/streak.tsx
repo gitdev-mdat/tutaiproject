@@ -7,8 +7,8 @@ import { prefersReducedMotion } from './fireworks';
 /**
  * The daily learning streak on the completion screen. The number shown is
  * always the one the server stored: nothing is counted up in the browser, a
- * failed request shows no streak, and replaying the celebration only replays
- * what was confirmed.
+ * failed request shows no streak, and the one celebration only shows what
+ * was confirmed.
  */
 
 export type StreakState =
@@ -102,30 +102,51 @@ export function streakCopy(result: CompletionResult): { title: string; message: 
 }
 
 /**
- * The streak inside the completion banner. `run` is the celebration being
+ * The streak inside the completion card. `run` is the celebration being
  * played (0 for none): with a new day awarded, the number rolls from the old
- * streak to the new one and the flame flares as it lands.
+ * streak to the new one and the flame flares as it lands. `quiet` (a lesson
+ * learned before) shows only the number, in one line.
  */
 export function StreakPanel({
   state,
   run,
   revealDelay,
+  quiet = false,
 }: {
   state: StreakState;
   run: number;
   /** Seconds before the roll, so it lands after the fireworks start. */
   revealDelay: number;
+  quiet?: boolean;
 }) {
+  if (quiet) {
+    if (state.phase !== 'done' || state.result.current === 0) return null;
+    const waiting = state.result.status === 'repeat' && !state.result.today;
+    return (
+      <p
+        className="mt-3 flex items-center gap-1.5 text-[14px] text-slate-600"
+        data-testid="streak"
+        data-status={state.result.status}
+        data-current={state.result.current}
+      >
+        <FlameIcon dim={waiting} still className="!h-5 !w-[18px]" style={{}} />
+        <span>
+          <strong className="font-extrabold text-amber-600">{state.result.current}</strong> ngày học
+          liên tiếp
+        </span>
+      </p>
+    );
+  }
   if (state.phase === 'pending') {
     return (
-      <p className="mt-5 text-[14px] text-blue-200/80 tt-fade-in" data-testid="streak-pending">
+      <p className="mt-4 text-[14px] text-slate-400" data-testid="streak-pending">
         Đang lưu chuỗi ngày học…
       </p>
     );
   }
   if (state.phase === 'none') {
     return state.failed ? (
-      <p className="mt-5 text-[14px] text-blue-200" role="status" data-testid="streak-error">
+      <p className="mt-4 text-[14px] text-slate-500" role="status" data-testid="streak-error">
         Chưa lưu được chuỗi ngày học lúc này. Bài học của em vẫn được ghi nhận.
       </p>
     ) : null;
@@ -143,8 +164,8 @@ export function StreakPanel({
   return (
     <div
       key={run}
-      className="tt-rise mt-5 flex items-center gap-3.5 rounded-2xl bg-white/[0.08] px-4 py-3 ring-1 ring-white/15 sm:gap-4"
-      style={{ animationDelay: `${run ? revealDelay : 0}s` }}
+      className={`mt-4 flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50/70 px-3.5 py-2.5 ${run ? 'tt-rise' : ''}`}
+      style={run ? { animationDelay: `${revealDelay}s` } : undefined}
       data-testid="streak"
       data-status={result.status}
       data-current={result.current}
@@ -167,9 +188,9 @@ export function StreakPanel({
           ))}
       </span>
       <div className="min-w-0" role="status" aria-live="polite">
-        <p className="flex flex-wrap items-baseline gap-x-2 text-white">
+        <p className="flex flex-wrap items-baseline gap-x-2 text-[#091224]">
           <span
-            className="relative inline-block h-[1.15em] overflow-hidden text-[34px] font-black leading-[1.15] tabular-nums sm:text-[38px]"
+            className="relative inline-block h-[1.15em] overflow-hidden text-[26px] font-black leading-[1.15] tabular-nums text-amber-600"
             data-testid="streak-number"
           >
             {rising ? (
@@ -182,17 +203,13 @@ export function StreakPanel({
             )}
           </span>
           {numberFirst ? (
-            <span className="text-[17px] font-extrabold sm:text-[19px]">{copy.title}</span>
+            <span className="text-[15px] font-bold">{copy.title}</span>
           ) : (
-            <span className="text-[15px] font-bold text-blue-100">ngày học liên tiếp</span>
+            <span className="text-[14px] font-semibold text-slate-600">ngày học liên tiếp</span>
           )}
         </p>
-        {!numberFirst && (
-          <p className="mt-0.5 text-[16px] font-extrabold text-white sm:text-[17px]">
-            {copy.title}
-          </p>
-        )}
-        <p className="mt-0.5 text-[14px] leading-6 text-blue-100" data-testid="streak-message">
+        {!numberFirst && <p className="text-[15px] font-bold text-[#091224]">{copy.title}</p>}
+        <p className="text-[13px] leading-5 text-slate-600" data-testid="streak-message">
           {numberFirst ? copy.message : 'Mai học tiếp để chuỗi dài thêm nhé.'}
         </p>
       </div>
@@ -209,10 +226,12 @@ const EMBERS: Array<[number, number]> = [
 
 function FlameIcon({
   dim,
+  still = false,
   className,
   style,
 }: {
   dim: boolean;
+  still?: boolean;
   className: string;
   style: React.CSSProperties;
 }) {
@@ -220,7 +239,7 @@ function FlameIcon({
   return (
     <svg
       viewBox="0 0 48 56"
-      className={`block h-12 w-[42px] sm:h-14 sm:w-12 ${className} ${dim ? 'opacity-55 saturate-50' : ''}`}
+      className={`block h-9 w-8 ${className} ${dim ? 'opacity-55 saturate-50' : ''}`}
       style={style}
     >
       <defs>
@@ -234,7 +253,7 @@ function FlameIcon({
           <stop offset="1" stopColor="#FFF7D6" />
         </linearGradient>
       </defs>
-      <g className={dim ? '' : 'tt-flicker'}>
+      <g className={dim || still ? '' : 'tt-flicker'}>
         <path
           d="M24 2c2 9 12 14 14 26 2 13-6 25-14 25S8 46 8 35c0-7 4-11 7-14 0 5 2 8 5 9-2-10 0-20 4-28z"
           fill={`url(#${id}-outer)`}

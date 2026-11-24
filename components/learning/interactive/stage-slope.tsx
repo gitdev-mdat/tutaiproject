@@ -437,6 +437,7 @@ export function Question({
   attempt,
   hints,
   columns,
+  layout,
   testId,
   onAnswer,
 }: {
@@ -444,6 +445,7 @@ export function Question({
   attempt: ReturnType<typeof useAttempt>;
   hints: React.ReactNode[];
   columns?: 1 | 2 | 3;
+  layout?: string;
   testId?: string;
   onAnswer?: (choice: Choice) => void;
 }) {
@@ -454,6 +456,7 @@ export function Question({
         choices={choices}
         attempt={attempt}
         columns={columns}
+        layout={layout}
         testId={testId}
         onAnswer={(choice) => {
           setLastWrong(choice.correct ? null : (choice.why ?? 'Thử lại với gợi ý bên dưới nhé.'));

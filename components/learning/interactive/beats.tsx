@@ -198,17 +198,21 @@ export function Choices({
   attempt,
   onAnswer,
   columns = 1,
+  layout,
   testId,
 }: {
   choices: Choice[];
   attempt: ReturnType<typeof useAttempt>;
   onAnswer?: (choice: Choice) => void;
   columns?: 1 | 2 | 3;
+  /** Grid classes that replace `columns`, e.g. one column on phones. */
+  layout?: string;
   testId?: string;
 }) {
   const [picked, setPicked] = React.useState<string[]>([]);
   const closed = attempt.done;
-  const grid = columns === 3 ? 'grid-cols-3' : columns === 2 ? 'grid-cols-2' : 'grid-cols-1';
+  const grid =
+    layout ?? (columns === 3 ? 'grid-cols-3' : columns === 2 ? 'grid-cols-2' : 'grid-cols-1');
   return (
     <div className={`mt-3 grid gap-2 ${grid}`} role="group" data-testid={testId}>
       {choices.map((choice) => {
@@ -400,16 +404,44 @@ export function DiscoveryCard({
   );
 }
 
-/** The admin's own step text, shown after the student has done the step. */
-export function ModelStep({ label, body }: { label: string | null; body: string }) {
+/**
+ * The admin's own step text, shown after the student has done the step. A
+ * student who got the step right by themselves sees it folded ("Xem lời giải
+ * mẫu"): it is there to compare, not to read again. After help or a shown
+ * answer it is open.
+ */
+export function ModelStep({
+  label,
+  body,
+  folded = false,
+}: {
+  label: string | null;
+  body: string;
+  folded?: boolean;
+}) {
+  const title = `Lời giải mẫu${label ? ` · ${label}` : ''}`;
+  if (folded) {
+    return (
+      <details className="group mt-3" data-testid="model-step" data-folded="true">
+        <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-1.5 rounded-lg text-[14px] font-semibold text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
+          <ChevronDown
+            className="size-4 -rotate-90 transition-transform group-open:rotate-0"
+            aria-hidden="true"
+          />
+          Xem {title.charAt(0).toLowerCase() + title.slice(1)}
+        </summary>
+        <div className="mt-1 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+          <RichText content={body} className="text-[15px] leading-7 text-slate-800" />
+        </div>
+      </details>
+    );
+  }
   return (
     <div
       className="tt-rise mt-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3"
       data-testid="model-step"
     >
-      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-slate-500">
-        Lời giải mẫu{label ? ` · ${label}` : ''}
-      </p>
+      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-slate-500">{title}</p>
       <RichText content={body} className="mt-1 text-[15px] leading-7 text-slate-800" />
     </div>
   );

@@ -13,11 +13,17 @@ export function StageLayout({
   graph,
   children,
   graphBelowOnPhones = false,
+  balance = 'graph',
 }: {
   graph: React.ReactNode | null;
   children: React.ReactNode;
   /** A graph with nothing to look at yet (the hidden challenge) goes after the activity on phones. */
   graphBelowOnPhones?: boolean;
+  /**
+   * 'graph': the graph is the centrepiece (exploring). 'even': a workspace
+   * of steps beside the graph, both columns the same width.
+   */
+  balance?: 'graph' | 'even';
 }) {
   if (!graph)
     return (
@@ -26,7 +32,13 @@ export function StageLayout({
       </BeatFocusProvider>
     );
   return (
-    <div className="flex flex-col md:grid md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:items-start md:gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-8">
+    <div
+      className={`flex flex-col md:grid md:items-start md:gap-6 xl:gap-8 ${
+        balance === 'even'
+          ? 'md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
+          : 'md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]'
+      }`}
+    >
       <div
         className={
           graphBelowOnPhones

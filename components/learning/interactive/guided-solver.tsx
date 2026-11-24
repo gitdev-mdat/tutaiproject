@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowDownRight, ArrowUpRight, Check, ListOrdered } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Check, ListOrdered } from 'lucide-react';
 import {
   analyzeFunction,
   derivative,
@@ -18,7 +18,6 @@ import type { WorkedExample } from '@/lib/knowledge-tree/lesson-journey';
 import { decimal } from '../function-graph';
 import { InlineText } from '../rich-text';
 import {
-  Beat,
   Feedback,
   Hints,
   ModelStep,
@@ -31,11 +30,15 @@ import {
 import { Question } from './stage-slope';
 
 /**
- * "Tự giải": the lesson's procedure done by the student on one function, one
- * step at a time (domain → derivative → f′ = 0 → sign of f′ → conclusion).
- * Every option, hint and check comes from the analysed function; after each
- * step the admin's own worked solution for that step is shown, when there is
- * one. `onProgress` reports how far the student is, so the graph can follow.
+ * "Tự giải": the lesson's procedure done by the student on one function, as a
+ * workspace of the method's four steps (domain → derivative and y′ = 0 →
+ * sign of y′ → conclusion). One step is on screen at a time; the step bar
+ * shows the whole method, where the student is, and opens any finished step
+ * again (its answers and feedback kept: every panel stays mounted). A one-line
+ * ledger under the bar keeps what was established so far. Every option, hint
+ * and check comes from the analysed function; after each step the admin's own
+ * worked solution for that step is shown, when there is one. `onProgress`
+ * reports how far the student is, so the graph can follow.
  */
 
 export type SolverStep = 'domain' | 'derivative' | 'roots' | 'signs' | 'conclusion' | 'solved';
@@ -46,6 +49,10 @@ export function GuidedSolver({
   example,
   activity,
   onProgress,
+  method = null,
+  finishLabel,
+  finish,
+  framedFinish = true,
 }: {
   source: string;
   /** The admin's worked example about this function, compared with after each step. */
@@ -53,6 +60,13 @@ export function GuidedSolver({
   /** Prefix of the saved activity ids ("vi-du", "thu-suc"). */
   activity: string;
   onProgress: (step: SolverStep) => void;
+  /** The lesson's own method: each step's wording is shown on its panel. */
+  method?: { title: string; steps: string[] } | null;
+  /** The last tab, once solved: what the solution adds up to. */
+  finishLabel: string;
+  finish: React.ReactNode;
+  /** false when the finish content is a card of its own (the variation table). */
+  framedFinish?: boolean;
 }) {
   const analysis = React.useMemo(() => {
     const result = analyzeFunction(source);
@@ -63,19 +77,22 @@ export function GuidedSolver({
   const roots = useAttempt(`${activity}/nghiem`);
   const signs = useAttempt(`${activity}/xet-dau`);
   const conclusion = useAttempt(`${activity}/ket-luan`);
+  // The step on screen: null follows the student's current step.
+  const [viewing, setViewing] = React.useState<number | null>(null);
+  const [seen, setSeen] = React.useState(() =>
+    groupOf(step0(domain, deriv, roots, signs, conclusion))
+  );
 
-  const step: SolverStep = !domain.done
-    ? 'domain'
-    : !deriv.done
-      ? 'derivative'
-      : !roots.done
-        ? 'roots'
-        : !signs.done
-          ? 'signs'
-          : !conclusion.done
-            ? 'conclusion'
-            : 'solved';
+  const step = step0(domain, deriv, roots, signs, conclusion);
   React.useEffect(() => onProgress(step), [step, onProgress]);
+  const nextRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    // When a step is answered, keep the way on above the sticky bar (desktop) or the dock (phone).
+    nextRef.current?.scrollIntoView({
+      block: 'nearest',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+  }, [seen]);
   if (!analysis) return null;
 
   const a = analysis;
@@ -114,135 +131,286 @@ export function GuidedSolver({
     expression.length % Math.max(derivativeOptions.length, 1)
   );
 
+  const doneOf = [domain.done, deriv.done && roots.done, signs.done, conclusion.done];
+  const current = groupOf(step);
+  // A step just finished stays on screen with its feedback until the student moves on.
+  if (seen !== current) {
+    setSeen(current);
+    if (current > seen && viewing === null) setViewing(seen);
+  }
+  const shown = viewing ?? current;
+  const methodText = (index: number) =>
+    method?.steps[index]?.replace(/^\s*(?:\*\*)?Bước\s*\d+\s*[:.)]\s*(?:\*\*)?\s*/i, '') ?? null;
+  const results = [
+    <InlineText key="1" text={`$D = ${domainText}$`} />,
+    <InlineText
+      key="2"
+      text={
+        a.criticalPoints.length
+          ? `$y' = ${yPrime}$; $y' = 0 \\Leftrightarrow x = ${a.criticalPoints.map(latexNumber).join('$ hoặc $x = ')}$`
+          : `$y' = ${yPrime}$, vô nghiệm`
+      }
+    />,
+    <>
+      {a.intervals
+        .map(
+          (interval) =>
+            `${interval.sign > 0 ? '+' : '−'} trên ${formatInterval(interval.from, interval.to)}`
+        )
+        .join(', ')}
+    </>,
+    <>
+      {a.pieces
+        .map(
+          (piece) =>
+            `${piece.direction === 'up' ? 'đồng biến' : 'nghịch biến'} trên ${formatInterval(piece.from, piece.to)}`
+        )
+        .join('; ')}
+    </>,
+  ];
+  const go = (group: number) => {
+    setViewing(group === current ? null : group);
+    window.requestAnimationFrame(() =>
+      document.getElementById(`${activity}-panel-${group}`)?.focus({ preventScroll: true })
+    );
+  };
+  // After a step is answered its feedback stays in view; the student moves on when ready.
+  const nextReady = shown < current && doneOf[shown];
+  const nextAction = nextReady ? (
+    <button
+      ref={nextRef}
+      type="button"
+      onClick={() => go(shown + 1)}
+      className="mt-4 inline-flex min-h-11 scroll-mb-28 items-center gap-2 rounded-xl bg-[#0052FF] px-5 text-[15px] font-bold text-white transition hover:bg-[#0044CC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+      data-testid="solver-next"
+    >
+      {shown + 1 < SOLVER_GROUPS.length
+        ? `Sang bước ${shown + 2}: ${SOLVER_GROUPS[shown + 1]}`
+        : finishLabel}
+      <ArrowRight className="size-4" aria-hidden="true" />
+    </button>
+  ) : null;
+  const panel = (group: number, body: React.ReactNode, testId: string) => (
+    <section
+      id={`${activity}-panel-${group}`}
+      tabIndex={-1}
+      hidden={shown !== group}
+      aria-label={group < 4 ? `Bước ${group + 1}: ${SOLVER_GROUPS[group]}` : finishLabel}
+      className={
+        group === 4 && !framedFinish
+          ? 'focus:outline-none'
+          : 'rounded-2xl border border-blue-200 bg-white p-4 shadow-[0_10px_30px_rgba(0,82,255,0.06)] focus:outline-none sm:p-5'
+      }
+      data-testid={testId}
+      data-state={group > current ? 'locked' : doneOf[group] ? 'done' : 'active'}
+    >
+      {group < 4 && (
+        <header className="mb-2.5">
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-blue-600">
+            Bước {group + 1}/4 · {SOLVER_GROUPS[group]}
+          </p>
+          {methodText(group) && (
+            <p className="mt-0.5 text-[13px] leading-5 text-slate-500">
+              <InlineText text={methodText(group)!} />
+            </p>
+          )}
+        </header>
+      )}
+      {body}
+      {nextAction && shown === group && nextAction}
+    </section>
+  );
+
   return (
     <div className="space-y-3" data-testid={`solver-${activity}`} data-step={step}>
-      <Beat
-        number={1}
-        title="Bước 1 · Tập xác định"
-        status={domain.done ? 'done' : 'active'}
-        summary={<InlineText text={`Bước 1: $D = ${domainText}$`} />}
-        testId="step-domain"
-      >
-        <Prompt>
-          <InlineText text={`Tập xác định của hàm số $y = ${expression}$ là gì?`} />
-        </Prompt>
-        <Question
-          choices={domainChoices}
-          attempt={domain}
-          testId="choices-domain"
-          hints={[
-            'Tập xác định gồm mọi x thay được vào hàm số.',
-            'Hàm đa thức (không có mẫu, không có căn) xác định với mọi số thực.',
-          ]}
-        />
-        {domain.done && (
-          <StepReview
-            attempt={domain}
-            model={model(1)}
-            fallback={`Hàm đa thức nên $D = ${domainText}$.`}
-          />
+      <nav aria-label="Các bước giải" data-testid="solver-steps">
+        <ol className="flex gap-1.5">
+          {[...SOLVER_GROUPS, finishLabel].map((label, group) => {
+            const reachable = group <= current;
+            const done = group < 4 ? doneOf[group] : step === 'solved';
+            const on = shown === group;
+            return (
+              <li key={group} className={on ? 'min-w-0 flex-1' : 'shrink-0'}>
+                <button
+                  type="button"
+                  disabled={!reachable}
+                  onClick={() => go(group)}
+                  aria-current={on ? 'step' : undefined}
+                  aria-label={`${group < 4 ? `Bước ${group + 1}: ` : ''}${label}${done ? ' (xong)' : reachable ? ' (đang làm)' : ' (chưa tới)'}`}
+                  title={label}
+                  className={`flex h-11 min-w-0 items-center gap-2 rounded-xl border text-left ${on ? 'w-full px-2.5' : 'w-11 justify-center'} text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    on
+                      ? 'border-blue-300 bg-blue-50 text-[#091224]'
+                      : done
+                        ? 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'
+                        : reachable
+                          ? 'border-blue-200 bg-white text-blue-700'
+                          : 'border-dashed border-slate-200 bg-transparent text-slate-400'
+                  }`}
+                  data-testid={`solver-chip-${GROUP_IDS[group]}`}
+                  data-done={done}
+                >
+                  <span
+                    className={`grid size-6 shrink-0 place-items-center rounded-full text-[12px] font-bold ${
+                      done
+                        ? 'bg-emerald-500 text-white'
+                        : reachable
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 text-slate-400'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {done ? (
+                      <Check className="size-3.5" strokeWidth={3} />
+                    ) : group < 4 ? (
+                      group + 1
+                    ) : (
+                      '★'
+                    )}
+                  </span>
+                  {on && <span className="min-w-0 truncate">{label}</span>}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        {/* What the student has established so far, in one line each: the whole
+            solution stays readable without keeping every step open. */}
+        {shown > 0 && shown <= 4 && doneOf[0] && (
+          <ol
+            className="mt-2 space-y-0.5 text-[13px] leading-5 text-slate-500"
+            data-testid="solver-ledger"
+          >
+            {results.slice(0, Math.min(shown, 4)).map((result, index) =>
+              doneOf[index] ? (
+                <li key={index} className="flex gap-1.5">
+                  <span className="shrink-0 font-semibold text-slate-400">{index + 1}.</span>
+                  <span className="min-w-0">{result}</span>
+                </li>
+              ) : null
+            )}
+          </ol>
         )}
-      </Beat>
+      </nav>
 
-      {reached('derivative') && (
-        <Beat
-          number={2}
-          title="Bước 2 · Tính đạo hàm"
-          status={deriv.done ? 'done' : 'active'}
-          summary={<InlineText text={`Bước 2: $y' = ${yPrime}$`} />}
-          testId="step-derivative"
-        >
+      {panel(
+        0,
+        <>
           <Prompt>
-            <InlineText text={`Đạo hàm của $y = ${expression}$ là:`} />
+            <InlineText text={`Tập xác định của hàm số $y = ${expression}$ là gì?`} />
           </Prompt>
           <Question
-            choices={shuffled}
-            attempt={deriv}
-            testId="choices-derivative"
+            choices={domainChoices}
+            attempt={domain}
+            layout="grid-cols-1 sm:grid-cols-3"
+            testId="choices-domain"
             hints={[
-              <InlineText
-                key="1"
-                text="Đạo hàm từng số hạng: $(x^n)' = n \cdot x^{n-1}$, $(c)' = 0$."
-              />,
-              <InlineText key="2" text={`Số hạng bậc cao nhất cho ra ${firstTermHint(fPrime)}.`} />,
+              'Tập xác định gồm mọi x thay được vào hàm số.',
+              'Hàm đa thức (không có mẫu, không có căn) xác định với mọi số thực.',
             ]}
           />
-          {deriv.done && (
-            <Outcome attempt={deriv} right={<InlineText text={`$y' = ${yPrime}$`} />} />
-          )}
-        </Beat>
-      )}
-
-      {reached('roots') && (
-        <Beat
-          number={3}
-          title="Bước 2 · Giải y′ = 0"
-          status={roots.done ? 'done' : 'active'}
-          summary={
-            <InlineText
-              text={
-                a.criticalPoints.length
-                  ? `$y' = 0 \\Leftrightarrow x = ${a.criticalPoints.map(latexNumber).join('$ hoặc $x = ')}$`
-                  : "$y' = 0$ vô nghiệm"
-              }
+          {domain.done && (
+            <StepReview
+              attempt={domain}
+              model={model(1)}
+              fallback={`Hàm đa thức nên $D = ${domainText}$.`}
             />
-          }
-          testId="step-roots"
-        >
-          <RootPicker analysis={a} yPrime={yPrime} attempt={roots} />
-          {roots.done && (
-            <StepReview attempt={roots} model={model(2)} fallback={rootsFallback(a, yPrime)} />
           )}
-        </Beat>
+        </>,
+        'step-domain'
       )}
 
-      {reached('signs') && (
-        <Beat
-          number={4}
-          title="Bước 3 · Xét dấu y′"
-          status={signs.done ? 'done' : 'active'}
-          summary={
-            <>
-              Bước 3:{' '}
-              {a.intervals
-                .map(
-                  (interval) =>
-                    `${interval.sign > 0 ? '+' : '−'} trên ${formatInterval(interval.from, interval.to)}`
-                )
-                .join(', ')}
-            </>
-          }
-          testId="step-signs"
-        >
-          <SignTable analysis={a} attempt={signs} />
-          {signs.done && <StepReview attempt={signs} model={model(3)} fallback={null} />}
-        </Beat>
-      )}
+      {reached('derivative') &&
+        panel(
+          1,
+          <>
+            <div data-testid="step-derivative">
+              {!deriv.done ? (
+                <>
+                  <Prompt>
+                    <InlineText text={`Đạo hàm của $y = ${expression}$ là:`} />
+                  </Prompt>
+                  <Question
+                    choices={shuffled}
+                    attempt={deriv}
+                    columns={2}
+                    testId="choices-derivative"
+                    hints={[
+                      <InlineText
+                        key="1"
+                        text="Đạo hàm từng số hạng: $(x^n)' = n \cdot x^{n-1}$, $(c)' = 0$."
+                      />,
+                      <InlineText
+                        key="2"
+                        text={`Số hạng bậc cao nhất cho ra ${firstTermHint(fPrime)}.`}
+                      />,
+                    ]}
+                  />
+                </>
+              ) : (
+                <p className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-[15px] text-emerald-950">
+                  <Check className="size-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                  <span>
+                    {deriv.state.status === 'revealed' ? 'Đáp án: ' : 'Đúng: '}
+                    <InlineText text={`$y' = ${yPrime}$`} />
+                  </span>
+                </p>
+              )}
+            </div>
+            {reached('roots') && (
+              <div className="mt-4" data-testid="step-roots">
+                <RootPicker analysis={a} yPrime={yPrime} attempt={roots} />
+                {roots.done && (
+                  <StepReview
+                    attempt={roots}
+                    model={model(2)}
+                    fallback={rootsFallback(a, yPrime)}
+                  />
+                )}
+              </div>
+            )}
+          </>,
+          'step-2'
+        )}
 
-      {reached('conclusion') && (
-        <Beat
-          number={5}
-          title="Bước 4 · Kết luận"
-          status={conclusion.done ? 'done' : 'active'}
-          summary={
-            <>
-              Bước 4:{' '}
-              {a.pieces
-                .map(
-                  (piece) =>
-                    `${piece.direction === 'up' ? 'đồng biến' : 'nghịch biến'} trên ${formatInterval(piece.from, piece.to)}`
-                )
-                .join('; ')}
-            </>
-          }
-          testId="step-conclusion"
-        >
-          <ConclusionPicker analysis={a} attempt={conclusion} />
-          {conclusion.done && <StepReview attempt={conclusion} model={model(4)} fallback={null} />}
-        </Beat>
-      )}
+      {reached('signs') &&
+        panel(
+          2,
+          <>
+            <SignTable analysis={a} attempt={signs} />
+            {signs.done && <StepReview attempt={signs} model={model(3)} fallback={null} />}
+          </>,
+          'step-signs'
+        )}
+
+      {reached('conclusion') &&
+        panel(
+          3,
+          <>
+            <ConclusionPicker analysis={a} attempt={conclusion} />
+            {conclusion.done && (
+              <StepReview attempt={conclusion} model={model(4)} fallback={null} />
+            )}
+          </>,
+          'step-conclusion'
+        )}
+
+      {step === 'solved' && panel(4, finish, 'step-finish')}
     </div>
   );
+}
+
+function step0(...attempts: Array<{ done: boolean }>): SolverStep {
+  const index = attempts.findIndex((attempt) => !attempt.done);
+  return index < 0 ? 'solved' : ORDER[index];
+}
+
+/** The four steps of the method, as the student works them. */
+const SOLVER_GROUPS = ['Tập xác định', 'Đạo hàm, y′ = 0', 'Xét dấu y′', 'Kết luận'];
+const GROUP_IDS = ['domain', 'derivative', 'signs', 'conclusion', 'finish'];
+
+function groupOf(step: SolverStep): number {
+  return { domain: 0, derivative: 1, roots: 1, signs: 2, conclusion: 3, solved: 4 }[step];
 }
 
 function rotate<T>(items: T[], by: number): T[] {
@@ -276,15 +444,17 @@ function StepReview({
   fallback: string | null;
 }) {
   const { review } = React.useContext(RuntimeContext);
+  const { status, misses, hints } = attempt.state;
+  const byThemselves = review || (status === 'correct' && misses === 0 && hints === 0);
   return (
     <>
       {!review && attempt.state.status === 'revealed' && (
         <Feedback tone="shown" title="Không sao, mình cùng xem lời giải nhé." />
       )}
       {model ? (
-        <ModelStep label={model.label} body={model.body} />
+        <ModelStep label={model.label} body={model.body} folded={byThemselves} />
       ) : fallback ? (
-        <ModelStep label={null} body={fallback} />
+        <ModelStep label={null} body={fallback} folded={byThemselves} />
       ) : null}
     </>
   );
@@ -616,11 +786,11 @@ function ConclusionPicker({
         {a.pieces.map((piece, index) => (
           <li
             key={index}
-            className={`grid grid-cols-2 items-center gap-2 rounded-xl border-2 px-3 py-2.5 ${
+            className={`grid grid-cols-2 items-center gap-2 rounded-xl border-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] ${
               wrong.includes(index) ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
             }`}
           >
-            <span className="col-span-2 text-[15px] font-bold tabular-nums text-[#091224]">
+            <span className="col-span-2 text-[15px] font-bold tabular-nums text-[#091224] sm:col-span-1">
               Trên {formatInterval(piece.from, piece.to)}
             </span>
             {(['up', 'down'] as const).map((value) => {
